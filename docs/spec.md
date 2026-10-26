@@ -1,0 +1,891 @@
+# SML ERP — System Design Specification
+
+Oct 26, 2026 · @P R H M P Somarathna
+
+## 1. Overview
+
+SML ERP is a custom-built, web-based ERP for a business with two divisions: a metal machining workshop and a plastic injection moulding plant. It is delivered in four phases, starting with a payment voucher approval system that becomes the only route by which supplier payments enter the books.
+
+| Phase | Scope | Depends on |
+| --- | --- | --- |
+| 0. Core foundation | Users, roles, company, cost centres, chart of accounts, suppliers, journal, audit log, approval engine | — |
+| 1. Payment vouchers | Invoice upload, 3-level approval, supplier payments locked to approved vouchers | Phase 0 |
+| 1.5. Sales documents | Customers, quotations with costing, proforma invoices, sales orders, customer advances | Phase 0 |
+| 2. Financial accounting | QuickBooks-equivalent modules: AP, AR, banking, assets, inventory valuation, payroll, tax, reports | Phases 0, 1 |
+| 3. Production | Machining job cards, moulding shift production, supervisor entry pages, QC, OEE, job costing | Phases 0, 2 |
+
+**Users**
+
+| Role | Level | Main responsibility |
+| --- | --- | --- |
+| Accounts Clerk | L1 | Create vouchers, upload scanned invoices |
+| Accountant | L2 | Verify and code vouchers, first approval |
+| Director | L3 | Final approval of vouchers, high-value quotations, low-margin quotations |
+| Cashier / Payment Officer | — | Record payments against approved vouchers |
+| Sales Executive | — | Prepare quotations and proforma invoices |
+| Production Supervisor | — | Enter shift production data for assigned sections |
+| Production Manager | — | Approve shift reports, plan production |
+| Store Supervisor | — | Goods receipts with weights and counts per package, material issues and returns |
+| Auditor | — | Read-only access, including all logs |
+| System Admin | — | Users, roles, master configuration |
+
+One user can hold several roles. Permissions attach to roles, never directly to users.
+
+## 2. Technology stack and architecture
+
+The system is a modular monolith: one codebase and one PostgreSQL database, split into modules with clear boundaries. Microservices are deliberately avoided; they add operational cost an ERP of this size does not need.
+
+| Layer | Choice | Reason |
+| --- | --- | --- |
+| Database | PostgreSQL | ACID transactions, exact NUMERIC money, constraints and triggers enforce business rules |
+| Backend | Python, Django + Django REST Framework | Mature ORM, admin for master data, permissions, strong data libraries for analytics |
+| Background jobs | Celery + Redis | Notifications, report generation, invoice thumbnails, scheduled tasks |
+| Frontend | React + TypeScript, AG Grid or TanStack Table | Table- and form-heavy UI, large grids, responsive layouts |
+| File storage | S3-compatible (AWS S3 or self-hosted MinIO) | Scanned invoices and drawings kept outside the database, versioned |
+| Shop-floor client | Same React app as a PWA | Works on tablets, offline entry with sync |
+| Deployment | Docker, Nginx, Hostinger Ubuntu VPS | Simple to run, restore and scale |
+
+If the development team is stronger in PHP, Laravel replaces Django with no change to the rest of this design.
+
+**Module layout**
+
+```
+erp/
+├── core/          users, roles, permissions, company, cost centres,
+│                  number series, audit log, approval engine, notifications
+├── masters/       suppliers, customers, items, banks, machines, moulds
+├── accounting/    chart of accounts, journal, periods, financial reports
+├── vouchers/      Phase 1: voucher types, workflow, attachments
+├── payments/      Phase 1: supplier payments (locked to approved vouchers)
+├── sales/         Phase 1.5: quotations, proformas, sales orders, advances
+├── purchasing/    Phase 2: purchase requests, POs, GRNs, bills
+├── inventory/     Phase 2: stock, warehouses, valuation
+├── assets/        Phase 2: fixed assets, depreciation
+├── payroll/       Phase 2: salaries, EPF/ETF, payslips
+├── production/
+│   ├── common/    sections, shifts, shift reports, downtime, rejects
+│   ├── machining/ Phase 3: job orders, routings, job cards
+│   └── moulding/  Phase 3: mould runs, shots, material, OEE
+└── quality/       Phase 3: inspection plans and records
+```
+
+**Module rules**
+
+- Modules call each other through service functions, never by writing into another module's tables.
+- Only the `accounting` module writes journal entries. Other modules (payments, sales invoices, payroll, production costing) ask it to post.
+- Every module exposes a REST API; the frontend uses only that API, so a mobile app or integrations can be added later.
+
+**Security**
+
+- HTTPS everywhere; passwords hashed with Argon2.
+- Two-factor authentication required for Accountant, Director, Cashier and Admin.
+- Permissions checked on the server for every request, not only hidden in the UI.
+- Scanned files served through short-lived signed URLs.
+- Session timeout and login history per user.
+- Nightly encrypted database and file backups, copied off-site, with a monthly restore test.
+
+**Hosting on Hostinger Ubuntu VPS**
+
+- Ubuntu LTS release, with the application, PostgreSQL, Redis and MinIO (file storage) running in Docker containers behind Nginx.
+- Free SSL certificates from Let's Encrypt, renewed automatically.
+- Starting size: 4 vCPU, 16 GB RAM, 200 GB NVMe disk; scanned invoices and drawings are the main growth in disk use.
+- Data centre: the region closest to Sri Lanka that the provider offers, for fast page loads.
+- Firewall open only for HTTPS and SSH; SSH by key only, no password login.
+- Backups: the provider's VPS snapshots, plus nightly database and file backups copied to separate storage outside Hostinger, so a problem with the VPS account cannot take the backups with it.
+- A second, smaller VPS as a test environment, where every update is tried before production.
+
+## 3. Core foundation (Phase 0)
+
+The accounting core is built first, even though users first see the voucher system. Vouchers and payments are accounting transactions; building them on a correct ledger from day one avoids rewriting them in Phase 2.
+
+**Organisation**
+
+- Company: name, registration, VAT number, base currency (LKR), financial year start.
+- Cost centres: Workshop, Moulding, Administration (configurable). Every expense and revenue line carries one, giving a P&L per division.
+- Branches or locations, if the factories are at different sites.
+
+**Chart of accounts**
+
+- Tree of accounts: Assets, Liabilities, Equity, Income, Expenses, with unlimited sub-levels.
+- Only leaf accounts accept postings; group accounts only total.
+- Account types drive behaviour: bank, cash, receivable, payable, tax, stock, fixed asset.
+- A starter chart suited to a Sri Lankan manufacturer is loaded at setup and reviewed by the company accountant.
+
+**Journal (the ledger)**
+
+- `journal_entry`: number, date, source document type and id, narration, posted\_by, status.
+- `journal_line`: account, cost centre, party (supplier or customer), debit, credit.
+- Rules enforced in code and by a database check: total debits equal total credits, amounts are `NUMERIC(18,2)`, never floating point.
+- Posted entries are never edited or deleted; corrections are made by reversing entries.
+- Accounting periods (months) can be closed. No posting into a closed period.
+
+**Number series**
+
+Each document type has a configurable prefix and sequence (e.g. C895261005 for cheque vouchers, Q-2026-0001 for quotations). Numbers are allocated inside the database transaction that saves the document, so there are no duplicates and no gaps from failed saves.
+
+**Approval engine (shared)**
+
+One generic engine serves vouchers, quotations, purchase orders, shift reports and corrections.
+
+- An approval *matrix* defines, per document type, the levels required and the conditions (amount range, cost centre, voucher type).
+- Each level names a role, not a person, so leave cover works by assigning the role.
+- A user can never approve a document they created or one they already approved at a lower level.
+- Every action writes to an insert-only approval log.
+
+**Audit log**
+
+Every create, update and delete on master data and transactions records the user, timestamp, IP address, and old and new values. The log is insert-only; no role, including Admin, can edit it.
+
+**Notifications**
+
+In-app bell (as in the current system), email, and optionally SMS or WhatsApp. Users choose which events notify them. Typical events: voucher awaiting my approval, voucher returned to me, quotation approved, shift report awaiting approval.
+
+## 3A. Admin settings pages
+
+Factory structure, shifts, approval limits and currencies are maintained by the System Admin on settings pages, never in code. Every change on these pages is recorded in the audit log with old and new values, and settings that affect costs or approvals are dated, so past documents keep the values in force when they were created.
+
+| Page | Maintains | Used by |
+| --- | --- | --- |
+| 3A.1 Divisions, sections and machines | Factory structure, machine details and rates | Supervisor pages, planning, OEE, costing, quotations |
+| 3A.2 Shifts and rosters | Shift times, roster patterns, crews, seasonal assignments | Shift reports, manpower, OEE planned time, overtime |
+| 3A.3 Quotation approval limits | Minimum margin % and value limits | Quotation approval (5.1) |
+| 3A.4 Currencies and exchange rates | Currencies, daily rates | Quotations, invoices, receipts (5.5) |
+
+### 3A.1 Divisions, sections and machines
+
+**Layout:** a tree on the left (Division → Section → Machine) with search, and the selected item's form on the right. Buttons: Add division, Add section, Add machine, Import from Excel, Export.
+
+**Section fields:** code, name, division, category (Manual or CNC), section type (Machining, Moulding, Support), supervisors (multi-select from users), active.
+
+**Machine fields (all divisions):** code, name, section, make, model, serial no., year, hourly machine rate (dated history), status (Active, Under maintenance, Retired), photo, notes.
+
+**Extra machine fields for moulding machines:** clamping force (tonnes), maximum shot weight (g), screw diameter (mm), tie-bar spacing (mm × mm), maximum mould height and thickness (mm). The system uses these to warn when a mould is planned on a machine that is too small for it.
+
+**Rules**
+
+- Codes are unique and cannot be changed once used on a transaction; names can.
+- A machine can be moved to another section; its earlier production stays reported under the old section.
+- A section or machine with history cannot be deleted, only made inactive, which hides it from entry pages.
+- A new rate applies from its effective date; earlier jobs keep the old rate.
+
+**Initial data: Workshop division (18 sections)**
+
+| Code | Section | Category |
+| --- | --- | --- |
+| M-MIL | Manual Milling | Manual |
+| M-LAT | Manual Lathe | Manual |
+| M-DRL | Manual Drilling | Manual |
+| M-SHP | Manual Shaping | Manual |
+| M-GRD | Manual Grinding | Manual |
+| M-POL | Manual Polishing | Manual |
+| M-EDM | Manual EDM | Manual |
+| M-WED | Manual Wire EDM | Manual |
+| M-BSW | Manual Bandsaw | Manual |
+| C-MIL | CNC Milling | CNC |
+| C-LAT | CNC Lathe | CNC |
+| C-DRL | CNC Drilling | CNC |
+| C-SHP | CNC Shaping | CNC |
+| C-GRD | CNC Grinding | CNC |
+| C-POL | CNC Polishing | CNC |
+| C-EDM | CNC EDM | CNC |
+| C-WED | Wire EDM | CNC |
+| C-BSW | CNC Bandsaw | CNC |
+
+Codes are suggestions; the Admin can change them before go-live. Machines are added under each section on this page, starting with the 3 Manual Milling machines (M-MIL-01 to M-MIL-03). The 8 moulding machines, their sections and tonnage are entered on the same page under the Moulding division.
+
+### 3A.2 Shifts and rosters
+
+Four tabs:
+
+1. **Shifts:** name, start time, end time, break minutes. Shifts ending after midnight are detected automatically. Pre-filled: General 08:00–17:00.
+2. **Roster patterns:** name and an ordered cycle built by picking a shift or Off for each day, e.g. Day, Day, Night, Night, Off, Off. Shows hours per cycle and average hours per week.
+3. **Crews:** crew name (A, B, C…), division, members picked from the employee list.
+4. **Roster calendar:** assign a pattern to a division or section for a date range, with each crew's starting point in the cycle. A 4-week preview shows who is on each shift each day.
+
+**Checks:** a warning when a section has a day or night with no crew on shift, when one crew is assigned two overlapping rosters, or when a change would alter shifts that already have submitted production reports.
+
+### 3A.3 Quotation approval limits
+
+| Setting | Per | Example (to be set) |
+| --- | --- | --- |
+| Minimum margin % | Division (optional: per customer group) | Workshop 20%, Moulding 15% |
+| Value above which the Director approves | Division, in LKR (foreign-currency quotations converted at the day's rate) | LKR 1,000,000 |
+| Approver | Role | Director |
+
+- Each setting has an effective date and a history of earlier values.
+- Because these limits are financial controls, a change entered by the Admin takes effect only after the Director confirms it on the same page.
+
+### 3A.4 Currencies and exchange rates
+
+**Currencies tab:** LKR is the fixed base currency. Common currencies are pre-loaded and switched on or off by the Admin: USD, EUR, GBP, AUD, JPY, CNY, INR, SGD, AED. Fields: ISO code, name, symbol, decimal places, active. Other currencies can be added.
+
+**Exchange rates tab:** date, currency, rate to LKR (buying and selling, if the bank quotes both). Entered daily by the Accountant or imported from a CSV. If no rate exists for a date, the latest earlier rate is used and flagged on the document.
+
+**Customer currency:** each customer record has a default currency chosen from the active list.
+
+## 4. Phase 1: Payment voucher approval system
+
+No supplier payment can be recorded unless its voucher has been approved by the Accountant and then the Director. This is enforced in the user interface, the application and the database.
+
+### 4.1 Voucher types
+
+| Type | Payment method | Notes |
+| --- | --- | --- |
+| Cheque Payment | Cheque | Cheque number, bank and cheque date recorded at payment |
+| Online Payment | Bank transfer | Transfer reference recorded at payment |
+| Petty Cash | Cash | Same three-level approval as every other type |
+| Internal Transfer | Between own accounts | No supplier; debit and credit are both company bank/cash accounts |
+| Supplier Advance | Cheque or transfer | Paid before the invoice; later set off against the invoice |
+| Staff Reimbursement | Any | Payee is an employee, with receipts attached |
+
+Types are master data; new types can be added without code changes.
+
+### 4.2 Workflow
+
+&#91;embedded content: voucher approval flow · 3 levels, payment lock\]
+
+A return at either level sends the voucher back to the clerk, and approval restarts at the Accountant after resubmission.
+
+| Status | Set by | Next possible actions |
+| --- | --- | --- |
+| Draft | Clerk (L1) | Edit, attach invoices, submit, delete |
+| Submitted | Clerk (L1) | Accountant approves, returns or rejects |
+| Accountant Approved | Accountant (L2) | Director approves, returns or rejects |
+| Director Approved | Director (L3) | Cashier records payment |
+| Returned | L2 or L3 | Clerk corrects and resubmits; approvals restart at L2 |
+| Rejected | L2 or L3 | None (final). Reason mandatory |
+| Partly Paid | System | Further payments up to the approved amount |
+| Paid | System | None; voucher locked |
+| Cancelled | Accountant, with Director approval | Only before any payment |
+
+**Amendments.** A Director-approved voucher cannot be edited. A change creates an amendment (revision 1, 2, …) linked to the original, which goes through L2 and L3 approval again. Amendments appear in the Amendments List.
+
+### 4.3 Approval rules
+
+- Every voucher of every type and amount goes through all three levels: L1 submit → L2 approve → L3 approve. No type or amount skips the Director.
+- A user cannot approve their own voucher, or approve at two levels.
+- Reject and Return require a reason; Approve allows an optional comment.
+- Optional reminder: notify the next approver again if a voucher waits longer than a set number of days.
+- The approval matrix (section 3) still allows extra levels to be added later, but not fewer than three for vouchers.
+
+### 4.4 Screens
+
+**Clerk: create voucher**
+
+1. Choose voucher type and supplier (searchable, with supplier's outstanding balance shown).
+2. Add one or more invoice lines: supplier invoice number, invoice date, amount, tax.
+3. Upload scanned invoices (PDF, JPG, PNG; multiple files; drag and drop, or camera on a phone).
+4. Save as draft or submit.
+
+The system warns if the same supplier and invoice number already exist in any voucher, and if an uploaded file is identical (same hash) to one already in the system.
+
+**Accountant: review**
+
+- Queue of submitted vouchers with the invoice preview beside the details.
+- Assigns the GL expense account, cost centre (Workshop / Moulding / Admin) and tax treatment to each line.
+- Approve, return to clerk with a comment, or reject.
+
+**Director: approve (redesign of the current page)**
+
+Keeps what works in the current page (type tabs, approve and reject columns, reason box, bulk actions, Confirm and Reset) and adds:
+
+- Pending count on each tab, e.g. "Cheque Payment (5)", instead of only a green dot.
+- Clicking a row opens a side panel with the scanned invoice preview, line details, the Accountant's comment and the supplier's outstanding balance and aging.
+- Reason required for Reject; optional for Approve.
+- Bulk approve shows a confirmation: number of vouchers and total amount.
+- Filters by date range, supplier, amount and cost centre; totals shown at the foot of the list.
+- Fully usable on a phone, so approvals do not wait for the Director to be at a desk.
+
+**Cashier: record payment**
+
+- Lists only Director-approved, unpaid vouchers.
+- A payment is created from a voucher, never from a blank form. Supplier and maximum amount come from the voucher.
+- Records bank account, method, cheque or transfer reference and date. Supports partial payments.
+- Saving the payment posts the journal entry (Dr Supplier payable or expense, Cr Bank) and prints the payment voucher.
+
+**Lists and reports**
+
+Voucher List, Approved List, Amendments List (as today), plus: vouchers pending by approver and age, payments made by period, and the approval history of any voucher.
+
+### 4.5 Data model
+
+```sql
+CREATE TABLE voucher_type (
+  id             SERIAL PRIMARY KEY,
+  code           VARCHAR(10) UNIQUE NOT NULL,   -- CHQ, ONL, PCH, INT, ADV, RMB
+  name           VARCHAR(50) NOT NULL,
+  number_series  VARCHAR(20) NOT NULL,
+  needs_supplier BOOLEAN NOT NULL DEFAULT true
+);
+
+CREATE TABLE voucher (
+  id              BIGSERIAL PRIMARY KEY,
+  voucher_no      VARCHAR(20) UNIQUE NOT NULL,
+  voucher_type_id INT NOT NULL REFERENCES voucher_type(id),
+  supplier_id     INT REFERENCES supplier(id),
+  voucher_date    DATE NOT NULL,
+  total_amount    NUMERIC(18,2) NOT NULL CHECK (total_amount > 0),
+  status          VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+  revision        INT NOT NULL DEFAULT 0,
+  parent_id       BIGINT REFERENCES voucher(id),
+  created_by      INT NOT NULL REFERENCES app_user(id),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE voucher_line (
+  id             BIGSERIAL PRIMARY KEY,
+  voucher_id     BIGINT NOT NULL REFERENCES voucher(id),
+  invoice_no     VARCHAR(50),
+  invoice_date   DATE,
+  description    TEXT,
+  account_id     INT REFERENCES account(id),
+  cost_centre_id INT REFERENCES cost_centre(id),
+  amount         NUMERIC(18,2) NOT NULL,
+  tax_amount     NUMERIC(18,2) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE voucher_attachment (
+  id          BIGSERIAL PRIMARY KEY,
+  voucher_id  BIGINT NOT NULL REFERENCES voucher(id),
+  file_key    TEXT NOT NULL,
+  file_name   TEXT NOT NULL,
+  sha256      CHAR(64) NOT NULL,
+  uploaded_by INT NOT NULL REFERENCES app_user(id),
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE approval_log (             -- shared by all documents
+  id          BIGSERIAL PRIMARY KEY,
+  doc_type    VARCHAR(30) NOT NULL,
+  doc_id      BIGINT NOT NULL,
+  level       SMALLINT NOT NULL,
+  action      VARCHAR(20) NOT NULL,     -- SUBMIT, APPROVE, RETURN, REJECT
+  reason      TEXT,
+  user_id     INT NOT NULL REFERENCES app_user(id),
+  ip_address  INET,
+  acted_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE supplier_payment (
+  id               BIGSERIAL PRIMARY KEY,
+  payment_no       VARCHAR(20) UNIQUE NOT NULL,
+  voucher_id       BIGINT NOT NULL REFERENCES voucher(id),
+  bank_account_id  INT NOT NULL REFERENCES account(id),
+  method           VARCHAR(20) NOT NULL,   -- CHEQUE, TRANSFER, CASH
+  reference        VARCHAR(50),            -- cheque no. or transfer ref
+  payment_date     DATE NOT NULL,
+  amount           NUMERIC(18,2) NOT NULL CHECK (amount > 0),
+  journal_entry_id BIGINT REFERENCES journal_entry(id),
+  cancelled        BOOLEAN NOT NULL DEFAULT false,
+  created_by       INT NOT NULL REFERENCES app_user(id)
+);
+```
+
+### 4.6 The payment lock
+
+The rule is enforced at three layers, so a bug or a future change in one layer cannot bypass it.
+
+1. **Interface:** payments can only be started from an approved voucher.
+2. **Application:** the payment service checks status, remaining balance and user role before saving.
+3. **Database:** a trigger rejects any payment row that does not meet the rule.
+
+```sql
+CREATE FUNCTION check_payment_voucher() RETURNS trigger AS $$
+DECLARE v_status TEXT; v_total NUMERIC; v_paid NUMERIC;
+BEGIN
+  SELECT status, total_amount INTO v_status, v_total
+    FROM voucher WHERE id = NEW.voucher_id FOR UPDATE;
+
+  IF v_status NOT IN ('DIRECTOR_APPROVED', 'PARTLY_PAID') THEN
+    RAISE EXCEPTION 'Voucher % is not approved by the Director', NEW.voucher_id;
+  END IF;
+
+  SELECT COALESCE(SUM(amount), 0) INTO v_paid
+    FROM supplier_payment
+   WHERE voucher_id = NEW.voucher_id AND NOT cancelled;
+
+  IF v_paid + NEW.amount > v_total THEN
+    RAISE EXCEPTION 'Payment exceeds the approved amount';
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_payment_requires_approval
+BEFORE INSERT ON supplier_payment
+FOR EACH ROW EXECUTE FUNCTION check_payment_voucher();
+```
+
+In Phase 2, the same lock extends to manual journal entries: a journal line that debits a supplier's payable account and credits a bank or cash account is refused unless it comes from a supplier payment.
+
+## 5. Phase 1.5: Sales documents
+
+Quotations and proforma invoices come right after Phase 1 because they need only the core foundation, and they give sales staff a working tool early. Each document is created from the previous one, so data is entered once and any invoice traces back to its quotation.
+
+```
+Enquiry → Quotation (revisions) → Proforma Invoice (optional) → Sales Order
+        → Job / Work Order → Delivery Note → Tax Invoice
+```
+
+Delivery notes and tax invoices are completed in Phase 2; job and work orders in Phase 3.
+
+### 5.1 Quotations
+
+**Header:** customer, contact, enquiry reference, division (Machining or Moulding), currency, validity date, payment terms, delivery lead time, revision number.
+
+**Machining costing (per line, internal only)**
+
+| Cost element | How it is calculated |
+| --- | --- |
+| Material | Stock size and weight × material rate, plus cutting allowance |
+| Machining | Per operation: machine time × hourly rate of that machine type |
+| Setup | Setup hours × rate, divided by order quantity |
+| Subcontract | Heat treatment, plating, etc., plus transport |
+| Overhead | Configurable % on direct cost |
+| Margin | Configurable %; price = cost + overhead + margin |
+
+Quantity breaks show unit prices for several quantities (e.g. 10, 50, 100) on one quotation. Each line carries the customer's drawing, with its revision number.
+
+**Moulding costing (per line, internal only)**
+
+| Cost element | How it is calculated |
+| --- | --- |
+| Material | (Part weight + runner weight ÷ cavities) × resin rate, plus masterbatch % |
+| Machine | Cycle time ÷ cavities → machine hours per 1,000 pcs × machine hourly rate |
+| Rejects | Expected reject % added to material and machine cost |
+| Packing | Per piece or per carton |
+| Overhead and margin | As for machining |
+| Tooling (separate line) | Mould cost: charged once, amortised over a quantity, or customer-owned |
+
+Minimum order quantity is stated on each line.
+
+**Rate tables** (`machine_rate`, `material_rate`, `overhead_rate`) are maintained by the Accountant, dated, so old quotations keep the rates in force when they were made. In Phase 3, actual job times feed back to keep these rates realistic.
+
+**Controls and tracking**
+
+- Revisions: Q-2026-0042 Rev 0, Rev 1, … with full history of what was offered.
+- Approval through the shared approval engine: quotations below a minimum margin, or above a set value, need Director approval before sending.
+- Status: Draft, Awaiting Approval, Sent, Accepted, Lost (reason required), Expired.
+- Customer copy shows only description, quantity, unit price, terms. Costing never appears on it.
+- Output as PDF with company letterhead, and sent by email from the system.
+
+### 5.2 Proforma invoices
+
+- Created from an accepted quotation or a sales order; prices and terms carried over.
+- Used to request an advance payment, or for the customer's import, LC or bank documents.
+- **Not an accounting entry.** Issuing it records no sale and no receivable.
+- Own number series (e.g. PI-2026-0001) and clearly titled "Proforma Invoice".
+- Advance received against it posts as a customer advance: Dr Bank, Cr Customer Advances (liability).
+- When the tax invoice is raised, the advance is set off automatically against it.
+- One click converts it to the sales order, and later to the tax invoice.
+
+### 5.3 Sales orders
+
+- Created from an accepted quotation or proforma, or entered directly for repeat orders.
+- Holds the customer's PO number, delivery schedule (several dates for moulding call-offs) and the agreed price.
+- In Phase 3, a sales order line generates a machining job order or a moulding production requirement.
+
+### 5.4 Added tables
+
+| Table | Purpose |
+| --- | --- |
+| `customer`, `customer_contact` | Customer master |
+| `quotation`, `quotation_line` | Header and lines, with revision and parent link |
+| `quotation_costing` | Cost build-up per line (internal) |
+| `quotation_qty_break` | Unit prices for alternative quantities |
+| `machine_rate`, `material_rate`, `overhead_rate` | Dated rate tables |
+| `proforma_invoice`, `proforma_line` | Proforma documents |
+| `sales_order`, `sales_order_line`, `delivery_schedule` | Confirmed orders |
+| `customer_advance` | Advances received and their set-off against invoices |
+
+### 5.5 Export sales and foreign currency
+
+Export customers are quoted, invoiced and paid in their own currency from Phase 1.5.
+
+- Each customer has a default currency (LKR, USD, EUR or any other added by the Admin).
+- Quotations, proformas, sales orders and invoices are issued in that currency; costing stays in LKR, and the quotation shows the exchange rate used to convert.
+- Exchange rates are kept in a dated table, entered daily or imported.
+- Export documents: commercial invoice, packing list (cartons, net and gross weight, dimensions), and proforma for the buyer's bank or LC.
+- Shipping terms (Incoterms such as FOB, CIF) and port of loading and destination on each document.
+- Foreign-currency bank accounts; receipts recorded in the invoice currency.
+- In Phase 2, exchange gains and losses are posted on receipt and revalued at month-end; export sales are treated under the applicable VAT rules (confirm with the tax advisor).
+- Profitability (7.7) is always reported in LKR, using the rate at invoice date.
+
+## 6. Phase 2: Financial accounting
+
+Phase 2 extends the Phase 0 ledger to cover what QuickBooks provides, with the voucher system remaining the only route for supplier payments.
+
+| Module | Main features |
+| --- | --- |
+| General ledger | Chart of accounts, manual journals (with approval), recurring journals, period close, year-end close and carry-forward |
+| Accounts payable | Purchase requests, purchase orders, goods received notes, supplier bills with 3-way match (PO, GRN, bill), debit notes, supplier statements, aging. Payments only via approved vouchers |
+| Accounts receivable | Delivery notes, tax invoices, credit notes, receipts, advance set-off, customer statements, aging, credit limits, reminders |
+| Banking | Bank and cash accounts, cheque register (issued and received), post-dated cheques, bank reconciliation with statement import (CSV/Excel), deposits, inter-account transfers |
+| Petty cash | Imprest float per custodian, replenishment through a petty cash voucher |
+| Inventory valuation | Raw material, consumables, finished goods, WIP; weighted average cost; stock journal postings |
+| Fixed assets | Asset register (machines, moulds, vehicles), depreciation schedules, disposals, mould assets linked to their shot count |
+| Payroll | Phase 2b, after core accounting is live: employee master, salary components, overtime, attendance import, EPF and ETF, PAYE, payslips, bank transfer file |
+| Tax | VAT on sales and purchases, SSCL, withholding tax; tax reports for filing |
+| Multi-currency | Foreign currency invoices and bills, exchange rate table, realised and unrealised gains and losses |
+| Budgeting | Budgets by account and cost centre, monthly budget vs actual |
+| Reports | Trial balance, P&L and balance sheet (company and per division), cash flow statement, general ledger detail, AP/AR aging, VAT report, audit trail |
+
+Tax rates and rules change; they are stored as dated master data, never hard-coded, and must be confirmed with the company's tax advisor before go-live.
+
+**Migration at go-live:** opening trial balance, open supplier and customer balances by invoice, open POs and sales orders, fixed asset register with accumulated depreciation, stock on hand with value.
+
+## 6A. Goods receipt and incoming inspection
+
+Every raw material delivery is received, weighed or counted package by package, and held in quarantine until inspected. Only accepted material can be issued to production, and only accepted quantities can be paid for.
+
+### 6A.1 Flow
+
+1. **Arrival:** delivery recorded at the store against the purchase order: supplier, vehicle, delivery note number, supplier's invoice number.
+2. **Goods receipt (Store Supervisor):** quantities entered per package (see 6A.2). Every package gets a printed QR label with its lot number. Status: *Quarantine*.
+3. **Incoming inspection (QC Inspector):** checks from the item's inspection plan, results entered, certificates attached.
+4. **Decision:** Accept, Reject, or Accept under deviation (needs Production Manager approval, Director for critical materials).
+5. **Stock update:** accepted lots move to available stock; rejected lots move to a rejected location for return to the supplier, with a debit note.
+
+### 6A.2 Store Supervisor entry page
+
+The page adapts to how the material arrives. Package types are configured per item.
+
+| Material arrives as | Entered per package | Calculated |
+| --- | --- | --- |
+| Bags (resin, masterbatch) | Bag no., supplier lot no., gross weight, tare (bag weight, defaulted per item), declared weight on bag | Net weight per bag, total net, variance vs declared and vs invoice |
+| Bars, rods, tubes | Bundle no., heat no., number of pieces, length per piece or total, weight | Total length, total weight, kg per metre vs standard |
+| Plates, sheets | Plate no., heat no., length × width × thickness, weight | Theoretical weight vs actual |
+| Coils | Coil no., heat no., gross and tare weight | Net weight |
+| Counted items (inserts, fasteners, cartons) | Boxes and quantity per box, or total count | Total quantity |
+
+- Weighbridge or platform scale: weights can be typed, or read directly from a connected digital scale to avoid typing errors.
+- Tolerance per item (e.g. ±0.5% on resin net weight, configurable): variances outside it are highlighted and the Accountant sees them on the supplier's payment voucher.
+- Photos of damaged or wet bags can be attached from a phone or tablet.
+- Fast entry for large deliveries: "40 bags × 25 kg declared" creates 40 lines, then the supervisor enters or scans each actual weight.
+
+### 6A.3 Inspection plans
+
+An inspection plan per item, or per material category, defines what is checked, the limits and the sample size.
+
+| Material | Typical checks |
+| --- | --- |
+| Plastic resin | Grade and colour vs PO, bag condition, contamination, moisture, Certificate of Analysis attached; melt flow index if tested in-house |
+| Masterbatch | Colour match against master sample, lot number, certificate |
+| Steel and other metals | Grade vs mill test certificate, heat number matches certificate, diameter or thickness, length, hardness, rust and surface defects |
+| Bought-out parts | Dimensions per drawing, visual, quantity |
+
+- Each check is numeric (with min and max) or pass/fail.
+- Sampling: all packages, a fixed number, or a percentage per lot.
+- Out-of-limit results are marked automatically; the inspector cannot accept a lot with a failed critical check without raising a deviation.
+
+### 6A.4 Links to other modules
+
+- **Payment vouchers (Phase 1):** when a voucher is for a material delivery, the voucher shows the GRN's accepted quantity next to the invoiced quantity. Shortages and rejections are flagged to the Accountant and Director before approval.
+- **Accounts payable (Phase 2):** 3-way match uses accepted quantity, not delivered quantity. Rejections and shortages generate a debit note.
+- **Inventory:** stock is held by lot with status Quarantine, Available, Rejected or On Hold. Production can issue only Available lots.
+- **Production (Phase 3):** material issues record the lot number, so any moulded or machined batch traces back to the resin or steel lot and its supplier certificate.
+
+### 6A.5 Roles
+
+- **Store Supervisor:** goods receipt and package-level weights and counts; cannot record inspection results.
+- **QC Inspector (new role):** inspection results and accept or reject decisions; cannot change received quantities.
+- **Production Manager / Director:** approve deviations.
+
+### 6A.6 Added tables
+
+| Table | Purpose |
+| --- | --- |
+| `goods_receipt`, `goods_receipt_line` | Delivery header (PO, supplier, delivery note, vehicle) and items |
+| `receipt_package` | One row per bag, bundle, coil or box: lot or heat no., gross, tare, net, count, declared value |
+| `inspection_plan`, `inspection_parameter` | Checks per item or category, limits, sampling rule |
+| `incoming_inspection`, `inspection_result` | Inspection per lot and the value of each check |
+| `material_lot` | Lot with status and location, linked to receipt and inspection |
+| `quality_deviation` | Accept-under-deviation requests and approvals |
+| `supplier_return` | Rejected material returned, linked to the debit note |
+
+### 6A.7 Reports
+
+- Receipts by supplier and material, with weight variance.
+- Rejection rate by supplier and material, and a supplier quality rating.
+- Lots in quarantine and how long they have waited.
+- Lot traceability: from a supplier lot to the production batches that used it, and back.
+
+**Phasing:** this module belongs with purchasing and inventory in Phase 2. The goods receipt and weight entry page can be brought forward into Phase 1.5 if you want vouchers checked against received quantities from the start.
+
+## 7. Phase 3: Production
+
+The two divisions are modelled differently: the workshop is a make-to-order job shop tracked by job card, and the moulding plant is repetitive production tracked by machine and shift. Both share sections, shifts, supervisor entry pages, downtime, rejects and quality records.
+
+### 7.1 Masters
+
+| Master | Key fields |
+| --- | --- |
+| Section | Name, division, section type (Machining, Moulding, Support), supervisors |
+| Shift | Name, start, end, break; used by roster patterns (see 7.1A) |
+| Machine | Code, section, type, hourly rate, capacity (tonnage for moulding machines), status |
+| Mould | Code, part(s), cavities, standard cycle time, shot weight, runner weight, required tonnage, compatible machines, owner (company or customer), shot count, maintenance interval |
+| Item | Raw materials (bar, plate, resin, masterbatch), consumables, finished parts, with unit and drawing |
+| Routing | For machined parts: ordered operations, machine type, standard setup and run time |
+| Reason codes | Reject reasons and downtime reasons per division |
+
+**Factory structure: Division → Section → Machine.** All three levels are added, renamed and deactivated by the System Admin, with no code change. A machine bought next year is one new record; it immediately appears on the supervisor pages, production plans, OEE and costing.
+
+| Level | Current setup (initial data) | Admin can |
+| --- | --- | --- |
+| Division | Workshop (machining), Moulding | Add a division, set its type (Machining, Moulding or Support) |
+| Section | Workshop: 18 sections (list in 3A.1). Moulding: one or more sections grouping the machines | Add a section under any division, assign supervisors |
+| Machine | Manual Milling: 3 machines. Moulding: 8 machines | Add, move between sections, retire; set hourly rate, capacity, tonnage |
+
+Machines that are retired keep their history; they are hidden from entry pages, not deleted.
+
+### 7.1A Shifts and rosters
+
+Both divisions run day and night. The roster changes with the season, so shift patterns are data with effective dates, not fixed settings.
+
+| Shift (examples) | Times | Hours |
+| --- | --- | --- |
+| General | 08:00–17:00 | 9 (incl. break) |
+| Day 12-hour | Configurable, e.g. 07:00–19:00 | 12 |
+| Night 12-hour | Configurable, e.g. 19:00–07:00 | 12 |
+| 3-shift A / B / C | Configurable, 8 hours each | 8 |
+
+- **Roster pattern:** a repeating cycle of shifts and off days, e.g. *Day, Day, Night, Night, Off, Off* (6-day cycle). Three crews start the cycle 2 days apart, so every day has one crew on days, one on nights and one off.
+- **Crews:** operators are assigned to crews (A, B, C…); the manpower entry page pre-fills the crew on shift.
+- **Seasonal change:** a roster assignment links a pattern to a division or section for a date range. Switching from 3 shifts to 12-hour rotation is a new assignment from a date; past data is unaffected.
+- **Mixed rosters:** staff on the General shift and crews on rotation can work in the same section at once.
+- **Night shifts crossing midnight** belong to the date the shift started, for production reports, OEE and costing.
+- **Planned time** for OEE availability comes from the active roster; off days are not counted as lost time.
+- Roster and attendance give overtime hours for payroll when it is added.
+
+Added tables: `division`, `shift_pattern`, `shift_pattern_day`, `crew`, `crew_member`, `roster_assignment`.
+
+### 7.2 Machining workshop
+
+- **Job order** created from a sales order line: part, drawing revision, quantity, due date, routing copied from the part's standard routing (editable per job).
+- **Material issue** from stores against the job.
+- **Job card** per operation: printed with a QR code, travels with the parts.
+- **Subcontract operations:** parts sent out and received back against the job, with the supplier's bill going through the voucher system.
+- **Inspection:** first-article, in-process and final inspection results recorded against the job, with measurements.
+- **Job costing:** actual material, machine time, labour and subcontract cost vs the quotation estimate, per job.
+
+### 7.3 Injection moulding
+
+- **Production plan:** which mould runs on which machine, per shift, from sales order delivery schedules and stock levels.
+- **Shift production:** shots, good quantity, rejects by reason, material used.
+- **Material:** resin and masterbatch issued per machine, regrind generated and used, with a maximum regrind % per part.
+- **Mould maintenance:** shot count updated from production; preventive maintenance due when the interval is reached; repair history per mould.
+- **Finished goods:** good quantity moves to finished stock when the shift report is approved.
+
+**Mould making link:** when the workshop builds or repairs a mould, it is an internal job order. Its cost is capitalised to the mould asset (new mould) or charged to the Moulding cost centre (repair).
+
+### 7.4 Production supervisor entry pages
+
+Each supervisor sees only the sections assigned to them, and the page they get depends on the section type.
+
+**Shift production entry**
+
+| Section type | What the supervisor enters | What the system calculates |
+| --- | --- | --- |
+| Machining | Scan job card; operation, machine, operator, start and end time, quantity completed, rejected (with reason), for rework | Time per piece vs standard; quantity available for next operation |
+| Moulding | Per machine: mould, material batch, shot counter at start and end, rejects by reason, operator | Good qty = shots × cavities − rejects; actual cycle time; material per good piece |
+| Support | Input quantity, output quantity, waste | Yield % |
+
+**Other entry pages**
+
+1. **Downtime log:** machine, from and to time, reason (breakdown, mould change, setup, power failure, no material, no operator, planned maintenance), remarks.
+2. **Material issue and return:** material, batch, quantity drawn from stores and returned; regrind generated.
+3. **Manpower:** operators present per shift and machine, overtime hours.
+4. **Shift summary:** totals for the shift, then Submit.
+
+**Controls**
+
+- Supervisor can enter data only for assigned sections.
+- Entry allowed during the shift and up to a grace period after it ends (default 2 hours, configurable). After that, changes need a correction request approved by the Production Manager.
+- Submitted reports are locked. The Production Manager approves them; only approved data updates stock, mould shot counts and job costs.
+- Validation: completed quantity cannot exceed what the previous operation released; shot counters cannot decrease; time entries on one machine cannot overlap; rejects cannot exceed shots × cavities.
+- Every change recorded in the audit log.
+
+**Shop-floor usability**
+
+- Tablet and phone layout: large buttons, number pads, dropdowns instead of typing.
+- QR or barcode scanning for job cards, moulds, machines and material batches.
+- Interface language option: English, Sinhala, Tamil.
+- Offline entry: saved on the device and synced when Wi-Fi returns, with a visible sync status.
+
+### 7.5 Added tables
+
+| Table | Purpose |
+| --- | --- |
+| `section`, `section_supervisor` | Sections and their assigned supervisors |
+| `shift`, `machine`, `mould`, `routing`, `routing_operation` | Production masters |
+| `job_order`, `job_card` | Machining jobs and their operations |
+| `production_plan` | Planned mould-machine runs per shift |
+| `shift_report` | One per section per shift: draft, submitted, approved |
+| `production_entry` | Job card operations and moulding machine runs |
+| `reject_entry`, `downtime_entry` | Rejects and downtime by reason |
+| `material_movement` | Issues, returns, regrind |
+| `manpower_entry` | Operators and hours per shift |
+| `inspection_record` | QC results and measurements |
+| `mould_maintenance` | Planned and actual maintenance per mould |
+
+### 7.6 Reports
+
+- Daily production by section, machine and shift.
+- Reject % by reason, part, mould and machine.
+- OEE per moulding machine: availability × performance × quality.
+- Downtime by reason and machine (Pareto).
+- Machining: actual vs estimated time and cost per job; on-time delivery.
+- Material consumption vs standard; regrind usage.
+- Moulds approaching their maintenance shot count.
+
+### 7.7 Job and production order profitability
+
+Every machining job order and moulding production order shows its cost, revenue and margin while it is running, and a final profitability report when it closes. Figures update each time a shift report, material issue or supplier bill linked to the order is approved, so they are at most one shift old.
+
+**What profitability is measured on**
+
+| Division | Unit | Revenue |
+| --- | --- | --- |
+| Machining | Job order (one per sales order line, or internal job such as mould making) | Sales order value; earned revenue = completed qty × unit price |
+| Moulding | Production order (part, quantity, delivery schedule); also part and mould per month for continuous runs | Good qty × unit price |
+| Support sections | Not a profit unit; costs absorbed into the orders they serve | — |
+| Division | Cost centre P&L from the ledger (Phase 2), reconciled with the order totals | Invoiced sales |
+
+**Where each cost comes from**
+
+| Cost element | Source | Valued at |
+| --- | --- | --- |
+| Material | Material issues by lot (6A, 7.4) | Actual lot cost from goods receipt; regrind credited at its set value |
+| Machine time | Job cards and moulding shift runs | Actual hours × machine hourly rate |
+| Labour | Manpower entries | Operator hours × labour rate (actual payroll cost once Phase 2 payroll runs) |
+| Setup and mould change | Downtime entries coded to the order | Hours × machine and labour rate |
+| Subcontract | Supplier bills through payment vouchers | Actual invoiced cost |
+| Direct expenses | Voucher lines tagged to the order (tools, inserts, special packing, transport) | Actual cost |
+| Rejects and rework | Reject entries | Cost already spent on the rejected pieces, shown separately |
+| Mould cost | Moulding runs | Amortisation per shot for company-owned moulds |
+| Overhead | Calculated | Overhead rate per machine hour (set by the Accountant, reviewed yearly) |
+
+To let supplier bills reach the right order, each payment voucher line gets an optional **job / production order** field, filled by the Accountant when coding the voucher (section 4.4).
+
+**Three figures for every order**
+
+| Figure | Meaning |
+| --- | --- |
+| Estimate | Cost and margin from the accepted quotation |
+| Actual to date | Costs posted so far, revenue earned on completed quantity |
+| Forecast at completion | Actual to date + estimated cost of remaining quantity at standard rates |
+
+```latex
+\text{Forecast margin} = \text{Order value} - (\text{Actual cost to date} + \text{Remaining qty} \times \text{Standard unit cost})
+```
+
+**During production**
+
+- **Order dashboard:** all open orders with % complete, order value, cost to date, forecast margin and a red, amber or green status. Filter by division, customer, section, due date.
+- **Drill-down:** from any order to each cost line and its source document (job card, shift report, material issue, voucher).
+- **Alerts** to the Production Manager and Director when:
+  - cost to date for the completed quantity exceeds the estimate by a set % (e.g. 10%);
+  - forecast margin falls below the minimum margin;
+  - reject % on the order exceeds its limit.
+- **Moulding view per machine and mould:** actual vs standard cycle time, material per good piece, rejects, and margin per 1,000 pieces.
+
+**At completion**
+
+When the last quantity is delivered, the order is closed and its final report shows estimate vs actual by element:
+
+| Variance | Explains |
+| --- | --- |
+| Material price | Paid more or less per kg than quoted |
+| Material usage | Used more or less material per piece (scrap, cut losses, runner weight) |
+| Machine time | Took longer or shorter than the quoted time per piece or cycle time |
+| Setup | Setup or mould changes longer than planned |
+| Rejects | Cost of rejected and reworked pieces |
+| Subcontract and direct expenses | Actual vs quoted outside costs |
+
+Closed orders feed the quotation rate tables (5.1): average actual cycle times, setup times and material usage per part, so the next quotation for the same or a similar part is priced on real data.
+
+**Accounting (Phase 2)**
+
+- Costs of open orders sit in a Work in Progress account per division.
+- On completion, cost moves to finished goods, then to cost of sales when invoiced.
+- Month-end WIP valuation report reconciles open orders with the WIP account.
+- Machine time not charged to any order (idle time) is reported separately as unabsorbed overhead, so it is visible instead of hidden in job costs.
+
+**Profitability reports**
+
+- Margin by order, customer, part, mould and division, for any period.
+- Most and least profitable customers and parts.
+- Estimate accuracy: average variance of closed orders by element, showing where quotations are consistently off.
+- Daily snapshot of each open order's forecast margin, so its trend over the life of the order can be charted.
+
+**Added tables**
+
+| Table | Purpose |
+| --- | --- |
+| `production_order` | Moulding production orders (part, quantity, sales order link) |
+| `cost_rate` | Dated machine, labour and overhead rates |
+| `order_cost_entry` | Every cost posted to a job or production order: element, source document, quantity, rate, amount |
+| `order_profit_snapshot` | Daily snapshot of cost, revenue, % complete and forecast margin per open order |
+| `voucher_line.order_id` | New optional column linking supplier bills to an order |
+
+**Phasing:** live profitability using standard rates is available as soon as Phase 3 production entry runs. Actual material lot costs need the Phase 2 inventory module, and actual labour cost needs Phase 2 payroll.
+
+## 8. Non-functional requirements, roadmap and team
+
+### 8.1 Non-functional requirements
+
+| Area | Requirement |
+| --- | --- |
+| Performance | List pages load in under 2 seconds with 50 concurrent users |
+| Availability | 99.5% during working hours; maintenance outside shifts |
+| Backup | Nightly encrypted backup of database and files, kept 30 days, off-site copy, monthly restore test |
+| Browsers | Current Chrome, Edge, Safari; tablets and phones for approvals and shop-floor entry |
+| Data retention | Financial records kept at least the legally required period (confirm with auditor) |
+| Accessibility | Readable on phones; keyboard navigation for data entry screens |
+| Testing | Automated tests for every posting rule and every approval rule; accountant sign-off on posting test cases |
+
+### 8.2 Roadmap
+
+| Phase | Scope | Estimate (2–3 developers) |
+| --- | --- | --- |
+| 0 + 1 | Core foundation, voucher approval, supplier payments | 3–4 months |
+| 1.5 | Customers, quotations with costing, proforma invoices, sales orders | 2 months |
+| 2 | Full financial accounting, migration, one-month parallel run; payroll follows as Phase 2b | 9–12 months |
+| 3 | Moulding production and supervisor pages first, then machining job cards and costing, QC, OEE | 6–9 months |
+
+Each phase ends with user acceptance testing by the people who will use it, then go-live. Phase 1 can run alongside the existing accounting system until Phase 2 replaces it.
+
+### 8.3 Team
+
+| Role | Commitment |
+| --- | --- |
+| Senior backend developer (owns the data model) | Full-time |
+| Frontend developer | Full-time |
+| Second developer (backend or full-stack) | Full-time from Phase 2 |
+| QA tester | Part-time |
+| Accountant reviewing the accounting design and test cases | Part-time, essential |
+| Production Manager as process owner for Phase 3 | Part-time |
+
+### 8.4 Open questions
+
+**Decisions made**
+
+| Question | Decision | Where in this document |
+| --- | --- | --- |
+| Divisions, sections, machines | Admin-configurable at all three levels; initial data includes Manual Milling (3 machines) and 8 moulding machines | 7.1 |
+| Shifts | Both divisions run nights. General shift 08:00–17:00; seasonal rosters (3 × 8-hour, or 12-hour Day/Night/Off rotation) | 7.1A |
+| Voucher approval thresholds | None. Every voucher needs the Director's approval | 4.3 |
+| Existing system | Not custom-built; no voucher history migrated. Phase 1 starts fresh | 4 |
+| Hosting | Hostinger Ubuntu VPS, in the region closest to Sri Lanka | 2 |
+| Payroll | Phase 2b, after core accounting is live | 6, 8.2 |
+| Quotation approval limits | Yes: minimum margin % and maximum value, set by the Director in settings | 5.1 |
+| Export customers | Yes: foreign-currency quotations, proformas, invoices and receipts | 5.5 |
+
+**Still needed for initial setup**
+
+- [x] Workshop sections: 18 sections listed; Admin maintains them on page 3A.1.
+- [x] Moulding machine grouping and tonnage: entered by the Admin on page 3A.1.
+- [x] Roster shift times: entered by the Admin on page 3A.2.
+- [x] Quotation margin and value limits: set on page 3A.3, confirmed by the Director.
+- [x] Export currencies: common currencies pre-loaded on page 3A.4.
+- [x] VPS provider: Hostinger Ubuntu VPS.
+- [ ] Before go-live: Admin enters all machines, crews and roster patterns; Director sets the quotation limits.

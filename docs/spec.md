@@ -73,6 +73,116 @@ The roles follow the usual ERP practice of separating three duties: whoever *rec
 | Settings pages, users and roles |  |  | confirm limits |  | view | ✓ |
 | Audit and approval logs |  |  | view |  | view | view |
 
+### 1.2 Access control model
+
+Access follows role-based access control (RBAC, as defined in the NIST RBAC standard, ANSI/INCITS 359) and the access-control controls of ISO/IEC 27001:2022 Annex A: access control (5.15), access rights (5.18), segregation of duties (5.3), privileged access (8.2) and information access restriction (8.3).
+
+**Principles**
+
+- **Deny by default:** a user sees only the areas their roles open; everything else is hidden from menus and refused by the server.
+- **Least privilege and need to know:** each role gets only what its job needs, and only for its own divisions and sections.
+- **Segregation of duties:** recording, approving and paying are held by different people (1.1).
+- **Privileged access kept separate:** the System Administrator manages users and settings, not money.
+- **Every grant is traceable:** who gave which access, to whom, when, why and until when.
+- **Regular review:** access is reviewed and confirmed periodically, and removed when people leave or change jobs.
+
+**How a user's access is worked out**
+
+1. **Roles** give the default access, from the matrices below. A user can hold several roles.
+2. **Data scope** limits it to the user's divisions (WS, IM, HO…) and, for production staff, their sections. A Production Supervisor for Manual Milling sees only Manual Milling.
+3. **Overrides** set by the Admin for that user add or remove access to an area or action (1.3).
+4. **Hard controls** apply last and cannot be overridden by anyone (1.3).
+
+The result is shown on the user's **Effective access** page, so it is always clear what a person can do and why.
+
+**Access levels**
+
+| Level | Meaning |
+| --- | --- |
+| — | No access: the area is hidden |
+| V | View: read, search, print and export |
+| E | Enter: create and edit their own records, and submit them |
+| A | Approve: review, approve, return or reject at the role's level (includes V) |
+| M | Manage: full maintenance of that area's records or settings (includes V and E) |
+
+Special actions sit outside the levels and are granted one by one: record payments, delete a submitted voucher, close a period, change bank details, export personal data, manage users and roles.
+
+**Default access: finance and administration roles**
+
+| Area | Admin | Director | Accountant | Clerk | Cashier | Auditor |
+| --- | --- | --- | --- | --- | --- | --- |
+| Dashboard | V (system) | V (all) | V | V (own) | V (own) | V |
+| Payment vouchers | V, delete\* | A (L3), delete\* | E, A (L2) | E | V (approved) | V |
+| Supplier payments | — | V | V | — | E, pay\* | V |
+| Banking and reconciliation | — | V | M | — | V | V |
+| Suppliers and payees | — | V | M, bank details\* | E (add) | V | V |
+| Chart of accounts and journals | — | V, close period\* | M | — | — | V |
+| Financial reports (P&L, balance sheet) | — | V | V | — | — | V |
+| Sales | — | A (above limits) | V | — | — | V |
+| Purchasing | — | A | V | — | — | V |
+| Stores and goods receipt | — | V | V | — | — | V |
+| Quality | — | A (deviations) | V | — | — | V |
+| Production and costing | — | V | V | — | — | V |
+| HR and payroll | — | A (payroll) | V (totals) | — | — | V (totals) |
+| Settings (divisions, sections, machines, shifts, currencies, numbering) | M | V, confirm limits | V | — | — | V |
+| Users, roles and access | M | V, confirm sensitive grants | — | — | — | V |
+| Audit and approval logs | V | V | V (finance) | — | — | V |
+
+**Default access: operations roles**
+
+| Area | Sales Exec. | Sales Mgr | Purchasing | Store Sup. | QC Insp. | HR & Payroll | Planner | Prod. Sup. | Prod. Mgr |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Dashboard | V (own) | V (sales) | V (own) | V (own) | V (own) | V (own) | V (prod.) | V (sections) | V (prod.) |
+| Payment vouchers | — | — | — | — | — | — | — | — | — |
+| Suppliers and payees | — | — | E | V | V | — | — | — | — |
+| Sales: customers, quotations, proformas, orders | E | A (within limits) | — | — | — | — | V | — | V |
+| Purchasing | — | — | E | V | V | — | V | — | V |
+| Stores and goods receipt | — | — | V | E | V | — | V | V | V |
+| Quality: inspection | — | — | V | V | A | — | — | V | A (deviations) |
+| Production planning and job orders | V (status) | V (status) | — | — | — | — | E | V | A |
+| Shop-floor entry | — | — | — | — | E (inspection) | — | — | E (own sections) | V |
+| Production approvals and reports | — | — | — | — | V | — | V | V (own sections) | A |
+| Job and order profitability | — | V | — | — | — | — | — | — | V |
+| HR and payroll | — | — | — | — | — | M | — | V (attendance) | V (attendance) |
+
+Operations roles have no access to vouchers, payments, banking, accounting, financial reports, settings, users or logs unless the Admin grants it. \* = special action. Areas for later phases switch on as those phases go live.
+
+### 1.3 Admin overrides and access administration
+
+The Admin can give or remove access for an individual user, overriding their roles' defaults, from the **User access** page.
+
+**User access page**
+
+- The user's roles and data scope (divisions, sections).
+- A grid of every area and action showing, for each: the default from the roles, any override, and the resulting effective access, colour-coded (granted by override, removed by override).
+- **Grant** or **remove** any area or action for this user, with a mandatory reason and an optional end date for temporary access (e.g. covering for someone on leave). Expired overrides lapse automatically and the user is notified.
+- A removal always beats a grant, from a role or from another override.
+- **Copy access from another user**, and **reset to role defaults**.
+- History of every change to this user's access.
+
+**Sensitive grants need the Director's confirmation.** Following ISO/IEC 27001 control 8.2 on privileged access, an override that gives any of the following takes effect only after the Director confirms it on the same page: approving vouchers at any level, recording payments, deleting vouchers, changing supplier bank details, closing periods, managing users and roles, and access to payroll. Removing access never needs confirmation, so access can be cut immediately.
+
+**Hard controls (cannot be overridden by anyone)**
+
+- No one approves a document they created, or approves one document at two levels (rules 5 and 6).
+- Every voucher passes all three approval levels; no override can skip the Director.
+- The Admin cannot change their own access or roles; another Admin or the Director must do it.
+- Audit and approval logs cannot be edited by anyone.
+- Data scope can be widened only by an explicit override, never by accident through a role.
+
+**Joiners, movers and leavers**
+
+- **New user:** created by the Admin from a role template, with divisions and sections; temporary password and two-factor setup on first login.
+- **Change of job:** roles changed and old overrides reviewed on the same screen, so access from the old job is not carried over.
+- **Leaver:** one action deactivates the account, ends all sessions and removes overrides. The user's records and history stay.
+- Accounts unused for 90 days are deactivated automatically (configurable).
+
+**Access review**
+
+- Every quarter the system produces an **access review report** per manager: each user, their roles, overrides, sensitive access and last login.
+- The Director (or each manager for their people) confirms or removes each line. Unconfirmed sensitive overrides are flagged.
+- Reports of conflicting role combinations, active overrides and their expiry dates are available at any time.
+
 ## 2. Technology stack and architecture
 
 The system is a modular monolith: one codebase and one PostgreSQL database, split into modules with clear boundaries. Microservices are deliberately avoided; they add operational cost an ERP of this size does not need.

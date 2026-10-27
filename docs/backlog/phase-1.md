@@ -32,15 +32,42 @@ Status: `[ ]` to do · `[x]` done
   - Users with those roles cannot reach any page until 2FA is set up.
   - Failed logins are recorded; 5 failures in 15 minutes locks the account for 15 minutes.
 
-- [ ] **P0-04 Roles and permissions** (spec 1.1, 3)
-  Standard roles from spec 1.1 loaded at setup (Phase 1 roles active: System Administrator,
-  Director, Accountant, Accounts Clerk, Cashier, Auditor). Admin can create custom roles by
-  ticking permissions. A user can hold several roles. Permission checks on every API endpoint,
-  following the Phase 1 permission table in spec 1.1.
+- [ ] **P0-04 Roles, permissions and data scope** (spec 1.1, 1.2)
+  Permission model: areas × access levels (none, View, Enter, Approve, Manage) plus special
+  actions (record payments, delete submitted voucher, close period, change bank details,
+  export personal data, manage users and roles). Standard roles loaded with the default access
+  matrices in spec 1.2 (Phase 1 roles active: System Administrator, Director, Accountant,
+  Accounts Clerk, Cashier, Auditor). Admin can create custom roles by ticking permissions.
+  A user can hold several roles. Data scope per user: divisions, and sections for production
+  staff. Deny by default: menus show only permitted areas, and every API endpoint checks the
+  effective permission and data scope on the server.
+  - An endpoint called without the required permission returns 403; the area is absent from
+    the user's menu.
+  - A user scoped to one division cannot see or change another division's records, through
+    lists, reports, exports or direct API calls.
+  - Auditor can read everything and change nothing.
+  - The System Administrator has no access to payments, banking, accounting or financial
+    reports by default.
   - Assigning a conflicting combination (Clerk + Cashier, Accountant + Cashier, Admin + any
     finance role) shows a warning and records the reason in the audit log.
-  - An endpoint called without the required permission returns 403.
-  - Auditor can read everything and change nothing.
+
+- [ ] **P0-04b User access overrides and access administration** (spec 1.3)
+  User access page: roles, data scope, and a grid of every area and action showing role
+  default, override and effective access. Admin can grant or remove access per user with a
+  mandatory reason and optional end date; copy access from another user; reset to role
+  defaults; full history. Joiner / mover / leaver actions. Quarterly access review report.
+  - A removal override beats any grant, from a role or another override.
+  - An override that grants a sensitive permission (approve vouchers at any level, record
+    payments, delete vouchers, change bank details, close periods, manage users and roles,
+    payroll) has no effect until the Director confirms it. Removals take effect immediately.
+  - An expired temporary override stops working on its end date, and the user is notified.
+  - No override can let a user approve their own document, approve at two levels, or skip the
+    Director on a voucher (tested directly against the hard controls).
+  - The Admin cannot change their own roles or overrides.
+  - Deactivating a leaver ends all their sessions at once and removes their overrides; their
+    records and history remain.
+  - Accounts unused for 90 days (configurable) are deactivated automatically.
+  - Every grant, removal, confirmation and expiry is in the audit log.
 
 - [ ] **P0-05 Audit log** (spec 3)
   Insert-only log of create/update/delete on audited models: user, time, IP, old and new values.

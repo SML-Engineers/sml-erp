@@ -270,6 +270,8 @@ Division is the one dimension every part of the system reports by, from vouchers
 
 These starting divisions and codes are confirmed by the owner. The Admin maintains divisions (add, rename, deactivate) from the Divisions control panel (3A.1). A new division added later appears at once in every form, filter and report; earlier periods are unaffected.
 
+**Adding a division while the system is live.** The Admin adds a division at any time after go-live, from the Divisions control panel, with no developer, no new deployment, no restart and no downtime. The steps are on one screen: code and name, type (Production or Shared), default bank account, which users may work in it, then its sections and machines (3A.1). From that moment the division can be chosen on vouchers and every other document, has its own voucher numbers (its code + date + running number), appears in every filter, report and dashboard, and gets its own column in the divisional profit and loss. Earlier periods and other divisions' figures do not change. The Accountant then adds it to the overhead allocation bases and budgets.
+
 **Every transaction carries a division**
 
 - Every income and expense line in the ledger must have a division; the system refuses to post one without it.

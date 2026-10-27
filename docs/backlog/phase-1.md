@@ -88,7 +88,10 @@ Status: `[ ]` to do · `[x]` done
   deactivated by the Admin from the Divisions control panel.
   - A division's code cannot change once it has been used on any document.
   - A division with transactions cannot be deleted, only deactivated.
-  - A new division appears in every division picker and filter without code changes.
+  - A division added through the control panel on a running system is usable immediately:
+    no restart, deployment or code change (test: create through the API, then use it at once).
+  - A new division appears in every division picker, filter and report, gets its own voucher
+    numbering, and leaves existing divisions' records and figures unchanged.
 
 - [ ] **P0-08 Number series** (spec 3)
   Number formats built from tokens, set by the Admin per document type: code (PP), year

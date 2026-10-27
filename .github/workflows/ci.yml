@@ -89,7 +89,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: make up
-        run: make up
+        run: make up 2>&1 | tee make-up.log; exit ${PIPESTATUS[0]}
+        shell: bash
+      - name: Report make up output on failure
+        if: failure()
+        shell: bash
+        run: |
+          body=$(tail -c 6000 make-up.log | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error title=make up output::$body"
       - name: Wait for the API through Nginx
         run: |
           for i in $(seq 1 60); do
@@ -111,7 +118,19 @@ jobs:
         run: make test
       - name: Show logs on failure
         if: failure()
-        run: docker compose -f deploy/docker-compose.dev.yml --env-file .env logs --tail=200
+        run: |
+          compose="docker compose -f deploy/docker-compose.dev.yml --env-file .env"
+          $compose ps -a
+          $compose logs --tail=200
+          # Also report as annotations, which are visible on the pull request's Checks tab.
+          report() {
+            body=$(printf '%s' "$2" | tail -c 6000 | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=$1::$body"
+          }
+          report "Services" "$($compose ps -a --format '{{.Service}} {{.State}} {{.Status}}' 2>&1)"
+          for s in db redis minio backend worker frontend nginx; do
+            report "Log: $s" "$($compose logs --no-color --tail=40 $s 2>&1)"
+          done
       - name: make down
         if: always()
         run: make down

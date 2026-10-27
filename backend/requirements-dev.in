@@ -1,0 +1,7 @@
+# Development and test dependencies. Locked in requirements-dev.lock.txt, which uses the same
+# runtime versions as requirements.lock.txt.
+-r requirements.in
+-c requirements.lock.txt
+pytest>=8.3,<9
+pytest-django>=4.9,<5
+ruff>=0.8,<1

@@ -1,0 +1,61 @@
+name: Dependency locks
+
+# Regenerates the exact-version lock files whenever the allowed version ranges change on a
+# task branch, and commits them to that branch. Locks are never changed silently on main:
+# they arrive through the pull request like any other change.
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - backend/requirements.in
+      - backend/requirements-dev.in
+      - frontend/package.json
+      - .github/workflows/locks.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: locks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lock:
+    name: Regenerate lock files
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Backend locks (exact versions with hashes)
+        working-directory: backend
+        run: |
+          pip install "pip-tools>=7.4,<8"
+          pip-compile --quiet --generate-hashes --allow-unsafe --strip-extras \
+            --output-file requirements.lock.txt requirements.in
+          pip-compile --quiet --generate-hashes --allow-unsafe --strip-extras \
+            --output-file requirements-dev.lock.txt requirements-dev.in
+
+      - name: Frontend lock
+        working-directory: frontend
+        run: npm install --package-lock-only --no-audit --no-fund
+
+      - name: Commit changed locks to this branch
+        run: |
+          git add backend/requirements.lock.txt backend/requirements-dev.lock.txt frontend/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lock files already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update dependency lock files"
+          git push
+          echo "::notice title=Lock files updated::New lock files were committed to this branch. Push any further commit (or re-run CI) so the checks run against them."

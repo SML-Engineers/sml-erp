@@ -6,10 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt requirements-dev.txt ./
+# Exact versions with hashes (docs/decisions/0001-dependency-pinning.md)
+COPY requirements.lock.txt requirements-dev.lock.txt ./
 ARG INSTALL_DEV=true
-RUN if [ "$INSTALL_DEV" = "true" ]; then pip install -r requirements-dev.txt; \
-    else pip install -r requirements.txt; fi
+RUN if [ "$INSTALL_DEV" = "true" ]; then pip install --require-hashes -r requirements-dev.lock.txt; \
+    else pip install --require-hashes -r requirements.lock.txt; fi
 
 COPY . .
 

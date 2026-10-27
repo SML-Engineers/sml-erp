@@ -1,0 +1,11 @@
+# Runtime dependencies. Versions are bounded to the current major/minor line;
+# exact pins will be added with a lock file (see docs/decisions/0001-dependency-pinning.md).
+Django>=5.2,<5.3
+djangorestframework>=3.16,<3.17
+django-environ>=0.12,<0.13
+psycopg[binary]>=3.2,<4
+celery>=5.5,<6
+redis>=5.2,<7
+django-storages[s3]>=1.14,<2
+boto3>=1.35,<2
+gunicorn>=23,<24

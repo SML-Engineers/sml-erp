@@ -29,7 +29,7 @@ Do not add another framework, ORM, UI kit or state library without asking.
 backend/
   config/            Django settings, urls, celery
   apps/
-    core/            users, roles, permissions, company, cost centres, number series,
+    core/            users, roles, permissions, company, divisions, number series,
                      audit log, approval engine, notifications, settings pages
     masters/         suppliers, customers, banks, divisions, sections, machines, shifts, currencies
     accounting/      chart of accounts, journal entries, periods
@@ -98,6 +98,6 @@ These protect the company's money and records. Never weaken them, even if a task
 | L3 / Director | Final approval |
 | Voucher | Request to pay a supplier (or petty cash, transfer, reimbursement), with invoice scans |
 | Division → Section → Machine | Factory structure, e.g. Workshop → Manual Milling → M-MIL-01 |
-| Cost centre | Workshop, Moulding, Administration; every income/expense line carries one |
+| Division | WS Workshop, IM Plastic Injection Moulding, HO Head Office (shared); every income/expense line carries one, and every report can be run per division. Its code is the PP in voucher numbers |
 | GRN | Goods received note |
 | OEE | Overall equipment effectiveness = availability × performance × quality |

@@ -8,7 +8,7 @@ SML ERP is a custom-built, web-based ERP for a business with two divisions: a me
 
 | Phase | Scope | Depends on |
 | --- | --- | --- |
-| 0. Core foundation | Users, roles, company, cost centres, chart of accounts, suppliers, journal, audit log, approval engine | — |
+| 0. Core foundation | Users, roles, company, divisions, chart of accounts, suppliers, journal, audit log, approval engine | — |
 | 1. Payment vouchers | Invoice upload, 3-level approval, supplier payments locked to approved vouchers | Phase 0 |
 | 1.5. Sales documents | Customers, quotations with costing, proforma invoices, sales orders, customer advances | Phase 0 |
 | 2. Financial accounting | QuickBooks-equivalent modules: AP, AR, banking, assets, inventory valuation, payroll, tax, reports | Phases 0, 1 |
@@ -93,7 +93,7 @@ If the development team is stronger in PHP, Laravel replaces Django with no chan
 
 ```
 erp/
-├── core/          users, roles, permissions, company, cost centres,
+├── core/          users, roles, permissions, company, divisions,
 │                  number series, audit log, approval engine, notifications
 ├── masters/       suppliers, customers, items, banks, machines, moulds
 ├── accounting/    chart of accounts, journal, periods, financial reports
@@ -143,8 +143,52 @@ The accounting core is built first, even though users first see the voucher syst
 **Organisation**
 
 - Company: name, registration, VAT number, base currency (LKR), financial year start.
-- Cost centres: Workshop, Moulding, Administration (configurable). Every expense and revenue line carries one, giving a P&L per division.
+- Divisions: Workshop and Plastic Injection Moulding today; the Admin adds more at any time. Every income and expense line carries a division, so every report, including the profit and loss, can be run per division (see 3.1).
 - Branches or locations, if the factories are at different sites.
+
+### 3.1 Divisions and divisional reporting
+
+Division is the one dimension every part of the system reports by, from vouchers to the profit and loss, so the profit of each division (for example Plastic Injection Moulding) can be seen at any time.
+
+**Division master** (Admin, page 3A.1)
+
+| Code (PP) | Division | Type |
+| --- | --- | --- |
+| WS | Workshop | Production |
+| IM | Plastic Injection Moulding | Production |
+| HO | Head Office (shared costs) | Shared |
+
+Codes are suggestions for the Admin to confirm. A new division added later appears at once in every form, filter and report; earlier periods are unaffected.
+
+**Every transaction carries a division**
+
+- Every income and expense line in the ledger must have a division; the system refuses to post one without it.
+- Documents take their division from where they start: a voucher from its header (the PP in its number), a sales invoice from its sales order, a goods receipt from its purchase order, production from the section's division.
+- A shared bill can be split across divisions by amount or % on one voucher (e.g. an electricity bill split by sub-meter readings).
+- Balance sheet items such as bank and loans belong to the company. Receivables, payables, stock, work in progress and fixed assets also carry a division, so they can be analysed per division too.
+
+**Shared costs and allocation**
+
+Costs that belong to the whole company (rent, directors, audit fee, office staff) are booked to the Shared division (HO). Once a month the Accountant runs an **overhead allocation**: HO costs are spread to the production divisions by a basis set per group of accounts (fixed %, machine hours, headcount, floor area or sales). The allocation is posted as a journal, so it is visible, traceable and reversible. Divisional reports show profit both before and after allocated overheads.
+
+**Work between divisions**
+
+When the Workshop makes or repairs moulds, or supplies parts, for Plastic Injection Moulding, it is recorded as an inter-division transfer at cost (or cost plus a set %). It is income for the Workshop and a cost or an asset for Moulding, and is eliminated in the company totals so nothing is counted twice.
+
+**Divisional reports**
+
+| Report | Per division |
+| --- | --- |
+| Profit and loss | Side by side: WS, IM, HO and company total; month, year to date, comparison with last year and budget; before and after allocated overheads |
+| Key figures | Sales, gross margin %, direct cost, overheads, net profit, cost per machine hour |
+| Budget vs actual | Budget set per account and division |
+| Payables and vouchers | Pending and paid vouchers, supplier spend |
+| Receivables and sales | Sales, quotations won and lost, customer aging |
+| Stock and purchasing | Stock value, purchases, incoming inspection results |
+| Production | Output, rejects, OEE, job and production order profitability (7.7) |
+| Balance sheet | Company total, with division breakdown of receivables, payables, stock, WIP and fixed assets |
+
+Every list and report has a division filter, and the dashboard can be switched between divisions or show all of them together.
 
 **Chart of accounts**
 
@@ -162,7 +206,7 @@ The accounting core is built first, even though users first see the voucher syst
 - **Sub-accounts** to any depth (e.g. Repairs and maintenance → Machine repairs → CNC machines). Reports can show sub-accounts or roll them up into their parent.
 - **Account numbers** are optional, as in QuickBooks; when used, they set the sort order. Names must be unique within the same parent.
 - Accounts with transactions cannot be deleted, only made inactive (rule 9). Two accounts can be merged, moving all their history to one.
-- Each account can carry a default tax code and a default cost centre.
+- Each account can carry a default tax code and a default division.
 - Some accounts are created by the system and cannot be removed: Accounts payable, Accounts receivable, Retained earnings, Opening balance equity, Undeposited funds, Customer advances, VAT payable and receivable.
 - A starter chart for a manufacturing company, based on QuickBooks' default chart, is loaded at setup. The company accountant reviews and edits it before go-live.
 - Import and export of the chart from Excel, so an existing chart can be loaded in one step.
@@ -170,20 +214,20 @@ The accounting core is built first, even though users first see the voucher syst
 **Journal (the ledger)**
 
 - `journal_entry`: number, date, source document type and id, narration, posted\_by, status.
-- `journal_line`: account, cost centre, party (supplier or customer), debit, credit.
+- `journal_line`: account, division, party (supplier or customer), debit, credit.
 - Rules enforced in code and by a database check: total debits equal total credits, amounts are `NUMERIC(18,2)`, never floating point.
 - Posted entries are never edited or deleted; corrections are made by reversing entries.
 - Accounting periods (months) can be closed. No posting into a closed period.
 
 **Number series**
 
-Each document type has a number format built from tokens and set by the Admin. The voucher format is **PPYYMMDDXXX**: PP is a two-character code per voucher type, YY the year, MM the month, DD the day, and XXX a running number that restarts at 001 each day for each code. For example, the third cheque voucher created on 23 October 2026 with code CQ is CQ261023003. Other documents use the same mechanism with their own formats (e.g. quotations Q-YYYY-NNNN). Numbers are allocated inside the database transaction that saves the document, so there are no duplicates, and a number once given is never reused, even if its document is later deleted.
+Each document type has a number format built from tokens and set by the Admin. The voucher format is **PPYYMMDDXXX**: PP is the two-character code of the voucher's division (set by the Admin on the division), YY the year, MM the month, DD the day, and XXX a running number that restarts at 001 each day for each division. For example, if Plastic Injection Moulding has the code IM, the third voucher of that division created on 23 October 2026 is IM261023003. The voucher type (cheque, online, petty cash…) is a field on the voucher and a filter in every list, not part of the number. Other documents use the same mechanism with their own formats. Numbers are allocated inside the database transaction that saves the document, so there are no duplicates, and a number once given is never reused, even if its document is later deleted.
 
 **Approval engine (shared)**
 
 One generic engine serves vouchers, quotations, purchase orders, shift reports and corrections.
 
-- An approval *matrix* defines, per document type, the levels required and the conditions (amount range, cost centre, voucher type).
+- An approval *matrix* defines, per document type, the levels required and the conditions (amount range, division, voucher type).
 - Each level names a role, not a person, so leave cover works by assigning the role.
 - A user can never approve a document they created or one they already approved at a lower level.
 - Every action writes to an insert-only approval log.
@@ -210,6 +254,8 @@ Factory structure, shifts, approval limits and currencies are maintained by the 
 ### 3A.1 Divisions, sections and machines
 
 **Layout:** a tree on the left (Division → Section → Machine) with search, and the selected item's form on the right. Buttons: Add division, Add section, Add machine, Import from Excel, Export.
+
+**Division fields:** two-character code (the PP in document numbers; cannot change once used), name, type (Production or Shared), default bank account, active. Adding a division makes it available at once in every form, filter and report.
 
 **Section fields:** code, name, division, category (Manual or CNC), section type (Machining, Moulding, Support), supervisors (multi-select from users), active.
 
@@ -294,7 +340,7 @@ No supplier payment can be recorded unless its voucher has been approved by the 
 | Supplier Advance | Cheque or transfer | Paid before the invoice; later set off against the invoice |
 | Staff Reimbursement | Any | Payee is an employee, with receipts attached |
 
-Types are master data; new types can be added without code changes. Each type is numbered PPYYMMDDXXX (section 3, Number series). The Admin sets each type's two-character code, for example CQ cheque payment, OP online payment, PC petty cash, IT internal transfer, SA supplier advance, SR staff reimbursement. The date part is the date the voucher is first saved.
+Types are master data; new types can be added without code changes. Every voucher is numbered PPYYMMDDXXX (section 3, Number series). Every voucher belongs to one division, chosen when it is created, and the division's code is the PP part of the number. The date part is the date the voucher is first saved.
 
 **Payees.** A voucher is paid to a payee from the supplier master. Each payee has a category: Supplier, Utility (e.g. water board, electricity), Bank or credit card, Government, Employee, or Other. Recurring payments such as credit card and utility bills are vouchers like any other, with the same three-level approval.
 
@@ -340,7 +386,7 @@ The system warns if the same supplier and invoice number already exist in any vo
 **Accountant: review**
 
 - Queue of submitted vouchers with the invoice preview beside the details.
-- Assigns the GL expense account, cost centre (Workshop / Moulding / Admin) and tax treatment to each line.
+- Assigns the GL expense account, division and tax treatment to each line; the division defaults to the voucher's division, and a shared bill (e.g. electricity) can be split across divisions by amount or %.
 - Approve, return to clerk with a comment, or reject.
 
 **Director: approve (redesign of the current page)**
@@ -351,7 +397,7 @@ Keeps what works in the current page (type tabs, approve and reject columns, rea
 - Clicking a row opens a side panel with the scanned invoice preview, line details, the Accountant's comment and the supplier's outstanding balance and aging.
 - Reason required for Reject; optional for Approve.
 - Bulk approve shows a confirmation: number of vouchers and total amount.
-- Filters by date range, supplier, amount and cost centre; totals shown at the foot of the list.
+- Filters by date range, supplier, amount and division; totals shown at the foot of the list.
 - Fully usable on a phone, so approvals do not wait for the Director to be at a desk.
 
 **Row actions menu (all voucher lists)**
@@ -371,7 +417,7 @@ Every edit, deletion and print is written to the audit log.
 
 - Company letterhead, voucher type and number, date.
 - Payee name and bank details; supplier invoice numbers and dates.
-- Lines with GL account, cost centre and amount; tax; total in figures and in words.
+- Lines with GL account, division and amount; tax; total in figures and in words.
 - Payment details once paid: bank account, cheque number and date, or transfer reference.
 - Prepared by, checked by (Accountant) and approved by (Director), each with name, date and time from the approval log, plus space for the payee's signature.
 - A4 by default; A5 selectable.
@@ -402,6 +448,7 @@ CREATE TABLE voucher (
   id              BIGSERIAL PRIMARY KEY,
   voucher_no      VARCHAR(20) UNIQUE NOT NULL,
   voucher_type_id INT NOT NULL REFERENCES voucher_type(id),
+  division_id     INT NOT NULL REFERENCES division(id),     -- PP in the voucher number
   supplier_id     INT REFERENCES supplier(id),
   voucher_date    DATE NOT NULL,
   total_amount    NUMERIC(18,2) NOT NULL CHECK (total_amount > 0),
@@ -419,7 +466,7 @@ CREATE TABLE voucher_line (
   invoice_date   DATE,
   description    TEXT,
   account_id     INT REFERENCES account(id),
-  cost_centre_id INT REFERENCES cost_centre(id),
+  division_id    INT REFERENCES division(id),       -- defaults to the voucher's division
   amount         NUMERIC(18,2) NOT NULL,
   tax_amount     NUMERIC(18,2) NOT NULL DEFAULT 0
 );
@@ -606,7 +653,7 @@ Phase 2 extends the Phase 0 ledger to cover what QuickBooks provides, with the v
 | Payroll | Phase 2b, after core accounting is live: employee master, salary components, overtime, attendance import, EPF and ETF, PAYE, payslips, bank transfer file |
 | Tax | VAT on sales and purchases, SSCL, withholding tax; tax reports for filing |
 | Multi-currency | Foreign currency invoices and bills, exchange rate table, realised and unrealised gains and losses |
-| Budgeting | Budgets by account and cost centre, monthly budget vs actual |
+| Budgeting | Budgets by account and division, monthly budget vs actual |
 | Reports | Trial balance, P&L and balance sheet (company and per division), cash flow statement, general ledger detail, AP/AR aging, VAT report, audit trail |
 
 Tax rates and rules change; they are stored as dated master data, never hard-coded, and must be confirmed with the company's tax advisor before go-live.
@@ -711,7 +758,7 @@ The two divisions are modelled differently: the workshop is a make-to-order job 
 
 | Level | Current setup (initial data) | Admin can |
 | --- | --- | --- |
-| Division | Workshop (machining), Moulding | Add a division, set its type (Machining, Moulding or Support) |
+| Division | Workshop (WS), Plastic Injection Moulding (IM), Head Office (HO, shared costs) | Add a division, set its type (Machining, Moulding or Support) |
 | Section | Workshop: 18 sections (list in 3A.1). Moulding: one or more sections grouping the machines | Add a section under any division, assign supervisors |
 | Machine | Manual Milling: 3 machines. Moulding: 8 machines | Add, move between sections, retire; set hourly rate, capacity, tonnage |
 
@@ -755,7 +802,7 @@ Added tables: `division`, `shift_pattern`, `shift_pattern_day`, `crew`, `crew_me
 - **Mould maintenance:** shot count updated from production; preventive maintenance due when the interval is reached; repair history per mould.
 - **Finished goods:** good quantity moves to finished stock when the shift report is approved.
 
-**Mould making link:** when the workshop builds or repairs a mould, it is an internal job order. Its cost is capitalised to the mould asset (new mould) or charged to the Moulding cost centre (repair).
+**Mould making link:** when the workshop builds or repairs a mould, it is an internal job order. Its cost is capitalised to the mould asset (new mould) or charged to the Plastic Injection Moulding division (repair), through an inter-division transfer (3.1).
 
 ### 7.4 Production supervisor entry pages
 
@@ -828,7 +875,7 @@ Every machining job order and moulding production order shows its cost, revenue 
 | Machining | Job order (one per sales order line, or internal job such as mould making) | Sales order value; earned revenue = completed qty × unit price |
 | Moulding | Production order (part, quantity, delivery schedule); also part and mould per month for continuous runs | Good qty × unit price |
 | Support sections | Not a profit unit; costs absorbed into the orders they serve | — |
-| Division | Cost centre P&L from the ledger (Phase 2), reconciled with the order totals | Invoiced sales |
+| Division | Division P&L from the ledger (Phase 2), reconciled with the order totals | Invoiced sales |
 
 **Where each cost comes from**
 

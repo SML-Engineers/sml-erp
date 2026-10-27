@@ -53,23 +53,30 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Master data and admin settings
 
-- [ ] **P0-07 Company and cost centres** (spec 3)
+- [ ] **P0-07 Company and divisions** (spec 3, 3.1)
   Company profile (name, registration, VAT no., base currency LKR, financial year start).
-  Cost centres: Workshop, Moulding, Administration (editable).
+  Division master maintained by the Admin: two-character code (PP), name, type (Production or
+  Shared), default bank account, active. Seed: WS Workshop, IM Plastic Injection Moulding,
+  HO Head Office (shared costs); codes confirmed by the owner before go-live.
+  - A division's code cannot change once it has been used on any document.
+  - A division with transactions cannot be deleted, only deactivated.
+  - A new division appears in every division picker and filter without code changes.
 
 - [ ] **P0-08 Number series** (spec 3)
   Number formats built from tokens, set by the Admin per document type: code (PP), year
   (YY / YYYY), month (MM), day (DD), running number (XXX / NNNN) with a reset period
   (daily, monthly, yearly or never). Allocated inside the saving transaction.
-  - Voucher format PPYYMMDDXXX: the third CQ voucher on 2026-10-23 is CQ261023003.
-  - The running number restarts at 001 each day, separately for each code.
+  - Voucher format PPYYMMDDXXX, PP = the voucher's division code: the third IM voucher on
+    2026-10-23 is IM261023003.
+  - The running number restarts at 001 each day, separately for each division.
   - 50 concurrent saves produce 50 unique, consecutive numbers.
   - A number is never reused, including after its document is deleted.
   - Creating a 1,000th document with a 3-digit running number on one day is refused with a
     clear message (the Admin can widen the running number).
 
 - [ ] **P0-09 Divisions, sections and machines page** (spec 3A.1)
-  Tree view Division → Section → Machine with add/edit forms, Excel import and export.
+  Tree view Division → Section → Machine with add/edit forms, Excel import and export
+  (divisions themselves come from P0-07).
   Moulding machine extra fields. Seed: Workshop division with the 18 sections from spec 3A.1,
   Moulding division. No machines are seeded: the Admin adds all of them from this page.
   - A section or machine used on a transaction cannot be deleted, only deactivated.
@@ -104,7 +111,7 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P0-15 Chart of accounts, QuickBooks style** (spec 3)
   Accountant adds, edits, merges and deactivates accounts from the Chart of Accounts page.
   QuickBooks account types and editable detail types, sub-accounts to any depth, optional
-  account numbers, default tax code and cost centre, system accounts that cannot be removed,
+  account numbers, default tax code and division, system accounts that cannot be removed,
   Excel import and export. Starter chart for a manufacturing company loaded at setup.
   - An account with transactions cannot be deleted, only made inactive.
   - Merging two accounts moves all history to the remaining account; totals are unchanged.
@@ -119,6 +126,8 @@ Status: `[ ]` to do · `[x]` done
   - Updating or deleting a posted entry fails at database level.
   - Posting into a closed period is refused.
   - Reversal creates a mirror entry linked to the original.
+  - A line on an income or expense account without a division is refused (spec 3.1).
+  - Profit and loss by division for a date range equals the company total when summed.
 
 - [ ] **P0-17 Approval engine** (spec 3)
   Generic engine: approval matrix per document type (levels, roles, conditions), approval log
@@ -135,21 +144,23 @@ Status: `[ ]` to do · `[x]` done
 
 - [ ] **P1-01 Voucher types** (spec 4.1)
   Seed: Cheque Payment, Online Payment, Petty Cash, Internal Transfer, Supplier Advance,
-  Staff Reimbursement. Admin can add types and sets each type's two-character code
-  (defaults: CQ, OP, PC, IT, SA, SR). Numbers follow PPYYMMDDXXX (P0-08), dated on first save.
+  Staff Reimbursement. Admin can add types. The type is a field and a list filter; it is not
+  part of the voucher number.
 
 - [ ] **P1-02 Voucher entry — Clerk** (spec 4.4, 4.5)
-  Create voucher with type, supplier (with outstanding balance), lines, multiple scanned
+  Create voucher with division, type, supplier (with outstanding balance), lines, multiple scanned
   attachments (PDF/JPG/PNG, drag-and-drop and phone camera), save draft, submit.
+  The number (PPYYMMDDXXX, P0-08) is given on first save, using the voucher's division code.
   - Same supplier + invoice number already on another voucher shows a warning.
   - An uploaded file identical (SHA-256) to an existing attachment shows a warning.
   - Files larger than 20 MB or of other types are refused.
 
 - [ ] **P1-03 Accountant review** (spec 4.4)
-  Queue of submitted vouchers; invoice preview beside details; set GL account, cost centre,
+  Queue of submitted vouchers; invoice preview beside details; set GL account, division,
   tax per line (and optional job/production order field, unused until Phase 3);
   approve / return / reject.
-  - A voucher cannot be approved at L2 while any line lacks an account or cost centre.
+  - A voucher cannot be approved at L2 while any line lacks an account or division.
+  - A line can be split across divisions by amount or %; the split must add up to the line total.
 
 - [ ] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk

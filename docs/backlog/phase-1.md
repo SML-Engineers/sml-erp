@@ -32,9 +32,13 @@ Status: `[ ]` to do · `[x]` done
   - Users with those roles cannot reach any page until 2FA is set up.
   - Failed logins are recorded; 5 failures in 15 minutes locks the account for 15 minutes.
 
-- [ ] **P0-04 Roles and permissions** (spec 1, 3)
-  Roles: Clerk, Accountant, Director, Cashier, Auditor, System Admin (others added later).
-  A user can hold several roles. Permission checks on every API endpoint.
+- [ ] **P0-04 Roles and permissions** (spec 1.1, 3)
+  Standard roles from spec 1.1 loaded at setup (Phase 1 roles active: System Administrator,
+  Director, Accountant, Accounts Clerk, Cashier, Auditor). Admin can create custom roles by
+  ticking permissions. A user can hold several roles. Permission checks on every API endpoint,
+  following the Phase 1 permission table in spec 1.1.
+  - Assigning a conflicting combination (Clerk + Cashier, Accountant + Cashier, Admin + any
+    finance role) shows a warning and records the reason in the audit log.
   - An endpoint called without the required permission returns 403.
   - Auditor can read everything and change nothing.
 
@@ -54,13 +58,20 @@ Status: `[ ]` to do · `[x]` done
   Cost centres: Workshop, Moulding, Administration (editable).
 
 - [ ] **P0-08 Number series** (spec 3)
-  Configurable prefix and sequence per document type, allocated inside the saving transaction.
-  - 50 concurrent saves produce 50 unique, gap-free numbers.
+  Number formats built from tokens, set by the Admin per document type: code (PP), year
+  (YY / YYYY), month (MM), day (DD), running number (XXX / NNNN) with a reset period
+  (daily, monthly, yearly or never). Allocated inside the saving transaction.
+  - Voucher format PPYYMMDDXXX: the third CQ voucher on 2026-10-23 is CQ261023003.
+  - The running number restarts at 001 each day, separately for each code.
+  - 50 concurrent saves produce 50 unique, consecutive numbers.
+  - A number is never reused, including after its document is deleted.
+  - Creating a 1,000th document with a 3-digit running number on one day is refused with a
+    clear message (the Admin can widen the running number).
 
 - [ ] **P0-09 Divisions, sections and machines page** (spec 3A.1)
   Tree view Division → Section → Machine with add/edit forms, Excel import and export.
   Moulding machine extra fields. Seed: Workshop division with the 18 sections from spec 3A.1,
-  Moulding division.
+  Moulding division. No machines are seeded: the Admin adds all of them from this page.
   - A section or machine used on a transaction cannot be deleted, only deactivated.
   - Codes cannot change once used.
 
@@ -90,10 +101,16 @@ Status: `[ ]` to do · `[x]` done
 
 ## C. Accounting core
 
-- [ ] **P0-15 Chart of accounts** (spec 3)
-  Account tree with types; only leaf accounts accept postings. Starter chart loaded from a
-  fixture, to be reviewed by the company accountant.
-  - Posting to a group account is refused.
+- [ ] **P0-15 Chart of accounts, QuickBooks style** (spec 3)
+  Accountant adds, edits, merges and deactivates accounts from the Chart of Accounts page.
+  QuickBooks account types and editable detail types, sub-accounts to any depth, optional
+  account numbers, default tax code and cost centre, system accounts that cannot be removed,
+  Excel import and export. Starter chart for a manufacturing company loaded at setup.
+  - An account with transactions cannot be deleted, only made inactive.
+  - Merging two accounts moves all history to the remaining account; totals are unchanged.
+  - An account's type cannot be changed once it has transactions in a closed period.
+  - A sub-account must have the same report section as its parent (e.g. no expense
+    sub-account under a bank account).
 
 - [ ] **P0-16 Journal and periods** (spec 3)
   `journal_entry` / `journal_line`, posting service, reversal service, accounting periods
@@ -118,9 +135,8 @@ Status: `[ ]` to do · `[x]` done
 
 - [ ] **P1-01 Voucher types** (spec 4.1)
   Seed: Cheque Payment, Online Payment, Petty Cash, Internal Transfer, Supplier Advance,
-  Staff Reimbursement. Admin can add types. Each type has its own number series in the
-  current format (e.g. C895261005 cheque, T895261045 online) with an Admin-set starting number.
-  - Numbering can be set to continue from the old system's last voucher number.
+  Staff Reimbursement. Admin can add types and sets each type's two-character code
+  (defaults: CQ, OP, PC, IT, SA, SR). Numbers follow PPYYMMDDXXX (P0-08), dated on first save.
 
 - [ ] **P1-02 Voucher entry — Clerk** (spec 4.4, 4.5)
   Create voucher with type, supplier (with outstanding balance), lines, multiple scanned
@@ -151,8 +167,11 @@ Status: `[ ]` to do · `[x]` done
   - Edit: Clerk only on Draft/Returned; Accountant only at L2; Director only at L3. A Director
     change to payee, amount or lines returns the voucher to the Accountant with the change shown.
   - After Director approval, Edit is replaced by Amend.
-  - Delete: only never-submitted Drafts, by the creator or Admin. Deleting a submitted voucher
-    is refused at service and database level.
+  - Delete: a never-submitted Draft by its creator or the Admin; a submitted voucher with no
+    payment by the Director or the Admin only, with a mandatory reason.
+  - A deleted voucher is a soft delete: status Deleted, hidden from working lists, listed with
+    its full history in a Deleted Vouchers report, number never reused.
+  - Deleting a voucher with any payment is refused at service and database level.
   - Reprints are watermarked "Copy"; every edit, delete and print is in the audit log.
 
 - [ ] **P1-05 Returns and amendments** (spec 4.2)

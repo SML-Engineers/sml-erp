@@ -31,6 +31,48 @@ SML ERP is a custom-built, web-based ERP for a business with two divisions: a me
 
 One user can hold several roles. Permissions attach to roles, never directly to users.
 
+### 1.1 Standard roles
+
+The roles follow the usual ERP practice of separating three duties: whoever *records* a transaction does not *approve* it, and neither of them *pays* it. IT administration is kept apart from money. The standard roles below are loaded at setup; the Admin can also create custom roles by ticking permissions, and can assign several roles to one person.
+
+| Role | From phase | Can | Cannot |
+| --- | --- | --- | --- |
+| System Administrator | 0 | Users, roles, settings pages, master codes; delete vouchers that have no payment (with reason) | Create, approve or pay vouchers; post journals |
+| Director | 1 | Final approval (L3); approve deletions, cancellations, quotation limits, period close; all reports | Record payments |
+| Accountant | 1 | Review and code vouchers (L2); suppliers and payees; chart of accounts; journals; bank reconciliation | Final approval; record payments |
+| Accounts Clerk | 1 | Create vouchers, upload scans, submit; create payees | Approve anything |
+| Cashier / Payment Officer | 1 | Record payments against Director-approved vouchers; cheque register | Create, edit or approve vouchers |
+| Auditor | 1 | Read everything, including audit and approval logs; export | Change anything |
+| Sales Executive | 1.5 | Customers, quotations, proformas, sales orders | Approve quotations above limits |
+| Sales Manager | 1.5 | Approve quotations within the limits; sales reports | Change rate tables |
+| Purchasing Officer | 2 | Purchase requests and orders | Approve own purchase orders |
+| Store Supervisor | 2 | Goods receipts with weights and counts, material issues and returns | Inspection results |
+| QC Inspector | 2 | Inspection results; accept or reject lots | Change received quantities |
+| HR and Payroll Officer | 2b | Employees, attendance, payroll preparation | Approve payroll (Director) |
+| Production Planner | 3 | Job orders, production plans | Approve shift reports |
+| Production Supervisor | 3 | Shift entries for assigned sections only | Other sections' data |
+| Production Manager | 3 | Approve shift reports, corrections, deviations | Payments |
+
+**Conflicting combinations.** When the Admin gives one person two roles that should be separated (Clerk + Cashier, Accountant + Cashier, Admin + any finance role), the system shows a warning and records the reason in the audit log. Whatever roles a person holds, they can never approve a document they created or approve one document at two levels.
+
+**Phase 1 permissions**
+
+| Action | Clerk | Accountant | Director | Cashier | Auditor | Admin |
+| --- | --- | --- | --- | --- | --- | --- |
+| Create, edit draft, upload scans, submit | ✓ |  |  |  |  |  |
+| Review and code, approve / return / reject at L2 |  | ✓ |  |  |  |  |
+| Approve / return / reject at L3 |  |  | ✓ |  |  |  |
+| Delete an unsubmitted draft | own |  |  |  |  | ✓ |
+| Delete a submitted voucher with no payment (reason required) |  |  | ✓ |  |  | ✓ |
+| Start an amendment of an approved voucher | ✓ | ✓ |  |  |  |  |
+| Request / approve cancellation |  | request | approve |  |  |  |
+| Record payment |  |  |  | ✓ |  |  |
+| View and print vouchers | own | all | all | approved | all |  |
+| Add payees / edit bank details | add | ✓ |  |  |  |  |
+| Chart of accounts |  | ✓ | view |  | view |  |
+| Settings pages, users and roles |  |  | confirm limits |  | view | ✓ |
+| Audit and approval logs |  |  | view |  | view | view |
+
 ## 2. Technology stack and architecture
 
 The system is a modular monolith: one codebase and one PostgreSQL database, split into modules with clear boundaries. Microservices are deliberately avoided; they add operational cost an ERP of this size does not need.
@@ -106,10 +148,24 @@ The accounting core is built first, even though users first see the voucher syst
 
 **Chart of accounts**
 
-- Tree of accounts: Assets, Liabilities, Equity, Income, Expenses, with unlimited sub-levels.
-- Only leaf accounts accept postings; group accounts only total.
-- Account types drive behaviour: bank, cash, receivable, payable, tax, stock, fixed asset.
-- A starter chart suited to a Sri Lankan manufacturer is loaded at setup and reviewed by the company accountant.
+- Works like QuickBooks: the Accountant adds, renames, merges or deactivates accounts at any time from the Chart of Accounts page, with no code change.
+- Every account has an **account type** and a **detail type**, as in QuickBooks. The type decides where the account appears in the reports and how it behaves:
+
+| Report section | Account types |
+| --- | --- |
+| Balance sheet: assets | Bank, Accounts receivable, Other current asset, Fixed asset, Other asset |
+| Balance sheet: liabilities | Accounts payable, Credit card, Other current liability, Long-term liability |
+| Balance sheet: equity | Equity |
+| Profit and loss | Income, Other income, Cost of goods sold, Expense, Other expense |
+
+- Detail types refine the type (e.g. Fixed asset → Machinery and equipment, Vehicles, Moulds and tooling; Expense → Electricity, Repairs and maintenance). The list of detail types is editable.
+- **Sub-accounts** to any depth (e.g. Repairs and maintenance → Machine repairs → CNC machines). Reports can show sub-accounts or roll them up into their parent.
+- **Account numbers** are optional, as in QuickBooks; when used, they set the sort order. Names must be unique within the same parent.
+- Accounts with transactions cannot be deleted, only made inactive (rule 9). Two accounts can be merged, moving all their history to one.
+- Each account can carry a default tax code and a default cost centre.
+- Some accounts are created by the system and cannot be removed: Accounts payable, Accounts receivable, Retained earnings, Opening balance equity, Undeposited funds, Customer advances, VAT payable and receivable.
+- A starter chart for a manufacturing company, based on QuickBooks' default chart, is loaded at setup. The company accountant reviews and edits it before go-live.
+- Import and export of the chart from Excel, so an existing chart can be loaded in one step.
 
 **Journal (the ledger)**
 
@@ -121,7 +177,7 @@ The accounting core is built first, even though users first see the voucher syst
 
 **Number series**
 
-Each document type has a configurable prefix and sequence (e.g. C895261005 for cheque vouchers, Q-2026-0001 for quotations). Numbers are allocated inside the database transaction that saves the document, so there are no duplicates and no gaps from failed saves.
+Each document type has a number format built from tokens and set by the Admin. The voucher format is **PPYYMMDDXXX**: PP is a two-character code per voucher type, YY the year, MM the month, DD the day, and XXX a running number that restarts at 001 each day for each code. For example, the third cheque voucher created on 23 October 2026 with code CQ is CQ261023003. Other documents use the same mechanism with their own formats (e.g. quotations Q-YYYY-NNNN). Numbers are allocated inside the database transaction that saves the document, so there are no duplicates, and a number once given is never reused, even if its document is later deleted.
 
 **Approval engine (shared)**
 
@@ -191,7 +247,7 @@ Factory structure, shifts, approval limits and currencies are maintained by the 
 | C-WED | Wire EDM | CNC |
 | C-BSW | CNC Bandsaw | CNC |
 
-Codes are suggestions; the Admin can change them before go-live. Machines are added under each section on this page, starting with the 3 Manual Milling machines (M-MIL-01 to M-MIL-03). The 8 moulding machines, their sections and tonnage are entered on the same page under the Moulding division.
+Codes are suggestions; the Admin can change them before go-live. No machines are pre-loaded. The Admin adds every machine under its section from this control panel, including the 3 Manual Milling machines and the 8 moulding machines with their tonnage, and adds new sections or machines whenever the factory changes.
 
 ### 3A.2 Shifts and rosters
 
@@ -238,7 +294,7 @@ No supplier payment can be recorded unless its voucher has been approved by the 
 | Supplier Advance | Cheque or transfer | Paid before the invoice; later set off against the invoice |
 | Staff Reimbursement | Any | Payee is an employee, with receipts attached |
 
-Types are master data; new types can be added without code changes. Each type has its own number series, keeping the current format (for example C895261005 for cheque payments, T895261045 for online payments). The Admin sets the starting number, so numbering can continue from the old system's last voucher.
+Types are master data; new types can be added without code changes. Each type is numbered PPYYMMDDXXX (section 3, Number series). The Admin sets each type's two-character code, for example CQ cheque payment, OP online payment, PC petty cash, IT internal transfer, SA supplier advance, SR staff reimbursement. The date part is the date the voucher is first saved.
 
 **Payees.** A voucher is paid to a payee from the supplier master. Each payee has a category: Supplier, Utility (e.g. water board, electricity), Bank or credit card, Government, Employee, or Other. Recurring payments such as credit card and utility bills are vouchers like any other, with the same three-level approval.
 
@@ -307,7 +363,7 @@ As in the current system, every row has an actions button (⋯) with the four ac
 | Resources | Opens the scanned invoices and other attachments in a viewer: page through, zoom, rotate, download. More files can be added while the voucher is still in Draft or Returned | Anyone who can see the voucher, at any status |
 | Print | Produces the payment voucher as a PDF in the company format (see below) | Anyone who can see the voucher. A reprint is marked "Copy" and logged |
 | Edit | Opens the voucher form | **Clerk:** Draft or Returned vouchers. **Accountant:** while waiting at L2. **Director:** while waiting at L3, can correct description and coding; a change to payee, amount or lines sends the voucher back to the Accountant, with the change highlighted. After Director approval, Edit becomes **Amend** (new revision, spec 4.2) |
-| Delete | Removes the voucher | Only a Draft that was never submitted, by its creator or the Admin. Once submitted, a voucher is never deleted: it is rejected or cancelled, so its history stays on record |
+| Delete | Removes the voucher | A Draft never submitted: its creator or the Admin. A submitted voucher with no payment: the Director or the Admin only, with a mandatory reason. A deleted voucher is marked Deleted and removed from all working lists, but kept with its full history in a Deleted Vouchers report; its number is never reused. A voucher with any payment cannot be deleted |
 
 Every edit, deletion and print is written to the audit log.
 

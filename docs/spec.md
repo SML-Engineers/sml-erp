@@ -268,7 +268,7 @@ Division is the one dimension every part of the system reports by, from vouchers
 | IM | Plastic Injection Moulding | Production |
 | HO | Head Office (shared costs) | Shared |
 
-Codes are suggestions for the Admin to confirm. A new division added later appears at once in every form, filter and report; earlier periods are unaffected.
+These starting divisions and codes are confirmed by the owner. The Admin maintains divisions (add, rename, deactivate) from the Divisions control panel (3A.1). A new division added later appears at once in every form, filter and report; earlier periods are unaffected.
 
 **Every transaction carries a division**
 
@@ -868,7 +868,7 @@ The two divisions are modelled differently: the workshop is a make-to-order job 
 
 | Level | Current setup (initial data) | Admin can |
 | --- | --- | --- |
-| Division | Workshop (WS), Plastic Injection Moulding (IM), Head Office (HO, shared costs) | Add a division, set its type (Machining, Moulding or Support) |
+| Division | Workshop (WS), Plastic Injection Moulding (IM), Head Office (HO, shared costs), confirmed by the owner | Add a division, set its type (Machining, Moulding or Support) |
 | Section | Workshop: 18 sections (list in 3A.1). Moulding: one or more sections grouping the machines | Add a section under any division, assign supervisors |
 | Machine | Manual Milling: 3 machines. Moulding: 8 machines | Add, move between sections, retire; set hourly rate, capacity, tonnage |
 

@@ -84,7 +84,8 @@ Status: `[ ]` to do · `[x]` done
   Company profile (name, registration, VAT no., base currency LKR, financial year start).
   Division master maintained by the Admin: two-character code (PP), name, type (Production or
   Shared), default bank account, active. Seed: WS Workshop, IM Plastic Injection Moulding,
-  HO Head Office (shared costs); codes confirmed by the owner before go-live.
+  HO Head Office (shared costs), as confirmed by the owner. Divisions are added, renamed and
+  deactivated by the Admin from the Divisions control panel.
   - A division's code cannot change once it has been used on any document.
   - A division with transactions cannot be deleted, only deactivated.
   - A new division appears in every division picker and filter without code changes.

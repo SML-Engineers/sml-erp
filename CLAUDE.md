@@ -74,6 +74,9 @@ These protect the company's money and records. Never weaken them, even if a task
 ## How to work
 
 - One backlog task per branch and pull request. Branch name: `task/P1-07-voucher-entry`.
+- **Never push to `main` directly**, never merge your own pull request, and never ask the owner
+  to merge before every check is green. GitHub does not enforce this on the current plan, so it
+  is an agreed rule (docs/decisions/0003).
 - Write tests for every business rule, including the failure cases (e.g. "payment for an
   unapproved voucher is refused"). A task is not done until its acceptance criteria are tests
   that pass.

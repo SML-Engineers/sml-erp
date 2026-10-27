@@ -1,6 +1,7 @@
 # 0003 — Protecting the main branch
 
-**Status:** waiting for the owner's decision.
+**Status:** accepted on 2026-10-28: Option B (free plan, agreed practice) during development;
+revisit before Phase 1 go-live (backlog P1-12).
 
 ## Context
 

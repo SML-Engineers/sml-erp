@@ -74,8 +74,9 @@ Status: `[ ]` to do · `[x]` done
   Admin takes effect only after Director confirmation.
   (Used in Phase 1.5; built now because it is an admin setting.)
 
-- [ ] **P0-13 Suppliers**
-  Supplier master: code, name, address, contacts, VAT no., bank details, payment terms,
+- [ ] **P0-13 Suppliers and payees** (spec 4.1)
+  Supplier master: code, name, payee category (Supplier, Utility, Bank or credit card,
+  Government, Employee, Other), address, contacts, VAT no., bank details, payment terms,
   currency, active. Bank detail changes are audited and shown to the Accountant on the next voucher.
   - Duplicate VAT number warns before saving.
 
@@ -113,7 +114,9 @@ Status: `[ ]` to do · `[x]` done
 
 - [ ] **P1-01 Voucher types** (spec 4.1)
   Seed: Cheque Payment, Online Payment, Petty Cash, Internal Transfer, Supplier Advance,
-  Staff Reimbursement. Admin can add types.
+  Staff Reimbursement. Admin can add types. Each type has its own number series in the
+  current format (e.g. C895261005 cheque, T895261045 online) with an Admin-set starting number.
+  - Numbering can be set to continue from the old system's last voucher number.
 
 - [ ] **P1-02 Voucher entry — Clerk** (spec 4.4, 4.5)
   Create voucher with type, supplier (with outstanding balance), lines, multiple scanned
@@ -134,6 +137,19 @@ Status: `[ ]` to do · `[x]` done
   lines, Accountant's comment, supplier balance and aging; filters and totals; phone layout.
   - Confirm with any Reject lacking a reason is refused and the row is highlighted.
   - Bulk approval shows the count and total amount before confirming.
+
+- [ ] **P1-04b Row actions: Resources, Print, Edit, Delete** (spec 4.4, as in the current system)
+  Actions menu (⋯) on every voucher row, plus a paperclip icon when attachments exist.
+  Resources opens an attachment viewer (page, zoom, rotate, download). Print produces the
+  company-format payment voucher PDF (A4 default, A5 option) with prepared / checked /
+  approved names, dates and times from the approval log, and the total in words.
+  - Actions a user may not take are hidden AND refused by the API.
+  - Edit: Clerk only on Draft/Returned; Accountant only at L2; Director only at L3. A Director
+    change to payee, amount or lines returns the voucher to the Accountant with the change shown.
+  - After Director approval, Edit is replaced by Amend.
+  - Delete: only never-submitted Drafts, by the creator or Admin. Deleting a submitted voucher
+    is refused at service and database level.
+  - Reprints are watermarked "Copy"; every edit, delete and print is in the audit log.
 
 - [ ] **P1-05 Returns and amendments** (spec 4.2)
   Returned vouchers go back to the Clerk; resubmission restarts at L2. Amending an approved,

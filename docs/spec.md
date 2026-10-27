@@ -238,7 +238,9 @@ No supplier payment can be recorded unless its voucher has been approved by the 
 | Supplier Advance | Cheque or transfer | Paid before the invoice; later set off against the invoice |
 | Staff Reimbursement | Any | Payee is an employee, with receipts attached |
 
-Types are master data; new types can be added without code changes.
+Types are master data; new types can be added without code changes. Each type has its own number series, keeping the current format (for example C895261005 for cheque payments, T895261045 for online payments). The Admin sets the starting number, so numbering can continue from the old system's last voucher.
+
+**Payees.** A voucher is paid to a payee from the supplier master. Each payee has a category: Supplier, Utility (e.g. water board, electricity), Bank or credit card, Government, Employee, or Other. Recurring payments such as credit card and utility bills are vouchers like any other, with the same three-level approval.
 
 ### 4.2 Workflow
 
@@ -295,6 +297,28 @@ Keeps what works in the current page (type tabs, approve and reject columns, rea
 - Bulk approve shows a confirmation: number of vouchers and total amount.
 - Filters by date range, supplier, amount and cost centre; totals shown at the foot of the list.
 - Fully usable on a phone, so approvals do not wait for the Director to be at a desk.
+
+**Row actions menu (all voucher lists)**
+
+As in the current system, every row has an actions button (⋯) with the four actions below, and a paperclip icon when the voucher has attachments. Actions the user is not allowed to take are hidden, and the server refuses them even if called directly.
+
+| Action | What it does | Who can use it, and when |
+| --- | --- | --- |
+| Resources | Opens the scanned invoices and other attachments in a viewer: page through, zoom, rotate, download. More files can be added while the voucher is still in Draft or Returned | Anyone who can see the voucher, at any status |
+| Print | Produces the payment voucher as a PDF in the company format (see below) | Anyone who can see the voucher. A reprint is marked "Copy" and logged |
+| Edit | Opens the voucher form | **Clerk:** Draft or Returned vouchers. **Accountant:** while waiting at L2. **Director:** while waiting at L3, can correct description and coding; a change to payee, amount or lines sends the voucher back to the Accountant, with the change highlighted. After Director approval, Edit becomes **Amend** (new revision, spec 4.2) |
+| Delete | Removes the voucher | Only a Draft that was never submitted, by its creator or the Admin. Once submitted, a voucher is never deleted: it is rejected or cancelled, so its history stays on record |
+
+Every edit, deletion and print is written to the audit log.
+
+**Printed payment voucher**
+
+- Company letterhead, voucher type and number, date.
+- Payee name and bank details; supplier invoice numbers and dates.
+- Lines with GL account, cost centre and amount; tax; total in figures and in words.
+- Payment details once paid: bank account, cheque number and date, or transfer reference.
+- Prepared by, checked by (Accountant) and approved by (Director), each with name, date and time from the approval log, plus space for the payee's signature.
+- A4 by default; A5 selectable.
 
 **Cashier: record payment**
 

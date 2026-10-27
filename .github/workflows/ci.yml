@@ -128,7 +128,7 @@ jobs:
             echo "::error title=$1::$body"
           }
           report "Services" "$($compose ps -a --format '{{.Service}} {{.State}} {{.Status}}' 2>&1)"
-          for s in db redis minio backend worker frontend nginx; do
+          for s in db redis storage backend worker frontend nginx; do
             report "Log: $s" "$($compose logs --no-color --tail=40 $s 2>&1)"
           done
       - name: make down

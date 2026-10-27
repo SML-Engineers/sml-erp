@@ -11,7 +11,7 @@ Status: `[ ]` to do · `[x]` done
 ## A. Project foundation
 
 - [x] **P0-01 Project skeleton**
-  Docker Compose with Django, PostgreSQL, Redis, MinIO, Celery worker, React (Vite) dev
+  Docker Compose with Django, PostgreSQL, Redis, S3-compatible file storage, Celery worker, React (Vite) dev
   server and Nginx. `make up`, `make test`, `make migrate` commands. `.env.example`.
   - `make up` starts everything; the API health endpoint returns 200; the React app loads.
   - `make test` runs backend and frontend tests (one sample test each) and passes.

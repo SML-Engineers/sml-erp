@@ -39,7 +39,6 @@ developer's own machine only; servers get their own secrets, which are never com
 | --- | --- |
 | http://localhost:8080 | The application (React app and API through Nginx) |
 | http://localhost:8080/api/v1/health/ | API health check |
-| http://localhost:9001 | File storage console (MinIO) |
 
 ## Structure
 

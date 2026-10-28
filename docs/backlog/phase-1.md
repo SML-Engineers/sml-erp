@@ -150,10 +150,14 @@ Status: `[ ]` to do · `[x]` done
   - A division's tax invoice code is 1 to 15 letters or digits, unique, and fixed once used
     on an invoice (application and database); an invoice for a division without one is refused.
 
-- [ ] **P0-10 Shifts and rosters page** (spec 3A.2)
+- [x] **P0-10 Shifts and rosters page** (spec 3A.2)
   Tabs: Shifts, Roster patterns, Crews, Roster calendar with 4-week preview and the warnings
   listed in the spec. Seed: General shift 08:00–17:00.
   - A night shift is attributed to the date it started.
+  - Rosters are dated: one cannot start in the past, and once started only its end date can
+    change; shift times and pattern days used by a started roster are fixed.
+  - A crew can follow only one roster at a time (refused, not just warned).
+  - Crew members are picked from the employee register, added with the HR module.
 
 - [ ] **P0-11 Currencies and exchange rates page** (spec 3A.4)
   Pre-loaded currencies (USD, EUR, GBP, AUD, JPY, CNY, INR, SGD, AED); daily rate entry and CSV import.

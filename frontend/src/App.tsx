@@ -16,6 +16,7 @@ import CompanyPage from "./pages/settings/CompanyPage";
 import DivisionsPage from "./pages/settings/DivisionsPage";
 import FactoryPage from "./pages/settings/FactoryPage";
 import NumberSeriesPage from "./pages/settings/NumberSeriesPage";
+import ShiftsPage from "./pages/settings/ShiftsPage";
 
 /** Hands the signed-in user (from the layout) to a page. */
 function WithMe({ page }: { page: (me: CurrentUser) => ReactNode }) {
@@ -71,6 +72,10 @@ export default function App() {
         <Route
           path="settings/factory"
           element={<WithMe page={(me) => <FactoryPage me={me} />} />}
+        />
+        <Route
+          path="settings/shifts"
+          element={<WithMe page={(me) => <ShiftsPage me={me} />} />}
         />
         <Route
           path="settings/number-series"

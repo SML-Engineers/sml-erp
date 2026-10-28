@@ -47,3 +47,16 @@ class AreaAccess(IsFullyAuthenticated):
             else getattr(view, "access_write_level", "manage")
         )
         return has_access(request.user, area, level)
+
+
+class ReadForAllAreaWrite(AreaAccess):
+    """Anyone fully signed in may read; changes need the view's area at its write level.
+
+    For shared reference data with no business figures, such as the company name and logo
+    printed on every document.
+    """
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return IsFullyAuthenticated.has_permission(self, request, view)
+        return super().has_permission(request, view)

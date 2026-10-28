@@ -6,13 +6,12 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import organisation
 from .models import Company, Division
-from .permissions import AreaAccess, IsFullyAuthenticated
+from .permissions import AreaAccess, ReadForAllAreaWrite
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -94,13 +93,9 @@ def _error(error: organisation.OrganisationError):
 class _ReadForAllWriteForSettings(APIView):
     """Anyone signed in may read (printing, page headers); changes need Settings: Manage."""
 
+    permission_classes = [ReadForAllAreaWrite]
     access_area = "settings"
     access_write_level = "manage"
-
-    def get_permissions(self):
-        if self.request.method in SAFE_METHODS:
-            return [IsFullyAuthenticated()]
-        return [AreaAccess()]
 
 
 class CompanyView(_ReadForAllWriteForSettings):

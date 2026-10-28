@@ -1,5 +1,9 @@
 # Dependabot opens pull requests for dependency updates, so upgrades are deliberate and
 # tested by CI like any other change. Security fixes are proposed as soon as they are known.
+#
+# Only minor and patch versions are proposed for packages and base images. Major versions
+# (e.g. Django 5.2 LTS -> 6.x, Node 22 LTS -> 26) change behaviour and are planned upgrades:
+# a backlog task, not a robot's pull request (docs/decisions/0001).
 version: 2
 updates:
   - package-ecosystem: pip
@@ -7,6 +11,9 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       backend-minor-and-patch:
         update-types: [minor, patch]
@@ -16,6 +23,9 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       frontend-minor-and-patch:
         update-types: [minor, patch]
@@ -29,3 +39,6 @@ updates:
     directories: [/backend, /frontend]
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

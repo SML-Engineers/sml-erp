@@ -28,6 +28,7 @@ import CurrenciesPage from "./pages/settings/CurrenciesPage";
 import QuotationLimitsPage from "./pages/settings/QuotationLimitsPage";
 import ApprovalMatrixPage from "./pages/settings/ApprovalMatrixPage";
 import DocumentEmailPage from "./pages/settings/DocumentEmailPage";
+import VoucherTypesPage from "./pages/settings/VoucherTypesPage";
 import SentEmailsPage from "./pages/admin/SentEmailsPage";
 
 /** Hands the signed-in user (from the layout) to a page. */
@@ -126,6 +127,10 @@ export default function App() {
           element={<WithMe page={(me) => <DocumentEmailPage me={me} />} />}
         />
         <Route path="admin/sent-emails" element={<SentEmailsPage />} />
+        <Route
+          path="settings/voucher-types"
+          element={<WithMe page={(me) => <VoucherTypesPage me={me} />} />}
+        />
       </Route>
     </Routes>
   );

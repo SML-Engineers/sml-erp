@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.masters",
     "apps.accounting",
+    "apps.vouchers",
 ]
 
 MIDDLEWARE = [

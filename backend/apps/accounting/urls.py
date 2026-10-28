@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import journal_views as j
 from . import views as v
 
 urlpatterns = [
@@ -19,4 +20,14 @@ urlpatterns = [
     path("chart-of-accounts/import/", v.ChartImportView.as_view(), name="chart-import"),
     path("chart-of-accounts/<int:pk>/", v.AccountDetailView.as_view(), name="account-detail"),
     path("chart-of-accounts/<int:pk>/merge/", v.AccountMergeView.as_view(), name="account-merge"),
+    path("journal/", j.JournalListView.as_view(), name="journal-list"),
+    path("journal/<int:pk>/", j.JournalDetailView.as_view(), name="journal-detail"),
+    path("journal/<int:pk>/reverse/", j.JournalReverseView.as_view(), name="journal-reverse"),
+    path("accounting-periods/", j.PeriodListView.as_view(), name="period-list"),
+    path(
+        "accounting-periods/<str:month>/<str:action>/",
+        j.PeriodChangeView.as_view(),
+        name="period-change",
+    ),
+    path("reports/profit-and-loss/", j.ProfitAndLossView.as_view(), name="profit-and-loss"),
 ]

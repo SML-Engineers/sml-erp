@@ -13,3 +13,5 @@ class AccountingConfig(AppConfig):
 
         register(m.DetailType)
         register(m.Account)
+        register(m.AccountingPeriod)
+        register(m.JournalEntry)

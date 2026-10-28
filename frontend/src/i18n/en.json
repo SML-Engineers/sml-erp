@@ -233,7 +233,10 @@
       "account_merged": "Ledger accounts merged",
       "detail_type_created": "Detail type added",
       "detail_type_changed": "Detail type changed",
-      "detail_type_deleted": "Detail type deleted"
+      "detail_type_deleted": "Detail type deleted",
+      "journal_posted": "Journal entry posted",
+      "period_closed": "Accounting period closed",
+      "period_reopened": "Accounting period reopened"
     }
   },
   "menu": {
@@ -673,5 +676,45 @@
     "importHelp": "One sheet named Accounts, in the layout of the export: Number, Name, Parent (written as Parent:Sub-account), Type, Detail type, Description, Default division, Active. Rows are matched by number, or else by full name. Check the file first: nothing is saved until every row is accepted.",
     "checked": "The file is fine. Importing it would add {{created}} and update {{updated}} accounts ({{unchanged}} unchanged), and add {{detail_types_created}} detail types.",
     "imported": "Imported: {{created}} accounts added, {{updated}} updated, {{unchanged}} unchanged; {{detail_types_created}} detail types added."
+  },
+  "journal": {
+    "title": "Journal",
+    "help": "Every posted entry, newest first. A posted entry never changes: a mistake is corrected by reversing it, which posts the mirror entry.",
+    "filter": "Filter the journal",
+    "from": "From",
+    "to": "To",
+    "search": "Number or narration",
+    "show": "Show",
+    "none": "No entries.",
+    "number": "Number",
+    "date": "Date",
+    "narration": "Narration",
+    "source": "Source",
+    "amount": "Amount",
+    "reversedBy": "Reversed by {{number}}",
+    "reversalOf": "Reversal of {{number}}",
+    "postedBy": "Posted by {{name}}",
+    "lines": "Lines",
+    "account": "Account",
+    "division": "Division",
+    "description": "Description",
+    "debit": "Debit",
+    "credit": "Credit",
+    "total": "Total",
+    "reverse": "Reverse entry",
+    "reverseHelp": "Posts the mirror entry, dated like this one if its month is open, otherwise today. This entry stays as it is."
+  },
+  "periods": {
+    "title": "Accounting periods",
+    "help": "Each month is open until the Director closes it. Nothing can be posted into a closed month. Reopening needs a reason and is recorded in the audit log.",
+    "previous": "Previous year",
+    "next": "Next year",
+    "month": "Month",
+    "entries": "Entries",
+    "open": "Open",
+    "closed": "Closed",
+    "changedBy": "Last closed or reopened by",
+    "close": "Close {{month}}",
+    "reopen": "Reopen {{month}}"
   }
 }

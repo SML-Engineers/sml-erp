@@ -217,7 +217,7 @@ Status: `[ ]` to do · `[x]` done
   - Deferred to the tax codes task: the default tax code per account (tax design waiting
     for the owner's QuickBooks tax list). The default division is done.
 
-- [ ] **P0-16 Journal and periods** (spec 3)
+- [x] **P0-16 Journal and periods** (spec 3)
   `journal_entry` / `journal_line`, posting service, reversal service, accounting periods
   with close/reopen (Director only).
   - An unbalanced entry is refused (service and database).
@@ -229,6 +229,15 @@ Status: `[ ]` to do · `[x]` done
   - An account's type cannot be changed once it has entries in a closed period (from P0-15).
   - Posting marks the account used (`accounting.services.mark_used`) and refuses inactive or
     merged accounts; reports count a merged account's entries under the remaining account.
+  - Only posted entries are stored (drafts live on their source documents), so there is no
+    status column. Numbers come from a new "journal" series, JV{YY}{MM}{NNNN}, monthly.
+  - Balance is checked by the service and by a deferred database trigger when the saving
+    transaction commits (an entry and its lines are saved together). Posting also refuses
+    inactive or merged accounts and income or expense lines without a division (database too).
+  - Lines carry a supplier as the party; customers are added with them in Phase 1.5.
+  - Months are calendar months; only a month that has ended can be closed; reopening needs a
+    reason. Manual journal entry (with approval) stays in Phase 2: posting is called by the
+    voucher and payment services; the Accountant can reverse an entry on the Journal page.
 
 - [ ] **P0-17 Approval engine** (spec 3)
   Generic engine: approval matrix per document type (levels, roles, conditions), approval log

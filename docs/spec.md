@@ -1186,6 +1186,55 @@ Closed orders feed the quotation rate tables (5.1): average actual cycle times, 
 
 **Phasing:** live profitability using standard rates is available as soon as Phase 3 production entry runs. Actual material lot costs need the Phase 2 inventory module, and actual labour cost needs Phase 2 payroll.
 
+## 7A. Interactive features, as in QuickBooks (owner request, 29 Oct 2026)
+
+The owner asked for the interactive features of QuickBooks Online and Desktop. Each is placed in the phase that builds what it depends on; none changes the order of Phase 1. Where QuickBooks relies on services that do not exist in Sri Lanka, the nearest workable equivalent is given.
+
+**Dashboards and reporting**
+
+| Feature | How it works here | Phase |
+| --- | --- | --- |
+| Interactive business overview | Dashboard tiles and charts (profit and loss, cash, payables, receivables, vouchers waiting), per division or for the company. Clicking any figure opens the report behind it, and any report line opens the transactions behind it, down to the document and its scans | Vouchers dashboard in Phase 1; financial tiles in Phase 2 |
+| Cash flow planner | Projects bank balances day by day for 13 weeks from approved and unpaid vouchers, invoices due (by each customer's payment history), payroll and recurring payments. The user adds "what-if" items (a machine purchase, a delayed receipt) that change the projection but are never posted | Phase 2 |
+| Custom report builder | Start from a standard report or a data source (journal lines, vouchers, invoices, stock, production). Choose columns, filters, grouping and subtotals, sort, and period columns (months, divisions); save it, share it with a role, export to Excel or PDF, and email it (3B). Columns are chosen and ordered by drag-and-drop. A user only ever sees data their role and divisions allow | Phase 2 |
+
+**Invoicing and payments**
+
+| Feature | How it works here | Phase |
+| --- | --- | --- |
+| Pay Now on invoices | The emailed invoice (3B) carries a secure link to a customer page showing the invoice, its PDF and a Pay Now button. Payment goes through a Sri Lankan payment gateway (for example PayHere: Visa, Mastercard, Amex and local wallets, with payment links and payment notifications), and the page also shows the bank account and reference for a transfer (owner's decision: both). A confirmed payment is recorded as a receipt waiting for the Accountant to deposit. US-style ACH does not exist in Sri Lanka; a gateway account and its fees are the company's decision | Phase 2 (with tax invoices) |
+| Automated reminders | Per customer, a reminder schedule (e.g. 3 days before due, on the due date, every 7 days after), with the Admin's default message and placeholders (3B). Sent automatically from the finance mailbox; stops when paid; each reminder is recorded. A customer can be excluded | Phase 2 |
+| Live invoice tracking | Each invoice shows its history: sent (from the email record, 3B), viewed (the customer opened the link; email "open" tracking is unreliable, so only the link counts), partly paid, paid, deposited | Phase 2 |
+
+**Banking and expenses**
+
+| Feature | How it works here | Phase |
+| --- | --- | --- |
+| Bank feeds | Sri Lankan banks do not yet offer a shared feed service (open banking is still being planned by the Central Bank), so live feeds as in the US are not available. Instead: import the bank's statement file (CSV or Excel) as often as wanted, using the bank's import template; templates are provided for the 15 largest Sri Lankan banks (below). If a bank used by the company offers a corporate API, a direct feed can be added for that bank | Phase 2 (bank reconciliation) |
+| Transaction matching | Imported lines are matched to payments, receipts and transfers already in the books (amount, date, cheque number, reference). Suggestions for the rest come from rules and from how similar lines were coded before. The Accountant approves, matches, splits or adds with one click; nothing is posted without that click | Phase 2 |
+| Receipt capture and match | Photograph a receipt or invoice on the phone (the voucher upload already takes the camera, P1-02). The system reads supplier, date, invoice number, amounts and VAT from the image and fills in the voucher lines for the Clerk to check. Images are read by Anthropic's Claude (owner's decision, below) | Reading invoices: after Phase 1 go-live; matching to bank lines: Phase 2 |
+
+**Payroll and people**
+
+| Feature | How it works here | Phase |
+| --- | --- | --- |
+| Employee self-service portal | Each employee signs in (phone friendly) to see their payslips, EPF and ETF contributions, APIT certificates, leave balance and attendance; to apply for leave; and to request changes to personal or bank details, which HR approves (bank details need the same check as suppliers' bank details) | Phase 2b (payroll) |
+| Time tracking | Attendance uploaded by the HR executive from an Excel template (owner's decision, below), plus a phone punch clock for staff working away. A phone punch can be limited to a set area around each site (geofencing, with the employee's consent). Shifts and rosters already exist (3A.2); worked hours, overtime and holiday work flow to payroll and to job costing | Phase 2b |
+
+**Inventory and projects**
+
+| Feature | How it works here | Phase |
+| --- | --- | --- |
+| Project profitability | Each job order and production order already has its live profitability: income, material, labour, machine time and overheads against the estimate, with a red, amber or green status (7.7) | Phase 3 (7.7) |
+| Inventory alerts | Each item has a reorder level and quantity per store. Falling below it notifies the storekeeper and purchasing (P0-18), with a one-click draft purchase request to the usual supplier, which then follows its normal approval | Phase 2 (stores and purchasing) |
+
+**Decisions made by the owner (29 Oct 2026)**
+
+- **Card payments: both.** The customer page offers Pay Now through a payment gateway (for example PayHere) and also shows the bank transfer details with the reference to use. The gateway account and its keys are set by the Admin in a settings page; the keys are stored encrypted, like the mailbox password (3B).
+- **Receipt reading: Claude.** Images are read by Anthropic's Claude through its API. Only the image and the request leave the server; the API key is an environment setting on the server, never in the repository (rule 12). What Claude reads only fills in a draft for the Clerk to check; nothing is saved or posted without a person confirming it. Each reading is recorded with the file's SHA-256 fingerprint.
+- **Attendance: an Excel template.** No device link. The system provides an attendance template (employee number, date, time in, time out, shift, leave code, remarks) that the HR executive fills in and uploads, as for the factory structure import (3A.1): checked first, all or nothing, every refused row listed. Uploaded attendance is confirmed by HR before payroll uses it. A device export can be loaded later if its columns are mapped to the template.
+- **Banks: statement import templates for the 15 largest banks in Sri Lanka.** The company uses Commercial Bank of Ceylon, Sampath Bank, Seylan Bank, People's Bank, Bank of Ceylon and Hatton National Bank. Templates are prepared for these and for National Development Bank, Nations Trust Bank, DFCC Bank, National Savings Bank, Pan Asia Bank, Union Bank of Colombo, Amana Bank, Cargills Bank and Standard Chartered Bank Sri Lanka. A template is a column mapping (which columns hold the date, description, cheque number or reference, debit, credit and balance; the date format; header rows), so the Accountant can correct one or add a bank without a code change. Each bank's template is checked against a real statement export from that bank before go-live: one sample statement per bank used (account numbers can be masked).
+
 ## 8. Non-functional requirements, roadmap and team
 
 ### 8.1 Non-functional requirements
@@ -1236,6 +1285,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Payroll | Phase 2b, after core accounting is live | 6, 8.2 |
 | Quotation approval limits | Yes: minimum margin % and maximum value, set by the Director in settings | 5.1 |
 | Export customers | Yes: foreign-currency quotations, proformas, invoices and receipts | 5.5 |
+| QuickBooks-style interactive features | Added to the plan in the phase each depends on; Sri Lankan equivalents where US services do not exist | 7A |
 | Tax invoice and quotation numbers | Tax invoice YYMMM_XX_PP per division, restarting monthly and carrying on past 99; quotation QL + YYMMDD + daily count; amounts as 115,750.00 | 3, 5.1, 6.1 |
 
 **Still needed for initial setup**

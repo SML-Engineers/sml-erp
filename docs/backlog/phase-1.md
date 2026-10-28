@@ -371,6 +371,13 @@ Status: `[ ]` to do · `[x]` done
   Voucher List, Approved List, Amendments List; vouchers pending by approver and age;
   payments by period; approval history of any voucher; export to Excel and PDF.
 
+- [ ] **P1-08b Vouchers dashboard** (spec 7A, owner 29 Oct 2026)
+  Home page tiles for the user's role and divisions: vouchers waiting for me, waiting by
+  level and age, approved and unpaid (total), paid this month, by division. Each tile and
+  chart opens the filtered list behind it, and each row opens the voucher.
+  - Figures match the lists they open (same filters, same totals).
+  - A user only sees vouchers of their divisions.
+
 - [ ] **P1-09 Reminders**
   Daily reminder to approvers for vouchers waiting longer than a configurable number of days.
 

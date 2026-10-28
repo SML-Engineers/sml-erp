@@ -358,6 +358,8 @@ One generic engine serves vouchers, quotations, purchase orders, shift reports a
 - Each level names a role, not a person, so leave cover works by assigning the role.
 - A user can never approve a document they created or one they already approved at a lower level.
 - Every action writes to an insert-only approval log.
+- Level 1 is the person who submits; approval levels start at 2. Where several rules fit a document at the same level, the most specific one (division, sub-type, amount range) is used. The route is copied onto the document when it is submitted, so a later matrix change never alters a document already on its way; a returned document is routed afresh when resubmitted.
+- The Admin maintains the matrix on a settings page. Rules are added or switched off, never edited, and the matrix always keeps each document type's minimum: for vouchers, two approval levels that apply to every voucher, the last being the Director.
 
 **Audit log**
 

@@ -210,6 +210,7 @@ def register_core_models():
     )
     register(m.Company, exclude=("updated_at",))
     register(m.NumberSeries, exclude=("updated_at",))
+    register(m.ApprovalRule)
     for model in (
         m.Division,
         m.Role,

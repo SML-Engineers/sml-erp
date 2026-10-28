@@ -236,7 +236,9 @@
       "detail_type_deleted": "Detail type deleted",
       "journal_posted": "Journal entry posted",
       "period_closed": "Accounting period closed",
-      "period_reopened": "Accounting period reopened"
+      "period_reopened": "Accounting period reopened",
+      "approval_rule_added": "Approval rule added",
+      "approval_rule_switched_off": "Approval rule switched off"
     }
   },
   "menu": {
@@ -716,5 +718,30 @@
     "changedBy": "Last closed or reopened by",
     "close": "Close {{month}}",
     "reopen": "Reopen {{month}}"
+  },
+  "matrix": {
+    "title": "Approval matrix",
+    "help": "Who approves each kind of document, level by level. Level 1 is the person who submits. Where several rules fit a document at a level, the most specific one (division, type, amount) is used. A rule is never edited: add the new one and switch the old one off. Documents already submitted keep the route they were given.",
+    "levelOne": "L1: the person who creates and submits the document.",
+    "minimum": "At least {{levels}} approval levels, always ending with the Director, whatever the type or amount.",
+    "rulesOf": "Approval rules: {{name}}",
+    "level": "Level",
+    "role": "Approved by",
+    "conditions": "Applies to",
+    "always": "Every document",
+    "from": "from {{amount}}",
+    "upTo": "up to {{amount}}",
+    "division": "division {{code}}",
+    "subtype": "type {{subtype}}",
+    "inUse": "In use",
+    "off": "Switched off",
+    "switchOff": "Switch off",
+    "add": "Add rule",
+    "minAmount": "From amount (optional)",
+    "maxAmount": "Up to amount (optional)",
+    "divisionOptional": "Division (optional, e.g. WS)",
+    "check": "Check route",
+    "amount": "Amount",
+    "submitter": "L1 Submitter"
   }
 }

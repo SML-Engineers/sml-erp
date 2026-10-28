@@ -128,13 +128,16 @@ Status: `[ ]` to do · `[x]` done
   - Creating a 1,000th document with a 3-digit running number on one day is refused with a
     clear message (the Admin can widen the running number).
 
-- [ ] **P0-09 Divisions, sections and machines page** (spec 3A.1)
+- [x] **P0-09 Divisions, sections and machines page** (spec 3A.1)
   Tree view Division → Section → Machine with add/edit forms, Excel import and export
   (divisions themselves come from P0-07).
   Moulding machine extra fields. Seed: Workshop division with the 18 sections from spec 3A.1,
   Moulding division. No machines are seeded: the Admin adds all of them from this page.
   - A section or machine used on a transaction cannot be deleted, only deactivated.
   - Codes cannot change once used.
+  - Section scope for production staff (from P0-04): a user can be limited to particular
+    sections, and sees the sections they supervise. "Copy access from another user" does not
+    copy sections yet; it is added with the production pages (Phase 3).
 
 - [ ] **P0-10 Shifts and rosters page** (spec 3A.2)
   Tabs: Shifts, Roster patterns, Crews, Roster calendar with 4-week preview and the warnings

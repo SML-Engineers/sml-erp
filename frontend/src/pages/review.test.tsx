@@ -85,7 +85,7 @@ test("the accountant codes an electricity bill split across divisions and approv
   renderAt("/vouchers/review", <ReviewPage />);
 
   const queue = await screen.findByRole("region", { name: "Queue" });
-  fireEvent.click(within(queue).getByRole("button", { name: /WS261029001/ }));
+  fireEvent.click(await within(queue).findByRole("button", { name: /WS261029001/ }));
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
   expect(within(panel).getByTitle("bill.pdf")).toHaveAttribute("src", "/api/v1/vouchers/9/attachments/4/");
 

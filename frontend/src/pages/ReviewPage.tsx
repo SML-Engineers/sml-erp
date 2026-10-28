@@ -60,12 +60,12 @@ export default function ReviewPage() {
 
   return (
     <main className="page">
-      <h1>{t("review.title")}</h1>
-      <p className="muted">{t("review.help")}</p>
+      <h1>{t("voucherReview.title")}</h1>
+      <p className="muted">{t("voucherReview.help")}</p>
       <div className="review-layout">
-        <section className="panel" aria-label={t("review.queue")}>
-          <h2>{t("review.queue")}</h2>
-          {queue.data?.length === 0 && <p className="muted">{t("review.empty")}</p>}
+        <section className="panel" aria-label={t("voucherReview.queue")}>
+          <h2>{t("voucherReview.queue")}</h2>
+          {queue.data?.length === 0 && <p className="muted">{t("voucherReview.empty")}</p>}
           <ul className="queue">
             {queue.data?.map((v) => (
               <li key={v.id} className={v.id === selected ? "selected" : undefined}>
@@ -184,9 +184,9 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         </p>
       ))}
 
-      <div className="preview" aria-label={t("review.preview")} role="group">
+      <div className="preview" aria-label={t("voucherReview.preview")} role="group">
         {voucher.attachments.length > 1 && (
-          <select aria-label={t("review.whichFile")} value={file ?? ""} onChange={(e) => setFile(Number(e.target.value))}>
+          <select aria-label={t("voucherReview.whichFile")} value={file ?? ""} onChange={(e) => setFile(Number(e.target.value))}>
             {voucher.attachments.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.file_name}
@@ -200,20 +200,20 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         {current && current.content_type !== "application/pdf" && (
           <img alt={current.file_name} src={voucherFileUrl(voucher.id, current.id)} />
         )}
-        {!current && <p className="muted">{t("review.noScan")}</p>}
+        {!current && <p className="muted">{t("voucherReview.noScan")}</p>}
       </div>
 
       <div className="table-wrap">
-        <table aria-label={t("review.coding")}>
+        <table aria-label={t("voucherReview.coding")}>
           <thead>
             <tr>
               <th>{t("vouchers.invoiceNo")}</th>
               <th className="num">{t("vouchers.amount")}</th>
-              <th>{t("review.account")}</th>
+              <th>{t("voucherReview.account")}</th>
               <th>{t("vouchers.division")}</th>
               <th>{t("vouchers.taxCode")}</th>
               <th className="num">{t("vouchers.tax")}</th>
-              <th>{t("review.job")}</th>
+              <th>{t("voucherReview.job")}</th>
             </tr>
           </thead>
           <tbody>
@@ -230,7 +230,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                   <td className="num">{formatDecimal(line.amount)}</td>
                   <td>
                     <select
-                      aria-label={t("review.accountOf", { n })}
+                      aria-label={t("voucherReview.accountOf", { n })}
                       value={c.account}
                       onChange={(e) => {
                         const chosen = usable.find((a) => String(a.id) === e.target.value);
@@ -252,7 +252,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                   </td>
                   <td>
                     {!c.split && (
-                      <select aria-label={t("review.divisionOf", { n })} value={c.division} onChange={(e) => set(index, { division: e.target.value })}>
+                      <select aria-label={t("voucherReview.divisionOf", { n })} value={c.division} onChange={(e) => set(index, { division: e.target.value })}>
                         <option value="">—</option>
                         {divisions.data?.map((d) => (
                           <option key={d.code} value={d.code}>
@@ -263,18 +263,18 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                     )}
                     <label className="check">
                       <input type="checkbox" checked={c.split} onChange={(e) => set(index, { split: e.target.checked })} />
-                      {t("review.split")}
+                      {t("voucherReview.split")}
                     </label>
                     {c.split && (
-                      <div role="group" aria-label={t("review.splitOf", { n })}>
+                      <div role="group" aria-label={t("voucherReview.splitOf", { n })}>
                         <label className="check">
                           <input type="checkbox" checked={c.byPercent} onChange={(e) => set(index, { byPercent: e.target.checked })} />
-                          {t("review.byPercent")}
+                          {t("voucherReview.byPercent")}
                         </label>
                         {c.splits.map((s, row) => (
                           <div key={row} className="inline-form">
                             <select
-                              aria-label={t("review.splitDivision", { n, row: String(row + 1) })}
+                              aria-label={t("voucherReview.splitDivision", { n, row: String(row + 1) })}
                               value={s.division}
                               onChange={(e) => setSplit(index, row, { division: e.target.value })}
                             >
@@ -287,7 +287,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                             </select>
                             <input
                               inputMode="decimal"
-                              aria-label={c.byPercent ? t("review.splitPercent", { n, row: String(row + 1) }) : t("review.splitAmount", { n, row: String(row + 1) })}
+                              aria-label={c.byPercent ? t("voucherReview.splitPercent", { n, row: String(row + 1) }) : t("voucherReview.splitAmount", { n, row: String(row + 1) })}
                               value={c.byPercent ? s.percent : s.amount}
                               onChange={(e) => setSplit(index, row, c.byPercent ? { percent: e.target.value } : { amount: e.target.value })}
                             />
@@ -298,13 +298,13 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                           className="small secondary"
                           onClick={() => set(index, { splits: [...c.splits, { division: "", amount: "", percent: "" }] })}
                         >
-                          {t("review.addDivision")}
+                          {t("voucherReview.addDivision")}
                         </button>
                       </div>
                     )}
                   </td>
                   <td>
-                    <select aria-label={t("review.taxCodeOf", { n })} value={c.tax_code} onChange={(e) => set(index, { tax_code: e.target.value })}>
+                    <select aria-label={t("voucherReview.taxCodeOf", { n })} value={c.tax_code} onChange={(e) => set(index, { tax_code: e.target.value })}>
                       <option value="">{t("vouchers.enterTax")}</option>
                       {purchaseCodes.map((code) => (
                         <option key={code.code} value={code.code}>
@@ -320,14 +320,14 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                       <input
                         inputMode="decimal"
                         className="num"
-                        aria-label={t("review.taxOf", { n })}
+                        aria-label={t("voucherReview.taxOf", { n })}
                         value={c.tax_amount}
                         onChange={(e) => set(index, { tax_amount: e.target.value })}
                       />
                     )}
                   </td>
                   <td>
-                    <input aria-label={t("review.jobOf", { n })} value={c.job_ref} maxLength={50} onChange={(e) => set(index, { job_ref: e.target.value })} />
+                    <input aria-label={t("voucherReview.jobOf", { n })} value={c.job_ref} maxLength={50} onChange={(e) => set(index, { job_ref: e.target.value })} />
                   </td>
                 </tr>
               );
@@ -345,27 +345,27 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
       </div>
       <div className="row-actions">
         <button type="button" className="secondary" disabled={save.isPending} onClick={() => save.mutate()}>
-          {t("review.saveCoding")}
+          {t("voucherReview.saveCoding")}
         </button>
       </div>
       <ErrorLine error={save.error} />
 
       <label className="inline-form">
-        {t("review.commentOrReason")}
+        {t("voucherReview.commentOrReason")}
         <input value={text} onChange={(e) => setText(e.target.value)} />
       </label>
       <div className="row-actions">
         <button type="button" disabled={decide.isPending} onClick={() => decide.mutate("approve")}>
-          {t("review.approve")}
+          {t("voucherReview.approve")}
         </button>
         <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("return")}>
-          {t("review.return")}
+          {t("voucherReview.return")}
         </button>
         <button type="button" className="danger" disabled={decide.isPending} onClick={() => decide.mutate("reject")}>
-          {t("review.reject")}
+          {t("voucherReview.reject")}
         </button>
       </div>
-      <p className="muted">{t("review.saveFirst")}</p>
+      <p className="muted">{t("voucherReview.saveFirst")}</p>
       <ErrorLine error={decide.error} />
     </section>
   );

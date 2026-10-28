@@ -345,7 +345,10 @@ def save(
         new_lines = _lines(voucher, list(lines))
         voucher.total_amount = sum((line.total for line in new_lines), Decimal("0"))
         voucher.save()
-        coding = {line.line_no: (line.account_id, line.division_id) for line in voucher.lines.all()}
+        coding = {
+            line.line_no: (line.account_id, line.division_id, line.job_ref)
+            for line in voucher.lines.all()
+        }
         voucher.lines.all().delete()
         for line in new_lines:
             if line.line_no in coding:

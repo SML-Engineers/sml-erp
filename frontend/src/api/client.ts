@@ -72,3 +72,15 @@ export async function apiSend<T>(
   });
   return parse<T>(response);
 }
+
+/** Upload files (multipart form). The browser sets the Content-Type with its boundary. */
+export async function apiUpload<T>(path: string, form: FormData, method: "POST" | "PUT" = "PUT") {
+  await ensureCsrf();
+  const response = await fetch(`${API_BASE}${path}`, {
+    method,
+    credentials: "same-origin",
+    headers: { Accept: "application/json", "X-CSRFToken": readCookie("csrftoken") ?? "" },
+    body: form,
+  });
+  return parse<T>(response);
+}

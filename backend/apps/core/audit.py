@@ -208,6 +208,7 @@ def register_core_models():
         exclude=("last_login", "totp_last_timestep", "password_changed_at", "date_joined"),
         secret=("password", "totp_secret_encrypted"),
     )
+    register(m.Company, exclude=("updated_at",))
     for model in (
         m.Division,
         m.Role,

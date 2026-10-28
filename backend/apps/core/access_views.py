@@ -49,10 +49,16 @@ class CatalogView(APIView):
 
 
 class DivisionListView(APIView):
-    """The divisions the user may work in (used by every division picker)."""
+    """The divisions the user may work in (used by every division picker).
+
+    Pickers on new documents show active divisions only; list and report filters pass
+    ?include_inactive=1 so older records of a deactivated division can still be found.
+    """
 
     def get(self, request):
-        divisions = access.division_scope(request.user).filter(is_active=True)
+        divisions = access.division_scope(request.user)
+        if request.query_params.get("include_inactive") not in ("1", "true"):
+            divisions = divisions.filter(is_active=True)
         return Response(DivisionSerializer(divisions, many=True).data)
 
 

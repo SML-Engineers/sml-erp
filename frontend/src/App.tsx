@@ -12,6 +12,8 @@ import AccessReviewPage from "./pages/admin/AccessReviewPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
 import UserAccessPage from "./pages/admin/UserAccessPage";
 import UsersPage from "./pages/admin/UsersPage";
+import CompanyPage from "./pages/settings/CompanyPage";
+import DivisionsPage from "./pages/settings/DivisionsPage";
 
 /** Hands the signed-in user (from the layout) to a page. */
 function WithMe({ page }: { page: (me: CurrentUser) => ReactNode }) {
@@ -56,6 +58,14 @@ export default function App() {
           element={<WithMe page={(me) => <AccessReviewPage me={me} />} />}
         />
         <Route path="admin/audit" element={<AuditLogPage />} />
+        <Route
+          path="settings/company"
+          element={<WithMe page={(me) => <CompanyPage me={me} />} />}
+        />
+        <Route
+          path="settings/divisions"
+          element={<WithMe page={(me) => <DivisionsPage me={me} />} />}
+        />
       </Route>
     </Routes>
   );

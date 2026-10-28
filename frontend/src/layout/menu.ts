@@ -30,6 +30,13 @@ export const MENU: MenuSection[] = [
       { label: "audit.link", path: "/admin/audit", area: "audit_logs" },
     ],
   },
+  {
+    label: "menu.settings",
+    items: [
+      { label: "company.title", path: "/settings/company", area: "settings" },
+      { label: "divisions.title", path: "/settings/divisions", area: "settings" },
+    ],
+  },
 ];
 
 /** The menu as this user may see it: items they cannot view, and empty sections, removed. */

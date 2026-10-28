@@ -21,3 +21,5 @@ class MastersConfig(AppConfig):
         register(m.Currency)
         register(m.ExchangeRate)
         register(m.QuotationLimit)
+        register(m.Supplier)
+        register(m.SupplierBankAccount)

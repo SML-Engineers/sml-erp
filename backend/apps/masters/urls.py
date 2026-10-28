@@ -3,6 +3,7 @@ from django.urls import path
 from . import currency_views as cv
 from . import limit_views as lv
 from . import roster_views as rv
+from . import supplier_views as sv
 from . import views
 
 urlpatterns = [
@@ -74,6 +75,23 @@ urlpatterns = [
         "settings/quotation-limits/<int:pk>/withdraw/",
         lv.LimitWithdrawView.as_view(),
         name="limit-withdraw",
+    ),
+    path("payees/", sv.SupplierListView.as_view(), name="payee-list"),
+    path("payees/<int:pk>/", sv.SupplierDetailView.as_view(), name="payee-detail"),
+    path(
+        "payees/<int:pk>/bank-accounts/",
+        sv.BankAccountListView.as_view(),
+        name="payee-bank-accounts",
+    ),
+    path(
+        "payees/<int:pk>/bank-accounts/<int:account_pk>/",
+        sv.BankAccountDetailView.as_view(),
+        name="payee-bank-account-detail",
+    ),
+    path(
+        "payees/<int:pk>/acknowledge-bank-change/",
+        sv.AcknowledgeBankChangeView.as_view(),
+        name="payee-acknowledge-bank-change",
     ),
     path("users/<int:pk>/sections/", views.UserSectionsView.as_view(), name="user-sections"),
 ]

@@ -204,7 +204,11 @@
       "currency_switched_on": "Currency switched on",
       "exchange_rate_entered": "Exchange rate entered",
       "exchange_rate_corrected": "Exchange rate corrected",
-      "exchange_rate_removed": "Exchange rate removed"
+      "exchange_rate_removed": "Exchange rate removed",
+      "quotation_limit_proposed": "Quotation limits proposed",
+      "quotation_limit_confirmed": "Quotation limits confirmed by the Director",
+      "quotation_limit_rejected": "Quotation limits rejected",
+      "quotation_limit_withdrawn": "Quotation limits change withdrawn"
     }
   },
   "menu": {
@@ -469,5 +473,35 @@
     "csvFile": "CSV file",
     "checked": "The file is fine. Importing it would add {{added}} rates, correct {{corrected}} and leave {{unchanged}} unchanged.",
     "imported": "Imported: {{added}} rates added, {{corrected}} corrected, {{unchanged}} unchanged."
+  },
+  "limits": {
+    "title": "Quotation approval limits",
+    "help": "A quotation below its division's minimum margin, or above its value limit, needs the Director's approval before it is sent. Foreign-currency quotations are converted at the rate of their date. Changes entered by the Admin take effect only after the Director confirms them.",
+    "inForce": "In force today",
+    "minMargin": "Minimum margin %",
+    "directorAbove": "Director approves above (LKR)",
+    "since": "Since",
+    "notSet": "Not set",
+    "notSetHelp": "Until a division's limits are confirmed, every quotation of that division goes to the Director.",
+    "waiting": "Waiting for the Director",
+    "changeFor": "Change for {{division}}:",
+    "changeText": "from {{from}}, minimum margin {{margin}}, Director approves above LKR {{value}} (entered by {{by}}).",
+    "rejectReason": "Reason for rejecting",
+    "reject": "Reject",
+    "withdraw": "Withdraw",
+    "propose": "Propose new limits",
+    "from": "From",
+    "send": "Send to the Director",
+    "proposeHelp": "Old quotations keep the limits in force on their date. If the Director confirms after the start date, the limits apply from the day of confirmation.",
+    "history": "History",
+    "enteredBy": "Entered by",
+    "decidedBy": "Decided by",
+    "inForceTag": "in force",
+    "status": {
+      "pending": "Waiting for the Director",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    }
   }
 }

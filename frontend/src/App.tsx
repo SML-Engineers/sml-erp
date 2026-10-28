@@ -18,6 +18,7 @@ import FactoryPage from "./pages/settings/FactoryPage";
 import NumberSeriesPage from "./pages/settings/NumberSeriesPage";
 import ShiftsPage from "./pages/settings/ShiftsPage";
 import CurrenciesPage from "./pages/settings/CurrenciesPage";
+import QuotationLimitsPage from "./pages/settings/QuotationLimitsPage";
 
 /** Hands the signed-in user (from the layout) to a page. */
 function WithMe({ page }: { page: (me: CurrentUser) => ReactNode }) {
@@ -81,6 +82,10 @@ export default function App() {
         <Route
           path="settings/currencies"
           element={<WithMe page={(me) => <CurrenciesPage me={me} />} />}
+        />
+        <Route
+          path="settings/quotation-limits"
+          element={<WithMe page={(me) => <QuotationLimitsPage me={me} />} />}
         />
         <Route
           path="settings/number-series"

@@ -165,10 +165,14 @@ Status: `[ ]` to do · `[x]` done
   - The Admin keeps the currency list; the Accountant enters rates (Accounting: Enter).
   - A rate used on a document never changes (application and database); LKR is fixed.
 
-- [ ] **P0-12 Quotation approval limits page** (spec 3A.3)
+- [x] **P0-12 Quotation approval limits page** (spec 3A.3)
   Minimum margin % and value limit per division, effective-dated. A change entered by the
   Admin takes effect only after Director confirmation.
   (Used in Phase 1.5; built now because it is an admin setting.)
+  - The Director cannot confirm a change they entered (rule 5); one pending change per
+    division; confirmed limits are never changed or deleted (database).
+  - Without confirmed limits, every quotation of that division goes to the Director.
+  - Per customer group limits wait for customer groups (Phase 1.5).
 
 - [ ] **P0-13 Suppliers and payees** (spec 4.1)
   Supplier master: code, name, payee category (Supplier, Utility, Bank or credit card,

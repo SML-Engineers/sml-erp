@@ -211,6 +211,12 @@ def register_core_models():
     register(m.Company, exclude=("updated_at",))
     register(m.NumberSeries, exclude=("updated_at",))
     register(m.ApprovalRule)
+    register(
+        m.MailAccount,
+        exclude=("updated_at", "last_test_at", "last_test_ok", "last_test_error"),
+        secret=("password_encrypted",),
+    )
+    register(m.EmailTemplate, exclude=("updated_at",))
     for model in (
         m.Division,
         m.Role,

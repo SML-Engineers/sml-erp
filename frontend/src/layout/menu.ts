@@ -38,6 +38,7 @@ export const MENU: MenuSection[] = [
       { label: "users.title", path: "/admin/users", area: "users" },
       { label: "review.link", path: "/admin/access-review", area: "users" },
       { label: "audit.link", path: "/admin/audit", area: "audit_logs" },
+      { label: "sentEmails.title", path: "/admin/sent-emails", area: "audit_logs" },
     ],
   },
   {
@@ -51,6 +52,7 @@ export const MENU: MenuSection[] = [
       { label: "limits.title", path: "/settings/quotation-limits", area: "settings" },
       { label: "numbering.title", path: "/settings/number-series", area: "settings" },
       { label: "matrix.title", path: "/settings/approval-matrix", area: "settings" },
+      { label: "documentEmail.title", path: "/settings/document-email", area: "settings" },
     ],
   },
 ];

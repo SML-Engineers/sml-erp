@@ -700,3 +700,103 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"{self.user} {self.event}"
+
+
+# --- Sending documents by email (spec 3B, backlog P0-19) ---------------------------------
+
+
+class MailAccount(models.Model):
+    """The mailbox documents and reports are sent from (e.g. finance@domain.com). One row,
+    id 1. The password is stored encrypted and never leaves the server."""
+
+    class Security(models.TextChoices):
+        STARTTLS = "starttls", "STARTTLS (usually port 587)"
+        SSL = "ssl", "SSL/TLS (usually port 465)"
+        NONE = "none", "None (only for a mail server on the same machine)"
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    from_name = models.CharField(max_length=100, blank=True)
+    from_address = models.EmailField(blank=True)
+    reply_to = models.EmailField(blank=True)
+    copy_to = models.EmailField(blank=True)
+    host = models.CharField(max_length=200, blank=True)
+    port = models.PositiveIntegerField(default=587)
+    security = models.CharField(max_length=10, choices=Security.choices, default=Security.STARTTLS)
+    username = models.CharField(max_length=200, blank=True)
+    password_encrypted = models.TextField(blank=True)
+    last_test_at = models.DateTimeField(null=True, blank=True)
+    last_test_ok = models.BooleanField(null=True, blank=True)
+    last_test_error = models.CharField(max_length=500, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(id=1), name="core_mailaccount_single_row"),
+        ]
+
+    def __str__(self):
+        return self.from_address or "(not set up)"
+
+    @classmethod
+    def get(cls) -> "MailAccount":
+        account, _ = cls.objects.get_or_create(pk=1)
+        return account
+
+    @property
+    def is_ready(self) -> bool:
+        return bool(self.from_address and self.host)
+
+
+class EmailTemplate(models.Model):
+    """The default subject and message for one kind of document or report, with
+    placeholders such as {customer_name}. The person sending may edit them each time."""
+
+    document_type = models.SlugField(max_length=30, unique=True)
+    subject = models.CharField(max_length=200)
+    body = models.TextField()
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["document_type"]
+
+    def __str__(self):
+        return self.document_type
+
+
+class SentEmail(models.Model):
+    """Every document email sent or attempted, exactly as sent. Insert-only (database)."""
+
+    class Status(models.TextChoices):
+        SENT = "sent", "Sent"
+        FAILED = "failed", "Failed"
+
+    document_type = models.SlugField(max_length=30)
+    document_id = models.BigIntegerField(null=True, blank=True)
+    document_label = models.CharField(max_length=200)
+    from_address = models.CharField(max_length=300)
+    to = models.TextField()
+    cc = models.TextField(blank=True)
+    bcc = models.TextField(blank=True)
+    subject = models.CharField(max_length=200)
+    body = models.TextField()
+    attachment = models.FileField(upload_to="sent-emails/%Y/%m/", blank=True)
+    attachment_name = models.CharField(max_length=200, blank=True)
+    attachment_sha256 = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices)
+    error = models.CharField(max_length=500, blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    sent_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-sent_at", "-id"]
+        indexes = [
+            models.Index(fields=["document_type", "document_id"], name="core_sentemail_doc"),
+        ]
+
+    def __str__(self):
+        return f"{self.document_label} to {self.to} ({self.status})"

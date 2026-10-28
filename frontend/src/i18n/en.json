@@ -238,7 +238,9 @@
       "period_closed": "Accounting period closed",
       "period_reopened": "Accounting period reopened",
       "approval_rule_added": "Approval rule added",
-      "approval_rule_switched_off": "Approval rule switched off"
+      "approval_rule_switched_off": "Approval rule switched off",
+      "mail_account_changed": "Document email account changed",
+      "email_template_changed": "Default email message changed"
     }
   },
   "menu": {
@@ -762,5 +764,62 @@
       "document_approved": "A document I created was approved",
       "document_rejected": "A document I created was rejected"
     }
+  },
+  "email": {
+    "title": "Send by email",
+    "from": "From: {{from}}",
+    "to": "To",
+    "cc": "Cc",
+    "subject": "Subject",
+    "body": "Message",
+    "send": "Send email",
+    "cancel": "Cancel",
+    "sent": "Sent to {{to}}.",
+    "notReady": "Document email is not set up yet. Ask the Admin to enter the sending mailbox under Settings → Document email."
+  },
+  "documentEmail": {
+    "title": "Document email",
+    "help": "The mailbox that quotations, invoices, statements, outstanding reports and other documents are emailed from, and the default message for each kind. The person sending can edit the message before it goes.",
+    "account": "Sending mailbox",
+    "accountHelp": "Use the finance mailbox's own mail server (for example smtp.hostinger.com, port 465 with SSL) so the company domain's SPF and DKIM records cover the emails. The password is stored encrypted and is never shown again.",
+    "fromName": "Sender name",
+    "fromAddress": "Send from (e.g. finance@domain.com)",
+    "replyTo": "Replies go to (optional)",
+    "copyTo": "Send a copy of every email to (optional)",
+    "host": "Mail server",
+    "port": "Port",
+    "security": "Connection security",
+    "securities": {
+      "starttls": "STARTTLS (usually port 587)",
+      "ssl": "SSL/TLS (usually port 465)",
+      "none": "None (only for a mail server on this machine)"
+    },
+    "username": "User name",
+    "password": "Password",
+    "passwordKeep": "New password (leave empty to keep the saved one)",
+    "save": "Save mailbox",
+    "test": "Send test email",
+    "testTo": "Send the test to",
+    "testOk": "The last test email was sent successfully.",
+    "testFailed": "The last test email failed: {{error}}",
+    "notTested": "Send a test email to check these settings.",
+    "notReady": "Not set up yet: documents cannot be emailed.",
+    "messages": "Default messages",
+    "messagesHelp": "The subject and message offered for each kind of document. Words in braces, such as {document_number}, are filled in for each email; only the placeholders listed can be used.",
+    "kind": "Kind of document",
+    "messageOf": "Default message: {{name}}",
+    "placeholders": "Placeholders you can use:",
+    "preview": "Preview",
+    "saveMessage": "Save message",
+    "messageSaved": "Saved."
+  },
+  "sentEmails": {
+    "title": "Sent emails",
+    "help": "Every document and report emailed from the system, exactly as it was sent. This record cannot be changed or deleted.",
+    "when": "Sent",
+    "document": "Document",
+    "by": "Sent by",
+    "sent": "Sent",
+    "failed": "Failed"
   }
 }

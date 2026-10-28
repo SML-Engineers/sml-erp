@@ -269,6 +269,19 @@ Status: `[ ]` to do · `[x]` done
   - The reminder for vouchers waiting too long (spec 4.3, optional) is left for later.
   - Servers need an SMTP account (EMAIL_* settings) and APP_URL for links in emails.
 
+- [ ] **P0-19 Sending documents and reports by email** (spec 3B; owner, 29 Oct 2026)
+  Settings → Document email: the sending mailbox (e.g. finance@domain.com) with its mail
+  server, password stored encrypted, a test email; default subject and body per kind of
+  document or report, with placeholders. A send form whose message can be edited before
+  sending; an insert-only record of every email sent. Each document and report module adds
+  its Email button using this (quotations, invoices, statements, outstanding reports…).
+  - The password is never returned by the API, and only the Admin changes the settings.
+  - A template with an unknown placeholder is refused.
+  - The edited subject and body are what is sent and what is recorded.
+  - Sending without a configured account, to an invalid address, or to more than 20
+    recipients is refused; a failed send is recorded with the error.
+  - The sent-email record cannot be changed or deleted (database).
+
 ## D. Payment vouchers (Phase 1)
 
 - [ ] **P1-01 Voucher types** (spec 4.1)

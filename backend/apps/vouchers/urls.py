@@ -19,7 +19,27 @@ urlpatterns += [
         v.PayeeBalanceView.as_view(),
         name="voucher-payee-balance",
     ),
+    path("vouchers/waiting/", v.WaitingView.as_view(), name="voucher-waiting"),
     path("vouchers/<int:pk>/", v.VoucherDetailView.as_view(), name="voucher-detail"),
+    path("vouchers/<int:pk>/coding/", v.CodingView.as_view(), name="voucher-coding"),
+    path(
+        "vouchers/<int:pk>/approve/",
+        v.DecisionView.as_view(),
+        {"decision": "approve"},
+        name="voucher-approve",
+    ),
+    path(
+        "vouchers/<int:pk>/return/",
+        v.DecisionView.as_view(),
+        {"decision": "return"},
+        name="voucher-return",
+    ),
+    path(
+        "vouchers/<int:pk>/reject/",
+        v.DecisionView.as_view(),
+        {"decision": "reject"},
+        name="voucher-reject",
+    ),
     path("vouchers/<int:pk>/submit/", v.SubmitView.as_view(), name="voucher-submit"),
     path(
         "vouchers/<int:pk>/attachments/",

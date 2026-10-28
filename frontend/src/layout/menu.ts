@@ -1,4 +1,4 @@
-import { can, type Access } from "../api/access";
+import { can, type Access, type Level } from "../api/access";
 
 export interface MenuItem {
   /** Translation key for the label. */
@@ -6,6 +6,8 @@ export interface MenuItem {
   path: string;
   /** The area the user needs View access to; null = everyone signed in. */
   area: string | null;
+  /** A higher level needed in that area, when View is not enough. */
+  level?: Level;
 }
 
 export interface MenuSection {
@@ -24,7 +26,10 @@ export const MENU: MenuSection[] = [
   },
   {
     label: "menu.vouchers",
-    items: [{ label: "vouchers.title", path: "/vouchers", area: "vouchers" }],
+    items: [
+      { label: "vouchers.title", path: "/vouchers", area: "vouchers" },
+      { label: "menu.waiting", path: "/vouchers/review", area: "vouchers", level: "approve" },
+    ],
   },
   {
     label: "menu.accounts",
@@ -67,6 +72,6 @@ export const MENU: MenuSection[] = [
 export function visibleMenu(access: Access | undefined): MenuSection[] {
   return MENU.map((section) => ({
     ...section,
-    items: section.items.filter((item) => item.area === null || can(access, item.area)),
+    items: section.items.filter((item) => item.area === null || can(access, item.area, item.level ?? "view")),
   })).filter((section) => section.items.length > 0);
 }

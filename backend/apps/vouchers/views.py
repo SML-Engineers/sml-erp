@@ -166,6 +166,17 @@ def _detail(v: Voucher, user) -> dict:
                         "name": line.account.name,
                     },
                     "division": line.division.code if line.division else None,
+                    "job_ref": line.job_ref,
+                    "splits": [
+                        {
+                            "division": part.division.code,
+                            "amount": f"{part.amount:.2f}",
+                            "percent": None
+                            if part.percent is None
+                            else f"{part.percent.normalize():f}",
+                        }
+                        for part in line.splits.select_related("division")
+                    ],
                 }
                 for line in v.lines.select_related("tax_code", "account", "division")
             ],
@@ -181,6 +192,7 @@ def _detail(v: Voucher, user) -> dict:
                 for a in v.attachments.all()
             ],
             "warnings": services.duplicate_invoices(v),
+            **_approval(v, user),
             "can_edit": v.created_by_id == user.pk and v.status in services.EDITABLE,
             "payee_balance": services.payee_balance(v.payee) if v.payee else None,
             "approvals": [
@@ -196,6 +208,22 @@ def _detail(v: Voucher, user) -> dict:
         }
     )
     return body
+
+
+def _approval(v: Voucher, user) -> dict:
+    state = approvals.state_of(services.DOC, v.pk)
+    waiting = state is not None and state.status == "in_progress"
+    step = (
+        next((s for s in state.route if s["level"] == state.current_level), None)
+        if waiting
+        else None
+    )
+    return {
+        "waiting_level": state.current_level if waiting else None,
+        "waiting_for": step["role_name"] if step else None,
+        "can_act": waiting and approvals.why_not(user, state) is None,
+        "uncoded_lines": services.uncoded_lines(v) if waiting else [],
+    }
 
 
 class LineInputSerializer(serializers.Serializer):
@@ -387,3 +415,134 @@ class TransferAccountsView(_Vouchers):
                 for a in CompanyAccount.objects.filter(is_active=True)
             ]
         )
+
+
+# --- Review and approval (P1-03) --------------------------------------------------------
+
+
+class _Approving(_Vouchers):
+    access_write_level = "approve"
+
+
+class WaitingView(_Approving):
+    """Vouchers waiting for this user's approval, oldest first."""
+
+    def get(self, request):
+        rows = (
+            services.waiting(request.user)
+            .select_related("voucher_type", "division", "payee", "created_by")
+            .order_by("submitted_at", "id")
+        )
+        result = []
+        for v in rows:
+            row = _summary(v)
+            row["submitted_at"] = v.submitted_at
+            row["waiting_level"] = _approval(v, request.user)["waiting_level"]
+            result.append(row)
+        return Response(result)
+
+
+class SplitSerializer(serializers.Serializer):
+    division = serializers.CharField(max_length=2)
+    amount = serializers.CharField(max_length=30, required=False, allow_blank=True, allow_null=True)
+    percent = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, allow_null=True
+    )
+
+
+class CodingSerializer(serializers.Serializer):
+    line_no = serializers.IntegerField()
+    account = serializers.IntegerField(required=False, allow_null=True)
+    division = serializers.CharField(
+        max_length=2, required=False, allow_blank=True, allow_null=True
+    )
+    tax_code = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, allow_null=True
+    )
+    tax_amount = serializers.CharField(max_length=30, required=False, allow_blank=True, default="0")
+    job_ref = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
+    splits = SplitSerializer(many=True, required=False, default=list)
+
+
+class CodingInput(serializers.Serializer):
+    lines = CodingSerializer(many=True)
+
+
+def _division(code, where):
+    if not code:
+        return None
+    division = Division.objects.filter(code=code.upper()).first()
+    if division is None:
+        raise VoucherError(f"{where}: unknown division {code}.")
+    return division
+
+
+def _codings(lines) -> list:
+    from apps.accounting.models import Account
+
+    result = []
+    for line in lines:
+        where = f"Line {line['line_no']}"
+        account = None
+        if line.get("account"):
+            account = Account.objects.filter(pk=line["account"]).first()
+            if account is None:
+                raise VoucherError(f"{where}: unknown account.")
+        code = None
+        if line.get("tax_code"):
+            code = TaxCode.objects.filter(code=line["tax_code"].upper()).first()
+            if code is None:
+                raise VoucherError(f"{where}: unknown tax code {line['tax_code']}.")
+        result.append(
+            services.CodingInput(
+                line_no=line["line_no"],
+                account=account,
+                division=_division(line.get("division"), where),
+                tax_code=code,
+                tax_amount=line["tax_amount"],
+                job_ref=line["job_ref"],
+                splits=[
+                    services.SplitInput(
+                        division=_division(part["division"], where),
+                        amount=part.get("amount"),
+                        percent=part.get("percent"),
+                    )
+                    for part in line["splits"]
+                ],
+            )
+        )
+    return result
+
+
+class CodingView(_Approving):
+    def patch(self, request, pk):
+        voucher = _get(request.user, pk)
+        data = CodingInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            voucher = services.code_lines(
+                request.user, voucher, _codings(data.validated_data["lines"])
+            )
+        except VoucherError as error:
+            return _error(error)
+        return Response(_detail(voucher, request.user))
+
+
+class DecisionView(_Approving):
+    """Approve (optional comment), return or reject (reason required)."""
+
+    def post(self, request, pk, decision):
+        voucher = _get(request.user, pk)
+        text = str(request.data.get("comment") or request.data.get("reason") or "")
+        try:
+            if decision == "approve":
+                voucher = services.approve(request.user, voucher, text)
+            elif decision == "return":
+                voucher = services.send_back(request.user, voucher, text)
+            elif decision == "reject":
+                voucher = services.reject(request.user, voucher, text)
+            else:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+        except VoucherError as error:
+            return _error(error)
+        return Response(_detail(voucher, request.user))

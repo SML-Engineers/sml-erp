@@ -52,6 +52,8 @@ const draft: VoucherDetail = {
       total: "25000.00",
       account: null,
       division: "WS",
+      job_ref: "",
+      splits: [],
     },
   ],
   attachments: [],
@@ -59,6 +61,10 @@ const draft: VoucherDetail = {
   can_edit: true,
   payee_balance: { waiting_approval: "0.00", approved_unpaid: "0.00", outstanding: "0.00" },
   approvals: [],
+  waiting_level: null,
+  waiting_for: null,
+  can_act: false,
+  uncoded_lines: [],
 };
 
 const formApi = {

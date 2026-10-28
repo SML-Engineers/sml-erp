@@ -229,3 +229,5 @@ frontend/dist/
 # Django
 backend/staticfiles/
 .ruff_cache/
+# The Python template above ignores any "lib/" folder; the frontend's source library is code.
+!frontend/src/lib/

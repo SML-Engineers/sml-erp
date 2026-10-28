@@ -56,7 +56,7 @@ def update_company(data: dict, reason: str = "") -> Company:
 
 
 def image_extension(content: bytes, what: str = "The logo") -> str:
-    """"png" or "jpg" from the file's content (not its name); anything else is refused."""
+    """ "png" or "jpg" from the file's content (not its name); anything else is refused."""
     for signature, extension in LOGO_SIGNATURES.items():
         if content.startswith(signature):
             return extension
@@ -156,14 +156,52 @@ def _check_type(division_type: str) -> str:
 @audited("division_created", reason_arg="reason")
 @transaction.atomic
 def create_division(
-    *, code: str, name: str, division_type: str = Division.Type.PRODUCTION, reason: str = ""
+    *,
+    code: str,
+    name: str,
+    division_type: str = Division.Type.PRODUCTION,
+    tax_invoice_code: str = "",
+    reason: str = "",
 ) -> Division:
     code = normalise_code(code)
     if Division.objects.filter(code=code).exists():
         raise OrganisationError(f"The code {code} is already used by another division.")
     return Division.objects.create(
-        code=code, name=_check_name(name), division_type=_check_type(division_type)
+        code=code,
+        name=_check_name(name),
+        division_type=_check_type(division_type),
+        tax_invoice_code=_check_tax_invoice_code(tax_invoice_code),
     )
+
+
+TAX_INVOICE_CODE_PATTERN = re.compile(r"^[A-Z0-9]{1,15}$")
+
+
+def _check_tax_invoice_code(value: str, exclude_pk: int | None = None) -> str:
+    """The division's code in tax invoice numbers (Gazette 2481/22): 1 to 15 letters or
+    digits, e.g. W1. Empty until the Admin sets it."""
+    value = (value or "").strip().upper()
+    if not value:
+        return ""
+    if not TAX_INVOICE_CODE_PATTERN.match(value):
+        raise OrganisationError(
+            "The tax invoice code must be 1 to 15 letters or digits, for example W1."
+        )
+    clash = Division.objects.filter(tax_invoice_code=value)
+    if exclude_pk:
+        clash = clash.exclude(pk=exclude_pk)
+    if clash.exists():
+        raise OrganisationError(
+            f"The tax invoice code {value} is already used by another division."
+        )
+    return value
+
+
+def tax_invoice_code_in_use(division: Division) -> bool:
+    """True once an invoice number has shown this division's tax invoice code."""
+    from .models import IssuedNumber
+
+    return IssuedNumber.objects.filter(division=division, series__format__contains="{IC}").exists()
 
 
 @transaction.atomic
@@ -184,6 +222,15 @@ def update_division(division: Division, data: dict, reason: str = "") -> Divisio
             division.code = code
     if "name" in data:
         division.name = _check_name(data["name"], exclude_pk=division.pk)
+    if "tax_invoice_code" in data:
+        value = _check_tax_invoice_code(data["tax_invoice_code"], exclude_pk=division.pk)
+        if value != division.tax_invoice_code:
+            if tax_invoice_code_in_use(division):
+                raise OrganisationError(
+                    f"The tax invoice code {division.tax_invoice_code} has been used on invoices "
+                    "and cannot change."
+                )
+            division.tax_invoice_code = value
     if "division_type" in data:
         division.division_type = _check_type(data["division_type"])
     if "is_active" in data and bool(data["is_active"]) != division.is_active:

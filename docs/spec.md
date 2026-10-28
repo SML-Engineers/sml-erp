@@ -335,6 +335,17 @@ Every list and report has a division filter, and the dashboard can be switched b
 
 Each document type has a number format built from tokens and set by the Admin. The voucher format is **PPYYMMDDXXX**: PP is the two-character code of the voucher's division (set by the Admin on the division), YY the year, MM the month, DD the day, and XXX a running number that restarts at 001 each day for each division. For example, if Plastic Injection Moulding has the code IM, the third voucher of that division created on 23 October 2026 is IM261023003. The voucher type (cheque, online, petty cash…) is a field on the voucher and a filter in every list, not part of the number. Other documents use the same mechanism with their own formats. Numbers are allocated inside the database transaction that saves the document, so there are no duplicates, and a number once given is never reused, even if its document is later deleted.
 
+Tokens are written in braces so they cannot be confused with fixed text: {PP} division code, {IC} the division's tax invoice code, {YY} or {YYYY} year, {MM} month number or {MMM} month letters (JAN … DEC), {DD} day, and one running number ({XX}, {XXX}, {NNNN}: one letter per digit, at least). Each series also says what happens when the running number has used all its digits: stop and ask the Admin to widen it, or carry on with more digits (99, 100, 101 …).
+
+| Document | Format | Example | Restarts | When full |
+| --- | --- | --- | --- | --- |
+| Payment voucher | {PP}{YY}{MM}{DD}{XXX} | IM261023003 | Daily, per division | Stop (Admin widens) |
+| Tax invoice | {YY}{MMM}_{IC}_{XX} | 26SEP_W1_35 | Monthly, per division | Carry on (26SEP_W1_100) |
+| Quotation | QL{YY}{MM}{DD}{XX} | QL26102105 (5th on 21 Oct 2026) | Daily | Carry on |
+| Proforma invoice | PI-{YYYY}-{NNNN} | PI-2026-0001 | Yearly | Carry on |
+
+The tax invoice number follows the government format YYMMM_QQQQ_XXXXX (Inland Revenue, Gazette 2481/22, in force from 1 July 2026): YY year, MMM month letters, QQQQ an alphanumeric code of 1 to 15 characters for the issuing unit (here the division's tax invoice code, e.g. W1 for the Workshop), XXXXX a numeric serial with no letters or symbols; no spaces, 40 characters at most. Confirmed by the owner: the serial restarts at 01 each month for each division and never stops.
+
 **Approval engine (shared)**
 
 One generic engine serves vouchers, quotations, purchase orders, shift reports and corrections.
@@ -367,7 +378,7 @@ Factory structure, shifts, approval limits and currencies are maintained by the 
 
 **Layout:** a tree on the left (Division → Section → Machine) with search, and the selected item's form on the right. Buttons: Add division, Add section, Add machine, Import from Excel, Export.
 
-**Division fields:** two-character code (the PP in document numbers; cannot change once used), name, type (Production or Shared), default bank account, active. Adding a division makes it available at once in every form, filter and report.
+**Division fields:** two-character code (the PP in document numbers; cannot change once used), name, type (Production or Shared), tax invoice code (1 to 15 letters or digits, e.g. W1: the QQQQ in tax invoice numbers; set by the Admin, unique, and fixed once an invoice has used it), default bank account, active. Adding a division makes it available at once in every form, filter and report.
 
 **Section fields:** code, name, division, category (Manual or CNC), section type (Machining, Moulding, Support), supervisors (multi-select from users), active.
 
@@ -701,11 +712,13 @@ Minimum order quantity is stated on each line.
 
 **Controls and tracking**
 
-- Revisions: Q-2026-0042 Rev 0, Rev 1, … with full history of what was offered.
+- Number QL{YY}{MM}{DD}{XX}, e.g. QL26102105 (section 3, Number series). Revisions keep the number and add Rev 0, Rev 1, … with full history of what was offered.
 - Approval through the shared approval engine: quotations below a minimum margin, or above a set value, need Director approval before sending.
 - Status: Draft, Awaiting Approval, Sent, Accepted, Lost (reason required), Expired.
 - Customer copy shows only description, quantity, unit price, terms. Costing never appears on it.
 - Output as PDF with company letterhead, and sent by email from the system.
+
+**Printed quotation** (based on the owner's current quotation; not a government format, so the layout can be improved): letterhead (logo, company name, address, phone, fax, email), title QUOTATION, Our Ref (the number), date, customer name and address; lines with description, quantity, unit price and total; SSCL line and subtotal; VAT with its rate; total; payment terms and notes (e.g. advance payment with the purchase order); quotation validity (e.g. 07 days); delivery term (Incoterm, e.g. EXW); closing and signature (Managing Director); the company slogan "Excellence through expertise". The current form still asks for the customer's SVAT registration; the SVAT scheme ended on 1 October 2025, so that line is dropped unless the tax advisor says otherwise.
 
 ### 5.2 Proforma invoices
 
@@ -769,6 +782,32 @@ Phase 2 extends the Phase 0 ledger to cover what QuickBooks provides, with the v
 | Reports | Trial balance, P&L and balance sheet (company and per division), cash flow statement, general ledger detail, AP/AR aging, VAT report, audit trail |
 
 Tax rates and rules change; they are stored as dated master data, never hard-coded, and must be confirmed with the company's tax advisor before go-live.
+
+### 6.1 Tax invoice (compulsory government format)
+
+The tax invoice layout is set by the Inland Revenue Department (Gazette 2481/22, in force from 1 July 2026, replacing Gazette 2463/05) and must be followed exactly; the owner's current invoice is the model.
+
+**Required by law**
+
+- Title **TAX INVOICE**, prominent (bold).
+- Supplier's TIN (nine digits), name and address, as on the VAT registration certificate.
+- Purchaser's TIN (nine digits), name and address, where the purchaser is VAT-registered.
+- Tax invoice number in the format YYMMM_QQQQ_XXXXX (section 3).
+- Date of invoice and date of supply, both as MM/DD/YYYY.
+- Description of the goods or services, and quantity.
+- Value of supply in LKR excluding VAT, VAT amount, and total including VAT, each to two decimal places (the "three-line" VAT breakdown).
+
+**Optional by law, kept because the current invoice has them:** telephone numbers, place of supply, total amount in words, terms (mode of payment), additional information.
+
+**Layout of SML's invoice:** logo, company name and email; TAX INVOICE; boxes for Date of invoice / Tax Invoice No; supplier details (TIN, name, address, telephone) / customer TIN, name and address; Date of supply / Place of supply; Terms (e.g. Due on receipt); a line table with Product Code, Description, PO No, Rate (Rs), Qty, Amount (Rs); Subtotal; SSCL line (code SSCL, rate 2.125%, amount); Subtotal; VAT amount; Total amount including VAT; total in words; signature line for Customer, Prepared By and Checked By.
+
+**Calculation, as on the current invoice:** SSCL = subtotal × SSCL rate; VAT = (subtotal + SSCL) × VAT rate; each amount rounded half-up to the cent. Example: 115,750.00 + SSCL 2,459.69 = 118,209.69; VAT 18% = 21,277.74; total 139,487.43. The SSCL and VAT rates are dated tax master data (rule 11), and the treatment is confirmed with the tax advisor before go-live.
+
+**Amounts** are shown with international grouping (115,750.00), on screens and printed documents (owner's decision; the current invoice's 1,15,750.00 style is not required).
+
+**Controls:** an invoice cannot be issued for a division without a tax invoice code; once issued it is never edited or deleted (a credit note corrects it); the number comes from the number series inside the saving transaction.
+
+**Later option:** the Inland Revenue accepts invoices sent from an ERP to its RAMIS system through a web API; integration can be considered once Phase 2 is live.
 
 **Migration at go-live:** opening trial balance, open supplier and customer balances by invoice, open POs and sales orders, fixed asset register with accumulated depreciation, stock on hand with value.
 
@@ -1162,6 +1201,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Payroll | Phase 2b, after core accounting is live | 6, 8.2 |
 | Quotation approval limits | Yes: minimum margin % and maximum value, set by the Director in settings | 5.1 |
 | Export customers | Yes: foreign-currency quotations, proformas, invoices and receipts | 5.5 |
+| Tax invoice and quotation numbers | Tax invoice YYMMM_XX_PP per division, restarting monthly and carrying on past 99; quotation QL + YYMMDD + daily count; amounts as 115,750.00 | 3, 5.1, 6.1 |
 
 **Still needed for initial setup**
 

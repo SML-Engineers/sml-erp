@@ -21,6 +21,8 @@ const division = (code: string, name: string): DivisionAdmin => ({
   code,
   name,
   division_type: "production",
+  tax_invoice_code: "",
+  tax_invoice_code_in_use: false,
   is_active: true,
   in_use: false,
   first_used_at: null,

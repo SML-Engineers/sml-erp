@@ -26,6 +26,10 @@ export interface DivisionAdmin {
   code: string;
   name: string;
   division_type: DivisionType;
+  /** Code in tax invoice numbers, e.g. W1 in 26SEP_W1_35; empty until the Admin sets it. */
+  tax_invoice_code: string;
+  /** Used on an invoice number: the tax invoice code can no longer change. */
+  tax_invoice_code_in_use: boolean;
   is_active: boolean;
   /** Used on a document: the code can no longer change and it cannot be deleted. */
   in_use: boolean;
@@ -39,6 +43,7 @@ export interface DivisionChange {
   code?: string;
   name?: string;
   division_type?: DivisionType;
+  tax_invoice_code?: string;
   is_active?: boolean;
   reason?: string;
 }
@@ -67,6 +72,7 @@ export const deleteDivision = (id: number, reason: string) =>
   apiSend<null>("DELETE", `/settings/divisions/${id}/`, { reason });
 
 export type ResetPeriod = "daily" | "monthly" | "yearly" | "never";
+export type WhenFull = "stop" | "grow";
 
 export interface NextNumber {
   /** Null when the format has no {PP}: all divisions share one running number. */
@@ -80,12 +86,14 @@ export interface NumberSeries {
   name: string;
   format: string;
   reset_period: ResetPeriod;
+  when_full: WhenFull;
   next_numbers: NextNumber[];
 }
 
 export interface SeriesChange {
   format: string;
   reset_period: ResetPeriod;
+  when_full?: WhenFull;
   reason?: string;
 }
 

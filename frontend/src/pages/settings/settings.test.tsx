@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { CurrentUser } from "../../api/auth";
 import type { Company, DivisionAdmin } from "../../api/organisation";
@@ -38,6 +38,8 @@ const division = (extra: Partial<DivisionAdmin>): DivisionAdmin => ({
   code: "WS",
   name: "Workshop",
   division_type: "production",
+  tax_invoice_code: "",
+  tax_invoice_code_in_use: false,
   is_active: true,
   in_use: false,
   first_used_at: null,
@@ -150,7 +152,13 @@ test("the admin adds a division and is told it can be used straight away", async
     "/api/v1/settings/divisions/",
     expect.objectContaining({
       method: "POST",
-      body: JSON.stringify({ code: "TS", name: "Tool Shop", division_type: "production", reason: "" }),
+      body: JSON.stringify({
+        code: "TS",
+        name: "Tool Shop",
+        division_type: "production",
+        tax_invoice_code: "",
+        reason: "",
+      }),
     }),
   );
 });
@@ -198,4 +206,42 @@ test("the server's refusal is shown, e.g. deactivating without a reason", async 
     "/api/v1/settings/divisions/2/",
     expect.objectContaining({ method: "PATCH" }),
   );
+});
+
+test("the admin sets a division's tax invoice code; a used one is locked", async () => {
+  const withCodes = [
+    { ...divisions[0], tax_invoice_code: "W1", tax_invoice_code_in_use: true },
+    divisions[1],
+    divisions[2],
+  ];
+  const api = mockApi({
+    "GET /api/v1/settings/divisions/": { body: withCodes },
+    "PATCH /api/v1/settings/divisions/2/": (sent) => ({
+      body: { ...divisions[1], ...(sent as object) },
+    }),
+  });
+  renderAt("/settings/divisions", <DivisionsPage me={admin} />);
+
+  const ws = (await screen.findByText("Workshop")).closest("tr")!;
+  expect(within(ws).getByText("W1")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit division WS" }));
+  let panel = screen.getByRole("region", { name: "Edit division WS" });
+  expect(within(panel).getByLabelText("Tax invoice code")).toBeDisabled();
+  fireEvent.click(within(panel).getByRole("button", { name: "Cancel" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit division IM" }));
+  panel = screen.getByRole("region", { name: "Edit division IM" });
+  fill("Tax invoice code", "p1", panel);
+  fireEvent.click(within(panel).getByRole("button", { name: "Save" }));
+
+  await screen.findByRole("button", { name: "Edit division IM" });
+  await waitFor(() =>
+    expect(api).toHaveBeenCalledWith(
+      "/api/v1/settings/divisions/2/",
+      expect.objectContaining({ method: "PATCH" }),
+    ),
+  );
+  const [, init] = api.mock.calls.find(([, i]) => i?.method === "PATCH")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({ code: "IM", tax_invoice_code: "P1" });
 });

@@ -21,6 +21,7 @@ const voucher: NumberSeries = {
   name: "Payment vouchers",
   format: "{PP}{YY}{MM}{DD}{XXX}",
   reset_period: "daily",
+  when_full: "stop",
   next_numbers: [
     { division: "HO", next: "HO261028001" },
     { division: "IM", next: "IM261028003" },
@@ -75,6 +76,7 @@ test("the admin checks a wider format, then saves it with a reason", async () =>
       body: JSON.stringify({
         format: "{PP}{YY}{MM}{DD}{XXXX}",
         reset_period: "daily",
+        when_full: "stop",
         reason: "busy days",
       }),
     }),

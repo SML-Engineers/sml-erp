@@ -209,12 +209,24 @@ class Division(models.Model):
     # the code is fixed and the division can only be deactivated; the database enforces both
     # (migration 0007). The default bank account is added with bank accounts (P0-14).
     first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+    # The division's code in tax invoice numbers (the QQQQ of YYMMM_QQQQ_XXXXX, Gazette
+    # 2481/22), e.g. W1 in 26SEP_W1_35. Set by the Admin; fixed once used on an invoice.
+    tax_invoice_code = models.CharField(max_length=15, blank=True)
 
     class Meta:
         ordering = ["code"]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(code__regex=r"^[A-Z0-9]{2}$"), name="core_division_code_format"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(tax_invoice_code__regex=r"^[A-Z0-9]{0,15}$"),
+                name="core_division_tax_invoice_code_format",
+            ),
+            models.UniqueConstraint(
+                fields=["tax_invoice_code"],
+                condition=~models.Q(tax_invoice_code=""),
+                name="core_division_tax_invoice_code_unique",
             ),
         ]
 
@@ -429,9 +441,11 @@ class AuditEvent(models.Model):
 class NumberSeries(models.Model):
     """How one document type is numbered (spec 3, Number series; backlog P0-08).
 
-    The format is literal text with tokens in braces: {PP} division code, {YY} or {YYYY}
-    year, {MM} month, {DD} day, and one running number {XXX} or {NNNN} (its length is the
-    number of digits). The voucher format is {PP}{YY}{MM}{DD}{XXX}, reset daily.
+    The format is literal text with tokens in braces: {PP} division code, {IC} division's
+    tax invoice code, {YY} or {YYYY} year, {MM} month number or {MMM} month letters (SEP),
+    {DD} day, and one running number {XXX} or {NNNN} (its length is the minimum number of
+    digits). Vouchers: {PP}{YY}{MM}{DD}{XXX} reset daily; tax invoices: {YY}{MMM}_{IC}_{XX}
+    reset monthly.
     Document types come with the software; the Admin changes their format and reset period.
     """
 
@@ -443,8 +457,16 @@ class NumberSeries(models.Model):
 
     document_type = models.SlugField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
+
+    class WhenFull(models.TextChoices):
+        STOP = "stop", "Stop and ask the Admin to widen it"
+        GROW = "grow", "Carry on with more digits"
+
     format = models.CharField(max_length=60)
     reset_period = models.CharField(max_length=10, choices=Reset.choices)
+    # When the running number has used all its digits: vouchers stop (P0-08); tax invoices
+    # carry on (26SEP_W1_99, then 26SEP_W1_100), because invoicing must never stop.
+    when_full = models.CharField(max_length=10, choices=WhenFull.choices, default=WhenFull.STOP)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

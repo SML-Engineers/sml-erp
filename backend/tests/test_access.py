@@ -175,6 +175,8 @@ def test_every_endpoint_declares_its_access():
         "CatalogView",  # names of areas and levels, no business data
         "DivisionListView",  # filtered to the user's own divisions
         "DivisionDetailView",  # filtered to the user's own divisions
+        "SectionPickerView",  # filtered to the user's own sections
+        "MachinePickerView",  # filtered to the user's own sections
     }
 
     def walk(patterns):

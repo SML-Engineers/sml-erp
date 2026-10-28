@@ -55,11 +55,12 @@ def update_company(data: dict, reason: str = "") -> Company:
     return company
 
 
-def _logo_extension(content: bytes) -> str:
+def image_extension(content: bytes, what: str = "The logo") -> str:
+    """"png" or "jpg" from the file's content (not its name); anything else is refused."""
     for signature, extension in LOGO_SIGNATURES.items():
         if content.startswith(signature):
             return extension
-    raise OrganisationError("The logo must be a PNG or JPEG image.")
+    raise OrganisationError(f"{what} must be a PNG or JPEG image.")
 
 
 @audited("company_logo_changed")
@@ -68,7 +69,7 @@ def set_company_logo(uploaded) -> Company:
     if uploaded.size > LOGO_MAX_BYTES:
         raise OrganisationError("The logo must be 1 MB or smaller.")
     content = uploaded.read()
-    extension = _logo_extension(content)
+    extension = image_extension(content)
     company = Company.objects.select_for_update().get(pk=1)
     uploaded.seek(0)
     company.logo.save(f"logo.{extension}", uploaded, save=False)
@@ -101,9 +102,15 @@ def _document_relations():
     """Reverse relations that mean a document or record uses the division.
 
     Which users may work in a division is access, not a document, so it does not lock the
-    code.
+    code; nor does the factory structure under it (models marked `is_structure`, such as
+    sections).
     """
-    return [rel for rel in _relations() if not (rel.related_model is User and rel.many_to_many)]
+    return [
+        rel
+        for rel in _relations()
+        if not (rel.related_model is User and rel.many_to_many)
+        and not getattr(rel.related_model, "is_structure", False)
+    ]
 
 
 def _relations():

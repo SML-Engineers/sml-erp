@@ -27,6 +27,7 @@ import { getAuditLog } from "../../api/audit";
 import type { CurrentUser } from "../../api/auth";
 import { ApiError } from "../../api/client";
 import AuditTable from "../../components/AuditTable";
+import SectionScopePanel from "../../components/SectionScopePanel";
 
 const LEVELS: Level[] = ["view", "enter", "approve", "manage"];
 
@@ -89,6 +90,7 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
       {canManage && !own && <Lifecycle user={user} onDone={refresh} />}
       <RolesPanel user={user} editable={canManage && !own} onDone={refresh} />
       <ScopePanel user={user} editable={canManage && !own} onDone={refresh} />
+      <SectionScopePanel userId={id} editable={canManage && !own} />
       <GridPanel grid={grid.data} userId={id} editable={canManage && !own} onDone={refresh} />
 
       <section className="panel">

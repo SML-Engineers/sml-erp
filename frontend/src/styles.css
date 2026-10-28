@@ -646,3 +646,143 @@ textarea:disabled {
 .mono {
   font-family: ui-monospace, monospace;
 }
+
+/* --- Divisions, sections and machines --- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.button-link.secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.tree-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.tree {
+  margin: 0;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.tree input[type="search"] {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.tree-list,
+.tree-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree-list ul {
+  padding-left: 14px;
+}
+
+.tree-division {
+  display: block;
+  margin: 12px 0 4px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.tree-item {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 500;
+  background: transparent;
+  color: var(--color-text);
+  border-radius: 4px;
+}
+
+.tree-item.machine {
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.tree-item:hover {
+  background: #f4f5f7;
+}
+
+.tree-item.selected {
+  background: #f1f0f8;
+  color: var(--color-primary);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #f2f4f7;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tree-detail .panel:first-child {
+  margin-top: 0;
+}
+
+fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.code-input.wide-code {
+  width: 12em;
+}
+
+.machine-photo {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.pre-line {
+  white-space: pre-line;
+}
+
+@media (max-width: 900px) {
+  .tree-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tree {
+    max-height: 40vh;
+  }
+}

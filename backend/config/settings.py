@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "storages",
     "apps.core",
+    "apps.masters",
 ]
 
 MIDDLEWARE = [

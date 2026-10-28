@@ -9,6 +9,8 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import BankAccountsPage from "./pages/BankAccountsPage";
 import ChartOfAccountsPage from "./pages/ChartOfAccountsPage";
+import JournalPage from "./pages/JournalPage";
+import PeriodsPage from "./pages/PeriodsPage";
 import PayeesPage from "./pages/PayeesPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
 import AccessReviewPage from "./pages/admin/AccessReviewPage";
@@ -64,6 +66,11 @@ export default function App() {
         <Route
           path="chart-of-accounts"
           element={<WithMe page={(me) => <ChartOfAccountsPage me={me} />} />}
+        />
+        <Route path="journal" element={<WithMe page={(me) => <JournalPage me={me} />} />} />
+        <Route
+          path="accounting-periods"
+          element={<WithMe page={(me) => <PeriodsPage me={me} />} />}
         />
         <Route path="admin/users" element={<WithMe page={(me) => <UsersPage me={me} />} />} />
         <Route

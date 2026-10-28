@@ -329,8 +329,10 @@ Every list and report has a division filter, and the dashboard can be switched b
 - `journal_entry`: number, date, source document type and id, narration, posted\_by, status.
 - `journal_line`: account, division, party (supplier or customer), debit, credit.
 - Rules enforced in code and by a database check: total debits equal total credits, amounts are `NUMERIC(18,2)`, never floating point.
-- Posted entries are never edited or deleted; corrections are made by reversing entries.
-- Accounting periods (months) can be closed. No posting into a closed period.
+- Only posted entries are stored; a document's draft lines stay on the document until it is posted.
+- Posted entries are never edited or deleted; corrections are made by reversing entries. A reversal is the mirror entry, linked to the original, dated like it when its month is open and otherwise today; it cannot itself be reversed.
+- Lines go only to active accounts that have not been merged; income and expense lines need a division (database too).
+- Accounting periods (calendar months) can be closed by the Director once the month has ended, and reopened with a reason. No posting into a closed period, and an account with entries in a closed period keeps its type.
 
 **Number series**
 
@@ -344,6 +346,7 @@ Tokens are written in braces so they cannot be confused with fixed text: {PP} di
 | Tax invoice | {YY}{MMM}_{IC}_{XX} | 26SEP_W1_35 | Monthly, per division | Carry on (26SEP_W1_100) |
 | Quotation | QL{YY}{MM}{DD}{XX} | QL26102105 (5th on 21 Oct 2026) | Daily | Carry on |
 | Proforma invoice | PI-{YYYY}-{NNNN} | PI-2026-0001 | Yearly | Carry on |
+| Journal entry | JV{YY}{MM}{NNNN} | JV26100001 | Monthly | Carry on |
 
 The tax invoice number follows the government format YYMMM_QQQQ_XXXXX (Inland Revenue, Gazette 2481/22, in force from 1 July 2026): YY year, MMM month letters, QQQQ an alphanumeric code of 1 to 15 characters for the issuing unit (here the division's tax invoice code, e.g. W1 for the Workshop), XXXXX a numeric serial with no letters or symbols; no spaces, 40 characters at most. Confirmed by the owner: the serial restarts at 01 each month for each division and never stops.
 

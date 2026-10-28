@@ -321,10 +321,15 @@ def update_account(user: User, account: Account, values: dict, reason: str = "")
 def _change_type(account: Account, new_type: str) -> None:
     """The type may change (it moves the account to another place on the reports) unless
     the system needs the account, it has sub-accounts, or it is a bank or cash account's
-    ledger. Changing the type of an account with entries in a closed period is refused
-    once periods exist (P0-16)."""
+    ledger, or it has entries in a closed period."""
+    from .journal import has_closed_entries  # the journal builds on these services
+
     if account.system_role:
         raise AccountingError(f"{account.name} is needed by the system and keeps its type.")
+    if has_closed_entries(account):
+        raise AccountingError(
+            f"{account.name} has entries in a closed period, so its type cannot change."
+        )
     if account.children.exists():
         raise AccountingError(
             f"{account.name} has sub-accounts, which must have the same type. Move them or "

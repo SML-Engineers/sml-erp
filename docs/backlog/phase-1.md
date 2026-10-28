@@ -27,7 +27,7 @@ Status: `[ ]` to do · `[x]` done
   - [x] `main` changes only through pull requests with passing checks: by agreed practice for
     now (owner's decision, docs/decisions/0003); enforced by GitHub when revisited at go-live.
 
-- [ ] **P0-03 Login and user accounts**
+- [x] **P0-03 Login and user accounts**
   Email + password login (Argon2 hashing), logout, session timeout, password change,
   login history. Two-factor authentication (TOTP) for users with Accountant, Director,
   Cashier or Admin roles.
@@ -40,6 +40,8 @@ Status: `[ ]` to do · `[x]` done
   export personal data, manage users and roles). Standard roles loaded with the default access
   matrices in spec 1.2 (Phase 1 roles active: System Administrator, Director, Accountant,
   Accounts Clerk, Cashier, Auditor). Admin can create custom roles by ticking permissions.
+  Holding the Accountant, Director, Cashier or System Administrator role sets the user's
+  `two_factor_required` flag automatically (built in P0-03).
   A user can hold several roles. Data scope per user: divisions, and sections for production
   staff. Deny by default: menus show only permitted areas, and every API endpoint checks the
   effective permission and data scope on the server.

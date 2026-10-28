@@ -38,6 +38,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.middleware.AbsoluteSessionTimeoutMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -66,7 +67,24 @@ DATABASES["default"]["ATOMIC_REQUESTS"] = True
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("DATABASE_CONN_MAX_AGE", default=60)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- Passwords (Argon2 hasher arrives with P0-03) ---------------------------------------
+# --- Users, passwords and sign-in (P0-03) ----------------------------------------------
+AUTH_USER_MODEL = "core.User"
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",  # only to read any older hashes
+]
+# Key for encrypting secrets stored in the database (authenticator secrets). Required.
+FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY")
+TOTP_ISSUER = env("TOTP_ISSUER", default="SML ERP")
+
+LOGIN_LOCK_THRESHOLD = 5  # failed attempts...
+LOGIN_LOCK_WINDOW_MINUTES = 15  # ...within this many minutes...
+LOGIN_LOCK_MINUTES = 15  # ...pause sign-in for this long
+TWO_FACTOR_PENDING_SECONDS = 300  # time allowed to enter the code after the password
+
+# Behind Nginx, the client's address is the last X-Forwarded-For entry Nginx adds.
+USE_X_FORWARDED_FOR = env.bool("USE_X_FORWARDED_FOR", default=False)
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
@@ -108,12 +126,15 @@ STORAGES = {
 
 # --- REST API ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
-    # Every endpoint requires a logged-in user unless it explicitly opts out (rule 8).
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    # Every endpoint requires a fully signed-in user unless it explicitly opts out (rule 8).
+    "DEFAULT_PERMISSION_CLASSES": ["apps.core.permissions.IsFullyAuthenticated"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     # Money and quantities travel as strings, so no floating point rounding (rule 1).
     "COERCE_DECIMAL_TO_STRING": True,
+    # Extra brake on sign-in attempts from one address, on top of the account lock.
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {"login": env("LOGIN_RATE", default="20/minute")},
 }
 if DEBUG:
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append(
@@ -128,7 +149,11 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 
 # --- Security ---------------------------------------------------------------------------
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE", default=8 * 60 * 60)
+# Idle timeout: the session expires after this many minutes without any request.
+SESSION_COOKIE_AGE = env.int("SESSION_IDLE_MINUTES", default=30) * 60
+SESSION_SAVE_EVERY_REQUEST = True
+# Absolute timeout: signed out this many hours after signing in, however active.
+SESSION_ABSOLUTE_HOURS = env.int("SESSION_ABSOLUTE_HOURS", default=12)
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"

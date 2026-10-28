@@ -1,6 +1,6 @@
 COMPOSE = docker compose -f deploy/docker-compose.dev.yml --env-file .env
 
-.PHONY: help env up down restart logs ps migrate makemigrations shell test test-backend \
+.PHONY: help env up down restart logs ps migrate makemigrations superuser shell test test-backend \
         test-frontend lint
 
 help:  ## Show the available commands
@@ -28,6 +28,9 @@ migrate: env  ## Apply database migrations
 
 makemigrations: env  ## Create migrations after changing models
 	$(COMPOSE) run --rm backend python manage.py makemigrations
+
+superuser: env  ## Create the first administrator account (asks for email and password)
+	$(COMPOSE) run --rm backend python manage.py createsuperuser
 
 shell: env  ## Open a Django shell
 	$(COMPOSE) run --rm backend python manage.py shell

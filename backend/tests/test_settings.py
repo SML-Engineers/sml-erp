@@ -8,7 +8,7 @@ from apps.core.tasks import ping
 def test_api_requires_login_by_default():
     # Rule 8: every endpoint is protected unless it explicitly opts out.
     assert settings.REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] == [
-        "rest_framework.permissions.IsAuthenticated"
+        "apps.core.permissions.IsFullyAuthenticated"
     ]
 
 

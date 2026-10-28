@@ -1,7 +1,13 @@
-from django.contrib import admin
+from django.conf import settings
 from django.urls import include, path
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
     path("api/v1/", include("apps.core.urls")),
 ]
+
+# Django's built-in admin signs in with a password only (no two-factor), so it is available
+# on developers' machines but never on the test or production servers.
+if settings.DEBUG:
+    from django.contrib import admin
+
+    urlpatterns.insert(0, path("admin/", admin.site.urls))

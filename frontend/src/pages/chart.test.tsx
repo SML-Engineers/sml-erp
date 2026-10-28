@@ -56,6 +56,7 @@ function account(over: Partial<LedgerAccount> & Pick<LedgerAccount, "id" | "numb
     detail_type: { id: 3, name: "Repairs and maintenance" },
     description: "",
     default_division: null,
+    default_tax_code: null,
     system_role: null,
     is_active: true,
     merged_into: null,
@@ -100,6 +101,7 @@ const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
   "GET /api/v1/chart-of-accounts/": { body: [cash, payable, repairs, machine, vehicles] },
   "GET /api/v1/chart-of-accounts/types/": { body: types },
   "GET /api/v1/divisions/": { body: [{ id: 1, code: "WS", name: "Workshop" }] },
+  "GET /api/v1/taxes/": { body: { components: [], codes: [] } },
   ...extra,
 });
 

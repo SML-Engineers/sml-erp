@@ -15,3 +15,5 @@ class AccountingConfig(AppConfig):
         register(m.Account)
         register(m.AccountingPeriod)
         register(m.JournalEntry)
+        for model in (m.TaxComponent, m.TaxRate, m.TaxCode):
+            register(model)

@@ -240,7 +240,12 @@
       "approval_rule_added": "Approval rule added",
       "approval_rule_switched_off": "Approval rule switched off",
       "mail_account_changed": "Document email account changed",
-      "email_template_changed": "Default email message changed"
+      "email_template_changed": "Default email message changed",
+      "tax_component_saved": "Tax saved",
+      "tax_rate_added": "Tax rate added",
+      "tax_rate_removed": "Tax rate removed",
+      "tax_code_saved": "Tax code saved",
+      "tax_code_deleted": "Tax code deleted"
     }
   },
   "menu": {
@@ -679,7 +684,9 @@
     "newDetailName": "New detail type",
     "importHelp": "One sheet named Accounts, in the layout of the export: Number, Name, Parent (written as Parent:Sub-account), Type, Detail type, Description, Default division, Active. Rows are matched by number, or else by full name. Check the file first: nothing is saved until every row is accepted.",
     "checked": "The file is fine. Importing it would add {{created}} and update {{updated}} accounts ({{unchanged}} unchanged), and add {{detail_types_created}} detail types.",
-    "imported": "Imported: {{created}} accounts added, {{updated}} updated, {{unchanged}} unchanged; {{detail_types_created}} detail types added."
+    "imported": "Imported: {{created}} accounts added, {{updated}} updated, {{unchanged}} unchanged; {{detail_types_created}} detail types added.",
+    "defaultTaxCode": "Default tax code",
+    "noTaxCode": "None"
   },
   "journal": {
     "title": "Journal",
@@ -821,5 +828,66 @@
     "by": "Sent by",
     "sent": "Sent",
     "failed": "Failed"
+  },
+  "taxes": {
+    "title": "Taxes",
+    "help": "As in QuickBooks: each tax (VAT, SSCL, withholding tax…) has its rates from a date, and tax codes say which taxes a document line carries and in what order. The starting taxes are suggestions without rates: check them and enter the rates in force.",
+    "components": "Taxes",
+    "codes": "Tax codes",
+    "codesHelp": "A tax code is chosen on each document line. Taxes in a code are charged in order; a later tax can be charged on the amount plus the taxes above it (VAT on the amount plus SSCL).",
+    "code": "Code",
+    "name": "Name",
+    "kind": "Kind",
+    "kinds": {
+      "charged": "Charged on invoices and bills",
+      "withheld": "Withheld from payments"
+    },
+    "currentRate": "Rate today",
+    "noRate": "No rate yet",
+    "active": "In use",
+    "off": "Switched off",
+    "addTax": "Add tax",
+    "addCode": "Add tax code",
+    "makeUp": "Taxes charged",
+    "noTax": "No tax",
+    "onNet": "On the net amount",
+    "onNetAndTax": "on the amount plus the taxes above",
+    "inUse": "This tax has been used on documents: its code is fixed, and a rate in force cannot change. A new rate can start today or later.",
+    "codeInUse": "This tax code has been used on documents: its taxes cannot change. Make a new tax code and switch this one off.",
+    "rates": "Rates",
+    "ratesOf": "Rates of {{code}}",
+    "enterRate": "Enter the rate in force before this tax is used.",
+    "from": "From",
+    "rate": "Rate",
+    "ratePercent": "Rate (%)",
+    "addRate": "Add rate",
+    "removeRate": "Remove",
+    "editTax": "Edit tax",
+    "salesAccount": "Account for tax on sales (owed to the government)",
+    "purchaseAccount": "Account for tax on purchases (claimed back)",
+    "partOfCost": "Not claimed back: part of the cost",
+    "save": "Save",
+    "switchOff": "Switch off",
+    "switchOn": "Switch on",
+    "delete": "Delete",
+    "codeForm": "Tax code details",
+    "use": "Used on",
+    "uses": {
+      "both": "Sales and purchases",
+      "sales": "Sales only",
+      "purchases": "Purchases only"
+    },
+    "taxesInCode": "Taxes in this code, in order",
+    "taxNumber": "Tax {{n}}",
+    "chargedOn": "Charged",
+    "removeTax": "Remove",
+    "addTaxToCode": "Add a tax",
+    "calculator": "Tax calculator",
+    "amount": "Net amount",
+    "onDate": "On date (empty: today)",
+    "calculate": "Calculate",
+    "result": "Tax calculation",
+    "net": "Net amount",
+    "gross": "Total including taxes"
   }
 }

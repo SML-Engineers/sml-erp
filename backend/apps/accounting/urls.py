@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import journal_views as j
+from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
@@ -30,4 +31,20 @@ urlpatterns = [
         name="period-change",
     ),
     path("reports/profit-and-loss/", j.ProfitAndLossView.as_view(), name="profit-and-loss"),
+    path("taxes/", t.TaxOverviewView.as_view(), name="taxes"),
+    path("taxes/calculate/", t.CalculateView.as_view(), name="tax-calculate"),
+    path("taxes/components/", t.ComponentListView.as_view(), name="tax-component-list"),
+    path(
+        "taxes/components/<int:pk>/",
+        t.ComponentDetailView.as_view(),
+        name="tax-component-detail",
+    ),
+    path("taxes/components/<int:pk>/rates/", t.RateListView.as_view(), name="tax-rate-list"),
+    path(
+        "taxes/components/<int:pk>/rates/<int:rate_pk>/",
+        t.RateDetailView.as_view(),
+        name="tax-rate-detail",
+    ),
+    path("taxes/codes/", t.CodeListView.as_view(), name="tax-code-list"),
+    path("taxes/codes/<int:pk>/", t.CodeDetailView.as_view(), name="tax-code-detail"),
 ]

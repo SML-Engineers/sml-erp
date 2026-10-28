@@ -62,7 +62,7 @@ def sort_key(account: Account):
 def chart(include_inactive: bool = False) -> list[tuple[Account, int, str]]:
     """The whole chart as a tree, depth first: (account, depth, full name)."""
     rows = Account.objects.select_related(
-        "detail_type", "default_division", "merged_into", "parent"
+        "detail_type", "default_division", "default_tax_code", "merged_into", "parent"
     )
     if not include_inactive:
         rows = rows.filter(is_active=True)
@@ -222,6 +222,8 @@ def _check(account: Account, *, new_detail: bool) -> None:
             raise AccountingError(f"The number {account.number} is already used by {other.name}.")
     if account.default_division is not None and not account.default_division.is_active:
         raise AccountingError(f"The division {account.default_division.code} is inactive.")
+    if account.default_tax_code is not None and not account.default_tax_code.is_active:
+        raise AccountingError(f"The tax code {account.default_tax_code.code} is switched off.")
     if len(account.description) > 500:
         raise AccountingError("The description can have at most 500 characters.")
 
@@ -239,6 +241,7 @@ def create_account(
     number="",
     description="",
     default_division: Division | None = None,
+    default_tax_code=None,
     reason="",
 ) -> Account:
     _manage(user)
@@ -252,6 +255,7 @@ def create_account(
         parent=parent,
         description=(description or "").strip(),
         default_division=default_division,
+        default_tax_code=default_tax_code,
     )
     with audit_context("account_created", reason), transaction.atomic():
         if parent is not None:
@@ -299,6 +303,8 @@ def update_account(user: User, account: Account, values: dict, reason: str = "")
             account.description = (values["description"] or "").strip()
         if "default_division" in values:
             account.default_division = values["default_division"]
+        if "default_tax_code" in values:
+            account.default_tax_code = values["default_tax_code"]
         if "detail_type" in values:
             if values["detail_type"] is None:
                 raise AccountingError("Choose the detail type.")

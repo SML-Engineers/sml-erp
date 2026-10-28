@@ -28,6 +28,7 @@ export const MENU: MenuSection[] = [
       { label: "payees.title", path: "/payees", area: "payees" },
       { label: "banking.title", path: "/bank-accounts", area: "banking" },
       { label: "chart.title", path: "/chart-of-accounts", area: "accounting" },
+      { label: "taxes.title", path: "/taxes", area: "accounting" },
       { label: "journal.title", path: "/journal", area: "accounting" },
       { label: "periods.title", path: "/accounting-periods", area: "accounting" },
     ],

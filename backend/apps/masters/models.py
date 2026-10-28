@@ -302,3 +302,75 @@ class RosterCrew(models.Model):
 
     def __str__(self):
         return f"{self.crew} from cycle day {self.start_position + 1}"
+
+
+# --- Currencies and exchange rates (spec 3A.4; backlog P0-11) ---------------------------
+
+
+class Currency(models.Model):
+    """A currency documents can be issued in. LKR is the base and always active."""
+
+    # Settings, not a document.
+    is_structure = True
+
+    code = models.CharField(max_length=3, unique=True)  # ISO 4217, e.g. USD
+    name = models.CharField(max_length=60)
+    symbol = models.CharField(max_length=8, blank=True)
+    decimal_places = models.PositiveSmallIntegerField(default=2)
+    is_base = models.BooleanField(default=False, editable=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-is_base", "code"]
+        verbose_name_plural = "currencies"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(code__regex=r"^[A-Z]{3}$"), name="masters_currency_code_format"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(decimal_places__lte=4), name="masters_currency_decimals"
+            ),
+            models.UniqueConstraint(
+                fields=["is_base"],
+                condition=models.Q(is_base=True),
+                name="masters_currency_one_base",
+            ),
+        ]
+
+    def __str__(self):
+        return self.code
+
+
+class ExchangeRate(models.Model):
+    """LKR for one unit of a currency on a date (rule 11: documents keep the rate of their
+    date). `rate` is the one used for conversion; buying and selling are kept when the bank
+    quotes both. Once a document has used a rate it cannot change (migration 0005)."""
+
+    is_structure = True
+
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Entered"
+        IMPORT = "import", "Imported"
+
+    currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name="rates")
+    date = models.DateField()
+    rate = models.DecimalField("Rate (LKR)", max_digits=18, decimal_places=6)
+    buying = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    selling = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    source = models.CharField(max_length=10, choices=Source.choices, default=Source.MANUAL)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["-date", "currency__code"]
+        constraints = [
+            models.UniqueConstraint(fields=["currency", "date"], name="masters_rate_one_per_day"),
+            models.CheckConstraint(condition=models.Q(rate__gt=0), name="masters_rate_positive"),
+        ]
+
+    def __str__(self):
+        return f"{self.currency.code} {self.rate} on {self.date}"

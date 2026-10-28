@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import currency_views as cv
 from . import roster_views as rv
 from . import views
 
@@ -48,5 +49,14 @@ urlpatterns = [
     path("settings/rosters/", rv.AssignmentListView.as_view(), name="roster-list"),
     path("settings/rosters/preview/", rv.RosterPreviewView.as_view(), name="roster-preview"),
     path("settings/rosters/<int:pk>/", rv.AssignmentDetailView.as_view(), name="roster-detail"),
+    path("currencies/", cv.CurrencyPickerView.as_view(), name="currency-picker"),
+    path("exchange-rates/lookup/", cv.RateLookupView.as_view(), name="rate-lookup"),
+    path("settings/currencies/", cv.CurrencyListView.as_view(), name="currency-list"),
+    path(
+        "settings/currencies/<str:code>/", cv.CurrencyDetailView.as_view(), name="currency-detail"
+    ),
+    path("settings/exchange-rates/", cv.RateListView.as_view(), name="rate-list"),
+    path("settings/exchange-rates/import/", cv.RateImportView.as_view(), name="rate-import"),
+    path("settings/exchange-rates/<int:pk>/", cv.RateDetailView.as_view(), name="rate-detail"),
     path("users/<int:pk>/sections/", views.UserSectionsView.as_view(), name="user-sections"),
 ]

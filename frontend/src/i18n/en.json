@@ -197,7 +197,14 @@
       "crew_reactivated": "Crew reactivated",
       "roster_assigned": "Roster added",
       "roster_changed": "Roster changed",
-      "roster_removed": "Roster removed"
+      "roster_removed": "Roster removed",
+      "currency_created": "Currency added",
+      "currency_changed": "Currency changed",
+      "currency_switched_off": "Currency switched off",
+      "currency_switched_on": "Currency switched on",
+      "exchange_rate_entered": "Exchange rate entered",
+      "exchange_rate_corrected": "Exchange rate corrected",
+      "exchange_rate_removed": "Exchange rate removed"
     }
   },
   "menu": {
@@ -421,5 +428,46 @@
     "preview": "4-week preview",
     "crew": "Crew",
     "everyone": "Everyone"
+  },
+  "currencies": {
+    "title": "Currencies and exchange rates",
+    "help": "LKR is the base currency. Documents in another currency use the rate of their date; if that day has no rate, the latest earlier rate is used and the document says so. A rate used on a document can never change.",
+    "tab": {
+      "currencies": "Currencies",
+      "rates": "Exchange rates"
+    },
+    "add": "Add currency",
+    "code": "ISO code",
+    "symbol": "Symbol",
+    "decimals": "Decimal places",
+    "base": "base",
+    "latest": "Latest rate (LKR)",
+    "on": "On",
+    "off": "Off",
+    "switchOn": "Switch on",
+    "switchOff": "Switch off",
+    "switchOnOne": "Switch on {{code}}",
+    "switchOffOne": "Switch off {{code}}",
+    "switchHelp": "To switch a currency off, give a reason first. Switched-off currencies leave the pickers on new documents.",
+    "rates": "Rates",
+    "currency": "Currency",
+    "enterRate": "Enter a rate",
+    "date": "Date",
+    "rate": "Rate (LKR)",
+    "buying": "Buying",
+    "selling": "Selling",
+    "saveRate": "Save rate",
+    "rateHelp": "LKR for one unit of the currency. If the bank quotes buying and selling, enter both and leave the rate empty: their middle is used. Correcting a saved rate needs a reason.",
+    "source": "Source",
+    "sources": {
+      "manual": "Entered",
+      "import": "Imported"
+    },
+    "used": "Used on documents",
+    "import": "Import rates from CSV",
+    "importHelp": "Columns: date (YYYY-MM-DD), currency, rate, and optionally buying and selling. Check the file first: nothing is saved until every line is accepted.",
+    "csvFile": "CSV file",
+    "checked": "The file is fine. Importing it would add {{added}} rates, correct {{corrected}} and leave {{unchanged}} unchanged.",
+    "imported": "Imported: {{added}} rates added, {{corrected}} corrected, {{unchanged}} unchanged."
   }
 }

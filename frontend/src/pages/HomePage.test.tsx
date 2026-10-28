@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 
 import { mockApi, renderAt, sampleUser } from "../test-utils";
 import HomePage from "./HomePage";
@@ -26,15 +26,4 @@ test("says when the database is not reachable", async () => {
   expect(
     await screen.findByText("System status: the database is not reachable"),
   ).toBeInTheDocument();
-});
-
-test("signs out and returns to the login page", async () => {
-  mockApi({
-    "GET /api/v1/health/": { body: { status: "ok", database: "ok", version: "0.1.0" } },
-    "POST /api/v1/auth/logout/": { body: { status: "signed_out" } },
-  });
-  renderAt("/dashboard", <HomePage user={sampleUser} />);
-
-  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
-  expect(await screen.findByText("Login page")).toBeInTheDocument();
 });

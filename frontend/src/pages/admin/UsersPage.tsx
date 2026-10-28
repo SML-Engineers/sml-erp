@@ -7,6 +7,7 @@ import { can } from "../../api/access";
 import { createUser, listUsers } from "../../api/admin";
 import type { CurrentUser } from "../../api/auth";
 import { ApiError } from "../../api/client";
+import DataTable from "../../components/DataTable";
 
 export default function UsersPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
@@ -70,34 +71,41 @@ export default function UsersPage({ me }: { me: CurrentUser }) {
 
       {users.isPending && <p className="muted">{t("common.loading")}</p>}
       {users.data && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>{t("users.fullName")}</th>
-                <th>{t("login.email")}</th>
-                <th>{t("users.roles")}</th>
-                <th>{t("users.divisions")}</th>
-                <th>{t("users.status")}</th>
-                <th>{t("users.lastSignIn")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.data.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <Link to={`/admin/users/${u.id}`}>{u.full_name}</Link>
-                  </td>
-                  <td>{u.email}</td>
-                  <td>{u.roles.map((r) => r.name).join(", ") || "—"}</td>
-                  <td>{u.all_divisions ? t("users.allDivisions") : u.divisions.join(", ") || "—"}</td>
-                  <td>{u.is_active ? t("users.active") : t("users.inactive")}</td>
-                  <td>{u.last_login ? new Date(u.last_login).toLocaleDateString() : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          label={t("users.title")}
+          rows={users.data}
+          rowKey={(u) => u.id}
+          columns={[
+            {
+              id: "name",
+              header: t("users.fullName"),
+              value: (u) => u.full_name,
+              cell: (u) => <Link to={`/admin/users/${u.id}`}>{u.full_name}</Link>,
+            },
+            { id: "email", header: t("login.email"), value: (u) => u.email },
+            {
+              id: "roles",
+              header: t("users.roles"),
+              value: (u) => u.roles.map((r) => r.name).join(", ") || "—",
+            },
+            {
+              id: "divisions",
+              header: t("users.divisions"),
+              value: (u) => (u.all_divisions ? t("users.allDivisions") : u.divisions.join(", ") || "—"),
+            },
+            {
+              id: "status",
+              header: t("users.status"),
+              value: (u) => (u.is_active ? t("users.active") : t("users.inactive")),
+            },
+            {
+              id: "last",
+              header: t("users.lastSignIn"),
+              value: (u) => u.last_login ?? "",
+              cell: (u) => (u.last_login ? new Date(u.last_login).toLocaleDateString() : "—"),
+            },
+          ]}
+        />
       )}
     </main>
   );

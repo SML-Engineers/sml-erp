@@ -90,10 +90,13 @@ Status: `[ ]` to do · `[x]` done
   - Every row records who (or "system" for scheduled jobs), when, the address, the event and
     the reason. Auditor, Director and Admin can read and filter it; nobody can change it.
 
-- [ ] **P0-06 Application layout**
+- [x] **P0-06 Application layout**
   Sidebar navigation, top bar with notification bell and user menu, responsive layout
   (works on a phone), shared table component with search, sort, paging and column totals.
   - The menu shows only the areas the user can view (from their access in /auth/me/).
+  - Table: page sizes 10 / 25 / 50 / All, "Showing X to Y of Z entries", search, sortable
+    columns, and money totals added exactly (no floating-point rounding).
+  - The notification bell is in place; its count arrives with notifications in P0-18.
 
 ## B. Master data and admin settings
 

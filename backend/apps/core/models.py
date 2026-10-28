@@ -62,6 +62,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Data scope (spec 1.2): the divisions this person works in, or all of them.
     all_divisions = models.BooleanField(default=False)
+    # Section scope (spec 1.1): False limits the user to the sections assigned to them
+    # (apps.masters.Section.users), e.g. a Production Supervisor for Manual Milling.
+    all_sections = models.BooleanField(default=True)
     divisions = models.ManyToManyField("core.Division", blank=True, related_name="users")
 
     objects = UserManager()

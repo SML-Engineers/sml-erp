@@ -297,10 +297,17 @@ Status: `[ ]` to do · `[x]` done
 
 ## D. Payment vouchers (Phase 1)
 
-- [ ] **P1-01 Voucher types** (spec 4.1)
+- [x] **P1-01 Voucher types** (spec 4.1)
   Seed: Cheque Payment, Online Payment, Petty Cash, Internal Transfer, Supplier Advance,
   Staff Reimbursement. Admin can add types. The type is a field and a list filter; it is not
   part of the voucher number.
+  - Settings → Voucher types. Each type says how it is paid, whether it has a payee (only
+    transfers between own accounts have none), which payee category it is limited to (e.g.
+    Employee for reimbursements) and whether it is an advance.
+  - A used type keeps its code and how it is paid (database for the code); it is switched off,
+    not deleted. All types pass the Accountant and the Director (approval matrix sub-type =
+    the type code). The spec's `number_series` column is not needed: all vouchers use the
+    one voucher series.
 
 - [ ] **P1-02 Voucher entry — Clerk** (spec 4.4, 4.5)
   Create voucher with division, type, supplier (with outstanding balance), lines, multiple scanned

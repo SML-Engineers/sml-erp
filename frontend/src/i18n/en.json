@@ -245,7 +245,12 @@
       "tax_rate_added": "Tax rate added",
       "tax_rate_removed": "Tax rate removed",
       "tax_code_saved": "Tax code saved",
-      "tax_code_deleted": "Tax code deleted"
+      "tax_code_deleted": "Tax code deleted",
+      "voucher_type_created": "Voucher type added",
+      "voucher_type_changed": "Voucher type changed",
+      "voucher_type_switched_off": "Voucher type switched off",
+      "voucher_type_switched_on": "Voucher type switched on",
+      "voucher_type_deleted": "Voucher type deleted"
     }
   },
   "menu": {
@@ -889,5 +894,44 @@
     "result": "Tax calculation",
     "net": "Net amount",
     "gross": "Total including taxes"
+  },
+  "voucherTypes": {
+    "title": "Voucher types",
+    "help": "The kinds of payment a voucher can be. The type is a field and a list filter; it is not part of the voucher number, and every type passes the same three approval levels, ending with the Director.",
+    "showOff": "Show switched-off types",
+    "add": "Add voucher type",
+    "code": "Code",
+    "name": "Name",
+    "method": "Paid by",
+    "methods": {
+      "cheque": "Cheque",
+      "transfer": "Bank transfer",
+      "cheque_or_transfer": "Cheque or bank transfer",
+      "cash": "Cash",
+      "internal": "Between the company's own accounts",
+      "any": "Any"
+    },
+    "payee": "Payee",
+    "noPayee": "No payee",
+    "anyPayee": "Any payee",
+    "categories": {
+      "supplier": "Suppliers only",
+      "utility": "Utilities only",
+      "bank_card": "Banks and credit cards only",
+      "government": "Government only",
+      "employee": "Employees only",
+      "other": "Other payees only"
+    },
+    "advance": "Advance: paid before the invoice and set off against it later",
+    "order": "Order in lists",
+    "notes": "Notes",
+    "on": "In use",
+    "off": "Switched off",
+    "inUse": "This type has been used on vouchers: its code and how it is paid are fixed. To change them, add a new type and switch this one off.",
+    "details": "Voucher type details",
+    "save": "Save",
+    "switchOff": "Switch off",
+    "switchOn": "Switch on",
+    "delete": "Delete"
   }
 }

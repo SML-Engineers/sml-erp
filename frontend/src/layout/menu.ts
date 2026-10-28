@@ -52,6 +52,7 @@ export const MENU: MenuSection[] = [
       { label: "currencies.title", path: "/settings/currencies", area: "settings" },
       { label: "limits.title", path: "/settings/quotation-limits", area: "settings" },
       { label: "numbering.title", path: "/settings/number-series", area: "settings" },
+      { label: "voucherTypes.title", path: "/settings/voucher-types", area: "settings" },
       { label: "matrix.title", path: "/settings/approval-matrix", area: "settings" },
       { label: "documentEmail.title", path: "/settings/document-email", area: "settings" },
     ],

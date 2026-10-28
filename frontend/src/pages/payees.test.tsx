@@ -54,7 +54,7 @@ const steel: Payee = {
   default_account: account,
 };
 
-const api = (extra = {}) => ({
+const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
   "GET /api/v1/payees/": { body: [steel] },
   "GET /api/v1/payees/1/bank-accounts/": { body: [account] },
   ...extra,

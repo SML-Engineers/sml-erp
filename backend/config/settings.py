@@ -161,6 +161,15 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.core.tasks.deactivate_inactive_accounts",
         "schedule": crontab(hour=0, minute=20),
     },
+    # Notification emails not yet sent (e.g. the worker was down when they were made).
+    "send-waiting-notification-emails": {
+        "task": "apps.core.tasks.send_waiting_notification_emails",
+        "schedule": crontab(minute="*/5"),
+    },
+    "tidy-old-notifications": {
+        "task": "apps.core.tasks.tidy_old_notifications",
+        "schedule": crontab(hour=1, minute=10),
+    },
 }
 
 # --- Email ------------------------------------------------------------------------------
@@ -171,6 +180,8 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="SML ERP <no-reply@localhost>")
+# The address people open the ERP at; links in emails start with it.
+APP_URL = env("APP_URL", default="http://localhost:8080")
 
 # --- Security ---------------------------------------------------------------------------
 SESSION_COOKIE_HTTPONLY = True

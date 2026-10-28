@@ -743,5 +743,24 @@
     "check": "Check route",
     "amount": "Amount",
     "submitter": "L1 Submitter"
+  },
+  "bell": {
+    "labelUnread": "Notifications, {{n}} unread",
+    "markAll": "Mark all as read",
+    "none": "Nothing new.",
+    "settings": "Choose my notifications",
+    "settingsTitle": "My notifications",
+    "settingsHelp": "Choose, for each kind of event, whether it appears under the bell and whether it is also sent to your email address.",
+    "event": "When",
+    "inApp": "Under the bell",
+    "email": "By email",
+    "inAppFor": "Under the bell: {{event}}",
+    "emailFor": "By email: {{event}}",
+    "events": {
+      "approval_waiting": "A document is waiting for my approval",
+      "document_returned": "A document I created was returned to me",
+      "document_approved": "A document I created was approved",
+      "document_rejected": "A document I created was rejected"
+    }
   }
 }

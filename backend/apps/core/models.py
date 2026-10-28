@@ -592,6 +592,9 @@ class ApprovalState(models.Model):
         Division, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     subtype = models.CharField(max_length=30, blank=True)
+    # How notifications name the document and where they link to (given by its module).
+    title = models.CharField(max_length=200, blank=True)
+    link = models.CharField(max_length=200, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -646,3 +649,54 @@ class ApprovalLog(models.Model):
 
     def __str__(self):
         return f"{self.document_type} {self.document_id} L{self.level} {self.action}"
+
+
+# --- Notifications (backlog P0-18) -------------------------------------------------------
+
+
+class Notification(models.Model):
+    """One message to one user: shown under the bell and/or sent by email, as the user
+    chose for that kind of event."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
+    )
+    event = models.SlugField(max_length=40)
+    title = models.CharField(max_length=200)
+    body = models.TextField(blank=True)
+    link = models.CharField(max_length=200, blank=True)
+    document_type = models.SlugField(max_length=30, blank=True)
+    document_id = models.BigIntegerField(null=True, blank=True)
+    in_app = models.BooleanField(default=True)
+    email = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    read_at = models.DateTimeField(null=True, blank=True)
+    emailed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "read_at"], name="core_notification_unread"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} {self.event}: {self.title}"
+
+
+class NotificationPreference(models.Model):
+    """A user's choice for one kind of event. No row means both on."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_preferences"
+    )
+    event = models.SlugField(max_length=40)
+    in_app = models.BooleanField(default=True)
+    email = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "event"], name="core_notificationpref_unique"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} {self.event}"

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } from "react-router";
 
 import { signOut, type CurrentUser } from "../api/auth";
+import NotificationBell from "../components/NotificationBell";
 import { visibleMenu } from "./menu";
 
 /** Pages inside the layout read the signed-in user from here. */
@@ -37,9 +38,7 @@ export default function AppLayout({ user }: { user: CurrentUser }) {
           {t("app.name")}
         </Link>
         <div className="topbar-right">
-          <button type="button" className="icon-button" aria-label={t("layout.notifications")}>
-            <span aria-hidden="true">🔔</span>
-          </button>
+          <NotificationBell />
           <UserMenu user={user} />
         </div>
       </header>
@@ -120,6 +119,9 @@ function UserMenu({ user }: { user: CurrentUser }) {
           <p className="muted">{user.email}</p>
           <Link role="menuitem" to="/account/password" onClick={() => setOpen(false)}>
             {t("layout.changePassword")}
+          </Link>
+          <Link role="menuitem" to="/account/notifications" onClick={() => setOpen(false)}>
+            {t("bell.settingsTitle")}
           </Link>
           <button type="button" role="menuitem" className="link-button" onClick={handleSignOut}>
             {t("home.signOut")}

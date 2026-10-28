@@ -13,9 +13,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  locks:
+    name: Lock files present and current
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Lock files exist
+        run: |
+          missing=0
+          for f in backend/requirements.lock.txt backend/requirements-dev.lock.txt frontend/package-lock.json; do
+            if [ ! -f "$f" ]; then echo "::error title=Missing lock file::$f"; missing=1; fi
+          done
+          exit $missing
+      - name: Every pinned backend package carries a hash
+        run: |
+          if grep -E '^[A-Za-z0-9_.-]+==' backend/requirements*.lock.txt | grep -v -- '\\$'; then
+            echo "::error title=Unhashed pin::Regenerate the lock files"; exit 1
+          fi
+
   backend:
     name: Backend tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    needs: [locks]
     defaults:
       run:
         working-directory: backend
@@ -34,13 +53,14 @@ jobs:
       DJANGO_SECRET_KEY: ci-only-not-a-real-secret
       DATABASE_URL: postgres://sml:ci_password@localhost:5432/sml_erp
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/requirements*.txt
-      - run: pip install -r requirements-dev.txt
+          cache-dependency-path: backend/requirements*.lock.txt
+      - name: Install exact locked versions
+        run: pip install --require-hashes -r requirements-dev.lock.txt
       - name: Lint
         run: ruff check .
       - name: Check no model change is missing a migration
@@ -49,45 +69,36 @@ jobs:
         run: python manage.py check
       - name: Tests
         run: pytest
-      - name: Record installed versions
-        if: always()
-        run: pip freeze --exclude-editable > installed-versions.txt
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: backend-installed-versions
-          path: backend/installed-versions.txt
 
   frontend:
     name: Frontend tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    needs: [locks]
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
-      - run: npm install
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install exact locked versions
+        run: npm ci
       - name: Type check
         run: npm run typecheck
       - name: Tests
         run: npm test
       - name: Production build
         run: npm run build
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: frontend-package-lock
-          path: frontend/package-lock.json
 
   stack:
     name: Full stack (make up, make test)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [backend, frontend]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: make up
         run: make up 2>&1 | tee make-up.log; exit ${PIPESTATUS[0]}
         shell: bash

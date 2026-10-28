@@ -17,7 +17,10 @@ Two kinds of file, for the backend and the frontend:
   the ranges change on a task branch and commits them to that branch. They reach `main` only
   through the pull request, after CI has passed.
 - **Dependabot** proposes updates monthly (and security fixes as soon as they are known) as
-  pull requests, each tested by CI before anyone merges it.
+  pull requests, each tested by CI before anyone merges it. It proposes only minor and patch
+  versions of packages and base images; a major upgrade (e.g. Django 5.2 LTS to 6.x, Node 22
+  LTS to a later line) is planned as a backlog task, because it can change behaviour. GitHub
+  Actions major versions are still proposed: they only affect the checks themselves.
 
 ## Why
 

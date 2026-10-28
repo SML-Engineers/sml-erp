@@ -159,5 +159,29 @@
       "two_factor_enabled": "Two-factor turned on",
       "two_factor_reset": "Two-factor reset"
     }
+  },
+  "menu": {
+    "main": "Main",
+    "dashboard": "Dashboard",
+    "administration": "Administration"
+  },
+  "layout": {
+    "menu": "Menu",
+    "mainMenu": "Main menu",
+    "closeMenu": "Close menu",
+    "notifications": "Notifications",
+    "welcome": "Welcome, {{name}}",
+    "changePassword": "Change password"
+  },
+  "table": {
+    "show": "Show",
+    "entries": "entries",
+    "all": "All",
+    "search": "Search",
+    "empty": "No entries.",
+    "total": "Total",
+    "showing": "Showing {{first}} to {{last}} of {{total}} entries",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

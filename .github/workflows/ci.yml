@@ -17,7 +17,7 @@ jobs:
     name: Lock files present and current
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Lock files exist
         run: |
           missing=0
@@ -54,7 +54,7 @@ jobs:
       DATABASE_URL: postgres://sml:ci_password@localhost:5432/sml_erp
       FIELD_ENCRYPTION_KEY: f6wnK5t4CdeuHZ7cxu9MQ1saJFde3m_tRuIUCG28qsQ=  # CI only
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -94,7 +94,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [backend, frontend]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: make up
         run: make up 2>&1 | tee make-up.log; exit ${PIPESTATUS[0]}
         shell: bash

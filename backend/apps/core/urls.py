@@ -5,6 +5,7 @@ from . import (
     approval_views,
     audit_views,
     auth_views,
+    document_email_views,
     notification_views,
     numbering_views,
     organisation_views,
@@ -12,6 +13,32 @@ from . import (
 )
 
 urlpatterns = [
+    path(
+        "settings/document-email/",
+        document_email_views.AccountView.as_view(),
+        name="document-email-account",
+    ),
+    path(
+        "settings/document-email/test/",
+        document_email_views.TestView.as_view(),
+        name="document-email-test",
+    ),
+    path(
+        "settings/document-email/templates/",
+        document_email_views.TemplateListView.as_view(),
+        name="document-email-templates",
+    ),
+    path(
+        "settings/document-email/templates/<slug:kind>/",
+        document_email_views.TemplateView.as_view(),
+        name="document-email-template",
+    ),
+    path(
+        "settings/document-email/templates/<slug:kind>/preview/",
+        document_email_views.TemplatePreviewView.as_view(),
+        name="document-email-preview",
+    ),
+    path("sent-emails/", document_email_views.SentEmailListView.as_view(), name="sent-emails"),
     path(
         "notifications/",
         notification_views.NotificationListView.as_view(),

@@ -454,6 +454,29 @@ Four tabs:
 
 **Customer currency:** each customer record has a default currency chosen from the active list.
 
+## 3B. Sending documents and reports by email
+
+Every document and report the company sends out (quotations, proforma invoices, tax invoices, purchase orders, payment advices to suppliers, customer statements and outstanding reports, and any other report) can be emailed directly from the system, from a separate company mailbox such as finance@domain.com. Confirmed by the owner on 29 October 2026.
+
+**Sending account (Admin, Settings → Document email)**
+
+- The Admin sets the mailbox documents are sent from: sender name and address, reply-to address, the mail server (host, port, security: STARTTLS, SSL or none) and its user name and password, and an optional address that receives a copy of every email (so the finance mailbox keeps everything that was sent).
+- The password is stored encrypted and is never shown again or sent to the browser; the Admin can only replace it.
+- A **Send test email** button checks the settings before they are used.
+- This account is used only for documents and reports. System notifications (P0-18) keep their own account.
+- The mail server is normally the finance mailbox's own provider (for example the Hostinger email service of the company domain), so that the domain's SPF and DKIM records cover the emails and they do not land in spam. A mail server on the VPS itself can be used instead by entering its address.
+
+**Default messages (Admin, same page)**
+
+- For each kind of document or report, the Admin sets a default subject and message body. They can contain placeholders that are filled in for each email, for example {customer_name}, {document_number}, {amount}, {due_date}, {company_name}, {sender_name}. The page lists the placeholders each kind of document allows and refuses any other.
+- Starting messages are provided for every kind; the Admin edits them before go-live.
+
+**Sending (anyone who may view and send that document)**
+
+- Email opens a form filled in from the default message: To (the customer's or supplier's email), Cc, subject and body, with the document attached as a PDF. Everything can be edited before sending; the edits apply to that email only.
+- Sending is refused if the sending account is not set up, an address is not valid, or there are more than 20 recipients.
+- Every email sent, or failed, is recorded for good: who sent it, when, to whom, the subject and body exactly as sent, and the attachment with its SHA-256 fingerprint. The record is insert-only and is shown on the document; the Admin and the Auditor can see all of them.
+
 ## 4. Phase 1: Payment voucher approval system
 
 No supplier payment can be recorded unless its voucher has been approved by the Accountant and then the Director. This is enforced in the user interface, the application and the database.

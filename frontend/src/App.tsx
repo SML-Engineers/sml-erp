@@ -26,6 +26,8 @@ import ShiftsPage from "./pages/settings/ShiftsPage";
 import CurrenciesPage from "./pages/settings/CurrenciesPage";
 import QuotationLimitsPage from "./pages/settings/QuotationLimitsPage";
 import ApprovalMatrixPage from "./pages/settings/ApprovalMatrixPage";
+import DocumentEmailPage from "./pages/settings/DocumentEmailPage";
+import SentEmailsPage from "./pages/admin/SentEmailsPage";
 
 /** Hands the signed-in user (from the layout) to a page. */
 function WithMe({ page }: { page: (me: CurrentUser) => ReactNode }) {
@@ -117,6 +119,11 @@ export default function App() {
           path="settings/approval-matrix"
           element={<WithMe page={(me) => <ApprovalMatrixPage me={me} />} />}
         />
+        <Route
+          path="settings/document-email"
+          element={<WithMe page={(me) => <DocumentEmailPage me={me} />} />}
+        />
+        <Route path="admin/sent-emails" element={<SentEmailsPage />} />
       </Route>
     </Routes>
   );

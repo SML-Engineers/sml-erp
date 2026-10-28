@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import (
     access_views,
+    approval_views,
     audit_views,
     auth_views,
     numbering_views,
@@ -44,6 +45,17 @@ urlpatterns = [
         "settings/divisions/<int:pk>/",
         organisation_views.DivisionAdminDetailView.as_view(),
         name="settings-division-detail",
+    ),
+    path("settings/approval-matrix/", approval_views.MatrixView.as_view(), name="approval-matrix"),
+    path(
+        "settings/approval-matrix/route/",
+        approval_views.RoutePreviewView.as_view(),
+        name="approval-route",
+    ),
+    path(
+        "settings/approval-matrix/<int:pk>/switch-off/",
+        approval_views.RuleSwitchOffView.as_view(),
+        name="approval-rule-switch-off",
     ),
     path(
         "settings/number-series/",

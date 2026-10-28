@@ -24,6 +24,7 @@ import NumberSeriesPage from "./pages/settings/NumberSeriesPage";
 import ShiftsPage from "./pages/settings/ShiftsPage";
 import CurrenciesPage from "./pages/settings/CurrenciesPage";
 import QuotationLimitsPage from "./pages/settings/QuotationLimitsPage";
+import ApprovalMatrixPage from "./pages/settings/ApprovalMatrixPage";
 
 /** Hands the signed-in user (from the layout) to a page. */
 function WithMe({ page }: { page: (me: CurrentUser) => ReactNode }) {
@@ -109,6 +110,10 @@ export default function App() {
         <Route
           path="settings/number-series"
           element={<WithMe page={(me) => <NumberSeriesPage me={me} />} />}
+        />
+        <Route
+          path="settings/approval-matrix"
+          element={<WithMe page={(me) => <ApprovalMatrixPage me={me} />} />}
         />
       </Route>
     </Routes>

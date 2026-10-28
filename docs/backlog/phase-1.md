@@ -239,12 +239,22 @@ Status: `[ ]` to do · `[x]` done
     reason. Manual journal entry (with approval) stays in Phase 2: posting is called by the
     voucher and payment services; the Accountant can reverse an entry on the Journal page.
 
-- [ ] **P0-17 Approval engine** (spec 3)
+- [x] **P0-17 Approval engine** (spec 3)
   Generic engine: approval matrix per document type (levels, roles, conditions), approval log
   (insert-only), actions Submit / Approve / Return / Reject, segregation of duties.
   - Creator cannot approve their own document.
   - The same user cannot approve at two levels.
   - Return and Reject without a reason are refused.
+  - Built in `apps.core.approvals`. Level 1 is the submitter; approval levels start at 2.
+    The route is copied onto the document when it is submitted, so a matrix change never
+    alters a document already on its way (rule 11); a returned document gets a fresh route.
+  - Segregation (rule 5) and the reason for Return and Reject are also enforced by the
+    database. Only the creator submits. An approver must hold the level's role and work in
+    the document's division.
+  - The Admin keeps the matrix on Settings → Approval matrix: rules are added or switched
+    off, never edited. For vouchers the matrix always keeps at least two approval levels that
+    apply to every voucher, the last being the Director (rule 6).
+  - The approval queue page and the voucher's own statuses come with the vouchers (P1-04).
 
 - [ ] **P0-18 Notifications**
   In-app bell and email for: voucher awaiting my approval, voucher returned to me,

@@ -520,3 +520,129 @@ class IssuedNumber(models.Model):
 
     def __str__(self):
         return self.number
+
+
+# --- Approval engine (spec 3, backlog P0-17) ---------------------------------------------
+
+
+class ApprovalRule(models.Model):
+    """One cell of the approval matrix: at this level, this role approves documents of this
+    type that meet the conditions (amount range, division, sub-type). Level 1 is the person
+    who submits; approval levels start at 2 (L2 Accountant, L3 Director for vouchers).
+
+    Rules are never edited: a change is a new rule and the old one switched off, so the
+    route of a document already submitted is unaffected (it is copied when submitted)."""
+
+    document_type = models.SlugField(max_length=30)
+    level = models.PositiveSmallIntegerField()
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="approval_rules")
+    min_amount = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    max_amount = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    division = models.ForeignKey(
+        Division, null=True, blank=True, on_delete=models.PROTECT, related_name="approval_rules"
+    )
+    subtype = models.CharField(max_length=30, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["document_type", "level", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(level__gte=2) & models.Q(level__lte=9),
+                name="core_approvalrule_level_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(min_amount__isnull=True)
+                | models.Q(max_amount__isnull=True)
+                | models.Q(min_amount__lte=models.F("max_amount")),
+                name="core_approvalrule_amount_range",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.document_type} L{self.level}: {self.role.code}"
+
+
+class ApprovalState(models.Model):
+    """Where one document is in its approval: its route (copied when submitted), the level
+    waiting, and the result. The document module keeps its own status in step with it."""
+
+    class Status(models.TextChoices):
+        IN_PROGRESS = "in_progress", "Waiting for approval"
+        APPROVED = "approved", "Approved"
+        RETURNED = "returned", "Returned"
+        REJECTED = "rejected", "Rejected"
+
+    document_type = models.SlugField(max_length=30)
+    document_id = models.BigIntegerField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    status = models.CharField(max_length=20, choices=Status.choices)
+    current_level = models.PositiveSmallIntegerField(null=True, blank=True)
+    # [{"level": 2, "role": "accountant"}, {"level": 3, "role": "director"}]
+    route = models.JSONField(default=list)
+    round = models.PositiveSmallIntegerField(default=1)
+    amount = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    division = models.ForeignKey(
+        Division, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    subtype = models.CharField(max_length=30, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["document_type", "document_id"], name="core_approvalstate_unique"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status="in_progress", current_level__isnull=False)
+                | (~models.Q(status="in_progress") & models.Q(current_level__isnull=True)),
+                name="core_approvalstate_level_when_waiting",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.document_type} {self.document_id}: {self.status}"
+
+
+class ApprovalLog(models.Model):
+    """Every approval action on every document (spec 4.5 approval_log). Insert-only:
+    nobody, the Admin included, can change or remove a row (rule 7)."""
+
+    class Action(models.TextChoices):
+        SUBMIT = "submit", "Submitted"
+        APPROVE = "approve", "Approved"
+        RETURN = "return", "Returned"
+        REJECT = "reject", "Rejected"
+
+    document_type = models.SlugField(max_length=30)
+    document_id = models.BigIntegerField()
+    round = models.PositiveSmallIntegerField()
+    level = models.PositiveSmallIntegerField()
+    action = models.CharField(max_length=10, choices=Action.choices)
+    reason = models.TextField(blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    acted_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["acted_at", "id"]
+        indexes = [
+            models.Index(fields=["document_type", "document_id"], name="core_approvallog_doc"),
+        ]
+        constraints = [
+            # Return and Reject always carry a reason (spec 4.3).
+            models.CheckConstraint(
+                condition=~models.Q(action__in=["return", "reject"])
+                | models.Q(reason__regex=r"\S"),
+                name="core_approvallog_reason_required",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.document_type} {self.document_id} L{self.level} {self.action}"

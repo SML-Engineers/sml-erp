@@ -65,3 +65,33 @@ export const updateDivision = (id: number, change: DivisionChange) =>
   apiSend<DivisionAdmin>("PATCH", `/settings/divisions/${id}/`, change);
 export const deleteDivision = (id: number, reason: string) =>
   apiSend<null>("DELETE", `/settings/divisions/${id}/`, { reason });
+
+export type ResetPeriod = "daily" | "monthly" | "yearly" | "never";
+
+export interface NextNumber {
+  /** Null when the format has no {PP}: all divisions share one running number. */
+  division: string | null;
+  next: string;
+}
+
+export interface NumberSeries {
+  id: number;
+  document_type: string;
+  name: string;
+  format: string;
+  reset_period: ResetPeriod;
+  next_numbers: NextNumber[];
+}
+
+export interface SeriesChange {
+  format: string;
+  reset_period: ResetPeriod;
+  reason?: string;
+}
+
+export const numberSeriesKey = ["settings", "number-series"];
+export const listNumberSeries = () => apiGet<NumberSeries[]>("/settings/number-series/");
+export const updateNumberSeries = (id: number, change: SeriesChange) =>
+  apiSend<NumberSeries>("PATCH", `/settings/number-series/${id}/`, change);
+export const previewNumberSeries = (id: number, change: SeriesChange) =>
+  apiSend<{ next_numbers: NextNumber[] }>("POST", `/settings/number-series/${id}/preview/`, change);

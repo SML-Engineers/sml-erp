@@ -114,10 +114,12 @@ Status: `[ ]` to do · `[x]` done
   - A new division appears in every division picker, filter and report, gets its own voucher
     numbering, and leaves existing divisions' records and figures unchanged.
 
-- [ ] **P0-08 Number series** (spec 3)
+- [x] **P0-08 Number series** (spec 3)
   Number formats built from tokens, set by the Admin per document type: code (PP), year
   (YY / YYYY), month (MM), day (DD), running number (XXX / NNNN) with a reset period
-  (daily, monthly, yearly or never). Allocated inside the saving transaction.
+  (daily, monthly, yearly or never). Allocated inside the saving transaction. Tokens are
+  written in braces so they cannot be confused with fixed text: {PP}{YY}{MM}{DD}{XXX},
+  PI-{YYYY}-{NNNN}.
   - Voucher format PPYYMMDDXXX, PP = the voucher's division code: the third IM voucher on
     2026-10-23 is IM261023003.
   - The running number restarts at 001 each day, separately for each division.

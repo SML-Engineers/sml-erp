@@ -35,6 +35,7 @@ export const MENU: MenuSection[] = [
     items: [
       { label: "company.title", path: "/settings/company", area: "settings" },
       { label: "divisions.title", path: "/settings/divisions", area: "settings" },
+      { label: "numbering.title", path: "/settings/number-series", area: "settings" },
     ],
   },
 ];

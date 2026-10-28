@@ -166,7 +166,8 @@
       "division_deactivated": "Division deactivated",
       "division_reactivated": "Division reactivated",
       "division_deleted": "Division deleted",
-      "division_first_used": "Division first used on a document"
+      "division_first_used": "Division first used on a document",
+      "number_series_changed": "Number format changed"
     }
   },
   "menu": {
@@ -245,5 +246,24 @@
     "reactivate": "Reactivate",
     "delete": "Delete",
     "reasonNeeded": "To deactivate or delete, give a reason first."
+  },
+  "numbering": {
+    "title": "Number series",
+    "help": "How each kind of document is numbered. Vouchers use {PP}{YY}{MM}{DD}{XXX}: the division code, the date, and a running number that restarts at 001 each day for each division, e.g. IM261023003.",
+    "document": "Document",
+    "format": "Format",
+    "reset": "Running number restarts",
+    "resets": {
+      "daily": "Every day",
+      "monthly": "Every month",
+      "yearly": "Every year",
+      "never": "Never"
+    },
+    "next": "Next numbers",
+    "editOne": "Edit numbering: {{name}}",
+    "tokens": "Click to add: {PP} division code, {YY} or {YYYY} year, {MM} month, {DD} day, {XXX} running number (one X per digit). Letters, digits and - / . _ can go between them.",
+    "check": "Check",
+    "wouldGive": "The next numbers would be:",
+    "neverReused": "Numbers already given are never given again, even after a change."
   }
 }

@@ -24,22 +24,27 @@ FOR EACH ROW EXECUTE FUNCTION core_refuse_change();
 
 CREATE OR REPLACE FUNCTION accounting_entry_balanced() RETURNS trigger AS $$
 DECLARE
-  entry_id bigint;
-  lines integer;
+  target bigint;
+  line_count integer;
   debits numeric;
   credits numeric;
 BEGIN
-  entry_id := CASE WHEN TG_TABLE_NAME = 'accounting_journalentry' THEN NEW.id ELSE NEW.entry_id END;
-  SELECT count(*), coalesce(sum(debit), 0), coalesce(sum(credit), 0)
-    INTO lines, debits, credits
-    FROM accounting_journalline WHERE accounting_journalline.entry_id = entry_id;
-  IF lines < 2 THEN
-    RAISE EXCEPTION 'Journal entry % needs at least two lines', entry_id
+  -- Fired from both tables: an entry's own row, or one of its lines.
+  IF TG_TABLE_NAME = 'accounting_journalentry' THEN
+    target := NEW.id;
+  ELSE
+    target := NEW.entry_id;
+  END IF;
+  SELECT count(*), coalesce(sum(l.debit), 0), coalesce(sum(l.credit), 0)
+    INTO line_count, debits, credits
+    FROM accounting_journalline l WHERE l.entry_id = target;
+  IF line_count < 2 THEN
+    RAISE EXCEPTION 'Journal entry % needs at least two lines', target
       USING ERRCODE = 'check_violation';
   END IF;
   IF debits <> credits THEN
     RAISE EXCEPTION 'Journal entry % does not balance: debits % and credits %',
-      entry_id, debits, credits USING ERRCODE = 'check_violation';
+      target, debits, credits USING ERRCODE = 'check_violation';
   END IF;
   RETURN NULL;
 END;

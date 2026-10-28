@@ -1,13 +1,14 @@
 """Access rules (backlog P0-04, spec 1.1 and 1.2).
 
-A user's effective access = the union of their active roles' permissions, limited to their
-data scope (divisions). Per-user overrides and hard controls are added in P0-04b.
+A user's effective access = their active roles' permissions, plus the Admin's grants, minus
+removals (P0-04b), limited to their data scope (divisions).
 """
 
 from dataclasses import dataclass, field
 
 from django.db import transaction
 from django.db.models import QuerySet
+from django.utils import timezone
 
 from .access_defaults import (
     ACTIONS,
@@ -17,7 +18,15 @@ from .access_defaults import (
     LEVELS,
     TWO_FACTOR_ROLES,
 )
-from .models import Division, Role, RoleAction, RolePermission, User, UserRole
+from .models import (
+    AccessOverride,
+    Division,
+    Role,
+    RoleAction,
+    RolePermission,
+    User,
+    UserRole,
+)
 
 
 @dataclass
@@ -38,8 +47,40 @@ class EffectiveAccess:
         }
 
 
+def _expand(raw: dict[str, set[str]]) -> dict[str, set[str]]:
+    return {
+        area: set().union(*(IMPLIES.get(level, set()) for level in levels))
+        for area, levels in raw.items()
+        if levels
+    }
+
+
+def role_access(user: User) -> tuple[dict[str, set[str]], set[str]]:
+    """Levels (not expanded) and actions from the user's active roles alone."""
+    raw: dict[str, set[str]] = {}
+    roles = Role.objects.filter(assignments__user=user, is_active=True)
+    for area, level in RolePermission.objects.filter(role__in=roles).values_list("area", "level"):
+        raw.setdefault(area, set()).add(level)
+    actions = set(RoleAction.objects.filter(role__in=roles).values_list("action", flat=True))
+    return raw, actions
+
+
+def active_overrides(user: User):
+    """Overrides in force today: not revoked, not past their end date, and confirmed if a
+    sensitive grant. Pending sensitive grants have no effect (spec 1.3)."""
+    today = timezone.localdate()
+    candidates = AccessOverride.objects.filter(user=user, revoked_at__isnull=True).exclude(
+        ends_on__lt=today
+    )
+    return [o for o in candidates if o.status == "active"]
+
+
 def effective_access(user: User) -> EffectiveAccess:
-    """Everything this user may do, from their active roles. Nothing for anonymous users."""
+    """Everything this user may do: roles, plus grants, minus removals (spec 1.2).
+
+    A removal always beats a grant. Removing a level also removes the levels that include it
+    (removing View on an area removes the whole area). Nothing for anonymous users.
+    """
     access = EffectiveAccess()
     if not user or not user.is_authenticated or not user.is_active:
         return access
@@ -47,12 +88,24 @@ def effective_access(user: User) -> EffectiveAccess:
     if cached is not None:
         return cached
 
-    roles = Role.objects.filter(assignments__user=user, is_active=True)
-    for area, level in RolePermission.objects.filter(role__in=roles).values_list("area", "level"):
-        access.areas.setdefault(area, set()).update(IMPLIES.get(level, set()))
-    access.actions.update(
-        RoleAction.objects.filter(role__in=roles).values_list("action", flat=True)
-    )
+    raw, actions = role_access(user)
+    overrides = active_overrides(user)
+    for o in overrides:
+        if o.effect == AccessOverride.Effect.GRANT:
+            if o.action:
+                actions.add(o.action)
+            else:
+                raw.setdefault(o.area, set()).add(o.level)
+    for o in overrides:
+        if o.effect == AccessOverride.Effect.REMOVE:
+            if o.action:
+                actions.discard(o.action)
+            else:
+                held = raw.get(o.area, set())
+                raw[o.area] = {lvl for lvl in held if o.level not in IMPLIES.get(lvl, set())}
+
+    access.areas = _expand(raw)
+    access.actions = actions
     user._effective_access = access  # cached for the rest of this request
     return access
 

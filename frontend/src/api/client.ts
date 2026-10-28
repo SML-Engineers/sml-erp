@@ -49,10 +49,19 @@ export async function apiGet<T>(path: string): Promise<T> {
   return parse<T>(response);
 }
 
-export async function apiPost<T>(path: string, data?: unknown): Promise<T> {
+export function apiPost<T>(path: string, data?: unknown): Promise<T> {
+  return apiSend<T>("POST", path, data);
+}
+
+/** Any change (POST, PUT, PATCH, DELETE), with the CSRF token Django requires. */
+export async function apiSend<T>(
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  path: string,
+  data?: unknown,
+): Promise<T> {
   await ensureCsrf();
   const response = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
+    method,
     credentials: "same-origin",
     headers: {
       Accept: "application/json",

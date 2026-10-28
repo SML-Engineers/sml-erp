@@ -229,3 +229,85 @@ class UserRole(models.Model):
 
     def __str__(self):
         return f"{self.user} as {self.role}"
+
+
+class AccessOverride(models.Model):
+    """An Admin's per-user grant or removal of access, over the roles' defaults (spec 1.3).
+
+    Never deleted: revoked and expired overrides stay as history.
+    """
+
+    class Effect(models.TextChoices):
+        GRANT = "grant", "Grant"
+        REMOVE = "remove", "Remove"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="access_overrides"
+    )
+    # Either an area and level, or a special action.
+    area = models.CharField(max_length=40, blank=True, default="")
+    level = models.CharField(max_length=10, blank=True, default="")
+    action = models.CharField(max_length=40, blank=True, default="")
+    effect = models.CharField(max_length=10, choices=Effect.choices)
+    reason = models.TextField()
+    ends_on = models.DateField(null=True, blank=True)  # last day it applies; empty = no end
+    # A sensitive grant has no effect until the Director confirms it.
+    is_sensitive = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    revoked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoke_reason = models.TextField(blank=True, default="")
+    expiry_notified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        target = self.action or f"{self.area} {self.level}"
+        return f"{self.effect} {target} for {self.user_id}"
+
+    @property
+    def status(self) -> str:
+        if self.revoked_at:
+            return "revoked"
+        if self.ends_on and self.ends_on < timezone.localdate():
+            return "expired"
+        if self.effect == self.Effect.GRANT and self.is_sensitive and not self.confirmed_at:
+            return "pending"
+        return "active"
+
+
+class AccessReview(models.Model):
+    """A periodic confirmation that a user's access is still right (spec 1.3)."""
+
+    class Outcome(models.TextChoices):
+        CONFIRMED = "confirmed", "Confirmed as correct"
+        CHANGED = "changed", "Changed during review"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="access_reviews"
+    )
+    period = models.CharField(max_length=7)  # e.g. 2026-Q4
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    reviewed_at = models.DateTimeField(default=timezone.now)
+    outcome = models.CharField(max_length=20, choices=Outcome.choices)
+    note = models.TextField(blank=True, default="")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "period"], name="core_accessreview_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.period} review of {self.user_id}: {self.outcome}"

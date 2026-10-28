@@ -58,7 +58,7 @@ Status: `[ ]` to do · `[x]` done
   - Assigning a conflicting combination (Clerk + Cashier, Accountant + Cashier, Admin + any
     finance role) shows a warning and records the reason in the audit log.
 
-- [ ] **P0-04b User access overrides and access administration** (spec 1.3)
+- [x] **P0-04b User access overrides and access administration** (spec 1.3)
   User access page: roles, data scope, and a grid of every area and action showing role
   default, override and effective access. Admin can grant or remove access per user with a
   mandatory reason and optional end date; copy access from another user; reset to role
@@ -74,10 +74,14 @@ Status: `[ ]` to do · `[x]` done
   - Deactivating a leaver ends all their sessions at once and removes their overrides; their
     records and history remain.
   - Accounts unused for 90 days (configurable) are deactivated automatically.
-  - Every grant, removal, confirmation and expiry is in the audit log.
+  - Every grant, removal, confirmation and expiry is recorded: each override keeps who
+    created, confirmed and ended it, when and why, and is never deleted. P0-05 adds these
+    events to the general audit log as well.
 
 - [ ] **P0-05 Audit log** (spec 3)
   Insert-only log of create/update/delete on audited models: user, time, IP, old and new values.
+  Includes every access change: users, roles, divisions, overrides, confirmations, expiries,
+  deactivations and access reviews.
   - Updating or deleting an audit row fails at database level.
   - Changing a supplier's bank account writes one audit row with old and new value.
 

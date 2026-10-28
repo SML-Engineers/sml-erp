@@ -191,11 +191,11 @@ Status: `[ ]` to do · `[x]` done
   - The default is chosen by the Accountant on the Bank and cash accounts page, not on the
     Divisions page: the Admin has no banking access by default.
   - Each cheque number is used once, ever (issued or spoiled with a reason; database).
-  - The link to ledger accounts is added with the chart of accounts (P0-15).
+  - The link to ledger accounts is added with the chart of accounts (P0-15, done).
 
 ## C. Accounting core
 
-- [ ] **P0-15 Chart of accounts, QuickBooks style** (spec 3)
+- [x] **P0-15 Chart of accounts, QuickBooks style** (spec 3)
   Accountant adds, edits, merges and deactivates accounts from the Chart of Accounts page.
   QuickBooks account types and editable detail types, sub-accounts to any depth, optional
   account numbers, default tax code and division, system accounts that cannot be removed,
@@ -205,6 +205,17 @@ Status: `[ ]` to do · `[x]` done
   - An account's type cannot be changed once it has transactions in a closed period.
   - A sub-account must have the same report section as its parent (e.g. no expense
     sub-account under a bank account).
+  - Done as in QuickBooks: a sub-account has the same account type as its parent (each
+    type is its own block on the reports), which also keeps it in the same report section.
+  - A merge never rewrites posted entries (rule 3): the merged account keeps them, becomes
+    inactive and points at the remaining account, and reports count its history there
+    (`roll_up`). Its sub-accounts and bank link move. A merge cannot be undone (database).
+  - A used account's number is fixed once it has one (rule 9); names can always change.
+  - Company bank and cash accounts are linked to a Bank-type ledger account (finishes P0-14);
+    the link is fixed once the account is used. Payments (P1-07) will require it.
+  - Moved to P0-16, where periods are built: the closed-period type check.
+  - Deferred to the tax codes task: the default tax code per account (tax design waiting
+    for the owner's QuickBooks tax list). The default division is done.
 
 - [ ] **P0-16 Journal and periods** (spec 3)
   `journal_entry` / `journal_line`, posting service, reversal service, accounting periods
@@ -215,6 +226,9 @@ Status: `[ ]` to do · `[x]` done
   - Reversal creates a mirror entry linked to the original.
   - A line on an income or expense account without a division is refused (spec 3.1).
   - Profit and loss by division for a date range equals the company total when summed.
+  - An account's type cannot be changed once it has entries in a closed period (from P0-15).
+  - Posting marks the account used (`accounting.services.mark_used`) and refuses inactive or
+    merged accounts; reports count a merged account's entries under the remaining account.
 
 - [ ] **P0-17 Approval engine** (spec 3)
   Generic engine: approval matrix per document type (levels, roles, conditions), approval log

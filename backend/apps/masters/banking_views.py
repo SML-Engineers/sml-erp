@@ -64,6 +64,7 @@ class AccountSerializer(serializers.ModelSerializer):
     default_for = serializers.SerializerMethodField()
     cheque_books = serializers.SerializerMethodField()
     in_use = serializers.SerializerMethodField()
+    ledger_account = serializers.SerializerMethodField()
 
     class Meta:
         model = CompanyAccount
@@ -79,6 +80,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "division",
             "custodian",
             "float_amount",
+            "ledger_account",
             "is_active",
             "default_for",
             "cheque_books",
@@ -91,6 +93,12 @@ class AccountSerializer(serializers.ModelSerializer):
             if account.custodian is None
             else {"id": account.custodian_id, "name": account.custodian.full_name}
         )
+
+    def get_ledger_account(self, account):
+        ledger = account.ledger_account
+        if ledger is None:
+            return None
+        return {"id": ledger.pk, "number": ledger.number, "name": ledger.name}
 
     def get_default_for(self, account):
         return sorted(account.default_for.values_list("division__code", flat=True))
@@ -117,6 +125,7 @@ class AccountInput(serializers.Serializer):
     float_amount = serializers.CharField(
         max_length=30, required=False, allow_blank=True, allow_null=True
     )
+    ledger_account = serializers.IntegerField(required=False, allow_null=True)
     is_active = serializers.BooleanField(required=False)
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
@@ -150,7 +159,9 @@ class _Banking(APIView):
 
 class AccountListView(_Banking):
     def get(self, request):
-        rows = CompanyAccount.objects.select_related("currency", "division", "custodian")
+        rows = CompanyAccount.objects.select_related(
+            "currency", "division", "custodian", "ledger_account"
+        )
         if request.query_params.get("include_closed") not in ("1", "true"):
             rows = rows.filter(is_active=True)
         return Response(AccountSerializer(rows, many=True).data)
@@ -298,5 +309,24 @@ class CustodianListView(_Banking):
             [
                 {"id": u.pk, "name": u.full_name}
                 for u in User.objects.filter(is_active=True).order_by("full_name")
+            ]
+        )
+
+
+class LedgerChoiceView(_Banking):
+    """Active Bank-type accounts of the chart, for linking a company account to its ledger."""
+
+    def get(self, request):
+        from apps.accounting.models import Account
+
+        taken = dict(
+            CompanyAccount.objects.filter(ledger_account__isnull=False).values_list(
+                "ledger_account_id", "code"
+            )
+        )
+        return Response(
+            [
+                {"id": a.pk, "number": a.number, "name": a.name, "linked_to": taken.get(a.pk)}
+                for a in Account.objects.filter(account_type="bank", is_active=True)
             ]
         )

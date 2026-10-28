@@ -4,6 +4,7 @@ from django.urls import include, path
 urlpatterns = [
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/", include("apps.masters.urls")),
+    path("api/v1/", include("apps.accounting.urls")),
 ]
 
 # Django's built-in admin signs in with a password only (no two-factor), so it is available

@@ -74,7 +74,21 @@ def _clean(values: dict, kind: str) -> dict:
             raise MastersError("The custodian must be an active user.")
     if "float_amount" in values:
         cleaned["float_amount"] = _money(values["float_amount"])
+    if "ledger_account" in values:
+        cleaned["ledger_account"] = _ledger(values["ledger_account"])
     return cleaned
+
+
+def _ledger(account_id):
+    """The account's ledger in the chart of accounts: an active Bank-type account."""
+    from apps.accounting.models import Account
+
+    if account_id in (None, ""):
+        return None
+    ledger = Account.objects.filter(pk=account_id).first()
+    if ledger is None or ledger.account_type != "bank" or not ledger.is_active:
+        raise MastersError("The ledger account must be an active account of type Bank.")
+    return ledger
 
 
 def _check_kind(account: CompanyAccount) -> None:
@@ -93,6 +107,14 @@ def _check_kind(account: CompanyAccount) -> None:
     ).exclude(pk=account.pk)
     if account.account_number and dup.exists():
         raise MastersError("That bank account is already in the list.")
+    if account.ledger_account_id:
+        other = (
+            CompanyAccount.objects.filter(ledger_account_id=account.ledger_account_id)
+            .exclude(pk=account.pk)
+            .first()
+        )
+        if other:
+            raise MastersError(f"That ledger account already belongs to {other.code}.")
 
 
 def create_account(user: User, *, code, kind, reason="", **values) -> CompanyAccount:
@@ -135,6 +157,13 @@ def update_account(user: User, account: CompanyAccount, values: dict, reason: st
             raise MastersError(
                 "This account has been used, so its bank, number and currency cannot change."
             )
+        if (
+            used
+            and account.ledger_account_id
+            and "ledger_account" in cleaned
+            and cleaned["ledger_account"] != account.ledger_account
+        ):
+            raise MastersError("This account has been used, so its ledger account cannot change.")
         for key, value in cleaned.items():
             setattr(account, key, value)
         if "is_active" in values and bool(values["is_active"]) != account.is_active:

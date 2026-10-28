@@ -27,6 +27,7 @@ const current: CompanyAccount = {
   division: null,
   custodian: null,
   float_amount: null,
+  ledger_account: null,
   is_active: true,
   default_for: ["WS"],
   cheque_books: [
@@ -48,6 +49,12 @@ const current: CompanyAccount = {
 const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
   "GET /api/v1/company-accounts/": { body: [current] },
   "GET /api/v1/company-accounts/custodians/": { body: [{ id: 3, name: "Kamal" }] },
+  "GET /api/v1/company-accounts/ledgers/": {
+    body: [
+      { id: 40, number: "1030", name: "Commercial Bank current", linked_to: null },
+      { id: 41, number: "1010", name: "Cash on hand", linked_to: "CASH" },
+    ],
+  },
   "GET /api/v1/company-accounts/division-defaults/": {
     body: [
       { division: "WS", account: { id: 1, code: "COM-CUR" } },
@@ -122,4 +129,33 @@ test("each division's default bank account is shown", async () => {
   await waitFor(() => expect(within(panel).getByLabelText("WS")).toHaveValue("1"));
   expect(within(panel).getByLabelText("IM")).toHaveValue("");
   expect(within(panel).getByLabelText("WS")).toBeDisabled();
+});
+
+test("the accountant links an account to its Bank ledger in the chart of accounts", async () => {
+  const unused = { ...current, in_use: false, cheque_books: [] };
+  const calls = mockApi(
+    api({
+      "GET /api/v1/company-accounts/": { body: [unused] },
+      "PATCH /api/v1/company-accounts/1/": {
+        body: { ...unused, ledger_account: { id: 40, number: "1030", name: "Commercial Bank current" } },
+      },
+    }),
+  );
+  renderAt("/bank-accounts", <BankAccountsPage me={accountant} />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "COM-CUR" }));
+  const link = await screen.findByRole("form", { name: "Save ledger account" });
+  expect(within(link).getByText("Not linked yet")).toBeInTheDocument();
+  const select = within(link).getByLabelText("Ledger account");
+  await within(link).findByRole("option", { name: "1030 Commercial Bank current" });
+  // a ledger already linked to another company account is not offered
+  expect(within(link).queryByRole("option", { name: "1010 Cash on hand" })).not.toBeInTheDocument();
+  fireEvent.change(select, { target: { value: "40" } });
+  fireEvent.click(within(link).getByRole("button", { name: "Save ledger account" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/company-accounts/1/",
+      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ ledger_account: 40 }) }),
+    ),
+  );
 });

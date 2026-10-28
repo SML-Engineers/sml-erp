@@ -315,10 +315,11 @@ Every list and report has a division filter, and the dashboard can be switched b
 | Profit and loss | Income, Other income, Cost of goods sold, Expense, Other expense |
 
 - Detail types refine the type (e.g. Fixed asset → Machinery and equipment, Vehicles, Moulds and tooling; Expense → Electricity, Repairs and maintenance). The list of detail types is editable.
-- **Sub-accounts** to any depth (e.g. Repairs and maintenance → Machine repairs → CNC machines). Reports can show sub-accounts or roll them up into their parent.
-- **Account numbers** are optional, as in QuickBooks; when used, they set the sort order. Names must be unique within the same parent.
-- Accounts with transactions cannot be deleted, only made inactive (rule 9). Two accounts can be merged, moving all their history to one.
+- **Sub-accounts** to any depth (e.g. Repairs and maintenance → Machine repairs → CNC machines). Reports can show sub-accounts or roll them up into their parent. As in QuickBooks, a sub-account has the same account type as its parent, so it is printed in the same block of the reports.
+- **Account numbers** are optional, as in QuickBooks; when used, they set the sort order. Names must be unique within the same parent and cannot contain a colon (the Excel import writes Parent:Sub-account). Once an account has been used, its number is fixed (rule 9); its name can still change.
+- Accounts with transactions cannot be deleted, only made inactive (rule 9); making an account inactive also makes its sub-accounts inactive. Two accounts of the same type can be merged, moving all their history to one: posted entries are never rewritten (rule 3), so the merged account keeps them, becomes inactive and points at the remaining account, and every report counts its entries under the remaining account. Its sub-accounts move to the remaining account. A merge cannot be undone.
 - Each account can carry a default tax code and a default division.
+- Each company bank, cash or petty cash account is linked to one Bank-type account in the chart, its ledger.
 - Some accounts are created by the system and cannot be removed: Accounts payable, Accounts receivable, Retained earnings, Opening balance equity, Undeposited funds, Customer advances, VAT payable and receivable.
 - A starter chart for a manufacturing company, based on QuickBooks' default chart, is loaded at setup. The company accountant reviews and edits it before go-live.
 - Import and export of the chart from Excel, so an existing chart can be loaded in one step.

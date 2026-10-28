@@ -14,11 +14,13 @@ import {
   listAccounts,
   listCustodians,
   listDefaults,
+  listLedgers,
   setDefault,
   spoilCheque,
   updateAccount,
   type AccountKind,
   type CompanyAccount,
+  type LedgerChoice,
 } from "../api/banking";
 import { ApiError } from "../api/client";
 import DataTable from "../components/DataTable";
@@ -108,6 +110,7 @@ function AddAccount() {
   const { t } = useTranslation();
   const refresh = useRefresh();
   const custodians = useQuery({ queryKey: [...accountsKey, "custodians"], queryFn: listCustodians });
+  const ledgers = useQuery({ queryKey: [...accountsKey, "ledgers"], queryFn: listLedgers });
   const [kind, setKind] = useState<AccountKind>("current");
   const [values, setValues] = useState<Record<string, string>>({
     code: "",
@@ -119,6 +122,7 @@ function AddAccount() {
     custodian: "",
     float_amount: "",
     division: "",
+    ledger_account: "",
   });
   const set = (field: string) => (value: string) => setValues((now) => ({ ...now, [field]: value }));
   const isBank = kind === "current" || kind === "savings";
@@ -130,6 +134,7 @@ function AddAccount() {
         kind,
         currency: values.currency,
         division: values.division,
+        ledger_account: values.ledger_account ? Number(values.ledger_account) : null,
         ...(isBank
           ? { bank_name: values.bank_name, branch: values.branch, account_number: values.account_number }
           : {}),
@@ -139,7 +144,7 @@ function AddAccount() {
       }),
     onSuccess: () => {
       refresh();
-      setValues((now) => ({ ...now, code: "", name: "", account_number: "", float_amount: "" }));
+      setValues((now) => ({ ...now, code: "", name: "", account_number: "", float_amount: "", ledger_account: "" }));
     },
   });
 
@@ -192,6 +197,11 @@ function AddAccount() {
           </>
         )}
         {text("division", t("banking.divisionOptional"))}
+        <LedgerSelect
+          value={values.ledger_account}
+          choices={ledgers.data ?? []}
+          onChange={set("ledger_account")}
+        />
         <div className="wide">
           <button type="submit" disabled={save.isPending}>
             {t("banking.add")}
@@ -224,7 +234,14 @@ function AccountPanel(props: { account: CompanyAccount; canManage: boolean; canS
         {account.custodian && ` · ${t("banking.custodian")}: ${account.custodian.name}`}
         {account.float_amount && ` · ${t("banking.float")}: ${formatDecimal(account.float_amount)}`}
       </p>
+      <p>
+        {t("banking.ledger")}:{" "}
+        {account.ledger_account
+          ? `${account.ledger_account.number} ${account.ledger_account.name}`.trim()
+          : t("banking.noLedger")}
+      </p>
       {account.in_use && <p className="muted">{t("banking.inUse")}</p>}
+      {props.canManage && !(account.in_use && account.ledger_account) && <LedgerLink account={account} />}
       {props.canManage && (
         <div className="inline-form">
           <label>
@@ -241,6 +258,54 @@ function AccountPanel(props: { account: CompanyAccount; canManage: boolean; canS
         <ChequeBooks account={account} canManage={props.canManage} canSpoil={props.canSpoil} />
       )}
     </section>
+  );
+}
+
+function LedgerSelect(props: { value: string; choices: LedgerChoice[]; onChange: (value: string) => void; own?: number }) {
+  const { t } = useTranslation();
+  return (
+    <label>
+      {t("banking.ledger")}
+      <select value={props.value} onChange={(e) => props.onChange(e.target.value)}>
+        <option value="">{t("banking.noLedger")}</option>
+        {props.choices
+          .filter((c) => !c.linked_to || c.id === props.own)
+          .map((c) => (
+            <option key={c.id} value={c.id}>
+              {`${c.number} ${c.name}`.trim()}
+            </option>
+          ))}
+      </select>
+    </label>
+  );
+}
+
+/** Link the account to its Bank-type ledger account (fixed once the account is used). */
+function LedgerLink({ account }: { account: CompanyAccount }) {
+  const { t } = useTranslation();
+  const refresh = useRefresh();
+  const ledgers = useQuery({ queryKey: [...accountsKey, "ledgers"], queryFn: listLedgers });
+  const [value, setValue] = useState(account.ledger_account ? String(account.ledger_account.id) : "");
+  const save = useMutation({
+    mutationFn: () => updateAccount(account.id, { ledger_account: value ? Number(value) : null }),
+    onSuccess: refresh,
+  });
+  return (
+    <form
+      className="inline-form"
+      aria-label={t("banking.saveLedger")}
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+    >
+      <LedgerSelect value={value} choices={ledgers.data ?? []} onChange={setValue} own={account.ledger_account?.id} />
+      <button type="submit" className="secondary" disabled={save.isPending}>
+        {t("banking.saveLedger")}
+      </button>
+      <p className="muted">{t("banking.ledgerHelp")}</p>
+      <ErrorLine error={save.error} />
+    </form>
   );
 }
 

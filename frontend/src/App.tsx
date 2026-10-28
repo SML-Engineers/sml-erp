@@ -8,6 +8,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import BankAccountsPage from "./pages/BankAccountsPage";
+import ChartOfAccountsPage from "./pages/ChartOfAccountsPage";
 import PayeesPage from "./pages/PayeesPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
 import AccessReviewPage from "./pages/admin/AccessReviewPage";
@@ -60,6 +61,10 @@ export default function App() {
           element={<WithMe page={(me) => <BankAccountsPage me={me} />} />}
         />
         <Route path="payees" element={<WithMe page={(me) => <PayeesPage me={me} />} />} />
+        <Route
+          path="chart-of-accounts"
+          element={<WithMe page={(me) => <ChartOfAccountsPage me={me} />} />}
+        />
         <Route path="admin/users" element={<WithMe page={(me) => <UsersPage me={me} />} />} />
         <Route
           path="admin/users/:id"

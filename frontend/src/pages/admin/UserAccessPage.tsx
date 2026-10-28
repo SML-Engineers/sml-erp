@@ -176,7 +176,7 @@ function Lifecycle({ user, onDone }: { user: UserRecord; onDone: () => void }) {
   const [source, setSource] = useState("");
   const users = useQuery({ queryKey: ["users"], queryFn: listUsers });
   const act = useMutation({
-    mutationFn: (what: "deactivate" | "reactivate" | "reset" | "copy") => {
+    mutationFn: (what: "deactivate" | "reactivate" | "reset" | "copy"): Promise<unknown> => {
       if (what === "deactivate") return deactivateUser(user.id, reason);
       if (what === "reactivate") return reactivateUser(user.id);
       if (what === "reset") return resetOverrides(user.id, reason);

@@ -55,6 +55,21 @@ def _expand(raw: dict[str, set[str]]) -> dict[str, set[str]]:
     }
 
 
+def _without(held: set[str], removed: str) -> set[str]:
+    """Take away `removed` and anything that includes it, keeping the levels below it.
+
+    Removing Manage leaves Enter and View; removing View leaves nothing in that area.
+    """
+    kept: set[str] = set()
+    for level in held:
+        implied = IMPLIES.get(level, set())
+        if removed in implied:
+            kept |= {lower for lower in implied if removed not in IMPLIES.get(lower, set())}
+        else:
+            kept.add(level)
+    return kept
+
+
 def role_access(user: User) -> tuple[dict[str, set[str]], set[str]]:
     """Levels (not expanded) and actions from the user's active roles alone."""
     raw: dict[str, set[str]] = {}
@@ -78,8 +93,9 @@ def active_overrides(user: User):
 def effective_access(user: User) -> EffectiveAccess:
     """Everything this user may do: roles, plus grants, minus removals (spec 1.2).
 
-    A removal always beats a grant. Removing a level also removes the levels that include it
-    (removing View on an area removes the whole area). Nothing for anonymous users.
+    A removal always beats a grant. Removing a level also removes the levels that include it,
+    and keeps the ones below it (removing Manage keeps Enter and View; removing View removes
+    the whole area). Nothing for anonymous users.
     """
     access = EffectiveAccess()
     if not user or not user.is_authenticated or not user.is_active:
@@ -101,8 +117,7 @@ def effective_access(user: User) -> EffectiveAccess:
             if o.action:
                 actions.discard(o.action)
             else:
-                held = raw.get(o.area, set())
-                raw[o.area] = {lvl for lvl in held if o.level not in IMPLIES.get(lvl, set())}
+                raw[o.area] = _without(raw.get(o.area, set()), o.level)
 
     access.areas = _expand(raw)
     access.actions = actions

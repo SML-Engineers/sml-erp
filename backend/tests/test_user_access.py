@@ -69,8 +69,15 @@ def test_removing_a_higher_level_keeps_the_lower_ones(admin):
     accountant = person("acc@sml.lk", "accountant")
     remove(as_user(admin), accountant, area="accounting", level="manage")
     assert not rights(accountant).has("accounting", "manage")
-    assert not rights(accountant).has("accounting", "enter")
+    assert rights(accountant).has("accounting", "enter")
     assert rights(accountant).has("accounting", "view")
+
+
+def test_removing_enter_keeps_view(admin):
+    clerk = person("clerk@sml.lk", "clerk")
+    remove(as_user(admin), clerk, area="vouchers", level="enter")
+    assert not rights(clerk).has("vouchers", "enter")
+    assert rights(clerk).has("vouchers", "view")
 
 
 def test_a_removal_beats_a_grant(admin):

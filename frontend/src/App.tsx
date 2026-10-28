@@ -14,6 +14,7 @@ import UserAccessPage from "./pages/admin/UserAccessPage";
 import UsersPage from "./pages/admin/UsersPage";
 import CompanyPage from "./pages/settings/CompanyPage";
 import DivisionsPage from "./pages/settings/DivisionsPage";
+import FactoryPage from "./pages/settings/FactoryPage";
 import NumberSeriesPage from "./pages/settings/NumberSeriesPage";
 
 /** Hands the signed-in user (from the layout) to a page. */
@@ -66,6 +67,10 @@ export default function App() {
         <Route
           path="settings/divisions"
           element={<WithMe page={(me) => <DivisionsPage me={me} />} />}
+        />
+        <Route
+          path="settings/factory"
+          element={<WithMe page={(me) => <FactoryPage me={me} />} />}
         />
         <Route
           path="settings/number-series"

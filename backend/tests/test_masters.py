@@ -80,8 +80,8 @@ def add_section(user, **data):
     return as_user(user).post("/api/v1/settings/sections/", data, format="json")
 
 
-def change_section(user, code, **data):
-    pk = section(code).pk
+def change_section(user, section_code, **data):
+    pk = section(section_code).pk
     return as_user(user).patch(f"/api/v1/settings/sections/{pk}/", data, format="json")
 
 
@@ -370,6 +370,7 @@ def test_a_supervisor_limited_to_manual_milling_sees_only_manual_milling(admin):
     assert response.status_code == 200, response.json()
     assert response.json() == {"all_sections": False, "sections": ["M-MIL"]}
 
+    supervisor.refresh_from_db()  # as signed in after the change
     sees = as_user(supervisor)
     assert [s["code"] for s in sees.get("/api/v1/sections/").json()] == ["M-MIL"]
     assert [m["code"] for m in sees.get("/api/v1/machines/").json()] == ["M-MIL-01"]

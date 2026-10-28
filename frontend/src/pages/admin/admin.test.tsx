@@ -72,6 +72,8 @@ const accessPageApi = (extra = {}) => ({
     ],
   },
   "GET /api/v1/divisions/": { body: [{ id: 2, code: "IM", name: "Plastic Injection Moulding" }] },
+  "GET /api/v1/users/7/sections/": { body: { all_sections: true, sections: [] } },
+  "GET /api/v1/sections/": { body: [{ id: 1, code: "IM-MLD", name: "Moulding", division: "IM" }] },
   ...extra,
 });
 

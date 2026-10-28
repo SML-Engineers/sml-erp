@@ -177,6 +177,8 @@ def test_every_endpoint_declares_its_access():
         "DivisionDetailView",  # filtered to the user's own divisions
         "SectionPickerView",  # filtered to the user's own sections
         "MachinePickerView",  # filtered to the user's own sections
+        "CurrencyPickerView",  # currency codes and names, no business data
+        "RateLookupView",  # published exchange rates, no business data
     }
 
     def walk(patterns):

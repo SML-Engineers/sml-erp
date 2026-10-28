@@ -18,3 +18,5 @@ class MastersConfig(AppConfig):
             register(model)
         register(m.RosterAssignment)
         register(m.RosterCrew)
+        register(m.Currency)
+        register(m.ExchangeRate)

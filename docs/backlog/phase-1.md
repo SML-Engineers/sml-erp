@@ -159,9 +159,11 @@ Status: `[ ]` to do · `[x]` done
   - A crew can follow only one roster at a time (refused, not just warned).
   - Crew members are picked from the employee register, added with the HR module.
 
-- [ ] **P0-11 Currencies and exchange rates page** (spec 3A.4)
+- [x] **P0-11 Currencies and exchange rates page** (spec 3A.4)
   Pre-loaded currencies (USD, EUR, GBP, AUD, JPY, CNY, INR, SGD, AED); daily rate entry and CSV import.
   - When no rate exists for a date, the latest earlier rate is returned and flagged.
+  - The Admin keeps the currency list; the Accountant enters rates (Accounting: Enter).
+  - A rate used on a document never changes (application and database); LKR is fixed.
 
 - [ ] **P0-12 Quotation approval limits page** (spec 3A.3)
   Minimum margin % and value limit per division, effective-dated. A change entered by the

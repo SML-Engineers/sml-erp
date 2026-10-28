@@ -309,13 +309,24 @@ Status: `[ ]` to do · `[x]` done
     the type code). The spec's `number_series` column is not needed: all vouchers use the
     one voucher series.
 
-- [ ] **P1-02 Voucher entry — Clerk** (spec 4.4, 4.5)
+- [x] **P1-02 Voucher entry — Clerk** (spec 4.4, 4.5)
   Create voucher with division, type, supplier (with outstanding balance), lines, multiple scanned
   attachments (PDF/JPG/PNG, drag-and-drop and phone camera), save draft, submit.
   The number (PPYYMMDDXXX, P0-08) is given on first save, using the voucher's division code.
   - Same supplier + invoice number already on another voucher shows a warning.
   - An uploaded file identical (SHA-256) to an existing attachment shows a warning.
   - Files larger than 20 MB or of other types are refused.
+  - The file type is read from the file itself (PDF, JPG, PNG), not from its name.
+  - Tax per line: a tax code (worked out at the invoice date) or a tax amount typed in.
+  - To submit: a payee that suits the type (e.g. an employee for reimbursements), at least one
+    line and one scan (internal transfers: the receiving company account, no scan needed).
+  - The division is part of the number and cannot change after the first save.
+  - A voucher is never deleted from the database and its number never changes; attachments
+    can only be removed while it is a draft or returned (database).
+  - Payee balance shown: vouchers waiting for approval plus approved and unpaid; payments
+    (P1-07) will reduce it.
+  - Who sees which vouchers: Clerk their own; Accountant, Director, Auditor and Admin all of
+    their divisions; Cashier approved ones.
 
 - [ ] **P1-03 Accountant review** (spec 4.4)
   Queue of submitted vouchers; invoice preview beside details; set GL account, division,

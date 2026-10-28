@@ -11,4 +11,5 @@ class VouchersConfig(AppConfig):
 
         from . import models as m
 
-        register(m.VoucherType)
+        for model in (m.VoucherType, m.Voucher, m.VoucherLine, m.VoucherAttachment):
+            register(model)

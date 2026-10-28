@@ -966,3 +966,24 @@ legend {
 .bell-panel li .link-button {
   text-align: left;
 }
+
+/* --- Voucher attachments (P1-02) --- */
+.drop-zone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border: 2px dashed var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.drop-zone.dragging {
+  border-color: var(--color-primary);
+}
+
+.drop-zone p {
+  flex-basis: 100%;
+  margin: 0;
+}

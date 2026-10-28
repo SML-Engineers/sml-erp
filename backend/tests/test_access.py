@@ -152,12 +152,8 @@ def test_signed_in_user_owing_two_factor_setup_is_refused(admin):
 
 
 def test_my_access_is_sent_to_the_app():
-    client = APIClient()
-    person("clerk@sml.lk", "clerk", divisions=["IM"])
-    client.post(
-        "/api/v1/auth/login/", {"email": "clerk@sml.lk", "password": PASSWORD}, format="json"
-    )
-    data = client.get("/api/v1/auth/me/").json()["user"]["access"]
+    clerk = person("clerk@sml.lk", "clerk", divisions=["IM"])
+    data = as_user(clerk).get("/api/v1/auth/me/").json()["user"]["access"]
     assert data["areas"]["vouchers"] == ["enter", "view"]
     assert "payments" not in data["areas"]
     assert data["divisions"] == ["IM"]

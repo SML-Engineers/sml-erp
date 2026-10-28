@@ -209,6 +209,7 @@ def register_core_models():
         secret=("password", "totp_secret_encrypted"),
     )
     register(m.Company, exclude=("updated_at",))
+    register(m.NumberSeries, exclude=("updated_at",))
     for model in (
         m.Division,
         m.Role,

@@ -421,3 +421,77 @@ class AuditEvent(models.Model):
         return (
             f"{self.occurred_at:%Y-%m-%d %H:%M} {self.actor_email} {self.action} {self.object_repr}"
         )
+
+
+class NumberSeries(models.Model):
+    """How one document type is numbered (spec 3, Number series; backlog P0-08).
+
+    The format is literal text with tokens in braces: {PP} division code, {YY} or {YYYY}
+    year, {MM} month, {DD} day, and one running number {XXX} or {NNNN} (its length is the
+    number of digits). The voucher format is {PP}{YY}{MM}{DD}{XXX}, reset daily.
+    Document types come with the software; the Admin changes their format and reset period.
+    """
+
+    class Reset(models.TextChoices):
+        DAILY = "daily", "Every day"
+        MONTHLY = "monthly", "Every month"
+        YEARLY = "yearly", "Every year"
+        NEVER = "never", "Never"
+
+    document_type = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=100)
+    format = models.CharField(max_length=60)
+    reset_period = models.CharField(max_length=10, choices=Reset.choices)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name_plural = "number series"
+
+    def __str__(self):
+        return f"{self.name} ({self.format})"
+
+
+class NumberCounter(models.Model):
+    """The last running number given in one series, for one division and one period."""
+
+    series = models.ForeignKey(NumberSeries, on_delete=models.PROTECT, related_name="counters")
+    # Empty when the format has no {PP}: then all divisions share one running number.
+    division = models.ForeignKey(
+        Division, null=True, blank=True, on_delete=models.PROTECT, related_name="number_counters"
+    )
+    # "2026-10-23" (daily), "2026-10" (monthly), "2026" (yearly) or "all" (never).
+    period = models.CharField(max_length=10)
+    last_number = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["series", "division", "period"],
+                name="core_numbercounter_unique",
+                nulls_distinct=False,
+            ),
+        ]
+
+    def __str__(self):
+        division = self.division_id or "-"
+        return f"{self.series.document_type} {division} {self.period}: {self.last_number}"
+
+
+class IssuedNumber(models.Model):
+    """Every number ever given, kept for good so none is ever given twice (insert-only)."""
+
+    series = models.ForeignKey(NumberSeries, on_delete=models.PROTECT, related_name="issued")
+    number = models.CharField(max_length=60)
+    division = models.ForeignKey(
+        Division, null=True, blank=True, on_delete=models.PROTECT, related_name="issued_numbers"
+    )
+    issued_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["series", "number"], name="core_issuednumber_unique"),
+        ]
+
+    def __str__(self):
+        return self.number

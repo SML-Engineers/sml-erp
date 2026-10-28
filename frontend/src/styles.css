@@ -642,3 +642,7 @@ textarea:disabled {
   max-height: 120px;
   margin-bottom: 12px;
 }
+
+.mono {
+  font-family: ui-monospace, monospace;
+}

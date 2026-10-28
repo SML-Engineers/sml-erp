@@ -1,6 +1,13 @@
 from django.urls import path
 
-from . import access_views, audit_views, auth_views, organisation_views, views
+from . import (
+    access_views,
+    audit_views,
+    auth_views,
+    numbering_views,
+    organisation_views,
+    views,
+)
 
 urlpatterns = [
     path("health/", views.health, name="health"),
@@ -37,6 +44,21 @@ urlpatterns = [
         "settings/divisions/<int:pk>/",
         organisation_views.DivisionAdminDetailView.as_view(),
         name="settings-division-detail",
+    ),
+    path(
+        "settings/number-series/",
+        numbering_views.NumberSeriesListView.as_view(),
+        name="number-series-list",
+    ),
+    path(
+        "settings/number-series/<int:pk>/",
+        numbering_views.NumberSeriesDetailView.as_view(),
+        name="number-series-detail",
+    ),
+    path(
+        "settings/number-series/<int:pk>/preview/",
+        numbering_views.NumberSeriesPreviewView.as_view(),
+        name="number-series-preview",
     ),
     path("roles/", access_views.RoleListView.as_view(), name="role-list"),
     path("roles/<slug:code>/", access_views.RoleDetailView.as_view(), name="role-detail"),

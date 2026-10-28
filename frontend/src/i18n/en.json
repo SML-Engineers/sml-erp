@@ -157,13 +157,23 @@
       "password_changed": "Password changed",
       "two_factor_setup_started": "Two-factor setup started",
       "two_factor_enabled": "Two-factor turned on",
-      "two_factor_reset": "Two-factor reset"
+      "two_factor_reset": "Two-factor reset",
+      "company_updated": "Company profile changed",
+      "company_logo_changed": "Company logo changed",
+      "company_logo_removed": "Company logo removed",
+      "division_created": "Division added",
+      "division_changed": "Division changed",
+      "division_deactivated": "Division deactivated",
+      "division_reactivated": "Division reactivated",
+      "division_deleted": "Division deleted",
+      "division_first_used": "Division first used on a document"
     }
   },
   "menu": {
     "main": "Main",
     "dashboard": "Dashboard",
-    "administration": "Administration"
+    "administration": "Administration",
+    "settings": "Settings"
   },
   "layout": {
     "menu": "Menu",
@@ -183,5 +193,57 @@
     "showing": "Showing {{first}} to {{last}} of {{total}} entries",
     "previous": "Previous",
     "next": "Next"
+  },
+  "company": {
+    "title": "Company profile",
+    "help": "The company's details, printed on vouchers and other documents.",
+    "field": {
+      "name": "Company name",
+      "registration_no": "Business registration no.",
+      "tin": "Taxpayer identification no. (TIN)",
+      "vat_no": "VAT registration no.",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "website": "Website",
+      "base_currency": "Base currency",
+      "financial_year_start_month": "Financial year starts in"
+    },
+    "baseCurrencyFixed": "Every amount in the books is in this currency, so it cannot be changed.",
+    "save": "Save company profile",
+    "saved": "Saved.",
+    "logo": "Logo",
+    "logoAlt": "Company logo",
+    "noLogo": "No logo uploaded yet.",
+    "chooseLogo": "Upload a logo",
+    "removeLogo": "Remove logo",
+    "logoRules": "PNG or JPEG, 1 MB at most."
+  },
+  "divisions": {
+    "title": "Divisions",
+    "help": "Every voucher, ledger line and report carries a division. A division added here can be used straight away. Once a division has been used on a document its code is fixed, and it can only be deactivated, not deleted.",
+    "add": "Add a division",
+    "code": "Code",
+    "name": "Name",
+    "type": "Type",
+    "types": {
+      "production": "Production",
+      "shared": "Shared"
+    },
+    "codeLocked": "Code status",
+    "locked": "Fixed (used on documents)",
+    "notYetUsed": "Can still change",
+    "users": "Users",
+    "create": "Add division",
+    "created": "Division {{code}} {{name}} added. It can be used straight away.",
+    "codeHelp": "The code is two letters or digits, for example WS. It is the first part of every voucher number of this division.",
+    "edit": "Edit",
+    "editOne": "Edit division {{code}}",
+    "save": "Save",
+    "lockedHelp": "This division has been used on documents, so its code cannot change.",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "delete": "Delete",
+    "reasonNeeded": "To deactivate or delete, give a reason first."
   }
 }

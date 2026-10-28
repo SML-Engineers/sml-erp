@@ -136,6 +136,60 @@ class RecoveryCode(models.Model):
         return f"Recovery code for {self.user_id} ({'used' if self.used_at else 'unused'})"
 
 
+class Company(models.Model):
+    """The company profile (spec 3): one row, id 1, created by migration 0007."""
+
+    MONTHS = [
+        (1, "January"),
+        (2, "February"),
+        (3, "March"),
+        (4, "April"),
+        (5, "May"),
+        (6, "June"),
+        (7, "July"),
+        (8, "August"),
+        (9, "September"),
+        (10, "October"),
+        (11, "November"),
+        (12, "December"),
+    ]
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    name = models.CharField(max_length=200)
+    registration_no = models.CharField("Business registration no.", max_length=50, blank=True)
+    tin = models.CharField("Taxpayer identification no. (TIN)", max_length=50, blank=True)
+    vat_no = models.CharField("VAT registration no.", max_length=50, blank=True)
+    address = models.TextField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    website = models.CharField(max_length=200, blank=True)
+    # Fixed once the company is created: every amount in the books is in this currency. The
+    # database refuses a change (migration 0007).
+    base_currency = models.CharField(max_length=3, default="LKR")
+    # Sri Lankan companies usually run April to March.
+    financial_year_start_month = models.PositiveSmallIntegerField(choices=MONTHS, default=4)
+    logo = models.FileField(upload_to="company/", blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "company"
+        constraints = [
+            models.CheckConstraint(condition=models.Q(id=1), name="core_company_single_row"),
+            models.CheckConstraint(
+                condition=models.Q(financial_year_start_month__gte=1)
+                & models.Q(financial_year_start_month__lte=12),
+                name="core_company_fy_month_valid",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def get(cls) -> "Company":
+        return cls.objects.get(pk=1)
+
+
 class Division(models.Model):
     """A division of the company (spec 3.1). Its code is the PP in voucher numbers."""
 
@@ -148,12 +202,25 @@ class Division(models.Model):
     division_type = models.CharField(max_length=20, choices=Type.choices, default=Type.PRODUCTION)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
+    # Set the first time a document uses this division (its number, its lines). From then on
+    # the code is fixed and the division can only be deactivated; the database enforces both
+    # (migration 0007). The default bank account is added with bank accounts (P0-14).
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["code"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(code__regex=r"^[A-Z0-9]{2}$"), name="core_division_code_format"
+            ),
+        ]
 
     def __str__(self):
         return f"{self.code} {self.name}"
+
+    @property
+    def in_use(self) -> bool:
+        return self.first_used_at is not None
 
 
 class Role(models.Model):

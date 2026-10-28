@@ -601,3 +601,44 @@ tfoot td {
   color: #fff;
   font-weight: 600;
 }
+
+/* --- Settings forms --- */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.form-grid .wide {
+  grid-column: 1 / -1;
+}
+
+textarea {
+  font: inherit;
+  font-weight: 400;
+  padding: 10px 12px;
+  border: 1px solid #c9ced6;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #f4f5f7;
+  color: var(--color-muted);
+}
+
+.code-input {
+  width: 5em;
+  text-transform: uppercase;
+  font-family: ui-monospace, monospace;
+}
+
+.company-logo {
+  display: block;
+  max-width: 240px;
+  max-height: 120px;
+  margin-bottom: 12px;
+}

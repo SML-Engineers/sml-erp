@@ -17,7 +17,8 @@ export function mockApi(routes: ApiRoutes) {
     const method = (init?.method ?? "GET").toUpperCase();
     const route = routes[`${method} ${url}`];
     if (!route) throw new Error(`Unexpected request: ${method} ${url}`);
-    const sent = init?.body ? JSON.parse(String(init.body)) : undefined;
+    // JSON bodies are decoded; anything else (an upload's FormData) is passed as it is.
+    const sent = typeof init?.body === "string" ? JSON.parse(init.body) : init?.body;
     const reply = typeof route === "function" ? route(sent) : route;
     return new Response(JSON.stringify(reply.body), {
       status: reply.status ?? 200,

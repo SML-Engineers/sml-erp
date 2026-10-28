@@ -100,11 +100,12 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Master data and admin settings
 
-- [ ] **P0-07 Company and divisions** (spec 3, 3.1)
+- [x] **P0-07 Company and divisions** (spec 3, 3.1)
   Company profile (name, registration, VAT no., base currency LKR, financial year start).
   Division master maintained by the Admin: two-character code (PP), name, type (Production or
-  Shared), default bank account, active. Seed: WS Workshop, IM Plastic Injection Moulding,
-  HO Head Office (shared costs), as confirmed by the owner. Divisions are added, renamed and
+  Shared), default bank account (added in P0-14, once bank accounts exist), active. Seed:
+  WS Workshop, IM Plastic Injection Moulding, HO Head Office (shared costs), as confirmed by
+  the owner. Divisions are added, renamed and
   deactivated by the Admin from the Divisions control panel.
   - A division's code cannot change once it has been used on any document.
   - A division with transactions cannot be deleted, only deactivated.
@@ -157,7 +158,8 @@ Status: `[ ]` to do · `[x]` done
 
 - [ ] **P0-14 Bank and cash accounts**
   Company bank accounts and cash/petty cash accounts linked to ledger accounts; cheque books
-  with number ranges.
+  with number ranges. Adds each division's default bank account (moved here from P0-07),
+  chosen on the Divisions control panel.
 
 ## C. Accounting core
 

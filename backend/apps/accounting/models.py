@@ -58,6 +58,10 @@ class Account(models.Model):
         on_delete=models.PROTECT,
         related_name="default_accounts",
     )
+    # The tax code proposed when this account is chosen on a document line (P0-20).
+    default_tax_code = models.ForeignKey(
+        "TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="default_for"
+    )
     # Set on the accounts the system posts to; such accounts cannot be removed.
     system_role = models.CharField(max_length=30, choices=SYSTEM_ROLE_CHOICES, blank=True)
     is_active = models.BooleanField(default=True)
@@ -207,3 +211,132 @@ class JournalLine(models.Model):
 
     def __str__(self):
         return f"{self.entry_id}/{self.line_no}"
+
+
+# --- Taxes (backlog P0-20) ---------------------------------------------------------------
+
+TAX_CODE_REGEX = r"^[A-Z0-9][A-Z0-9-]{0,19}$"
+
+
+class TaxComponent(models.Model):
+    """One tax, e.g. VAT, SSCL or withholding tax, with its dated rates and the ledger
+    accounts it is recorded in. Kept by the Accountant, as QuickBooks tax items."""
+
+    is_structure = True
+
+    class Kind(models.TextChoices):
+        CHARGED = "charged", "Charged on invoices and bills (VAT, SSCL…)"
+        WITHHELD = "withheld", "Withheld from payments (WHT…)"
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.CHARGED)
+    # Sales: the tax collected and owed to the government. Purchases: the tax paid that can
+    # be claimed back; empty means it is part of the cost of what was bought.
+    sales_account = models.ForeignKey(
+        Account, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    purchase_account = models.ForeignKey(
+        Account, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["code"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(code__regex=TAX_CODE_REGEX), name="accounting_taxcomponent_code"
+            ),
+        ]
+
+    def __str__(self):
+        return self.code
+
+
+class TaxRate(models.Model):
+    """A component's rate from a date (rule 11). A rate in force on a used tax is fixed."""
+
+    is_structure = True
+
+    component = models.ForeignKey(TaxComponent, on_delete=models.PROTECT, related_name="rates")
+    effective_from = models.DateField()
+    rate = models.DecimalField(max_digits=7, decimal_places=4)  # percent, e.g. 18.0000
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["component", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["component", "effective_from"], name="accounting_taxrate_one_per_day"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rate__gte=0) & models.Q(rate__lte=100),
+                name="accounting_taxrate_percent",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.component_id} {self.rate}% from {self.effective_from}"
+
+
+class TaxCode(models.Model):
+    """What is chosen on a document line, e.g. "VAT 18% + SSCL", "Exempt": the components
+    it applies, in order, each on the net amount or on the net plus the taxes before it."""
+
+    is_structure = True
+
+    class Use(models.TextChoices):
+        BOTH = "both", "Sales and purchases"
+        SALES = "sales", "Sales only"
+        PURCHASES = "purchases", "Purchases only"
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=300, blank=True)
+    use = models.CharField(max_length=10, choices=Use.choices, default=Use.BOTH)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["code"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(code__regex=TAX_CODE_REGEX), name="accounting_taxcode_code"
+            ),
+        ]
+
+    def __str__(self):
+        return self.code
+
+
+class TaxCodeLine(models.Model):
+    is_structure = True
+
+    class Base(models.TextChoices):
+        NET = "net", "On the net amount"
+        NET_AND_TAX = "net_and_tax", "On the net amount plus the taxes above"
+
+    tax_code = models.ForeignKey(TaxCode, on_delete=models.CASCADE, related_name="lines")
+    sequence = models.PositiveSmallIntegerField()
+    component = models.ForeignKey(TaxComponent, on_delete=models.PROTECT, related_name="in_codes")
+    base = models.CharField(max_length=12, choices=Base.choices, default=Base.NET)
+
+    class Meta:
+        ordering = ["tax_code", "sequence"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tax_code", "sequence"], name="accounting_taxcodeline_sequence"
+            ),
+            models.UniqueConstraint(
+                fields=["tax_code", "component"], name="accounting_taxcodeline_component_once"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.tax_code_id}/{self.sequence}"

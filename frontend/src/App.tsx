@@ -11,6 +11,7 @@ import BankAccountsPage from "./pages/BankAccountsPage";
 import ChartOfAccountsPage from "./pages/ChartOfAccountsPage";
 import JournalPage from "./pages/JournalPage";
 import PeriodsPage from "./pages/PeriodsPage";
+import TaxesPage from "./pages/TaxesPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import PayeesPage from "./pages/PayeesPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
@@ -73,6 +74,7 @@ export default function App() {
           element={<WithMe page={(me) => <ChartOfAccountsPage me={me} />} />}
         />
         <Route path="journal" element={<WithMe page={(me) => <JournalPage me={me} />} />} />
+        <Route path="taxes" element={<WithMe page={(me) => <TaxesPage me={me} />} />} />
         <Route
           path="accounting-periods"
           element={<WithMe page={(me) => <PeriodsPage me={me} />} />}

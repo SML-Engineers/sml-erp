@@ -30,6 +30,7 @@ export interface LedgerAccount {
   detail_type: { id: number; name: string };
   description: string;
   default_division: string | null;
+  default_tax_code: string | null;
   system_role: string | null;
   is_active: boolean;
   merged_into: { id: number; name: string } | null;
@@ -46,6 +47,7 @@ export interface LedgerChange {
   parent?: number | null;
   description?: string;
   default_division?: string | null;
+  default_tax_code?: string | null;
   is_active?: boolean;
   reason?: string;
 }

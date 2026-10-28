@@ -35,6 +35,7 @@ def _row(account: Account, depth: int, name: str, in_use: set[int], banks: dict)
         "detail_type": {"id": account.detail_type_id, "name": account.detail_type.name},
         "description": account.description,
         "default_division": account.default_division.code if account.default_division else None,
+        "default_tax_code": account.default_tax_code.code if account.default_tax_code else None,
         "system_role": account.system_role or None,
         "is_active": account.is_active,
         "merged_into": None
@@ -72,6 +73,9 @@ class AccountInput(serializers.Serializer):
     detail_type = serializers.IntegerField(required=False, allow_null=True)
     parent = serializers.IntegerField(required=False, allow_null=True)
     description = serializers.CharField(max_length=600, required=False, allow_blank=True)
+    default_tax_code = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, allow_null=True
+    )
     default_division = serializers.CharField(
         max_length=2, required=False, allow_blank=True, allow_null=True
     )
@@ -91,6 +95,15 @@ def _resolve(values: dict) -> dict:
         if found is None:
             raise AccountingError("Unknown parent account.")
         values["parent"] = found
+    if "default_tax_code" in values:
+        from .models import TaxCode
+
+        code = (values["default_tax_code"] or "").strip().upper()
+        values["default_tax_code"] = None
+        if code:
+            values["default_tax_code"] = TaxCode.objects.filter(code=code).first()
+            if values["default_tax_code"] is None:
+                raise AccountingError(f"Unknown tax code {code}.")
     if "default_division" in values:
         code = (values["default_division"] or "").strip().upper()
         values["default_division"] = None

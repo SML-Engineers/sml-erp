@@ -22,6 +22,7 @@ import {
   type LedgerAccount,
 } from "../api/accounts";
 import { listDivisions } from "../api/admin";
+import { getTaxes, taxesKey } from "../api/taxes";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import DataTable from "../components/DataTable";
@@ -195,6 +196,7 @@ function AccountForm(props: {
   const refresh = useRefresh();
   const { account, accounts, types } = props;
   const divisions = useQuery({ queryKey: [...chartKey, "divisions"], queryFn: listDivisions });
+  const taxes = useQuery({ queryKey: taxesKey, queryFn: getTaxes });
   const [values, setValues] = useState({
     account_type: account?.account_type ?? types[0]?.code ?? "",
     detail_type: account ? String(account.detail_type.id) : "",
@@ -203,6 +205,7 @@ function AccountForm(props: {
     parent: account?.parent ? String(account.parent) : "",
     description: account?.description ?? "",
     default_division: account?.default_division ?? "",
+    default_tax_code: account?.default_tax_code ?? "",
     reason: "",
   });
   const set = (field: keyof typeof values) => (value: string) =>
@@ -233,6 +236,7 @@ function AccountForm(props: {
         parent: values.parent ? Number(values.parent) : null,
         description: values.description,
         default_division: values.default_division || null,
+        default_tax_code: values.default_tax_code || null,
         reason: values.reason,
       };
       return account ? updateLedgerAccount(account.id, change) : createLedgerAccount(change);
@@ -304,6 +308,19 @@ function AccountForm(props: {
               {d.code} {d.name}
             </option>
           ))}
+        </select>
+      </label>
+      <label>
+        {t("chart.defaultTaxCode")}
+        <select value={values.default_tax_code} onChange={(e) => set("default_tax_code")(e.target.value)}>
+          <option value="">{t("chart.noTaxCode")}</option>
+          {taxes.data?.codes
+            .filter((c) => c.is_active || c.code === values.default_tax_code)
+            .map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code} – {c.name}
+              </option>
+            ))}
         </select>
       </label>
       <label className="wide">

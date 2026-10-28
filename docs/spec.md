@@ -324,6 +324,12 @@ Every list and report has a division filter, and the dashboard can be switched b
 - A starter chart for a manufacturing company, based on QuickBooks' default chart, is loaded at setup. The company accountant reviews and edits it before go-live.
 - Import and export of the chart from Excel, so an existing chart can be loaded in one step.
 
+**Taxes (as in QuickBooks)**
+
+- The Accountant keeps the taxes, with no code change (confirmed by the owner, 29 October 2026). A **tax** (VAT, SSCL, withholding tax…) has dated rates (rule 11) and the ledger accounts it is recorded in: on sales, the tax owed to the government; on purchases, the tax claimed back, or none when it is part of the cost.
+- A **tax code** is chosen on each document line. It lists the taxes charged, in order; each is charged on the net amount or on the net amount plus the taxes above it. The tax invoice's rule (6.1: SSCL, then VAT on the amount plus SSCL) is the starting code VAT-SSCL. Each tax is rounded half-up to the cent.
+- Once a document has used a tax, a new rate can only start today or later and a rate in force cannot change; once a tax code has been used, its taxes cannot change (a new code is made instead). Withholding tax is deducted when paying, not in tax codes.
+
 **Journal (the ledger)**
 
 - `journal_entry`: number, date, source document type and id, narration, posted\_by, status.

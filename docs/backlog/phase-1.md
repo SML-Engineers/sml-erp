@@ -214,8 +214,8 @@ Status: `[ ]` to do · `[x]` done
   - Company bank and cash accounts are linked to a Bank-type ledger account (finishes P0-14);
     the link is fixed once the account is used. Payments (P1-07) will require it.
   - Moved to P0-16, where periods are built: the closed-period type check.
-  - Deferred to the tax codes task: the default tax code per account (tax design waiting
-    for the owner's QuickBooks tax list). The default division is done.
+  - The default tax code per account came with the taxes (P0-20). The default division is
+    done.
 
 - [x] **P0-16 Journal and periods** (spec 3)
   `journal_entry` / `journal_line`, posting service, reversal service, accounting periods
@@ -281,6 +281,19 @@ Status: `[ ]` to do · `[x]` done
   - Sending without a configured account, to an invalid address, or to more than 20
     recipients is refused; a failed send is recorded with the error.
   - The sent-email record cannot be changed or deleted (database).
+
+- [x] **P0-20 Taxes, QuickBooks style** (owner, 29 Oct 2026: kept by the Accountant)
+  Tax components (VAT, SSCL, WHT…) with dated rates and their ledger accounts; tax codes made
+  of components in order, each on the net amount or on the net plus the taxes above (spec
+  6.1: SSCL, then VAT on the amount plus SSCL); a default tax code per account (from P0-15);
+  a calculator. Accounts → Taxes; the Accountant changes them, everyone may read them.
+  - The spec 6.1 example calculates exactly: 115,750.00 → SSCL 2,459.69, VAT 21,277.74,
+    total 139,487.43; each tax rounded half-up to the cent.
+  - A rate applies from its date (rule 11). Once a tax is used, a new rate starts today or
+    later and a rate in force cannot change; a used tax code's make-up cannot change
+    (database too).
+  - Starting taxes and codes are suggestions without rates; the Accountant enters the rates
+    in force. Withholding tax is applied at payment (P1-07), not in tax codes.
 
 ## D. Payment vouchers (Phase 1)
 

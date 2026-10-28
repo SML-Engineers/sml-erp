@@ -12,6 +12,8 @@ import ChartOfAccountsPage from "./pages/ChartOfAccountsPage";
 import JournalPage from "./pages/JournalPage";
 import PeriodsPage from "./pages/PeriodsPage";
 import TaxesPage from "./pages/TaxesPage";
+import VoucherPage from "./pages/VoucherPage";
+import VouchersPage from "./pages/VouchersPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import PayeesPage from "./pages/PayeesPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
@@ -76,6 +78,8 @@ export default function App() {
         />
         <Route path="journal" element={<WithMe page={(me) => <JournalPage me={me} />} />} />
         <Route path="taxes" element={<WithMe page={(me) => <TaxesPage me={me} />} />} />
+        <Route path="vouchers" element={<WithMe page={(me) => <VouchersPage me={me} />} />} />
+        <Route path="vouchers/:id" element={<WithMe page={(me) => <VoucherPage me={me} />} />} />
         <Route
           path="accounting-periods"
           element={<WithMe page={(me) => <PeriodsPage me={me} />} />}

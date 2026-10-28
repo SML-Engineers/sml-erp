@@ -87,5 +87,5 @@ test("the user menu signs out", async () => {
 });
 
 test("empty menu sections are left out", () => {
-  expect(visibleMenu(clerk.access).map((s) => s.label)).toEqual(["menu.main"]);
+  expect(visibleMenu(clerk.access).map((s) => s.label)).toEqual(["menu.main", "menu.vouchers"]);
 });

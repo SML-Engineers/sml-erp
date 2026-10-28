@@ -1,6 +1,6 @@
 # Development image: runs the Vite dev server. A production build served by Nginx
 # is added with the hosting task (P1-10).
-FROM node:22-alpine
+FROM node:26-alpine
 
 WORKDIR /app
 COPY package.json package-lock.json ./

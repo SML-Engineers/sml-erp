@@ -23,9 +23,13 @@ from .organisation import mark_division_used
 
 TOKEN = re.compile(r"\{([^{}]*)\}")
 LITERAL = re.compile(r"^[A-Za-z0-9\-/._]*$")
-DATE_TOKENS = {"YY", "YYYY", "MM", "DD"}
+DATE_TOKENS = {"YY", "YYYY", "MM", "MMM", "DD"}
+DIVISION_TOKENS = {"PP", "IC"}
+MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+IC_WIDTH = 15
+NO_TAX_INVOICE_CODE = "(no tax invoice code yet)"
 MAX_WIDTH = 9
-MAX_LENGTH = 30
+MAX_LENGTH = 40  # the longest tax invoice serial number allowed (Gazette 2481/22)
 MAX_SKIPS = 1000
 
 # What a format must show so that numbers cannot repeat after the running number restarts.
@@ -40,7 +44,11 @@ RESET_LABEL = {
     NumberSeries.Reset.MONTHLY: "every month",
     NumberSeries.Reset.YEARLY: "every year",
 }
-NEED_LABEL = {"year": "the year ({YY} or {YYYY})", "MM": "the month ({MM})", "DD": "the day ({DD})"}
+NEED_LABEL = {
+    "year": "the year ({YY} or {YYYY})",
+    "MM": "the month ({MM} or {MMM})",
+    "DD": "the day ({DD})",
+}
 
 
 class NumberSeriesError(Exception):
@@ -55,11 +63,14 @@ class ParsedFormat:
 
     @property
     def has_division(self) -> bool:
-        return "PP" in self.tokens
+        """The number shows the division, so each division has its own running number."""
+        return bool(DIVISION_TOKENS & self.tokens)
 
     def shows(self, need: str) -> bool:
         if need == "year":
             return bool({"YY", "YYYY"} & self.tokens)
+        if need == "MM":
+            return bool({"MM", "MMM"} & self.tokens)
         return need in self.tokens
 
 
@@ -78,6 +89,8 @@ def parse_format(number_format: str) -> ParsedFormat:
         raise NumberSeriesError("The format needs one running number, for example {XXX}.")
     if {"YY", "YYYY"} <= parsed.tokens:
         raise NumberSeriesError("Use either {YY} or {YYYY}, not both.")
+    if {"MM", "MMM"} <= parsed.tokens:
+        raise NumberSeriesError("Use either {MM} or {MMM}, not both.")
     if _length(parsed) > MAX_LENGTH:
         raise NumberSeriesError(f"Numbers in this format would be longer than {MAX_LENGTH}.")
     return parsed
@@ -102,10 +115,10 @@ def _add_token(parsed: ParsedFormat, token: str) -> None:
         parsed.width = len(token)
         parsed.parts.append(("token", "RUN"))
         return
-    if token not in DATE_TOKENS | {"PP"}:
+    if token not in DATE_TOKENS | DIVISION_TOKENS:
         raise NumberSeriesError(
-            f"Unknown token {{{token}}}. Use {{PP}}, {{YY}}, {{YYYY}}, {{MM}}, {{DD}}, "
-            "and one running number such as {XXX}."
+            f"Unknown token {{{token}}}. Use {{PP}}, {{IC}}, {{YY}}, {{YYYY}}, {{MM}}, {{MMM}}, "
+            "{DD}, and one running number such as {XXX}."
         )
     if token in parsed.tokens:
         raise NumberSeriesError(f"{{{token}}} appears twice.")
@@ -114,7 +127,8 @@ def _add_token(parsed: ParsedFormat, token: str) -> None:
 
 
 def _length(parsed: ParsedFormat) -> int:
-    sizes = {"PP": 2, "YY": 2, "YYYY": 4, "MM": 2, "DD": 2, "RUN": parsed.width}
+    sizes = {"PP": 2, "IC": IC_WIDTH, "YY": 2, "YYYY": 4, "MM": 2, "MMM": 3, "DD": 2}
+    sizes["RUN"] = parsed.width
     return sum(len(v) if kind == "text" else sizes[v] for kind, v in parsed.parts)
 
 
@@ -145,9 +159,11 @@ def period_key(reset_period: str, on_date: date) -> str:
 def render(parsed: ParsedFormat, division: Division | None, on_date: date, running: int) -> str:
     values = {
         "PP": division.code if division else "",
+        "IC": division.tax_invoice_code if division else "",
         "YY": on_date.strftime("%y"),
         "YYYY": on_date.strftime("%Y"),
         "MM": on_date.strftime("%m"),
+        "MMM": MONTHS[on_date.month - 1],  # fixed English letters, whatever the server locale
         "DD": on_date.strftime("%d"),
         "RUN": str(running).zfill(parsed.width),
     }
@@ -167,7 +183,12 @@ def _series(document_type: str) -> NumberSeries:
 
 def _counter_division(parsed: ParsedFormat, division: Division | None) -> Division | None:
     if parsed.has_division and division is None:
-        raise NumberSeriesError("This document needs a division: its number starts with it.")
+        raise NumberSeriesError("This document needs a division: its number shows it.")
+    if "IC" in parsed.tokens and not division.tax_invoice_code:
+        raise NumberSeriesError(
+            f"Division {division.code} has no tax invoice code yet. The Admin sets it in "
+            "Settings → Divisions."
+        )
     # Without {PP} in the number, all divisions share one running number, or they would clash.
     return division if parsed.has_division else None
 
@@ -205,7 +226,7 @@ def allocate(document_type: str, *, division: Division | None = None, on_date=No
                     [series.pk, counter_division.pk if counter_division else None, period],
                 )
                 running = cursor.fetchone()[0]
-            if running > limit:
+            if running > limit and series.when_full == NumberSeries.WhenFull.STOP:
                 raise NumberSeriesError(_full_message(series, parsed, division, period, limit))
             number = render(parsed, division, on_date, running)
             try:
@@ -242,6 +263,8 @@ def preview(
     reset_period = series.reset_period if reset_period is None else reset_period
     parsed = check(number_format, reset_period)
     on_date = on_date or timezone.localdate()
+    if "IC" in parsed.tokens and division is not None and not division.tax_invoice_code:
+        return NO_TAX_INVOICE_CODE
     counter_division = _counter_division(parsed, division)
     last = (
         NumberCounter.objects.filter(
@@ -253,7 +276,7 @@ def preview(
         .first()
     ) or 0
     running = last + 1
-    if running > _limit(parsed):
+    if running > _limit(parsed) and series.when_full == NumberSeries.WhenFull.STOP:
         return "—"
     return render(parsed, division, on_date, running)
 
@@ -261,7 +284,12 @@ def preview(
 @audited("number_series_changed", reason_arg="reason")
 @transaction.atomic
 def update_series(
-    series: NumberSeries, *, number_format: str, reset_period: str, reason: str
+    series: NumberSeries,
+    *,
+    number_format: str,
+    reset_period: str,
+    reason: str,
+    when_full: str | None = None,
 ) -> NumberSeries:
     if not (reason or "").strip():
         raise NumberSeriesError("Give a reason for changing the number format.")
@@ -269,5 +297,9 @@ def update_series(
     series = NumberSeries.objects.select_for_update().get(pk=series.pk)
     series.format = number_format.strip()
     series.reset_period = reset_period
+    if when_full is not None:
+        if when_full not in NumberSeries.WhenFull.values:
+            raise NumberSeriesError("Choose what happens when the running number is full.")
+        series.when_full = when_full
     series.save()
     return series

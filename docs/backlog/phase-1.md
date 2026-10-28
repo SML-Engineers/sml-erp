@@ -139,6 +139,17 @@ Status: `[ ]` to do · `[x]` done
     sections, and sees the sections they supervise. "Copy access from another user" does not
     copy sections yet; it is added with the production pages (Phase 3).
 
+- [x] **P0-08b Tax invoice and quotation numbers** (spec 3, 6.1; owner's sample invoice)
+  Number series gains {MMM} (month letters, e.g. SEP), {IC} (the division's tax invoice code,
+  set by the Admin on the Divisions page) and a choice of what happens when a running number is
+  full: stop, or carry on with more digits. Starting series: tax invoices {YY}{MMM}_{IC}_{XX}
+  (monthly, per division), quotations QL{YY}{MM}{DD}{XX} (daily), proformas PI-{YYYY}-{NNNN}.
+  - The 35th W1 invoice of September 2026 is 26SEP_W1_35; the serial restarts at 01 each
+    month for each division, and the 100th is 26SEP_W1_100.
+  - The 5th quotation of 21 October 2026 is QL26102105.
+  - A division's tax invoice code is 1 to 15 letters or digits, unique, and fixed once used
+    on an invoice (application and database); an invoice for a division without one is refused.
+
 - [ ] **P0-10 Shifts and rosters page** (spec 3A.2)
   Tabs: Shifts, Roster patterns, Crews, Roster calendar with 4-week preview and the warnings
   listed in the spec. Seed: General shift 08:00–17:00.

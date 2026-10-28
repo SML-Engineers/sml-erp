@@ -36,7 +36,15 @@ class NumberSeriesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NumberSeries
-        fields = ["id", "document_type", "name", "format", "reset_period", "next_numbers"]
+        fields = [
+            "id",
+            "document_type",
+            "name",
+            "format",
+            "reset_period",
+            "when_full",
+            "next_numbers",
+        ]
 
     def get_next_numbers(self, series) -> list[dict]:
         try:
@@ -48,6 +56,7 @@ class NumberSeriesSerializer(serializers.ModelSerializer):
 class SeriesInput(serializers.Serializer):
     format = serializers.CharField(max_length=60)
     reset_period = serializers.ChoiceField(choices=NumberSeries.Reset.choices)
+    when_full = serializers.ChoiceField(choices=NumberSeries.WhenFull.choices, required=False)
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
@@ -81,6 +90,7 @@ class NumberSeriesDetailView(_SettingsArea):
                 number_format=data.validated_data["format"],
                 reset_period=data.validated_data["reset_period"],
                 reason=data.validated_data["reason"],
+                when_full=data.validated_data.get("when_full"),
             )
         except numbering.NumberSeriesError as error:
             return _error(error)

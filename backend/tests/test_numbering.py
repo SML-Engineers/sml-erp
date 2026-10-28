@@ -172,12 +172,7 @@ def test_the_admin_can_widen_the_running_number():
 
 
 def test_a_format_without_a_division_shares_one_running_number():
-    proforma = NumberSeries.objects.create(
-        document_type="proforma",
-        name="Proforma invoices",
-        format="PI-{YYYY}-{NNNN}",
-        reset_period="yearly",
-    )
+    proforma = series("proforma")  # PI-{YYYY}-{NNNN}, reset yearly
     with transaction.atomic():
         first = allocate("proforma", division=division("IM"), on_date=DAY)
         second = allocate("proforma", division=division("WS"), on_date=DAY)
@@ -243,7 +238,7 @@ def test_the_settings_list_shows_the_next_number_for_each_division(admin):
         allocate("voucher", division=division("IM"))
     response = as_user(admin).get("/api/v1/settings/number-series/")
     assert response.status_code == 200
-    [voucher] = response.json()
+    [voucher] = [row for row in response.json() if row["document_type"] == "voucher"]
     nexts = {row["division"]: row["next"] for row in voucher["next_numbers"]}
     assert set(nexts) == {"HO", "IM", "WS"}
     assert nexts["IM"].endswith("002") and nexts["WS"].endswith("001")

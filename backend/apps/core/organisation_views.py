@@ -55,6 +55,7 @@ class CompanyInput(serializers.Serializer):
 
 class DivisionAdminSerializer(serializers.ModelSerializer):
     in_use = serializers.SerializerMethodField()
+    tax_invoice_code_in_use = serializers.SerializerMethodField()
     users = serializers.SerializerMethodField()
 
     class Meta:
@@ -64,6 +65,8 @@ class DivisionAdminSerializer(serializers.ModelSerializer):
             "code",
             "name",
             "division_type",
+            "tax_invoice_code",
+            "tax_invoice_code_in_use",
             "is_active",
             "in_use",
             "first_used_at",
@@ -74,6 +77,9 @@ class DivisionAdminSerializer(serializers.ModelSerializer):
     def get_in_use(self, division) -> bool:
         return organisation.is_in_use(division)
 
+    def get_tax_invoice_code_in_use(self, division) -> bool:
+        return organisation.tax_invoice_code_in_use(division)
+
     def get_users(self, division) -> int:
         return division.users.count()
 
@@ -81,6 +87,7 @@ class DivisionAdminSerializer(serializers.ModelSerializer):
 class DivisionInput(serializers.Serializer):
     code = serializers.CharField(max_length=10, required=False)
     name = serializers.CharField(max_length=100, required=False)
+    tax_invoice_code = serializers.CharField(max_length=30, required=False, allow_blank=True)
     division_type = serializers.CharField(required=False)
     is_active = serializers.BooleanField(required=False)
     reason = serializers.CharField(required=False, allow_blank=True, default="")
@@ -163,6 +170,7 @@ class DivisionAdminListView(APIView):
                 code=values.get("code", ""),
                 name=values.get("name", ""),
                 division_type=values.get("division_type", Division.Type.PRODUCTION),
+                tax_invoice_code=values.get("tax_invoice_code", ""),
                 reason=values["reason"],
             )
         except organisation.OrganisationError as error:

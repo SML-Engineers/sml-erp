@@ -262,11 +262,14 @@
     "deactivate": "Deactivate",
     "reactivate": "Reactivate",
     "delete": "Delete",
-    "reasonNeeded": "To deactivate or delete, give a reason first."
+    "reasonNeeded": "To deactivate or delete, give a reason first.",
+    "taxInvoiceCode": "Tax invoice code",
+    "taxInvoiceCodeHelp": "The division's code in tax invoice numbers, e.g. W1 in 26SEP_W1_35: 1 to 15 letters or digits.",
+    "taxInvoiceCodeLocked": "This tax invoice code has been used on invoices, so it cannot change."
   },
   "numbering": {
     "title": "Number series",
-    "help": "How each kind of document is numbered. Vouchers use {PP}{YY}{MM}{DD}{XXX}: the division code, the date, and a running number that restarts at 001 each day for each division, e.g. IM261023003.",
+    "help": "How each kind of document is numbered. Vouchers: {PP}{YY}{MM}{DD}{XXX}, e.g. IM261023003. Tax invoices follow the government format YYMMM_code_serial: {YY}{MMM}_{IC}_{XX}, e.g. 26SEP_W1_35, restarting at 01 each month for each division.",
     "document": "Document",
     "format": "Format",
     "reset": "Running number restarts",
@@ -278,10 +281,15 @@
     },
     "next": "Next numbers",
     "editOne": "Edit numbering: {{name}}",
-    "tokens": "Click to add: {PP} division code, {YY} or {YYYY} year, {MM} month, {DD} day, {XXX} running number (one X per digit). Letters, digits and - / . _ can go between them.",
+    "tokens": "Click to add: {PP} division code, {IC} division's tax invoice code, {YY} or {YYYY} year, {MM} month number or {MMM} month letters (SEP), {DD} day, {XX} running number (one X per digit, at least). Letters, digits and - / . _ can go between them.",
     "check": "Check",
     "wouldGive": "The next numbers would be:",
-    "neverReused": "Numbers already given are never given again, even after a change."
+    "neverReused": "Numbers already given are never given again, even after a change.",
+    "whenFull": "When the running number is full",
+    "whenFullOptions": {
+      "stop": "Stop and ask the Admin to widen it",
+      "grow": "Carry on with more digits (99, 100, 101…)"
+    }
   },
   "factory": {
     "title": "Divisions, sections and machines",

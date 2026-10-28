@@ -58,6 +58,11 @@ export default function DivisionsPage({ me }: { me: CurrentUser }) {
             { id: "code", header: t("divisions.code"), value: (d) => d.code },
             { id: "name", header: t("divisions.name"), value: (d) => d.name },
             {
+              id: "invoice",
+              header: t("divisions.taxInvoiceCode"),
+              value: (d) => d.tax_invoice_code || "—",
+            },
+            {
               id: "type",
               header: t("divisions.type"),
               value: (d) => t(`divisions.types.${d.division_type}`),
@@ -119,18 +124,42 @@ function TypeSelect({
   );
 }
 
+function InvoiceCodeInput(props: {
+  value: string;
+  onChange: (value: string) => void;
+  locked?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <label>
+      {t("divisions.taxInvoiceCode")}
+      <input
+        className="code-input wide-code"
+        value={props.value}
+        maxLength={15}
+        disabled={props.locked}
+        title={t("divisions.taxInvoiceCodeHelp")}
+        onChange={(e) => props.onChange(e.target.value.toUpperCase())}
+      />
+    </label>
+  );
+}
+
 function AddDivision() {
   const { t } = useTranslation();
   const refresh = useRefreshDivisions();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [type, setType] = useState<DivisionType>("production");
+  const [invoiceCode, setInvoiceCode] = useState("");
   const [reason, setReason] = useState("");
   const add = useMutation({
-    mutationFn: () => createDivision({ code, name, division_type: type, reason }),
+    mutationFn: () =>
+      createDivision({ code, name, division_type: type, tax_invoice_code: invoiceCode, reason }),
     onSuccess: () => {
       setCode("");
       setName("");
+      setInvoiceCode("");
       setReason("");
       refresh();
     },
@@ -160,6 +189,7 @@ function AddDivision() {
           <input value={name} required onChange={(e) => setName(e.target.value)} />
         </label>
         <TypeSelect value={type} onChange={setType} />
+        <InvoiceCodeInput value={invoiceCode} onChange={setInvoiceCode} />
         <label>
           {t("access.reason")}
           <input value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -189,6 +219,7 @@ function EditDivision({ division, onDone }: { division: DivisionAdmin; onDone: (
   const [code, setCode] = useState(division.code);
   const [name, setName] = useState(division.name);
   const [type, setType] = useState<DivisionType>(division.division_type);
+  const [invoiceCode, setInvoiceCode] = useState(division.tax_invoice_code);
   const [reason, setReason] = useState("");
   const done = () => {
     refresh();
@@ -199,6 +230,7 @@ function EditDivision({ division, onDone }: { division: DivisionAdmin; onDone: (
     mutationFn: () =>
       updateDivision(division.id, {
         ...(division.in_use ? {} : { code }),
+        ...(division.tax_invoice_code_in_use ? {} : { tax_invoice_code: invoiceCode }),
         name,
         division_type: type,
         reason,
@@ -242,6 +274,11 @@ function EditDivision({ division, onDone }: { division: DivisionAdmin; onDone: (
           <input value={name} required onChange={(e) => setName(e.target.value)} />
         </label>
         <TypeSelect value={type} onChange={setType} />
+        <InvoiceCodeInput
+          value={invoiceCode}
+          onChange={setInvoiceCode}
+          locked={division.tax_invoice_code_in_use}
+        />
         <label>
           {t("access.reason")}
           <input value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -251,6 +288,9 @@ function EditDivision({ division, onDone }: { division: DivisionAdmin; onDone: (
         </button>
       </form>
       {division.in_use && <p className="muted">{t("divisions.lockedHelp")}</p>}
+      {division.tax_invoice_code_in_use && (
+        <p className="muted">{t("divisions.taxInvoiceCodeLocked")}</p>
+      )}
       <div className="row-actions">
         <button
           type="button"

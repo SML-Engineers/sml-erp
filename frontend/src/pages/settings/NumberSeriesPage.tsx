@@ -13,11 +13,13 @@ import {
   type NextNumber,
   type NumberSeries,
   type ResetPeriod,
+  type WhenFull,
 } from "../../api/organisation";
 import DataTable from "../../components/DataTable";
 
 const RESETS: ResetPeriod[] = ["daily", "monthly", "yearly", "never"];
-const TOKENS = ["{PP}", "{YY}", "{YYYY}", "{MM}", "{DD}", "{XXX}", "{XXXX}"];
+const TOKENS = ["{PP}", "{IC}", "{YY}", "{YYYY}", "{MM}", "{MMM}", "{DD}", "{XX}", "{XXX}", "{XXXX}"];
+const WHEN_FULL: WhenFull[] = ["stop", "grow"];
 
 function errorText(error: unknown, fallback: string) {
   return error instanceof ApiError && error.detail ? error.detail : fallback;
@@ -112,13 +114,15 @@ function EditSeries({ series, onDone }: { series: NumberSeries; onDone: () => vo
   const queryClient = useQueryClient();
   const [format, setFormat] = useState(series.format);
   const [reset, setReset] = useState<ResetPeriod>(series.reset_period);
+  const [whenFull, setWhenFull] = useState<WhenFull>(series.when_full);
   const [reason, setReason] = useState("");
 
   const check = useMutation({
     mutationFn: () => previewNumberSeries(series.id, { format, reset_period: reset }),
   });
   const save = useMutation({
-    mutationFn: () => updateNumberSeries(series.id, { format, reset_period: reset, reason }),
+    mutationFn: () =>
+      updateNumberSeries(series.id, { format, reset_period: reset, when_full: whenFull, reason }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: numberSeriesKey });
       onDone();
@@ -158,6 +162,16 @@ function EditSeries({ series, onDone }: { series: NumberSeries; onDone: () => vo
             {RESETS.map((r) => (
               <option key={r} value={r}>
                 {t(`numbering.resets.${r}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {t("numbering.whenFull")}
+          <select value={whenFull} onChange={(e) => setWhenFull(e.target.value as WhenFull)}>
+            {WHEN_FULL.map((w) => (
+              <option key={w} value={w}>
+                {t(`numbering.whenFullOptions.${w}`)}
               </option>
             ))}
           </select>

@@ -41,5 +41,9 @@ class AreaAccess(IsFullyAuthenticated):
         area = getattr(view, "access_area", None)
         if area is None:
             raise AssertionError(f"{view.__class__.__name__} must declare access_area")
-        level = "view" if request.method in SAFE_METHODS else view.access_write_level
+        level = (
+            "view"
+            if request.method in SAFE_METHODS
+            else getattr(view, "access_write_level", "manage")
+        )
         return has_access(request.user, area, level)

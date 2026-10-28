@@ -5,3 +5,8 @@ class CoreConfig(AppConfig):
     name = "apps.core"
     label = "core"
     verbose_name = "Core"
+
+    def ready(self):
+        from .audit import register_core_models
+
+        register_core_models()

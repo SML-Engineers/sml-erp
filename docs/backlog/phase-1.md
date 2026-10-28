@@ -78,12 +78,17 @@ Status: `[ ]` to do · `[x]` done
     created, confirmed and ended it, when and why, and is never deleted. P0-05 adds these
     events to the general audit log as well.
 
-- [ ] **P0-05 Audit log** (spec 3)
+- [x] **P0-05 Audit log** (spec 3)
   Insert-only log of create/update/delete on audited models: user, time, IP, old and new values.
   Includes every access change: users, roles, divisions, overrides, confirmations, expiries,
   deactivations and access reviews.
   - Updating or deleting an audit row fails at database level.
-  - Changing a supplier's bank account writes one audit row with old and new value.
+  - A change writes one audit row with old and new values (tested on divisions and users;
+    the supplier bank-account case is tested with suppliers in P0-13).
+  - Passwords and other secrets never appear in the log; routine fields such as the last
+    sign-in time are not logged.
+  - Every row records who (or "system" for scheduled jobs), when, the address, the event and
+    the reason. Auditor, Director and Admin can read and filter it; nobody can change it.
 
 - [ ] **P0-06 Application layout**
   Sidebar navigation, top bar with notification bell and user menu, responsive layout
@@ -144,6 +149,8 @@ Status: `[ ]` to do · `[x]` done
   Government, Employee, Other), address, contacts, VAT no., bank details, payment terms,
   currency, active. Bank detail changes are audited and shown to the Accountant on the next voucher.
   - Duplicate VAT number warns before saving.
+  - Changing a supplier's bank account writes one audit row with the old and new value
+    (register the supplier model with the audit log, P0-05).
 
 - [ ] **P0-14 Bank and cash accounts**
   Company bank accounts and cash/petty cash accounts linked to ledger accounts; cheque books

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import access_views, auth_views, views
+from . import access_views, audit_views, auth_views, views
 
 urlpatterns = [
     path("health/", views.health, name="health"),
@@ -66,4 +66,5 @@ urlpatterns = [
         name="override-revoke",
     ),
     path("access-review/", access_views.AccessReviewView.as_view(), name="access-review"),
+    path("audit/", audit_views.AuditLogView.as_view(), name="audit-log"),
 ]

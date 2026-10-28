@@ -6,6 +6,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
 import AccessReviewPage from "./pages/admin/AccessReviewPage";
+import AuditLogPage from "./pages/admin/AuditLogPage";
 import UserAccessPage from "./pages/admin/UserAccessPage";
 import UsersPage from "./pages/admin/UsersPage";
 
@@ -35,6 +36,7 @@ export default function App() {
         path="/admin/users/:id"
         element={<AuthGate>{(me) => <UserAccessPage me={me} />}</AuthGate>}
       />
+      <Route path="/admin/audit" element={<AuthGate>{() => <AuditLogPage />}</AuthGate>} />
       <Route
         path="/admin/access-review"
         element={<AuthGate>{(me) => <AccessReviewPage me={me} />}</AuthGate>}

@@ -18,6 +18,7 @@ from .access_defaults import (
     LEVELS,
     TWO_FACTOR_ROLES,
 )
+from .audit import audited, record
 from .models import (
     AccessOverride,
     Division,
@@ -171,6 +172,7 @@ def conflict_warnings(role_codes: set[str]) -> list[str]:
     ]
 
 
+@audited("roles_changed", reason_arg="reason")
 @transaction.atomic
 def set_user_roles(actor: User, target: User, roles: list[Role], reason: str = "") -> list[str]:
     """Replace a user's roles. Returns any conflict warnings that were accepted with a reason."""
@@ -208,13 +210,18 @@ def set_user_roles(actor: User, target: User, roles: list[Role], reason: str = "
     return warnings
 
 
+@audited("divisions_changed")
 @transaction.atomic
 def set_user_scope(actor: User, target: User, all_divisions: bool, divisions: list[Division]):
     if actor.pk == target.pk:
         raise AccessError("You cannot change your own access; another administrator must do it.")
+    before = sorted(target.divisions.values_list("code", flat=True))
     target.all_divisions = all_divisions
     target.save(update_fields=["all_divisions"])
     target.divisions.set([] if all_divisions else divisions)
+    after = sorted(target.divisions.values_list("code", flat=True))
+    if before != after:  # many-to-many changes are not seen by the automatic capture
+        record("update", target, {"divisions": [before, after]})
 
 
 # --- Custom roles -----------------------------------------------------------------------
@@ -231,6 +238,7 @@ def validate_role_content(permissions: list[dict], actions: list[str]) -> None:
             raise AccessError(f"Unknown special action: {action!r}.")
 
 
+@audited("role_saved")
 @transaction.atomic
 def save_custom_role(
     role: Role | None,

@@ -1,0 +1,311 @@
+"""The access catalogue and the standard roles' default access (spec 1.1 and 1.2).
+
+STANDARD_ROLES_V1 is loaded by migration 0004. Treat it as frozen: a later change to the
+defaults is a new constant (V2) loaded by a new migration, so existing databases and new
+ones always agree.
+"""
+
+# --- Catalogue --------------------------------------------------------------------------
+
+AREAS = {
+    "dashboard": "Dashboard",
+    "vouchers": "Payment vouchers",
+    "payments": "Supplier payments",
+    "banking": "Banking and reconciliation",
+    "payees": "Suppliers and payees",
+    "accounting": "Chart of accounts and journals",
+    "financial_reports": "Financial reports",
+    "sales": "Sales",
+    "purchasing": "Purchasing",
+    "stores": "Stores and goods receipt",
+    "quality": "Quality",
+    "production_planning": "Production planning and job orders",
+    "shop_floor": "Shop-floor entry",
+    "production_approvals": "Production approvals and reports",
+    "job_profitability": "Job and order profitability",
+    "hr_payroll": "HR and payroll",
+    "settings": "Settings",
+    "users": "Users, roles and access",
+    "audit_logs": "Audit and approval logs",
+}
+
+LEVELS = {
+    "view": "View: read, search, print and export",
+    "enter": "Enter: create and edit own records, and submit them",
+    "approve": "Approve: review, approve, return or reject at the role's level",
+    "manage": "Manage: full maintenance of the area's records or settings",
+}
+
+# What each level includes (spec 1.2): Approve and Enter include View; Manage includes Enter.
+IMPLIES = {
+    "view": {"view"},
+    "enter": {"enter", "view"},
+    "approve": {"approve", "view"},
+    "manage": {"manage", "enter", "view"},
+}
+
+ACTIONS = {
+    "record_payment": "Record supplier payments",
+    "delete_submitted_voucher": "Delete a submitted voucher that has no payment",
+    "close_period": "Close and reopen accounting periods",
+    "change_bank_details": "Change suppliers' and payees' bank details",
+    "export_personal_data": "Export personal data",
+    "confirm_sensitive_grants": "Confirm sensitive access grants",
+    "confirm_limits": "Confirm quotation approval limits",
+}
+
+# Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
+SENSITIVE_AREA_LEVELS = {("vouchers", "approve"), ("users", "manage")}
+SENSITIVE_AREAS = {"hr_payroll"}
+SENSITIVE_ACTIONS = {
+    "record_payment",
+    "delete_submitted_voucher",
+    "change_bank_details",
+    "close_period",
+}
+
+# Holding any of these roles switches two-factor sign-in on (spec 1.1, P0-03).
+TWO_FACTOR_ROLES = {"system_admin", "director", "accountant", "cashier"}
+
+FINANCE_ROLES = {"director", "accountant", "clerk", "cashier"}
+
+# Pairs that should be held by different people (spec 1.1, "Conflicting combinations").
+CONFLICTING_PAIRS = [
+    ("clerk", "cashier", "records and pays the same vouchers"),
+    ("accountant", "cashier", "approves and pays the same vouchers"),
+] + [
+    ("system_admin", role, "manages access and also handles money")
+    for role in sorted(FINANCE_ROLES)
+]
+
+
+# --- Standard roles ---------------------------------------------------------------------
+
+V, E, A, M = "view", "enter", "approve", "manage"
+
+
+def _all_view(note_for=None):
+    note_for = note_for or {}
+    return [(area, V, note_for.get(area, "")) for area in AREAS]
+
+
+# Each role: code -> (name, description, active from phase 1, permissions, actions).
+# Permissions are (area, level, note); notes explain limits that the module itself applies.
+STANDARD_ROLES_V1 = {
+    "system_admin": (
+        "System Administrator",
+        "Users, roles, settings and master codes. Kept apart from money.",
+        True,
+        [
+            ("dashboard", V, "system"),
+            ("vouchers", V, "to delete unpaid vouchers"),
+            ("settings", M, ""),
+            ("users", M, ""),
+            ("audit_logs", V, ""),
+        ],
+        ["delete_submitted_voucher"],
+    ),
+    "director": (
+        "Director",
+        "Final approval (L3); approves deletions, cancellations, limits and period close.",
+        True,
+        [
+            ("dashboard", V, "all"),
+            ("vouchers", A, "level 3"),
+            ("payments", V, ""),
+            ("banking", V, ""),
+            ("payees", V, ""),
+            ("accounting", V, ""),
+            ("financial_reports", V, ""),
+            ("sales", A, "above limits"),
+            ("purchasing", A, ""),
+            ("stores", V, ""),
+            ("quality", A, "deviations"),
+            ("production_planning", V, ""),
+            ("production_approvals", V, ""),
+            ("job_profitability", V, ""),
+            ("hr_payroll", A, "payroll"),
+            ("settings", V, ""),
+            ("users", V, ""),
+            ("audit_logs", V, ""),
+        ],
+        ["delete_submitted_voucher", "close_period", "confirm_limits", "confirm_sensitive_grants"],
+    ),
+    "accountant": (
+        "Accountant",
+        "Reviews and codes vouchers (L2); suppliers, chart of accounts, journals, banking.",
+        True,
+        [
+            ("dashboard", V, ""),
+            ("vouchers", E, ""),
+            ("vouchers", A, "level 2"),
+            ("payments", V, ""),
+            ("banking", M, ""),
+            ("payees", M, ""),
+            ("accounting", M, ""),
+            ("financial_reports", V, ""),
+            ("sales", V, ""),
+            ("purchasing", V, ""),
+            ("stores", V, ""),
+            ("quality", V, ""),
+            ("production_planning", V, ""),
+            ("production_approvals", V, ""),
+            ("job_profitability", V, ""),
+            ("hr_payroll", V, "totals only"),
+            ("settings", V, ""),
+            ("audit_logs", V, "finance"),
+        ],
+        ["change_bank_details"],
+    ),
+    "clerk": (
+        "Accounts Clerk",
+        "Creates vouchers and uploads scanned invoices (L1).",
+        True,
+        [
+            ("dashboard", V, "own"),
+            ("vouchers", E, "own"),
+            ("payees", E, "add"),
+        ],
+        [],
+    ),
+    "cashier": (
+        "Cashier / Payment Officer",
+        "Records payments against Director-approved vouchers.",
+        True,
+        [
+            ("dashboard", V, "own"),
+            ("vouchers", V, "approved only"),
+            ("payments", E, ""),
+            ("banking", V, ""),
+            ("payees", V, ""),
+        ],
+        ["record_payment"],
+    ),
+    "auditor": (
+        "Auditor",
+        "Reads everything, including audit and approval logs. Changes nothing.",
+        True,
+        _all_view({"hr_payroll": "totals only"}),
+        [],
+    ),
+    "sales_executive": (
+        "Sales Executive",
+        "Customers, quotations, proformas and sales orders.",
+        False,
+        [("dashboard", V, "own"), ("sales", E, ""), ("production_planning", V, "status")],
+        [],
+    ),
+    "sales_manager": (
+        "Sales Manager",
+        "Approves quotations within the limits.",
+        False,
+        [
+            ("dashboard", V, "sales"),
+            ("sales", A, "within limits"),
+            ("production_planning", V, "status"),
+            ("job_profitability", V, ""),
+        ],
+        [],
+    ),
+    "purchasing_officer": (
+        "Purchasing Officer",
+        "Purchase requests and orders.",
+        False,
+        [
+            ("dashboard", V, "own"),
+            ("payees", E, ""),
+            ("purchasing", E, ""),
+            ("stores", V, ""),
+            ("quality", V, ""),
+        ],
+        [],
+    ),
+    "store_supervisor": (
+        "Store Supervisor",
+        "Goods receipts with weights and counts, material issues and returns.",
+        False,
+        [
+            ("dashboard", V, "own"),
+            ("payees", V, ""),
+            ("purchasing", V, ""),
+            ("stores", E, ""),
+            ("quality", V, ""),
+        ],
+        [],
+    ),
+    "qc_inspector": (
+        "QC Inspector",
+        "Inspection results; accepts or rejects lots.",
+        False,
+        [
+            ("dashboard", V, "own"),
+            ("payees", V, ""),
+            ("purchasing", V, ""),
+            ("stores", V, ""),
+            ("quality", A, ""),
+            ("shop_floor", E, "inspection"),
+            ("production_approvals", V, ""),
+        ],
+        [],
+    ),
+    "hr_payroll_officer": (
+        "HR and Payroll Officer",
+        "Employees, attendance and payroll preparation.",
+        False,
+        [("dashboard", V, "own"), ("hr_payroll", M, "")],
+        ["export_personal_data"],
+    ),
+    "production_planner": (
+        "Production Planner",
+        "Job orders, production plans and bills of materials.",
+        False,
+        [
+            ("dashboard", V, "production"),
+            ("sales", V, ""),
+            ("purchasing", V, ""),
+            ("stores", V, ""),
+            ("production_planning", E, ""),
+            ("production_approvals", V, ""),
+        ],
+        [],
+    ),
+    "production_supervisor": (
+        "Production Supervisor",
+        "Shift entries for assigned sections only.",
+        False,
+        [
+            ("dashboard", V, "own sections"),
+            ("stores", V, ""),
+            ("quality", V, ""),
+            ("production_planning", V, ""),
+            ("shop_floor", E, "own sections"),
+            ("production_approvals", V, "own sections"),
+            ("hr_payroll", V, "attendance"),
+        ],
+        [],
+    ),
+    "production_manager": (
+        "Production Manager",
+        "Approves shift reports, corrections, deviations and bills of materials.",
+        False,
+        [
+            ("dashboard", V, "production"),
+            ("sales", V, ""),
+            ("purchasing", V, ""),
+            ("stores", V, ""),
+            ("quality", A, "deviations"),
+            ("production_planning", A, ""),
+            ("shop_floor", V, ""),
+            ("production_approvals", A, ""),
+            ("job_profitability", V, ""),
+            ("hr_payroll", V, "attendance"),
+        ],
+        [],
+    ),
+}
+
+STANDARD_DIVISIONS_V1 = [
+    ("WS", "Workshop", "production"),
+    ("IM", "Plastic Injection Moulding", "production"),
+    ("HO", "Head Office", "shared"),
+]

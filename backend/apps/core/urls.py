@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import auth_views, views
+from . import access_views, auth_views, views
 
 urlpatterns = [
     path("health/", views.health, name="health"),
@@ -21,4 +21,15 @@ urlpatterns = [
         name="auth-password-change",
     ),
     path("auth/login-history/", auth_views.LoginHistoryView.as_view(), name="auth-login-history"),
+    path("access/catalog/", access_views.CatalogView.as_view(), name="access-catalog"),
+    path("divisions/", access_views.DivisionListView.as_view(), name="division-list"),
+    path(
+        "divisions/<str:code>/", access_views.DivisionDetailView.as_view(), name="division-detail"
+    ),
+    path("roles/", access_views.RoleListView.as_view(), name="role-list"),
+    path("roles/<slug:code>/", access_views.RoleDetailView.as_view(), name="role-detail"),
+    path("users/", access_views.UserListView.as_view(), name="user-list"),
+    path("users/<int:pk>/", access_views.UserDetailView.as_view(), name="user-detail"),
+    path("users/<int:pk>/roles/", access_views.UserRolesView.as_view(), name="user-roles"),
+    path("users/<int:pk>/scope/", access_views.UserScopeView.as_view(), name="user-scope"),
 ]

@@ -34,7 +34,7 @@ Status: `[ ]` to do · `[x]` done
   - Users with those roles cannot reach any page until 2FA is set up.
   - Failed logins are recorded; 5 failures in 15 minutes locks the account for 15 minutes.
 
-- [ ] **P0-04 Roles, permissions and data scope** (spec 1.1, 1.2)
+- [x] **P0-04 Roles, permissions and data scope** (spec 1.1, 1.2)
   Permission model: areas × access levels (none, View, Enter, Approve, Manage) plus special
   actions (record payments, delete submitted voucher, close period, change bank details,
   export personal data, manage users and roles). Standard roles loaded with the default access
@@ -45,8 +45,11 @@ Status: `[ ]` to do · `[x]` done
   A user can hold several roles. Data scope per user: divisions, and sections for production
   staff. Deny by default: menus show only permitted areas, and every API endpoint checks the
   effective permission and data scope on the server.
-  - An endpoint called without the required permission returns 403; the area is absent from
-    the user's menu.
+  - An endpoint called without the required permission returns 403. (Hiding the area from the
+    menu is part of P0-06; the user's access is already sent to the app in /auth/me/.)
+  - Section scope for production staff is added with sections in P0-09.
+  - The division records WS, IM and HO are created here so scope works; their control panel
+    is P0-07.
   - A user scoped to one division cannot see or change another division's records, through
     lists, reports, exports or direct API calls.
   - Auditor can read everything and change nothing.
@@ -81,6 +84,7 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P0-06 Application layout**
   Sidebar navigation, top bar with notification bell and user menu, responsive layout
   (works on a phone), shared table component with search, sort, paging and column totals.
+  - The menu shows only the areas the user can view (from their access in /auth/me/).
 
 ## B. Master data and admin settings
 

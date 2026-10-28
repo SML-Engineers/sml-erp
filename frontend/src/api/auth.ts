@@ -1,3 +1,4 @@
+import type { Access } from "./access";
 import { apiGet, apiPost } from "./client";
 
 export type Requirement = "password_change_required" | "two_factor_setup_required";
@@ -8,6 +9,7 @@ export interface CurrentUser {
   two_factor_enabled: boolean;
   two_factor_required: boolean;
   requirements: Requirement[];
+  access: Access;
 }
 
 export type Me =

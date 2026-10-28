@@ -2,11 +2,48 @@
   "app": {
     "name": "SML ERP"
   },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again."
+  },
   "home": {
     "checking": "Checking connection to the server…",
     "ok": "System status: OK",
     "degraded": "System status: the database is not reachable",
     "unreachable": "Cannot reach the server",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "welcome": "Welcome, {{name}}",
+    "signOut": "Sign out"
+  },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "codeTitle": "Two-factor code",
+    "codeHelp": "Enter the 6-digit code from your authenticator app, or one of your recovery codes.",
+    "code": "Code",
+    "verify": "Verify",
+    "failed": "Sign-in failed. Please try again."
+  },
+  "twoFactor": {
+    "title": "Set up two-factor sign-in",
+    "help": "Your role needs a second step when signing in. Scan this code with an authenticator app (such as Google Authenticator or Microsoft Authenticator), then enter the 6-digit code it shows.",
+    "qrAlt": "QR code for your authenticator app",
+    "manual": "Can't scan? Enter this key in the app:",
+    "confirm": "Turn on",
+    "recoveryTitle": "Your recovery codes",
+    "recoveryHelp": "If you lose your phone, each of these codes lets you sign in once. Print them or store them somewhere safe. They will not be shown again.",
+    "saved": "I have saved these codes"
+  },
+  "password": {
+    "title": "Change password",
+    "firstTime": "Please choose your own password before continuing.",
+    "rules": "At least 10 characters. Avoid common words, only numbers, or anything close to your name or email.",
+    "current": "Current password",
+    "new": "New password",
+    "repeat": "Repeat new password",
+    "mismatch": "The two new passwords do not match.",
+    "submit": "Change password"
   }
 }

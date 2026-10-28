@@ -8,6 +8,37 @@ export class ApiError extends Error {
   ) {
     super(`API request failed with status ${status}`);
   }
+
+  /** The server's explanation, ready to show to the user. */
+  get detail(): string | undefined {
+    const detail = (this.body as { detail?: unknown } | null)?.detail;
+    if (Array.isArray(detail)) return detail.join(" ");
+    return typeof detail === "string" ? detail : undefined;
+  }
+}
+
+function readCookie(name: string): string | undefined {
+  return document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(`${name}=`))
+    ?.split("=")[1];
+}
+
+let csrfReady: Promise<void> | null = null;
+
+/** Django sets the CSRF cookie on this call; every change sends it back as a header. */
+export function ensureCsrf(): Promise<void> {
+  if (readCookie("csrftoken")) return Promise.resolve();
+  csrfReady ??= fetch(`${API_BASE}/auth/csrf/`, { credentials: "same-origin" }).then(() => {
+    csrfReady = null;
+  });
+  return csrfReady;
+}
+
+async function parse<T>(response: Response): Promise<T> {
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new ApiError(response.status, body);
+  return body as T;
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -15,7 +46,20 @@ export async function apiGet<T>(path: string): Promise<T> {
     credentials: "same-origin",
     headers: { Accept: "application/json" },
   });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new ApiError(response.status, body);
-  return body as T;
+  return parse<T>(response);
+}
+
+export async function apiPost<T>(path: string, data?: unknown): Promise<T> {
+  await ensureCsrf();
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-CSRFToken": readCookie("csrftoken") ?? "",
+    },
+    body: data === undefined ? undefined : JSON.stringify(data),
+  });
+  return parse<T>(response);
 }

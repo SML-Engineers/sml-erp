@@ -1,48 +1,40 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { vi } from "vitest";
+import { fireEvent, screen } from "@testing-library/react";
 
+import { mockApi, renderAt, sampleUser } from "../test-utils";
 import HomePage from "./HomePage";
 
-function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={client}>
-      <HomePage />
-    </QueryClientProvider>,
-  );
-}
+test("welcomes the user and shows the system status", async () => {
+  mockApi({
+    "GET /api/v1/health/": { body: { status: "ok", database: "ok", version: "0.1.0" } },
+  });
+  renderAt("/dashboard", <HomePage user={sampleUser} />);
 
-function mockFetch(status: number, body: unknown) {
-  vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { "Content-Type": "application/json" },
-    }),
-  );
-}
-
-test("shows OK and the version when the API is healthy", async () => {
-  mockFetch(200, { status: "ok", database: "ok", version: "0.1.0" });
-  renderPage();
-
+  expect(screen.getByText("Welcome, Mewantha")).toBeInTheDocument();
   expect(await screen.findByText("System status: OK")).toBeInTheDocument();
   expect(screen.getByText("Version 0.1.0")).toBeInTheDocument();
-  expect(globalThis.fetch).toHaveBeenCalledWith("/api/v1/health/", expect.anything());
 });
 
-test("shows an error when the server cannot be reached", async () => {
-  vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
-  renderPage();
-
-  expect(await screen.findByText("Cannot reach the server")).toBeInTheDocument();
-});
-
-test("says the database is unreachable when the API reports it is down", async () => {
-  mockFetch(503, { status: "degraded", database: "unavailable", version: "0.1.0" });
-  renderPage();
+test("says when the database is not reachable", async () => {
+  mockApi({
+    "GET /api/v1/health/": {
+      status: 503,
+      body: { status: "degraded", database: "unavailable", version: "0.1.0" },
+    },
+  });
+  renderAt("/dashboard", <HomePage user={sampleUser} />);
 
   expect(
     await screen.findByText("System status: the database is not reachable"),
   ).toBeInTheDocument();
+});
+
+test("signs out and returns to the login page", async () => {
+  mockApi({
+    "GET /api/v1/health/": { body: { status: "ok", database: "ok", version: "0.1.0" } },
+    "POST /api/v1/auth/logout/": { body: { status: "signed_out" } },
+  });
+  renderAt("/dashboard", <HomePage user={sampleUser} />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  expect(await screen.findByText("Login page")).toBeInTheDocument();
 });

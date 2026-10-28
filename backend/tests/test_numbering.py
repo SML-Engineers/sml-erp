@@ -79,6 +79,8 @@ def test_the_date_is_today_in_sri_lanka_when_not_given():
 # --- Allocated inside the saving transaction --------------------------------------------
 
 
+# Without the per-test transaction, so the call really is outside any transaction.
+@pytest.mark.django_db(transaction=True, serialized_rollback=True)
 def test_numbers_are_given_only_inside_a_transaction():
     with pytest.raises(NumberSeriesError, match="saving transaction"):
         allocate("voucher", division=division("IM"), on_date=DAY)

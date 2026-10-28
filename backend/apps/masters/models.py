@@ -540,8 +540,8 @@ class SupplierBankAccount(models.Model):
 
 
 class CompanyAccount(models.Model):
-    """A company bank account, cash box or petty cash float. Linked to its ledger account
-    when the chart of accounts is added (P0-15)."""
+    """A company bank account, cash box or petty cash float, with its ledger account in the
+    chart of accounts (a Bank-type account, P0-15)."""
 
     is_structure = True
 
@@ -567,6 +567,13 @@ class CompanyAccount(models.Model):
     float_amount = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     division = models.ForeignKey(
         Division, null=True, blank=True, on_delete=models.PROTECT, related_name="company_accounts"
+    )
+    ledger_account = models.OneToOneField(
+        "accounting.Account",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="company_account",
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)

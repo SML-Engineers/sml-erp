@@ -27,6 +27,8 @@ export interface CompanyAccount {
   division: string | null;
   custodian: { id: number; name: string } | null;
   float_amount: string | null;
+  /** Its Bank-type account in the chart of accounts. */
+  ledger_account: { id: number; number: string; name: string } | null;
   is_active: boolean;
   default_for: string[];
   cheque_books: ChequeBook[];
@@ -44,8 +46,17 @@ export interface AccountChange {
   division?: string;
   custodian?: number | null;
   float_amount?: string | null;
+  ledger_account?: number | null;
   is_active?: boolean;
   reason?: string;
+}
+
+export interface LedgerChoice {
+  id: number;
+  number: string;
+  name: string;
+  /** Code of the company account already linked to it, if any. */
+  linked_to: string | null;
 }
 
 export interface ChequeRegister {
@@ -68,6 +79,7 @@ export const closeChequeBook = (id: number, bookId: number, reason: string) =>
 export const getRegister = (id: number) => apiGet<ChequeRegister>(`/company-accounts/${id}/cheques/`);
 export const spoilCheque = (id: number, number: number, reason: string) =>
   apiPost<unknown>(`/company-accounts/${id}/cheques/`, { number, reason });
+export const listLedgers = () => apiGet<LedgerChoice[]>("/company-accounts/ledgers/");
 export const listCustodians = () => apiGet<{ id: number; name: string }[]>("/company-accounts/custodians/");
 export const listDefaults = () =>
   apiGet<{ division: string; account: { id: number; code: string } | null }[]>(

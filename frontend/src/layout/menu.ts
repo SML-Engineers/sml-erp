@@ -27,6 +27,7 @@ export const MENU: MenuSection[] = [
     items: [
       { label: "payees.title", path: "/payees", area: "payees" },
       { label: "banking.title", path: "/bank-accounts", area: "banking" },
+      { label: "chart.title", path: "/chart-of-accounts", area: "accounting" },
     ],
   },
   {

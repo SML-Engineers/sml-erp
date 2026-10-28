@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "storages",
     "apps.core",
     "apps.masters",
+    "apps.accounting",
 ]
 
 MIDDLEWARE = [

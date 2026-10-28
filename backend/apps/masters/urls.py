@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import roster_views as rv
 from . import views
 
 urlpatterns = [
@@ -34,5 +35,18 @@ urlpatterns = [
     ),
     path("settings/factory/export/", views.FactoryExportView.as_view(), name="factory-export"),
     path("settings/factory/import/", views.FactoryImportView.as_view(), name="factory-import"),
+    path("settings/shifts/", rv.ShiftListView.as_view(), name="settings-shift-list"),
+    path("settings/shifts/<int:pk>/", rv.ShiftDetailView.as_view(), name="settings-shift-detail"),
+    path("settings/roster-patterns/", rv.PatternListView.as_view(), name="roster-pattern-list"),
+    path(
+        "settings/roster-patterns/<int:pk>/",
+        rv.PatternDetailView.as_view(),
+        name="roster-pattern-detail",
+    ),
+    path("settings/crews/", rv.CrewListView.as_view(), name="crew-list"),
+    path("settings/crews/<int:pk>/", rv.CrewDetailView.as_view(), name="crew-detail"),
+    path("settings/rosters/", rv.AssignmentListView.as_view(), name="roster-list"),
+    path("settings/rosters/preview/", rv.RosterPreviewView.as_view(), name="roster-preview"),
+    path("settings/rosters/<int:pk>/", rv.AssignmentDetailView.as_view(), name="roster-detail"),
     path("users/<int:pk>/sections/", views.UserSectionsView.as_view(), name="user-sections"),
 ]

@@ -113,6 +113,11 @@ def _document_relations():
     ]
 
 
+def related_rows(rel, obj):
+    """The rows on the other side of a reverse relation, for one-to-one links too."""
+    return rel.related_model._base_manager.filter(**{rel.field.name: obj})
+
+
 def _relations():
     return [rel for rel in Division._meta.related_objects if rel.get_accessor_name()]
 
@@ -121,8 +126,7 @@ def linked_record_counts(division: Division) -> dict[str, int]:
     """How many records of each kind point at this division (users included)."""
     counts = {}
     for rel in _relations():
-        accessor = rel.get_accessor_name()
-        count = getattr(division, accessor).count()
+        count = related_rows(rel, division).count()
         if count:
             counts[str(rel.related_model._meta.verbose_name_plural)] = count
     return counts
@@ -132,7 +136,7 @@ def is_in_use(division: Division) -> bool:
     """True once any document has used the division: its code is then fixed."""
     if division.first_used_at is not None:
         return True
-    return any(getattr(division, rel.get_accessor_name()).exists() for rel in _document_relations())
+    return any(related_rows(rel, division).exists() for rel in _document_relations())
 
 
 def _check_name(name: str, exclude_pk: int | None = None) -> str:

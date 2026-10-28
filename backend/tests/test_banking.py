@@ -242,3 +242,12 @@ def test_the_custodian_picker_lists_active_people_by_name_only(accountant, cashi
     rows = as_user(accountant).get("/api/v1/company-accounts/custodians/").json()
     assert {"id": cashier.pk, "name": cashier.full_name} in rows
     assert all(set(r) == {"id", "name"} for r in rows)
+
+
+def test_a_division_with_a_default_bank_account_cannot_be_deleted(accountant, current):
+    from apps.core import organisation
+
+    tool_shop = Division.objects.create(code="TS", name="Tool Shop")
+    banking.set_division_default(accountant, tool_shop, current)
+    with pytest.raises(organisation.OrganisationError, match="linked to"):
+        organisation.delete_division(tool_shop, reason="set up by mistake")

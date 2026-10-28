@@ -11,6 +11,7 @@ import BankAccountsPage from "./pages/BankAccountsPage";
 import ChartOfAccountsPage from "./pages/ChartOfAccountsPage";
 import JournalPage from "./pages/JournalPage";
 import PeriodsPage from "./pages/PeriodsPage";
+import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import PayeesPage from "./pages/PayeesPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
 import AccessReviewPage from "./pages/admin/AccessReviewPage";
@@ -59,6 +60,7 @@ export default function App() {
       {/* Every signed-in page sits inside the layout: side menu, top bar, user menu. */}
       <Route element={<AuthGate>{(user) => <AppLayout user={user} />}</AuthGate>}>
         <Route index element={<WithMe page={(me) => <HomePage user={me} />} />} />
+        <Route path="account/notifications" element={<NotificationSettingsPage />} />
         <Route
           path="bank-accounts"
           element={<WithMe page={(me) => <BankAccountsPage me={me} />} />}

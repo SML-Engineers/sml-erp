@@ -179,6 +179,9 @@ def test_every_endpoint_declares_its_access():
         "MachinePickerView",  # filtered to the user's own sections
         "CurrencyPickerView",  # currency codes and names, no business data
         "RateLookupView",  # published exchange rates, no business data
+        "NotificationListView",  # own notifications only
+        "NotificationReadView",  # own notifications only
+        "PreferenceView",  # own notification choices only
     }
 
     def walk(patterns):

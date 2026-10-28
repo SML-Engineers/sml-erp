@@ -256,9 +256,18 @@ Status: `[ ]` to do · `[x]` done
     apply to every voucher, the last being the Director (rule 6).
   - The approval queue page and the voucher's own statuses come with the vouchers (P1-04).
 
-- [ ] **P0-18 Notifications**
+- [x] **P0-18 Notifications**
   In-app bell and email for: voucher awaiting my approval, voucher returned to me,
   voucher approved/rejected. Per-user on/off settings.
+  - Raised by the approval engine for every document type, so vouchers (P1-04) get them
+    without further work: waiting for my approval (everyone who can act at the level, never
+    the creator), returned to me (with the reason), approved, rejected (with the reason).
+  - Notifications are written in the same transaction as the action; emails go out through
+    the background worker after it commits, with a five-minute job sending any still waiting.
+    Each email is sent once. Read notifications are tidied after 180 days.
+  - My notifications page (user menu): bell and email on or off per kind of event.
+  - The reminder for vouchers waiting too long (spec 4.3, optional) is left for later.
+  - Servers need an SMTP account (EMAIL_* settings) and APP_URL for links in emails.
 
 ## D. Payment vouchers (Phase 1)
 

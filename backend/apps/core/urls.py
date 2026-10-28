@@ -5,12 +5,28 @@ from . import (
     approval_views,
     audit_views,
     auth_views,
+    notification_views,
     numbering_views,
     organisation_views,
     views,
 )
 
 urlpatterns = [
+    path(
+        "notifications/",
+        notification_views.NotificationListView.as_view(),
+        name="notification-list",
+    ),
+    path(
+        "notifications/read/",
+        notification_views.NotificationReadView.as_view(),
+        name="notification-read",
+    ),
+    path(
+        "notifications/preferences/",
+        notification_views.PreferenceView.as_view(),
+        name="notification-preferences",
+    ),
     path("health/", views.health, name="health"),
     path("auth/csrf/", auth_views.CsrfView.as_view(), name="auth-csrf"),
     path("auth/login/", auth_views.LoginView.as_view(), name="auth-login"),

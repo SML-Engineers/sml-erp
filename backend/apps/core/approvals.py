@@ -259,6 +259,8 @@ def submit(
     division: Division | None = None,
     subtype: str = "",
     comment: str = "",
+    title: str = "",
+    link: str = "",
 ) -> ApprovalState:
     """Send a new or returned document for approval; approval (re)starts at the first level.
     Only its creator submits it (spec 4.2: the Clerk corrects and resubmits)."""
@@ -286,8 +288,11 @@ def submit(
         state.amount = _amount(amount)
         state.division = division
         state.subtype = subtype or ""
+        state.title = (title or "").strip()[:200]
+        state.link = (link or "").strip()[:200]
         state.save()
         _log(state, user, SUBMIT_LEVEL, ApprovalLog.Action.SUBMIT, (comment or "").strip())
+        _tell_approvers(state)
         return state
 
 
@@ -358,6 +363,10 @@ def approve(user: User, document_type: str, document_id: int, comment: str = "")
             state.status = ApprovalState.Status.APPROVED
             state.current_level = None
         state.save()
+        if later:
+            _tell_approvers(state)
+        else:
+            _tell_creator(state, "document_approved", "was approved", comment)
         return state
 
 
@@ -372,6 +381,10 @@ def _close(user, document_type, document_id, reason, action, status, event):
         state.status = status
         state.current_level = None
         state.save()
+        if action == ApprovalLog.Action.RETURN:
+            _tell_creator(state, "document_returned", "was returned to you", reason)
+        else:
+            _tell_creator(state, "document_rejected", "was rejected", reason)
         return state
 
 
@@ -398,6 +411,53 @@ def reject(user: User, document_type: str, document_id: int, reason: str):
         ApprovalLog.Action.REJECT,
         ApprovalState.Status.REJECTED,
         "document_rejected",
+    )
+
+
+# --- Notifications (P0-18) ------------------------------------------------------------
+
+
+def _title(state: ApprovalState) -> str:
+    return state.title or f"{_doc_type(state.document_type).name} {state.document_id}"
+
+
+def approvers(state: ApprovalState) -> list[User]:
+    """The people who could act at the waiting level now."""
+    if state.status != ApprovalState.Status.IN_PROGRESS:
+        return []
+    step = next(s for s in state.route if s["level"] == state.current_level)
+    people = User.objects.filter(
+        is_active=True,
+        role_assignments__role__code=step["role"],
+        role_assignments__role__is_active=True,
+    ).distinct()
+    return [person for person in people if why_not(person, state) is None]
+
+
+def _tell_approvers(state: ApprovalState) -> None:
+    from .notifications import notify
+
+    notify(
+        approvers(state),
+        "approval_waiting",
+        title=f"{_title(state)} is waiting for your approval (level {state.current_level})",
+        link=state.link,
+        document_type=state.document_type,
+        document_id=state.document_id,
+    )
+
+
+def _tell_creator(state: ApprovalState, event: str, what: str, reason: str) -> None:
+    from .notifications import notify
+
+    notify(
+        [state.created_by],
+        event,
+        title=f"{_title(state)} {what}",
+        body=(reason or "").strip(),
+        link=state.link,
+        document_type=state.document_type,
+        document_id=state.document_id,
     )
 
 

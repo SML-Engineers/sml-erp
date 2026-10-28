@@ -32,11 +32,42 @@ Status: `[ ]` to do · `[x]` done
   - Users with those roles cannot reach any page until 2FA is set up.
   - Failed logins are recorded; 5 failures in 15 minutes locks the account for 15 minutes.
 
-- [ ] **P0-04 Roles and permissions** (spec 1, 3)
-  Roles: Clerk, Accountant, Director, Cashier, Auditor, System Admin (others added later).
-  A user can hold several roles. Permission checks on every API endpoint.
-  - An endpoint called without the required permission returns 403.
+- [ ] **P0-04 Roles, permissions and data scope** (spec 1.1, 1.2)
+  Permission model: areas × access levels (none, View, Enter, Approve, Manage) plus special
+  actions (record payments, delete submitted voucher, close period, change bank details,
+  export personal data, manage users and roles). Standard roles loaded with the default access
+  matrices in spec 1.2 (Phase 1 roles active: System Administrator, Director, Accountant,
+  Accounts Clerk, Cashier, Auditor). Admin can create custom roles by ticking permissions.
+  A user can hold several roles. Data scope per user: divisions, and sections for production
+  staff. Deny by default: menus show only permitted areas, and every API endpoint checks the
+  effective permission and data scope on the server.
+  - An endpoint called without the required permission returns 403; the area is absent from
+    the user's menu.
+  - A user scoped to one division cannot see or change another division's records, through
+    lists, reports, exports or direct API calls.
   - Auditor can read everything and change nothing.
+  - The System Administrator has no access to payments, banking, accounting or financial
+    reports by default.
+  - Assigning a conflicting combination (Clerk + Cashier, Accountant + Cashier, Admin + any
+    finance role) shows a warning and records the reason in the audit log.
+
+- [ ] **P0-04b User access overrides and access administration** (spec 1.3)
+  User access page: roles, data scope, and a grid of every area and action showing role
+  default, override and effective access. Admin can grant or remove access per user with a
+  mandatory reason and optional end date; copy access from another user; reset to role
+  defaults; full history. Joiner / mover / leaver actions. Quarterly access review report.
+  - A removal override beats any grant, from a role or another override.
+  - An override that grants a sensitive permission (approve vouchers at any level, record
+    payments, delete vouchers, change bank details, close periods, manage users and roles,
+    payroll) has no effect until the Director confirms it. Removals take effect immediately.
+  - An expired temporary override stops working on its end date, and the user is notified.
+  - No override can let a user approve their own document, approve at two levels, or skip the
+    Director on a voucher (tested directly against the hard controls).
+  - The Admin cannot change their own roles or overrides.
+  - Deactivating a leaver ends all their sessions at once and removes their overrides; their
+    records and history remain.
+  - Accounts unused for 90 days (configurable) are deactivated automatically.
+  - Every grant, removal, confirmation and expiry is in the audit log.
 
 - [ ] **P0-05 Audit log** (spec 3)
   Insert-only log of create/update/delete on audited models: user, time, IP, old and new values.
@@ -49,18 +80,36 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Master data and admin settings
 
-- [ ] **P0-07 Company and cost centres** (spec 3)
+- [ ] **P0-07 Company and divisions** (spec 3, 3.1)
   Company profile (name, registration, VAT no., base currency LKR, financial year start).
-  Cost centres: Workshop, Moulding, Administration (editable).
+  Division master maintained by the Admin: two-character code (PP), name, type (Production or
+  Shared), default bank account, active. Seed: WS Workshop, IM Plastic Injection Moulding,
+  HO Head Office (shared costs), as confirmed by the owner. Divisions are added, renamed and
+  deactivated by the Admin from the Divisions control panel.
+  - A division's code cannot change once it has been used on any document.
+  - A division with transactions cannot be deleted, only deactivated.
+  - A division added through the control panel on a running system is usable immediately:
+    no restart, deployment or code change (test: create through the API, then use it at once).
+  - A new division appears in every division picker, filter and report, gets its own voucher
+    numbering, and leaves existing divisions' records and figures unchanged.
 
 - [ ] **P0-08 Number series** (spec 3)
-  Configurable prefix and sequence per document type, allocated inside the saving transaction.
-  - 50 concurrent saves produce 50 unique, gap-free numbers.
+  Number formats built from tokens, set by the Admin per document type: code (PP), year
+  (YY / YYYY), month (MM), day (DD), running number (XXX / NNNN) with a reset period
+  (daily, monthly, yearly or never). Allocated inside the saving transaction.
+  - Voucher format PPYYMMDDXXX, PP = the voucher's division code: the third IM voucher on
+    2026-10-23 is IM261023003.
+  - The running number restarts at 001 each day, separately for each division.
+  - 50 concurrent saves produce 50 unique, consecutive numbers.
+  - A number is never reused, including after its document is deleted.
+  - Creating a 1,000th document with a 3-digit running number on one day is refused with a
+    clear message (the Admin can widen the running number).
 
 - [ ] **P0-09 Divisions, sections and machines page** (spec 3A.1)
-  Tree view Division → Section → Machine with add/edit forms, Excel import and export.
+  Tree view Division → Section → Machine with add/edit forms, Excel import and export
+  (divisions themselves come from P0-07).
   Moulding machine extra fields. Seed: Workshop division with the 18 sections from spec 3A.1,
-  Moulding division.
+  Moulding division. No machines are seeded: the Admin adds all of them from this page.
   - A section or machine used on a transaction cannot be deleted, only deactivated.
   - Codes cannot change once used.
 
@@ -90,10 +139,16 @@ Status: `[ ]` to do · `[x]` done
 
 ## C. Accounting core
 
-- [ ] **P0-15 Chart of accounts** (spec 3)
-  Account tree with types; only leaf accounts accept postings. Starter chart loaded from a
-  fixture, to be reviewed by the company accountant.
-  - Posting to a group account is refused.
+- [ ] **P0-15 Chart of accounts, QuickBooks style** (spec 3)
+  Accountant adds, edits, merges and deactivates accounts from the Chart of Accounts page.
+  QuickBooks account types and editable detail types, sub-accounts to any depth, optional
+  account numbers, default tax code and division, system accounts that cannot be removed,
+  Excel import and export. Starter chart for a manufacturing company loaded at setup.
+  - An account with transactions cannot be deleted, only made inactive.
+  - Merging two accounts moves all history to the remaining account; totals are unchanged.
+  - An account's type cannot be changed once it has transactions in a closed period.
+  - A sub-account must have the same report section as its parent (e.g. no expense
+    sub-account under a bank account).
 
 - [ ] **P0-16 Journal and periods** (spec 3)
   `journal_entry` / `journal_line`, posting service, reversal service, accounting periods
@@ -102,6 +157,8 @@ Status: `[ ]` to do · `[x]` done
   - Updating or deleting a posted entry fails at database level.
   - Posting into a closed period is refused.
   - Reversal creates a mirror entry linked to the original.
+  - A line on an income or expense account without a division is refused (spec 3.1).
+  - Profit and loss by division for a date range equals the company total when summed.
 
 - [ ] **P0-17 Approval engine** (spec 3)
   Generic engine: approval matrix per document type (levels, roles, conditions), approval log
@@ -118,22 +175,23 @@ Status: `[ ]` to do · `[x]` done
 
 - [ ] **P1-01 Voucher types** (spec 4.1)
   Seed: Cheque Payment, Online Payment, Petty Cash, Internal Transfer, Supplier Advance,
-  Staff Reimbursement. Admin can add types. Each type has its own number series in the
-  current format (e.g. C895261005 cheque, T895261045 online) with an Admin-set starting number.
-  - Numbering can be set to continue from the old system's last voucher number.
+  Staff Reimbursement. Admin can add types. The type is a field and a list filter; it is not
+  part of the voucher number.
 
 - [ ] **P1-02 Voucher entry — Clerk** (spec 4.4, 4.5)
-  Create voucher with type, supplier (with outstanding balance), lines, multiple scanned
+  Create voucher with division, type, supplier (with outstanding balance), lines, multiple scanned
   attachments (PDF/JPG/PNG, drag-and-drop and phone camera), save draft, submit.
+  The number (PPYYMMDDXXX, P0-08) is given on first save, using the voucher's division code.
   - Same supplier + invoice number already on another voucher shows a warning.
   - An uploaded file identical (SHA-256) to an existing attachment shows a warning.
   - Files larger than 20 MB or of other types are refused.
 
 - [ ] **P1-03 Accountant review** (spec 4.4)
-  Queue of submitted vouchers; invoice preview beside details; set GL account, cost centre,
+  Queue of submitted vouchers; invoice preview beside details; set GL account, division,
   tax per line (and optional job/production order field, unused until Phase 3);
   approve / return / reject.
-  - A voucher cannot be approved at L2 while any line lacks an account or cost centre.
+  - A voucher cannot be approved at L2 while any line lacks an account or division.
+  - A line can be split across divisions by amount or %; the split must add up to the line total.
 
 - [ ] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk
@@ -151,8 +209,11 @@ Status: `[ ]` to do · `[x]` done
   - Edit: Clerk only on Draft/Returned; Accountant only at L2; Director only at L3. A Director
     change to payee, amount or lines returns the voucher to the Accountant with the change shown.
   - After Director approval, Edit is replaced by Amend.
-  - Delete: only never-submitted Drafts, by the creator or Admin. Deleting a submitted voucher
-    is refused at service and database level.
+  - Delete: a never-submitted Draft by its creator or the Admin; a submitted voucher with no
+    payment by the Director or the Admin only, with a mandatory reason.
+  - A deleted voucher is a soft delete: status Deleted, hidden from working lists, listed with
+    its full history in a Deleted Vouchers report, number never reused.
+  - Deleting a voucher with any payment is refused at service and database level.
   - Reprints are watermarked "Copy"; every edit, delete and print is in the audit log.
 
 - [ ] **P1-05 Returns and amendments** (spec 4.2)

@@ -258,7 +258,8 @@
       "document_submitted": "Document submitted for approval",
       "document_approved": "Document approved",
       "document_returned": "Document returned",
-      "document_rejected": "Document rejected"
+      "document_rejected": "Document rejected",
+      "voucher_coded": "Voucher coded"
     }
   },
   "menu": {
@@ -267,7 +268,8 @@
     "administration": "Administration",
     "settings": "Settings",
     "accounts": "Accounts",
-    "vouchers": "Vouchers"
+    "vouchers": "Vouchers",
+    "waiting": "Waiting for my approval"
   },
   "layout": {
     "menu": "Menu",
@@ -1019,5 +1021,35 @@
       "return": "Returned",
       "reject": "Rejected"
     }
+  },
+  "voucherReview": {
+    "title": "Waiting for my approval",
+    "help": "Vouchers waiting at your level, oldest first. Check the scanned invoice, give each line its account, division (or split a shared bill across divisions) and tax, then approve, return to the Clerk or reject. Return and Reject need a reason.",
+    "queue": "Queue",
+    "empty": "Nothing is waiting for you.",
+    "preview": "Scanned invoice",
+    "whichFile": "Show file",
+    "noScan": "No scan attached.",
+    "coding": "Coding",
+    "account": "Account",
+    "job": "Job / order",
+    "accountOf": "Account, line {{n}}",
+    "divisionOf": "Division, line {{n}}",
+    "taxCodeOf": "Tax code, line {{n}}",
+    "taxOf": "Tax, line {{n}}",
+    "jobOf": "Job or order, line {{n}}",
+    "split": "Split across divisions",
+    "splitOf": "Split of line {{n}}",
+    "byPercent": "By percentage",
+    "splitDivision": "Line {{n}}, part {{row}}: division",
+    "splitAmount": "Line {{n}}, part {{row}}: amount",
+    "splitPercent": "Line {{n}}, part {{row}}: %",
+    "addDivision": "Add a division",
+    "saveCoding": "Save coding",
+    "commentOrReason": "Comment (approve) or reason (return, reject)",
+    "approve": "Approve",
+    "return": "Return to Clerk",
+    "reject": "Reject",
+    "saveFirst": "Save the coding before approving: a voucher can only be approved at L2 when every line has its account and division."
   }
 }

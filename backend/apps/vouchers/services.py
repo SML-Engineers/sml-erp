@@ -10,14 +10,14 @@ import hashlib
 import re
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.db import transaction
 from django.db.models import Q, QuerySet, Sum
 from django.utils import timezone
 
 from apps.accounting import taxes
-from apps.accounting.models import TaxCode
+from apps.accounting.models import Account, TaxCode
 from apps.core import approvals
 from apps.core.access import division_scope, effective_access, has_access
 from apps.core.approvals import ApprovalError
@@ -27,7 +27,14 @@ from apps.core.numbering import NumberSeriesError, allocate
 from apps.masters.models import CompanyAccount, Supplier
 from apps.masters.services import is_in_use, mark_used
 
-from .models import TYPE_CODE_REGEX, Voucher, VoucherAttachment, VoucherLine, VoucherType
+from .models import (
+    TYPE_CODE_REGEX,
+    Voucher,
+    VoucherAttachment,
+    VoucherLine,
+    VoucherLineSplit,
+    VoucherType,
+)
 
 CODE = re.compile(TYPE_CODE_REGEX)
 CENT = Decimal("0.01")
@@ -338,11 +345,15 @@ def save(
         new_lines = _lines(voucher, list(lines))
         voucher.total_amount = sum((line.total for line in new_lines), Decimal("0"))
         voucher.save()
-        coding = {line.line_no: (line.account_id, line.division_id) for line in voucher.lines.all()}
+        coding = {
+            line.line_no: (line.account_id, line.division_id, line.job_ref)
+            for line in voucher.lines.all()
+        }
         voucher.lines.all().delete()
         for line in new_lines:
             if line.line_no in coding:
-                line.account_id, line.division_id = coding[line.line_no]
+                line.account_id, line.division_id, line.job_ref = coding[line.line_no]
+                line.division_id = line.division_id or voucher.division_id
             line.save()
         return voucher
 
@@ -527,3 +538,210 @@ def payee_balance(payee: Supplier) -> dict:
         "approved_unpaid": f"{approved:.2f}",
         "outstanding": f"{waiting + approved:.2f}",
     }
+
+
+# --- The Accountant's review and the approvals (P1-03) ----------------------------------
+
+
+def waiting(user: User) -> QuerySet[Voucher]:
+    """Vouchers waiting at a level this user can approve now (their queue)."""
+    ids = [state.document_id for state in approvals.waiting_for(user, DOC)]
+    return visible(user).filter(pk__in=ids)
+
+
+def _acting_state(user: User, voucher: Voucher) -> ApprovalState:
+    state = approvals.state_of(DOC, voucher.pk)
+    if state is None or state.status != ApprovalState.Status.IN_PROGRESS:
+        raise VoucherError(f"Voucher {voucher.number} is not waiting for approval.")
+    refusal = approvals.why_not(user, state)
+    if refusal:
+        raise VoucherError(refusal)
+    return state
+
+
+NOT_TO_CODE = {"bank", "accounts_receivable", "accounts_payable"}
+
+
+def _check_account(voucher: Voucher, account: Account, where: str) -> None:
+    if not account.is_active or account.merged_into_id:
+        raise VoucherError(f"{where}: {account.name} is inactive or merged.")
+    internal = voucher.voucher_type.payment_method == VoucherType.Method.INTERNAL
+    if internal and account.account_type != "bank":
+        raise VoucherError(f"{where}: an internal transfer goes to a Bank-type account.")
+    if not internal and account.account_type in NOT_TO_CODE:
+        raise VoucherError(
+            f"{where}: {account.name} cannot be the account of a payment; choose the expense, "
+            "asset or liability the payment is for."
+        )
+
+
+@dataclass
+class SplitInput:
+    division: Division
+    amount: object = None
+    percent: object = None
+
+
+@dataclass
+class CodingInput:
+    line_no: int
+    account: Account | None = None
+    division: Division | None = None
+    tax_code: TaxCode | None = None
+    tax_amount: object = "0"
+    job_ref: str = ""
+    splits: list = ()
+
+
+def _percent(value, where: str) -> Decimal:
+    try:
+        percent = Decimal(str(value))
+    except InvalidOperation:
+        raise VoucherError(f"{where}: the percentage is not a number.") from None
+    if not percent.is_finite() or percent <= 0 or percent > 100:
+        raise VoucherError(f"{where}: a percentage is more than 0 and at most 100.")
+    if percent != percent.quantize(Decimal("0.0001")):
+        raise VoucherError(f"{where}: a percentage has at most four decimals.")
+    return percent
+
+
+def _split(total: Decimal, splits: list[SplitInput], where: str) -> list[VoucherLineSplit]:
+    """The parts of a line, by amount or by percentage. They add up to the line total; with
+    percentages, the last part takes the cent left over by rounding."""
+    if len(splits) < 2:
+        raise VoucherError(f"{where}: a split needs at least two divisions.")
+    divisions = [s.division for s in splits]
+    if len({d.pk for d in divisions}) != len(divisions):
+        raise VoucherError(f"{where}: each division can appear once in a split.")
+    for division in divisions:
+        if not division.is_active:
+            raise VoucherError(f"{where}: division {division.code} is deactivated.")
+    by_percent = [s.percent not in (None, "") for s in splits]
+    if any(by_percent) and not all(by_percent):
+        raise VoucherError(f"{where}: split either by amount or by percentage, not both.")
+    parts = []
+    if all(by_percent):
+        percents = [_percent(s.percent, where) for s in splits]
+        if sum(percents) != 100:
+            raise VoucherError(f"{where}: the percentages add up to {sum(percents)}, not 100.")
+        amounts = [(total * p / 100).quantize(CENT, ROUND_HALF_UP) for p in percents[:-1]]
+        amounts.append(total - sum(amounts, Decimal("0")))
+        for s, p, a in zip(splits, percents, amounts, strict=True):
+            if a <= 0:
+                raise VoucherError(f"{where}: a part of the split is not more than zero.")
+            parts.append(VoucherLineSplit(division=s.division, amount=a, percent=p))
+    else:
+        for s in splits:
+            parts.append(
+                VoucherLineSplit(
+                    division=s.division,
+                    amount=_money(s.amount, where, positive=True),
+                )
+            )
+        added = sum((p.amount for p in parts), Decimal("0"))
+        if added != total:
+            raise VoucherError(
+                f"{where}: the split adds up to {added:,.2f}, not the line total {total:,.2f}."
+            )
+    return parts
+
+
+def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Voucher:
+    """The approver at the waiting level (the Accountant at L2) sets each line's account,
+    division or division split, tax and job reference. The amounts stay as entered."""
+    with audit_context("voucher_coded"), transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        _acting_state(user, voucher)
+        lines = {line.line_no: line for line in voucher.lines.select_for_update()}
+        for coding in codings:
+            where = f"Line {coding.line_no}"
+            line = lines.get(coding.line_no)
+            if line is None:
+                raise VoucherError(f"{where} is not on this voucher.")
+            if coding.account is not None:
+                _check_account(voucher, coding.account, where)
+            line.account = coding.account
+            if coding.tax_code is not None:
+                code = coding.tax_code
+                if not code.is_active or code.use == TaxCode.Use.SALES:
+                    raise VoucherError(f"{where}: the tax code {code.code} is not for purchases.")
+                try:
+                    on = line.invoice_date or voucher.voucher_date
+                    line.tax_amount = taxes.calculate(code, line.amount, on).tax
+                except Exception as error:  # noqa: BLE001 - shown as it is
+                    raise VoucherError(f"{where}: {error}") from None
+            else:
+                line.tax_amount = _money(coding.tax_amount, f"{where} tax", positive=False)
+            line.tax_code = coding.tax_code
+            line.job_ref = (coding.job_ref or "").strip()[:50]
+            line.splits.all().delete()
+            if coding.splits:
+                parts = _split(line.amount + line.tax_amount, list(coding.splits), where)
+                line.division = None
+                line.save()
+                for part in parts:
+                    part.line = line
+                    part.save()
+            else:
+                if coding.division is not None and not coding.division.is_active:
+                    raise VoucherError(f"{where}: division {coding.division.code} is deactivated.")
+                line.division = coding.division
+                line.save()
+        voucher.total_amount = sum((line.total for line in lines.values()), Decimal("0"))
+        if voucher.total_amount <= 0:
+            raise VoucherError("The voucher total must be more than zero.")
+        voucher.save()
+        return voucher
+
+
+def uncoded_lines(voucher: Voucher) -> list[int]:
+    return [
+        line.line_no
+        for line in voucher.lines.prefetch_related("splits")
+        if line.account_id is None or (line.division_id is None and not line.splits.all())
+    ]
+
+
+def approve(user: User, voucher: Voucher, comment: str = "") -> Voucher:
+    """Approve at the waiting level. The Accountant (L2) can only approve once every line
+    has its account and division (or division split)."""
+    with transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        state = _acting_state(user, voucher)
+        if state.current_level == state.route[0]["level"]:
+            missing = uncoded_lines(voucher)
+            if missing:
+                raise VoucherError(
+                    "Give every line its account and division before approving: line "
+                    + ", ".join(str(n) for n in missing)
+                    + "."
+                )
+        try:
+            approvals.approve(user, DOC, voucher.pk, comment)
+        except ApprovalError as error:
+            raise VoucherError(str(error)) from None
+        return sync_status(voucher)
+
+
+def send_back(user: User, voucher: Voucher, reason: str) -> Voucher:
+    """Return to the Clerk to correct and resubmit (reason required)."""
+    with transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        _acting_state(user, voucher)
+        try:
+            approvals.send_back(user, DOC, voucher.pk, reason)
+        except ApprovalError as error:
+            raise VoucherError(str(error)) from None
+        return sync_status(voucher)
+
+
+def reject(user: User, voucher: Voucher, reason: str) -> Voucher:
+    """Reject for good (reason required)."""
+    with transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        _acting_state(user, voucher)
+        try:
+            approvals.reject(user, DOC, voucher.pk, reason)
+        except ApprovalError as error:
+            raise VoucherError(str(error)) from None
+        return sync_status(voucher)

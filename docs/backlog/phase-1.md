@@ -328,12 +328,21 @@ Status: `[ ]` to do · `[x]` done
   - Who sees which vouchers: Clerk their own; Accountant, Director, Auditor and Admin all of
     their divisions; Cashier approved ones.
 
-- [ ] **P1-03 Accountant review** (spec 4.4)
+- [x] **P1-03 Accountant review** (spec 4.4)
   Queue of submitted vouchers; invoice preview beside details; set GL account, division,
   tax per line (and optional job/production order field, unused until Phase 3);
   approve / return / reject.
   - A voucher cannot be approved at L2 while any line lacks an account or division.
   - A line can be split across divisions by amount or %; the split must add up to the line total.
+  - Page "Waiting for my approval" (approvers only): the queue at the user's level, the scan
+    (PDF or photo) beside the details, coding, then Approve / Return to Clerk / Reject. The
+    same page serves the Director at L3 until the dedicated page (P1-04).
+  - Choosing an account fills in its default division and tax code (P0-15, P0-20).
+  - A payment line cannot be coded to a bank, receivable or payable account; an internal
+    transfer's line goes to a Bank-type account.
+  - A split by percentage gives the cent left over by rounding to the last division.
+  - The Accountant may change a line's tax; the voucher total follows. Amounts stay as entered
+    by the Clerk (a wrong amount is returned to the Clerk).
 
 - [ ] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk

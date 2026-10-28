@@ -136,6 +136,8 @@ class VoucherLine(models.Model):
     division = models.ForeignKey(
         "core.Division", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
+    # Job or production order the cost belongs to (unused until Phase 3).
+    job_ref = models.CharField(max_length=50, blank=True)
 
     class Meta:
         ordering = ["voucher", "line_no"]
@@ -173,3 +175,24 @@ class VoucherAttachment(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class VoucherLineSplit(models.Model):
+    """Part of a shared bill charged to one division (spec 3.1), e.g. electricity split by
+    sub-meter readings. The parts of a line add up to the line total."""
+
+    line = models.ForeignKey(VoucherLine, on_delete=models.CASCADE, related_name="splits")
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    # Kept when the split was entered as a percentage, to show it again.
+    percent = models.DecimalField(max_digits=7, decimal_places=4, null=True, blank=True)
+
+    class Meta:
+        ordering = ["line", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["line", "division"], name="vouchers_split_division"),
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="vouchers_split_amount"),
+        ]
+
+    def __str__(self):
+        return f"{self.line_id} {self.division_id} {self.amount}"

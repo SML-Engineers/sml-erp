@@ -69,6 +69,8 @@ export interface VoucherLineData {
   total: string;
   account: { id: number; number: string; name: string } | null;
   division: string | null;
+  job_ref: string;
+  splits: { division: string; amount: string; percent: string | null }[];
 }
 
 export interface VoucherAttachmentData {
@@ -96,6 +98,10 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
   payee_balance: { waiting_approval: string; approved_unpaid: string; outstanding: string } | null;
   approvals: { level: number; action: string; user: string; reason: string; acted_at: string }[];
   upload_warnings?: string[];
+  waiting_level: number | null;
+  waiting_for: string | null;
+  can_act: boolean;
+  uncoded_lines: number[];
 }
 
 export interface VoucherLineInput {

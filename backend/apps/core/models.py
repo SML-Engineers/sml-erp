@@ -27,7 +27,16 @@ class UserManager(BaseUserManager):
         extra.setdefault("is_staff", True)
         extra.setdefault("is_superuser", True)
         extra.setdefault("two_factor_required", True)
-        return self.create_user(email, full_name, password, **extra)
+        extra.setdefault("all_divisions", True)
+        user = self.create_user(email, full_name, password, **extra)
+        # The first administrator holds the System Administrator role; being a Django
+        # superuser grants nothing extra in the ERP's own access checks.
+        role = Role.objects.filter(code="system_admin").first()
+        if role is not None:
+            UserRole.objects.get_or_create(
+                user=user, role=role, defaults={"reason": "First administrator"}
+            )
+        return user
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -50,6 +59,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     must_change_password = models.BooleanField(default=False)
     password_changed_at = models.DateTimeField(null=True, blank=True)
+
+    # Data scope (spec 1.2): the divisions this person works in, or all of them.
+    all_divisions = models.BooleanField(default=False)
+    divisions = models.ManyToManyField("core.Division", blank=True, related_name="users")
 
     objects = UserManager()
 
@@ -121,3 +134,98 @@ class RecoveryCode(models.Model):
 
     def __str__(self):
         return f"Recovery code for {self.user_id} ({'used' if self.used_at else 'unused'})"
+
+
+class Division(models.Model):
+    """A division of the company (spec 3.1). Its code is the PP in voucher numbers."""
+
+    class Type(models.TextChoices):
+        PRODUCTION = "production", "Production"
+        SHARED = "shared", "Shared"
+
+    code = models.CharField(max_length=2, unique=True)
+    name = models.CharField(max_length=100)
+    division_type = models.CharField(max_length=20, choices=Type.choices, default=Type.PRODUCTION)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
+class Role(models.Model):
+    """A set of access levels and special actions (spec 1.1, 1.2)."""
+
+    code = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default="")
+    # Standard roles come from the specification and cannot be edited; the Admin copies one
+    # to make a custom role.
+    is_standard = models.BooleanField(default=False)
+    # Roles for later phases exist from the start but cannot be assigned until switched on.
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class RolePermission(models.Model):
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="permissions")
+    area = models.CharField(max_length=40)
+    level = models.CharField(max_length=10)
+    note = models.CharField(max_length=100, blank=True, default="")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["role", "area", "level"], name="core_roleperm_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.role}: {self.area} {self.level}"
+
+
+class RoleAction(models.Model):
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="actions")
+    action = models.CharField(max_length=40)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["role", "action"], name="core_roleaction_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.role}: {self.action}"
+
+
+class UserRole(models.Model):
+    """A role held by a user, with who gave it and why."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="role_assignments"
+    )
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="assignments")
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    assigned_at = models.DateTimeField(default=timezone.now)
+    reason = models.TextField(blank=True, default="")
+    conflict_warning = models.TextField(blank=True, default="")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "role"], name="core_userrole_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.user} as {self.role}"

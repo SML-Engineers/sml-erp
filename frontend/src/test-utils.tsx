@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { vi } from "vitest";
 
+import type { CurrentUser } from "./api/auth";
+
 type Reply = { status?: number; body: unknown };
 type ApiRoutes = Record<string, Reply | ((body: unknown) => Reply)>;
 
@@ -42,10 +44,11 @@ export function renderAt(path: string, element: ReactNode, routePath = path) {
   );
 }
 
-export const sampleUser = {
+export const sampleUser: CurrentUser = {
   email: "director@sml.lk",
   full_name: "Mewantha",
   two_factor_enabled: true,
   two_factor_required: true,
   requirements: [],
+  access: { areas: { dashboard: ["view"] }, actions: [], divisions: "all" },
 };

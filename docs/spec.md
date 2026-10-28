@@ -897,6 +897,50 @@ Both divisions run day and night. The roster changes with the season, so shift p
 
 Added tables: `division`, `shift_pattern`, `shift_pattern_day`, `crew`, `crew_member`, `roster_assignment`.
 
+### 7.1B Bills of materials (BOMs)
+
+Every manufactured item (finished part, sub-assembly, mould or tool) can have a bill of materials: the list of materials, parts and services needed to make one unit, or a stated batch quantity. Together with its routing (the operations, 7.1) it is the item's manufacturing recipe, used for quotations, planning, material issues and costing.
+
+**What a BOM line can be**
+
+| Component type | Example | Quantity per unit |
+| --- | --- | --- |
+| Raw material | Steel bar Ø50 EN8, aluminium plate, PP resin | Length or weight per piece, plus cutting or runner allowance |
+| Masterbatch and additives | Black masterbatch | % of resin weight |
+| Bought-out part | Brass insert, bearing, fastener | Count per piece |
+| Sub-assembly | A machined shaft used in an assembly | Count per piece; has its own BOM (multi-level) |
+| Subcontract service | Heat treatment, plating, anodising | Per piece or per kg |
+| Packing | Carton, polybag, label | Per piece, or pieces per carton |
+
+Each line also has: unit of measure, scrap or yield allowance %, the operation it is used at (so material is issued when that operation starts), how it is issued (manual issue, or **backflush**: deducted automatically when output is reported), and whether the customer supplies it.
+
+**Machining BOMs** hold the stock size and cut length per piece, with facing and saw-cut allowance, and calculate pieces per bar or plate and weight per piece.
+
+**Moulding BOMs** are built from the mould and part data: part weight, plus runner weight shared over the cavities, plus the reject allowance, gives resin per piece. Masterbatch is added as a % of resin, and the maximum regrind % allowed for the part is shown. A **family mould** that makes several different parts in one shot has one BOM for the mould run, with each part as an output.
+
+**Revisions and control**
+
+- Each BOM has a revision linked to the item's drawing revision, an effective-from date and a status: Draft, Approved, Obsolete.
+- The Production Planner prepares BOMs; the Production Manager approves them before they can be used. The Accountant and Director can view them with costs.
+- A job or production order takes a copy of the approved BOM when it is released, so a later BOM change never alters orders already in progress. Changes to a running order's materials are recorded against the order.
+- Copy a BOM to start a similar item; compare two revisions side by side; import and export with Excel.
+
+**What BOMs are used for**
+
+| Use | How |
+| --- | --- |
+| Quotations (5.1) | A quotation for a known part starts from its BOM and routing, so material and machine costs are filled in automatically |
+| Standard cost | Rolled up through all levels from material rates and routing machine rates; feeds the estimate in job profitability (7.7) |
+| Material requirements | An order's quantity × its BOM gives materials needed; compared with stock and open purchase orders, it produces a **shortage list** and suggested purchase requests |
+| Material issues | Stores issues material against the order's BOM; issuing more than the BOM allows needs a reason and the Production Manager's approval |
+| Backflush (moulding) | When a shift report is approved, resin, masterbatch and packing are deducted from stock for the good and rejected quantity |
+| Variance | Actual material used versus BOM, per order: the material usage variance in 7.7 |
+| Where-used | Which items and open orders use a given material or part, e.g. before changing a supplier or a resin grade |
+
+**Added tables:** `bom` (item, revision, division, status, effective from, base quantity), `bom_line` (component, quantity, unit, scrap %, operation, issue method, customer-supplied), `bom_output` (for family moulds), `order_bom_line` (the copy on each job or production order).
+
+**Phasing:** BOMs need the item master and stock, which arrive with inventory in Phase 2, so BOMs are built at the start of Phase 3, ahead of job orders. Until then, quotations (Phase 1.5) use their own costing sheet.
+
 ### 7.2 Machining workshop
 
 - **Job order** created from a sales order line: part, drawing revision, quantity, due date, routing copied from the part's standard routing (editable per job).

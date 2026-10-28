@@ -1,6 +1,7 @@
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
+from .access import has_access
 from .auth_services import PASSWORD_CHANGE_REQUIRED, setup_requirements
 
 _MESSAGES = {
@@ -12,8 +13,7 @@ _MESSAGES = {
 class IsFullyAuthenticated(BasePermission):
     """Signed in, and nothing outstanding (password change, two-factor setup).
 
-    This is the default for every endpoint (settings.REST_FRAMEWORK). Role permissions are
-    added on top in P0-04.
+    This is the default for every endpoint (settings.REST_FRAMEWORK).
     """
 
     def has_permission(self, request, view):
@@ -24,3 +24,22 @@ class IsFullyAuthenticated(BasePermission):
         if pending:
             raise PermissionDenied(detail=_MESSAGES[pending[0]], code=pending[0])
         return True
+
+
+class AreaAccess(IsFullyAuthenticated):
+    """Checks the user's access to the view's area (spec 1.2), on the server, every request.
+
+    A view sets `access_area`, and optionally `access_write_level` (default "manage") for
+    methods that change data. Reading needs "view".
+    """
+
+    message = "You do not have access to this part of the system."
+
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        area = getattr(view, "access_area", None)
+        if area is None:
+            raise AssertionError(f"{view.__class__.__name__} must declare access_area")
+        level = "view" if request.method in SAFE_METHODS else view.access_write_level
+        return has_access(request.user, area, level)

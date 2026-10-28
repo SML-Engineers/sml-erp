@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import auth_services as auth
+from .access_serializers import access_payload
 from .serializers import (
     CodeSerializer,
     LoginEventSerializer,
@@ -35,6 +36,7 @@ def _user_payload(user):
         "two_factor_enabled": user.two_factor_enabled,
         "two_factor_required": user.two_factor_required,
         "requirements": auth.setup_requirements(user),
+        "access": access_payload(user),
     }
 
 

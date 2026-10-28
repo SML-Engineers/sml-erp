@@ -20,3 +20,4 @@ class MastersConfig(AppConfig):
         register(m.RosterCrew)
         register(m.Currency)
         register(m.ExchangeRate)
+        register(m.QuotationLimit)

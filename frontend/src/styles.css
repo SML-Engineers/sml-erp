@@ -870,3 +870,15 @@ legend {
   color: #b54708;
   font-size: 0.875rem;
 }
+
+.pending-change {
+  border: 1px solid var(--color-border);
+  border-left: 3px solid #b54708;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.pending-change p {
+  margin: 0 0 6px;
+}

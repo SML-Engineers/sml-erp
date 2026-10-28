@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import currency_views as cv
+from . import limit_views as lv
 from . import roster_views as rv
 from . import views
 
@@ -58,5 +59,21 @@ urlpatterns = [
     path("settings/exchange-rates/", cv.RateListView.as_view(), name="rate-list"),
     path("settings/exchange-rates/import/", cv.RateImportView.as_view(), name="rate-import"),
     path("settings/exchange-rates/<int:pk>/", cv.RateDetailView.as_view(), name="rate-detail"),
+    path("settings/quotation-limits/", lv.LimitListView.as_view(), name="limit-list"),
+    path(
+        "settings/quotation-limits/<int:pk>/confirm/",
+        lv.LimitConfirmView.as_view(),
+        name="limit-confirm",
+    ),
+    path(
+        "settings/quotation-limits/<int:pk>/reject/",
+        lv.LimitRejectView.as_view(),
+        name="limit-reject",
+    ),
+    path(
+        "settings/quotation-limits/<int:pk>/withdraw/",
+        lv.LimitWithdrawView.as_view(),
+        name="limit-withdraw",
+    ),
     path("users/<int:pk>/sections/", views.UserSectionsView.as_view(), name="user-sections"),
 ]

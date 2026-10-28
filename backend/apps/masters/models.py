@@ -374,3 +374,71 @@ class ExchangeRate(models.Model):
 
     def __str__(self):
         return f"{self.currency.code} {self.rate} on {self.date}"
+
+
+# --- Quotation approval limits (spec 3A.3; backlog P0-12) -------------------------------
+
+
+class QuotationLimit(models.Model):
+    """A division's quotation limits from a date: a quotation below the minimum margin, or
+    above the value, needs the Director's approval before it is sent.
+
+    These are financial controls: a change entered by the Admin takes effect only after the
+    Director confirms it. A confirmed limit is never changed or deleted (migration 0006);
+    a new limit from a later date replaces it."""
+
+    is_structure = True
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Waiting for the Director"
+        CONFIRMED = "confirmed", "Confirmed"
+        REJECTED = "rejected", "Rejected"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+
+    division = models.ForeignKey(
+        Division, on_delete=models.PROTECT, related_name="quotation_limits"
+    )
+    effective_from = models.DateField()
+    min_margin_pct = models.DecimalField("Minimum margin %", max_digits=5, decimal_places=2)
+    director_above_lkr = models.DecimalField(
+        "Director approves above (LKR)", max_digits=18, decimal_places=2
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["division__code", "-effective_from", "-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(min_margin_pct__gte=0) & models.Q(min_margin_pct__lt=100),
+                name="masters_limit_margin_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(director_above_lkr__gt=0), name="masters_limit_value_positive"
+            ),
+            models.UniqueConstraint(
+                fields=["division", "effective_from"],
+                condition=models.Q(status="confirmed"),
+                name="masters_limit_one_confirmed_per_day",
+            ),
+            models.UniqueConstraint(
+                fields=["division"],
+                condition=models.Q(status="pending"),
+                name="masters_limit_one_pending",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.division.code} from {self.effective_from}: margin {self.min_margin_pct}%, "
+            f"Director above LKR {self.director_above_lkr}"
+        )

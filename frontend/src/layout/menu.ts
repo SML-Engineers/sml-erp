@@ -38,6 +38,7 @@ export const MENU: MenuSection[] = [
       { label: "factory.title", path: "/settings/factory", area: "settings" },
       { label: "shifts.title", path: "/settings/shifts", area: "settings" },
       { label: "currencies.title", path: "/settings/currencies", area: "settings" },
+      { label: "limits.title", path: "/settings/quotation-limits", area: "settings" },
       { label: "numbering.title", path: "/settings/number-series", area: "settings" },
     ],
   },

@@ -7,6 +7,7 @@ import AppLayout, { useMe } from "./layout/AppLayout";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import PayeesPage from "./pages/PayeesPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
 import AccessReviewPage from "./pages/admin/AccessReviewPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
@@ -53,6 +54,7 @@ export default function App() {
       {/* Every signed-in page sits inside the layout: side menu, top bar, user menu. */}
       <Route element={<AuthGate>{(user) => <AppLayout user={user} />}</AuthGate>}>
         <Route index element={<WithMe page={(me) => <HomePage user={me} />} />} />
+        <Route path="payees" element={<WithMe page={(me) => <PayeesPage me={me} />} />} />
         <Route path="admin/users" element={<WithMe page={(me) => <UsersPage me={me} />} />} />
         <Route
           path="admin/users/:id"

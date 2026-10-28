@@ -174,13 +174,16 @@ Status: `[ ]` to do · `[x]` done
   - Without confirmed limits, every quotation of that division goes to the Director.
   - Per customer group limits wait for customer groups (Phase 1.5).
 
-- [ ] **P0-13 Suppliers and payees** (spec 4.1)
+- [x] **P0-13 Suppliers and payees** (spec 4.1)
   Supplier master: code, name, payee category (Supplier, Utility, Bank or credit card,
   Government, Employee, Other), address, contacts, VAT no., bank details, payment terms,
   currency, active. Bank detail changes are audited and shown to the Accountant on the next voucher.
   - Duplicate VAT number warns before saving.
   - Changing a supplier's bank account writes one audit row with the old and new value
     (register the supplier model with the audit log, P0-05).
+  - Codes come from the number series (S0001…). Clerks add payees and edit contact details;
+    the Accountant deactivates; bank details need the "change bank details" action. A bank
+    change stays flagged until the Accountant acknowledges it (on the voucher in P1-03).
 
 - [ ] **P0-14 Bank and cash accounts**
   Company bank accounts and cash/petty cash accounts linked to ledger accounts; cheque books

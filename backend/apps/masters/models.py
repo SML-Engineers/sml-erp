@@ -442,3 +442,95 @@ class QuotationLimit(models.Model):
             f"{self.division.code} from {self.effective_from}: margin {self.min_margin_pct}%, "
             f"Director above LKR {self.director_above_lkr}"
         )
+
+
+# --- Suppliers and payees (spec 4.1; backlog P0-13) -------------------------------------
+
+
+class Supplier(models.Model):
+    """A payee: anyone a voucher can pay (spec 4.1). Its code comes from the number series.
+
+    Bank details live in SupplierBankAccount and only people with the "change bank details"
+    action may enter or change them; every change is flagged to the Accountant on the
+    payee's next voucher."""
+
+    class Category(models.TextChoices):
+        SUPPLIER = "supplier", "Supplier"
+        UTILITY = "utility", "Utility"
+        BANK_CARD = "bank_card", "Bank or credit card"
+        GOVERNMENT = "government", "Government"
+        EMPLOYEE = "employee", "Employee"
+        OTHER = "other", "Other"
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=200)
+    category = models.CharField(max_length=20, choices=Category.choices, default=Category.SUPPLIER)
+    address = models.TextField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    contact_person = models.CharField(max_length=100, blank=True)
+    contact_phone = models.CharField(max_length=50, blank=True)
+    vat_no = models.CharField("VAT registration no.", max_length=50, blank=True)
+    tin = models.CharField("TIN", max_length=20, blank=True)
+    payment_terms_days = models.PositiveSmallIntegerField(default=30)
+    currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name="suppliers")
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    # Set whenever bank details change; the Accountant sees it on the next voucher and
+    # acknowledges it there (P1-03).
+    bank_changed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    bank_changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    bank_change_acknowledged_at = models.DateTimeField(null=True, blank=True, editable=False)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["name"]
+        indexes = [models.Index(fields=["vat_no"], name="masters_supplier_vat")]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+    @property
+    def bank_change_pending(self) -> bool:
+        """Bank details changed since the Accountant last acknowledged them."""
+        return self.bank_changed_at is not None and (
+            self.bank_change_acknowledged_at is None
+            or self.bank_change_acknowledged_at < self.bank_changed_at
+        )
+
+
+class SupplierBankAccount(models.Model):
+    # Part of the payee's details, not a document.
+    is_structure = True
+
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name="bank_accounts")
+    bank_name = models.CharField(max_length=100)
+    branch = models.CharField(max_length=100, blank=True)
+    account_name = models.CharField(max_length=200)
+    account_number = models.CharField(max_length=34)
+    swift_code = models.CharField("SWIFT / BIC", max_length=11, blank=True)
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["supplier", "-is_default", "bank_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["supplier"],
+                condition=models.Q(is_default=True),
+                name="masters_supplier_one_default_account",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.bank_name} {self.account_number}"

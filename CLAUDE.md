@@ -15,7 +15,7 @@ machining workshop and a plastic injection moulding plant (Sri Lanka, base curre
 | Backend | Python 3.12, Django 5.2 LTS, Django REST Framework |
 | Database | PostgreSQL 16 |
 | Jobs | Celery + Redis |
-| Files | S3-compatible storage (MinIO in Docker), via `django-storages` |
+| Files | S3-compatible storage (SeaweedFS in Docker), via `django-storages` |
 | Frontend | React + TypeScript, Vite, TanStack Query, TanStack Table, React Router |
 | i18n | Django i18n + `react-i18next` (English first; Sinhala and Tamil later) |
 | Tests | `pytest` + `pytest-django` (backend), Vitest + Testing Library (frontend) |

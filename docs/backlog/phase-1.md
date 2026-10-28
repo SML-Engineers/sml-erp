@@ -10,8 +10,8 @@ Status: `[ ]` to do · `[x]` done
 
 ## A. Project foundation
 
-- [ ] **P0-01 Project skeleton**
-  Docker Compose with Django, PostgreSQL, Redis, MinIO, Celery worker, React (Vite) dev
+- [x] **P0-01 Project skeleton**
+  Docker Compose with Django, PostgreSQL, Redis, S3-compatible file storage, Celery worker, React (Vite) dev
   server and Nginx. `make up`, `make test`, `make migrate` commands. `.env.example`.
   - `make up` starts everything; the API health endpoint returns 200; the React app loads.
   - `make test` runs backend and frontend tests (one sample test each) and passes.
@@ -19,7 +19,11 @@ Status: `[ ]` to do · `[x]` done
 
 - [ ] **P0-02 Continuous integration**
   GitHub Actions workflow running lint and all tests on every pull request.
+  (The workflow itself was added in P0-01; remaining: commit exact dependency locks per
+  `docs/decisions/0001-dependency-pinning.md`, and protect `main` so it can only change
+  through a pull request whose checks pass.)
   - A failing test makes the pull request check fail.
+  - `main` cannot be pushed to directly, or merged with failing checks.
 
 - [ ] **P0-03 Login and user accounts**
   Email + password login (Argon2 hashing), logout, session timeout, password change,

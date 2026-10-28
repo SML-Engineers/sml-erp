@@ -1,0 +1,12 @@
+{
+  "app": {
+    "name": "SML ERP"
+  },
+  "home": {
+    "checking": "Checking connection to the server…",
+    "ok": "System status: OK",
+    "degraded": "System status: the database is not reachable",
+    "unreachable": "Cannot reach the server",
+    "version": "Version {{version}}"
+  }
+}

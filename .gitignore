@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- SML ERP ---
+# Local environment settings and secrets
+.env
+!.env.example
+# Frontend
+node_modules/
+frontend/dist/
+# Django
+backend/staticfiles/
+.ruff_cache/

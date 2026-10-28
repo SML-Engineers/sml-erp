@@ -41,7 +41,7 @@ The system is a modular monolith: one codebase and one PostgreSQL database, spli
 | Backend | Python, Django + Django REST Framework | Mature ORM, admin for master data, permissions, strong data libraries for analytics |
 | Background jobs | Celery + Redis | Notifications, report generation, invoice thumbnails, scheduled tasks |
 | Frontend | React + TypeScript, AG Grid or TanStack Table | Table- and form-heavy UI, large grids, responsive layouts |
-| File storage | S3-compatible (AWS S3 or self-hosted MinIO) | Scanned invoices and drawings kept outside the database, versioned |
+| File storage | S3-compatible (self-hosted SeaweedFS, or AWS S3) | Scanned invoices and drawings kept outside the database, versioned |
 | Shop-floor client | Same React app as a PWA | Works on tablets, offline entry with sync |
 | Deployment | Docker, Nginx, Hostinger Ubuntu VPS | Simple to run, restore and scale |
 
@@ -86,7 +86,7 @@ erp/
 
 **Hosting on Hostinger Ubuntu VPS**
 
-- Ubuntu LTS release, with the application, PostgreSQL, Redis and MinIO (file storage) running in Docker containers behind Nginx.
+- Ubuntu LTS release, with the application, PostgreSQL, Redis and SeaweedFS (file storage) running in Docker containers behind Nginx.
 - Free SSL certificates from Let's Encrypt, renewed automatically.
 - Starting size: 4 vCPU, 16 GB RAM, 200 GB NVMe disk; scanned invoices and drawings are the main growth in disk use.
 - Data centre: the region closest to Sri Lanka that the provider offers, for fast page loads.

@@ -286,3 +286,17 @@ class DivisionDefaultsView(_Banking):
         except MastersError as error:
             return _error(error)
         return self.get(request)
+
+
+class CustodianListView(_Banking):
+    """Active people who can hold petty cash: names only, for the custodian picker."""
+
+    def get(self, request):
+        from apps.core.models import User
+
+        return Response(
+            [
+                {"id": u.pk, "name": u.full_name}
+                for u in User.objects.filter(is_active=True).order_by("full_name")
+            ]
+        )

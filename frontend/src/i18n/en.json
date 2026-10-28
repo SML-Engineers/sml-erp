@@ -215,7 +215,16 @@
       "payee_reactivated": "Payee reactivated",
       "payee_bank_added": "Bank account added",
       "payee_bank_changed": "Bank details changed",
-      "payee_bank_change_acknowledged": "Changed bank details checked by the Accountant"
+      "payee_bank_change_acknowledged": "Changed bank details checked by the Accountant",
+      "company_account_created": "Company account added",
+      "company_account_changed": "Company account changed",
+      "company_account_closed": "Company account closed",
+      "company_account_reopened": "Company account reopened",
+      "division_bank_default_set": "Division default bank account set",
+      "cheque_book_added": "Cheque book added",
+      "cheque_book_closed": "Cheque book closed",
+      "cheque_issued": "Cheque issued",
+      "cheque_spoiled": "Cheque spoiled"
     }
   },
   "menu": {
@@ -559,5 +568,49 @@
     "reopenAccount": "Reopen account",
     "bankChangeHelp": "Every change is recorded with the old and new details and your reason, and flagged to the Accountant on the payee's next voucher.",
     "bankOnlyAccountant": "Only the Accountant can enter or change bank details."
+  },
+  "banking": {
+    "title": "Bank and cash accounts",
+    "help": "The company's bank accounts, cash and petty cash, with cheque books. Each cheque number can be used once only: issued on a payment, or recorded as spoiled with a reason. Each division has a default bank account for its payments.",
+    "showClosed": "Show closed accounts",
+    "kind": "Kind",
+    "kinds": {
+      "current": "Bank current account",
+      "savings": "Bank savings account",
+      "cash": "Cash",
+      "petty_cash": "Petty cash"
+    },
+    "bankAndNumber": "Bank and account no.",
+    "defaultFor": "Default for",
+    "open": "Open",
+    "closed": "Closed",
+    "add": "Add account",
+    "custodian": "Custodian",
+    "float": "Float (LKR)",
+    "divisionOptional": "Division (optional, e.g. WS)",
+    "inUse": "This account has been used: its code, bank, number and currency can no longer change.",
+    "close": "Close account",
+    "reopen": "Reopen account",
+    "chequeBooks": "Cheque books",
+    "nextCheque": "Next cheque",
+    "noLeaves": "no unused leaves",
+    "range": "Numbers",
+    "used": "Used",
+    "left": "Left",
+    "closeBook": "Close book",
+    "addBook": "Add cheque book",
+    "firstNumber": "First number",
+    "lastNumber": "Last number",
+    "digits": "Digits",
+    "spoil": "Record a spoiled cheque",
+    "chequeNumber": "Cheque number",
+    "register": "Used cheque numbers ({{count}})",
+    "leaf": {
+      "issued": "issued",
+      "spoiled": "spoiled"
+    },
+    "defaults": "Default bank account of each division",
+    "defaultsHelp": "Payments of a division are made from this account unless the Cashier chooses another.",
+    "noDefault": "No default"
   }
 }

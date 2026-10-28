@@ -236,3 +236,9 @@ def test_a_closed_cheque_book_gives_no_more_numbers(accountant, current):
     assert banking.next_cheque(current) is None
     with pytest.raises(MastersError, match="not in an active cheque book"):
         banking.use_cheque(accountant, current, 2, status="issued")
+
+
+def test_the_custodian_picker_lists_active_people_by_name_only(accountant, cashier):
+    rows = as_user(accountant).get("/api/v1/company-accounts/custodians/").json()
+    assert {"id": cashier.pk, "name": cashier.full_name} in rows
+    assert all(set(r) == {"id", "name"} for r in rows)

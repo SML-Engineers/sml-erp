@@ -114,6 +114,11 @@ urlpatterns = [
         name="cheque-register",
     ),
     path(
+        "company-accounts/custodians/",
+        bv.CustodianListView.as_view(),
+        name="company-account-custodians",
+    ),
+    path(
         "company-accounts/division-defaults/",
         bv.DivisionDefaultsView.as_view(),
         name="division-bank-defaults",

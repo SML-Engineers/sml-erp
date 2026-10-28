@@ -185,10 +185,13 @@ Status: `[ ]` to do · `[x]` done
     the Accountant deactivates; bank details need the "change bank details" action. A bank
     change stays flagged until the Accountant acknowledges it (on the voucher in P1-03).
 
-- [ ] **P0-14 Bank and cash accounts**
+- [x] **P0-14 Bank and cash accounts**
   Company bank accounts and cash/petty cash accounts linked to ledger accounts; cheque books
-  with number ranges. Adds each division's default bank account (moved here from P0-07),
-  chosen on the Divisions control panel.
+  with number ranges. Adds each division's default bank account (moved here from P0-07).
+  - The default is chosen by the Accountant on the Bank and cash accounts page, not on the
+    Divisions page: the Admin has no banking access by default.
+  - Each cheque number is used once, ever (issued or spoiled with a reason; database).
+  - The link to ledger accounts is added with the chart of accounts (P0-15).
 
 ## C. Accounting core
 

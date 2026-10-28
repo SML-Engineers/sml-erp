@@ -129,7 +129,7 @@ def test_role_changes_record_who_from_where_and_why(admin):
         {"roles": ["clerk", "cashier"], "reason": "Only one finance person in December"},
         format="json",
     )
-    created = rows(object_type="core.userrole", action="create")
+    created = rows(object_type="core.userrole", action="create", related_user=clerk)
     assert len(created) == 2
     assert all(r.actor == admin and r.event == "roles_changed" for r in created)
     assert all(r.reason == "Only one finance person in December" for r in created)

@@ -23,6 +23,10 @@ export const MENU: MenuSection[] = [
     items: [{ label: "menu.dashboard", path: "/", area: null }],
   },
   {
+    label: "menu.accounts",
+    items: [{ label: "payees.title", path: "/payees", area: "payees" }],
+  },
+  {
     label: "menu.administration",
     items: [
       { label: "users.title", path: "/admin/users", area: "users" },

@@ -882,3 +882,19 @@ legend {
 .pending-change p {
   margin: 0 0 6px;
 }
+
+.tag.warning {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.account-form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.account-form h3 {
+  margin: 0;
+  font-size: 1rem;
+}

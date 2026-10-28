@@ -208,14 +208,22 @@
       "quotation_limit_proposed": "Quotation limits proposed",
       "quotation_limit_confirmed": "Quotation limits confirmed by the Director",
       "quotation_limit_rejected": "Quotation limits rejected",
-      "quotation_limit_withdrawn": "Quotation limits change withdrawn"
+      "quotation_limit_withdrawn": "Quotation limits change withdrawn",
+      "payee_created": "Payee added",
+      "payee_changed": "Payee changed",
+      "payee_deactivated": "Payee deactivated",
+      "payee_reactivated": "Payee reactivated",
+      "payee_bank_added": "Bank account added",
+      "payee_bank_changed": "Bank details changed",
+      "payee_bank_change_acknowledged": "Changed bank details checked by the Accountant"
     }
   },
   "menu": {
     "main": "Main",
     "dashboard": "Dashboard",
     "administration": "Administration",
-    "settings": "Settings"
+    "settings": "Settings",
+    "accounts": "Accounts"
   },
   "layout": {
     "menu": "Menu",
@@ -503,5 +511,53 @@
       "rejected": "Rejected",
       "withdrawn": "Withdrawn"
     }
+  },
+  "payees": {
+    "title": "Suppliers and payees",
+    "help": "Everyone a voucher can pay: suppliers, utilities, banks and credit cards, government, employees and others. Bank details can be entered or changed only by the Accountant (or someone the Director has allowed); every change is recorded and shown to the Accountant on the payee's next voucher.",
+    "searchHint": "Name, code or VAT number",
+    "showInactive": "Show deactivated payees",
+    "add": "Add payee",
+    "category": "Category",
+    "categories": {
+      "supplier": "Supplier",
+      "utility": "Utility",
+      "bank_card": "Bank or credit card",
+      "government": "Government",
+      "employee": "Employee",
+      "other": "Other"
+    },
+    "field": {
+      "name": "Name",
+      "vat_no": "VAT registration no.",
+      "tin": "TIN (9 digits)",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "contact_person": "Contact person",
+      "contact_phone": "Contact phone",
+      "payment_terms_days": "Payment terms (days; 0 = on receipt)",
+      "notes": "Notes"
+    },
+    "bank": "Default bank account",
+    "bankChanged": "bank details changed",
+    "bankChangedNotice": "Bank details were changed by {{by}} on {{at}}. The Accountant checks them on the next voucher.",
+    "confirmDuplicate": "I have checked: this is a different payee. Save anyway.",
+    "bankAccounts": "Bank accounts",
+    "noAccounts": "No bank account yet.",
+    "acknowledge": "I have checked the new bank details",
+    "bankName": "Bank",
+    "branch": "Branch",
+    "accountName": "Account name",
+    "accountNumber": "Account number",
+    "default": "default",
+    "closed": "closed",
+    "makeDefault": "Default account for payments",
+    "addAccount": "Add bank account",
+    "editAccount": "Change bank account",
+    "closeAccount": "Close account",
+    "reopenAccount": "Reopen account",
+    "bankChangeHelp": "Every change is recorded with the old and new details and your reason, and flagged to the Accountant on the payee's next voucher.",
+    "bankOnlyAccountant": "Only the Accountant can enter or change bank details."
   }
 }

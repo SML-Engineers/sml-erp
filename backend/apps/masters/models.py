@@ -149,3 +149,156 @@ class MachineRate(models.Model):
 
     def __str__(self):
         return f"{self.machine.code} {self.rate} from {self.effective_from}"
+
+
+# --- Shifts and rosters (spec 3A.2, 7.1A; backlog P0-10) --------------------------------
+
+
+class Shift(models.Model):
+    """A working shift. One that ends at or before its start time runs past midnight and
+    belongs to the date it started (for production, OEE, costing and payroll)."""
+
+    code = models.CharField(max_length=5, unique=True)
+    name = models.CharField(max_length=50, unique=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    break_minutes = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["start_time", "code"]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+    @property
+    def crosses_midnight(self) -> bool:
+        return self.end_time <= self.start_time
+
+    @property
+    def length_minutes(self) -> int:
+        start = self.start_time.hour * 60 + self.start_time.minute
+        end = self.end_time.hour * 60 + self.end_time.minute
+        return end - start + (24 * 60 if self.crosses_midnight else 0)
+
+    @property
+    def working_minutes(self) -> int:
+        return self.length_minutes - self.break_minutes
+
+
+class RosterPattern(models.Model):
+    """A repeating cycle of shifts and days off, e.g. Day, Day, Night, Night, Off, Off."""
+
+    name = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class RosterPatternDay(models.Model):
+    # Part of its pattern: saved and changed together with it.
+    is_structure = True
+
+    pattern = models.ForeignKey(RosterPattern, on_delete=models.CASCADE, related_name="days")
+    position = models.PositiveSmallIntegerField()  # 0 = first day of the cycle
+    # Empty = a day off.
+    shift = models.ForeignKey(
+        Shift, null=True, blank=True, on_delete=models.PROTECT, related_name="pattern_days"
+    )
+
+    class Meta:
+        ordering = ["pattern", "position"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["pattern", "position"], name="masters_patternday_unique_position"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.pattern.name} day {self.position + 1}: {self.shift or 'Off'}"
+
+
+class Crew(models.Model):
+    """A team that works the same rotation (A, B, C…). Members come from the employee
+    register when the HR module is added."""
+
+    # Factory organisation, not a document: crews do not fix a division's code.
+    is_structure = True
+
+    code = models.CharField(max_length=10)
+    name = models.CharField(max_length=100, blank=True)
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, related_name="crews")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["division__code", "code"]
+        constraints = [
+            models.UniqueConstraint(fields=["division", "code"], name="masters_crew_unique_code"),
+        ]
+
+    def __str__(self):
+        return f"{self.division.code} crew {self.code}"
+
+
+class RosterAssignment(models.Model):
+    """A pattern in force for a division (or one section of it) over a date range.
+
+    A seasonal change is a new assignment from a date; once an assignment has started,
+    only its end date can be set, so past days never change."""
+
+    is_structure = True
+
+    pattern = models.ForeignKey(RosterPattern, on_delete=models.PROTECT, related_name="assignments")
+    division = models.ForeignKey(
+        Division, on_delete=models.PROTECT, related_name="roster_assignments"
+    )
+    # Empty = the whole division.
+    section = models.ForeignKey(
+        Section, null=True, blank=True, on_delete=models.PROTECT, related_name="roster_assignments"
+    )
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)  # empty = until changed
+    note = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["division__code", "-start_date"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__isnull=True)
+                | models.Q(end_date__gte=models.F("start_date")),
+                name="masters_roster_dates_in_order",
+            ),
+        ]
+
+    def __str__(self):
+        where = self.section.code if self.section else self.division.code
+        return f"{self.pattern.name} for {where} from {self.start_date}"
+
+
+class RosterCrew(models.Model):
+    """A crew on an assignment, with the day of the cycle it starts on."""
+
+    is_structure = True
+
+    assignment = models.ForeignKey(RosterAssignment, on_delete=models.CASCADE, related_name="crews")
+    crew = models.ForeignKey(Crew, on_delete=models.PROTECT, related_name="rosters")
+    start_position = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["assignment", "crew__code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["assignment", "crew"], name="masters_rostercrew_unique"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.crew} from cycle day {self.start_position + 1}"

@@ -14,3 +14,7 @@ class MastersConfig(AppConfig):
         register(m.Section)
         register(m.Machine)
         register(m.MachineRate)
+        for model in (m.Shift, m.RosterPattern, m.RosterPatternDay, m.Crew):
+            register(model)
+        register(m.RosterAssignment)
+        register(m.RosterCrew)

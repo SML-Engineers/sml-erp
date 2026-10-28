@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import banking_views as bv
 from . import currency_views as cv
 from . import limit_views as lv
 from . import roster_views as rv
@@ -92,6 +93,35 @@ urlpatterns = [
         "payees/<int:pk>/acknowledge-bank-change/",
         sv.AcknowledgeBankChangeView.as_view(),
         name="payee-acknowledge-bank-change",
+    ),
+    path("company-accounts/", bv.AccountListView.as_view(), name="company-account-list"),
+    path(
+        "company-accounts/<int:pk>/", bv.AccountDetailView.as_view(), name="company-account-detail"
+    ),
+    path(
+        "company-accounts/<int:pk>/cheque-books/",
+        bv.ChequeBookListView.as_view(),
+        name="cheque-book-list",
+    ),
+    path(
+        "company-accounts/<int:pk>/cheque-books/<int:book_pk>/close/",
+        bv.ChequeBookCloseView.as_view(),
+        name="cheque-book-close",
+    ),
+    path(
+        "company-accounts/<int:pk>/cheques/",
+        bv.ChequeRegisterView.as_view(),
+        name="cheque-register",
+    ),
+    path(
+        "company-accounts/custodians/",
+        bv.CustodianListView.as_view(),
+        name="company-account-custodians",
+    ),
+    path(
+        "company-accounts/division-defaults/",
+        bv.DivisionDefaultsView.as_view(),
+        name="division-bank-defaults",
     ),
     path("users/<int:pk>/sections/", views.UserSectionsView.as_view(), name="user-sections"),
 ]

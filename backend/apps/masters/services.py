@@ -16,7 +16,7 @@ from django.utils import timezone
 from apps.core.access import AccessError, division_scope, sees_all_divisions
 from apps.core.audit import audit_context, record
 from apps.core.models import Division, User
-from apps.core.organisation import OrganisationError, image_extension
+from apps.core.organisation import OrganisationError, image_extension, related_rows
 
 from .models import CODE_REGEX, Machine, MachineRate, Section
 
@@ -67,9 +67,7 @@ def is_in_use(obj) -> bool:
     """True once a transaction has used the section or machine: its code is then fixed."""
     if obj.first_used_at is not None:
         return True
-    return any(
-        getattr(obj, rel.get_accessor_name()).exists() for rel in _usage_relations(type(obj))
-    )
+    return any(related_rows(rel, obj).exists() for rel in _usage_relations(type(obj)))
 
 
 def linked_records(obj) -> dict[str, int]:
@@ -78,7 +76,7 @@ def linked_records(obj) -> dict[str, int]:
         accessor = rel.get_accessor_name()
         if not accessor:
             continue
-        count = getattr(obj, accessor).count()
+        count = related_rows(rel, obj).count()
         if count:
             counts[str(rel.related_model._meta.verbose_name_plural)] = count
     return counts

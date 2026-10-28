@@ -24,7 +24,10 @@ export const MENU: MenuSection[] = [
   },
   {
     label: "menu.accounts",
-    items: [{ label: "payees.title", path: "/payees", area: "payees" }],
+    items: [
+      { label: "payees.title", path: "/payees", area: "payees" },
+      { label: "banking.title", path: "/bank-accounts", area: "banking" },
+    ],
   },
   {
     label: "menu.administration",

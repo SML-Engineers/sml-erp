@@ -534,3 +534,133 @@ class SupplierBankAccount(models.Model):
 
     def __str__(self):
         return f"{self.bank_name} {self.account_number}"
+
+
+# --- Company bank and cash accounts, cheque books (backlog P0-14) -----------------------
+
+
+class CompanyAccount(models.Model):
+    """A company bank account, cash box or petty cash float. Linked to its ledger account
+    when the chart of accounts is added (P0-15)."""
+
+    is_structure = True
+
+    class Kind(models.TextChoices):
+        CURRENT = "current", "Bank current account"
+        SAVINGS = "savings", "Bank savings account"
+        CASH = "cash", "Cash"
+        PETTY_CASH = "petty_cash", "Petty cash"
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    bank_name = models.CharField(max_length=100, blank=True)
+    branch = models.CharField(max_length=100, blank=True)
+    account_number = models.CharField(max_length=34, blank=True)
+    currency = models.ForeignKey(
+        Currency, on_delete=models.PROTECT, related_name="company_accounts"
+    )
+    # Petty cash: who holds it and the float it is topped up to.
+    custodian = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    float_amount = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    division = models.ForeignKey(
+        Division, null=True, blank=True, on_delete=models.PROTECT, related_name="company_accounts"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bank_name", "account_number"],
+                condition=~models.Q(account_number=""),
+                name="masters_companyaccount_unique_number",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(float_amount__isnull=True) | models.Q(float_amount__gt=0),
+                name="masters_companyaccount_float_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+    @property
+    def is_bank(self) -> bool:
+        return self.kind in (self.Kind.CURRENT, self.Kind.SAVINGS)
+
+
+class DivisionBankDefault(models.Model):
+    """The bank account a division's payments are made from unless another is chosen."""
+
+    is_structure = True
+
+    division = models.OneToOneField(Division, on_delete=models.PROTECT, related_name="bank_default")
+    account = models.ForeignKey(
+        CompanyAccount, on_delete=models.PROTECT, related_name="default_for"
+    )
+
+    def __str__(self):
+        return f"{self.division.code}: {self.account.code}"
+
+
+class ChequeBook(models.Model):
+    """A cheque book: the leaf numbers it holds."""
+
+    is_structure = True
+
+    account = models.ForeignKey(
+        CompanyAccount, on_delete=models.PROTECT, related_name="cheque_books"
+    )
+    first_number = models.PositiveIntegerField()
+    last_number = models.PositiveIntegerField()
+    digits = models.PositiveSmallIntegerField(default=6)  # cheque numbers print with leading zeros
+    received_on = models.DateField(default=timezone.localdate)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["account", "first_number"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(last_number__gte=models.F("first_number")),
+                name="masters_chequebook_range_in_order",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.account.code} {self.first_number}-{self.last_number}"
+
+
+class ChequeLeaf(models.Model):
+    """A cheque number that has been used: issued on a payment, or spoiled. Kept for good."""
+
+    class Status(models.TextChoices):
+        ISSUED = "issued", "Issued"
+        SPOILED = "spoiled", "Spoiled"
+
+    book = models.ForeignKey(ChequeBook, on_delete=models.PROTECT, related_name="leaves")
+    account = models.ForeignKey(CompanyAccount, on_delete=models.PROTECT, related_name="cheques")
+    number = models.PositiveIntegerField()
+    status = models.CharField(max_length=10, choices=Status.choices)
+    reason = models.TextField(blank=True)
+    used_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    used_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["account", "number"]
+        constraints = [
+            models.UniqueConstraint(fields=["account", "number"], name="masters_cheque_once"),
+        ]
+
+    def __str__(self):
+        return f"{self.account.code} cheque {self.number} ({self.status})"

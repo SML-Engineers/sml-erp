@@ -118,5 +118,46 @@
       "confirmed": "Confirmed",
       "changed": "Changed"
     }
+  },
+  "audit": {
+    "title": "Audit log",
+    "help": "Every change to users, roles, access and settings: who, when, from where, the old and new values, and why. Nobody can edit or delete it.",
+    "link": "Audit log",
+    "trail": "Audit trail",
+    "none": "Nothing recorded yet.",
+    "when": "When",
+    "who": "Who",
+    "what": "What",
+    "changes": "Old → new",
+    "from": "From",
+    "to": "To",
+    "filter": "Show",
+    "reason": "Reason: {{reason}}",
+    "action": {
+      "create": "Created",
+      "update": "Changed",
+      "delete": "Deleted"
+    },
+    "event": {
+      "roles_changed": "Roles changed",
+      "divisions_changed": "Divisions changed",
+      "role_saved": "Custom role saved",
+      "access_granted": "Access granted",
+      "access_removed": "Access removed",
+      "access_confirmed": "Access confirmed by the Director",
+      "access_ended": "Access change ended",
+      "access_reset": "Reset to role defaults",
+      "access_copied": "Access copied from another user",
+      "access_expired": "Temporary access ended",
+      "access_reviewed": "Access reviewed",
+      "user_created": "User created",
+      "user_updated": "User updated",
+      "user_reactivated": "User reactivated",
+      "user_deactivated": "User deactivated",
+      "password_changed": "Password changed",
+      "two_factor_setup_started": "Two-factor setup started",
+      "two_factor_enabled": "Two-factor turned on",
+      "two_factor_reset": "Two-factor reset"
+    }
   }
 }

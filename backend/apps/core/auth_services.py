@@ -19,6 +19,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from . import crypto
+from .audit import audited
 from .models import LoginEvent, LoginLock, RecoveryCode, User, normalize_email
 
 SESSION_AUTH_TIME = "auth_time"
@@ -224,6 +225,7 @@ class TwoFactorError(Exception):
     pass
 
 
+@audited("two_factor_setup_started")
 def start_two_factor_setup(user: User) -> dict:
     """Create a new authenticator secret for the user to scan. Not active until confirmed."""
     if user.two_factor_enabled:
@@ -242,6 +244,7 @@ def start_two_factor_setup(user: User) -> dict:
     }
 
 
+@audited("two_factor_enabled")
 @transaction.atomic
 def confirm_two_factor(request, user: User, code: str) -> list[str]:
     """Turn two-factor on after the user proves their app works; returns recovery codes."""
@@ -259,6 +262,7 @@ def confirm_two_factor(request, user: User, code: str) -> list[str]:
     return codes
 
 
+@audited("two_factor_reset")
 def reset_two_factor(user: User) -> None:
     """Remove a user's authenticator so they set it up again (Admin, P0-04b)."""
     user.totp_secret_encrypted = ""
@@ -307,6 +311,7 @@ class PasswordChangeError(Exception):
         self.messages = messages
 
 
+@audited("password_changed")
 @transaction.atomic
 def change_password(request, user: User, current: str, new: str) -> None:
     if not user.check_password(current):

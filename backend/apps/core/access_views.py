@@ -25,6 +25,7 @@ from .access_serializers import (
     UserSerializer,
     UserUpdateInput,
 )
+from .audit import audit_context
 from .models import AccessOverride, Division, Role, User
 from .permissions import AreaAccess
 from .serializers import LoginEventSerializer
@@ -126,9 +127,13 @@ class UserListView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         temporary_password = secrets.token_urlsafe(12)
-        user = User.objects.create_user(
-            email, data.validated_data["full_name"], temporary_password, must_change_password=True
-        )
+        with audit_context("user_created"):
+            user = User.objects.create_user(
+                email,
+                data.validated_data["full_name"],
+                temporary_password,
+                must_change_password=True,
+            )
         body = UserSerializer(user).data
         body["temporary_password"] = temporary_password  # shown once, never stored in clear
         return Response(body, status=status.HTTP_201_CREATED)
@@ -157,7 +162,9 @@ class UserDetailView(APIView):
         for field_name, value in data.validated_data.items():
             setattr(user, field_name, value)
         if data.validated_data:
-            user.save(update_fields=list(data.validated_data))
+            event = "user_reactivated" if data.validated_data.get("is_active") else "user_updated"
+            with audit_context(event):
+                user.save(update_fields=list(data.validated_data))
         user.refresh_from_db()
         return Response(UserSerializer(user).data)
 

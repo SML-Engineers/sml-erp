@@ -23,8 +23,10 @@ import {
   type OverrideInfo,
   type UserRecord,
 } from "../../api/admin";
+import { getAuditLog } from "../../api/audit";
 import type { CurrentUser } from "../../api/auth";
 import { ApiError } from "../../api/client";
+import AuditTable from "../../components/AuditTable";
 
 const LEVELS: Level[] = ["view", "enter", "approve", "manage"];
 
@@ -62,6 +64,7 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
     void queryClient.invalidateQueries({ queryKey: ["user-access", id] });
     void queryClient.invalidateQueries({ queryKey: ["overrides", id] });
     void queryClient.invalidateQueries({ queryKey: ["users"] });
+    void queryClient.invalidateQueries({ queryKey: ["audit"] });
   };
 
   if (grid.isPending) return <p className="page-message">{t("common.loading")}</p>;
@@ -138,7 +141,23 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
           </div>
         )}
       </section>
+
+      {can(me.access, "audit_logs") && <AuditTrail userId={id} />}
     </main>
+  );
+}
+
+function AuditTrail({ userId }: { userId: number }) {
+  const { t } = useTranslation();
+  const trail = useQuery({
+    queryKey: ["audit", { user: userId }],
+    queryFn: () => getAuditLog({ user: userId, limit: 50 }),
+  });
+  return (
+    <section className="panel">
+      <h2>{t("audit.trail")}</h2>
+      {trail.data && <AuditTable rows={trail.data} />}
+    </section>
   );
 }
 

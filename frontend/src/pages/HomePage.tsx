@@ -36,16 +36,25 @@ export default function HomePage({ user }: { user: CurrentUser }) {
       {health.data && (
         <p className="muted">{t("home.version", { version: health.data.version })}</p>
       )}
-      {can(user.access, "users", "view") && (
+      {(can(user.access, "users") || can(user.access, "audit_logs")) && (
         <nav aria-label={t("home.administration")}>
           <h2>{t("home.administration")}</h2>
           <ul>
-            <li>
-              <Link to="/admin/users">{t("users.title")}</Link>
-            </li>
-            <li>
-              <Link to="/admin/access-review">{t("review.link")}</Link>
-            </li>
+            {can(user.access, "users") && (
+              <>
+                <li>
+                  <Link to="/admin/users">{t("users.title")}</Link>
+                </li>
+                <li>
+                  <Link to="/admin/access-review">{t("review.link")}</Link>
+                </li>
+              </>
+            )}
+            {can(user.access, "audit_logs") && (
+              <li>
+                <Link to="/admin/audit">{t("audit.link")}</Link>
+              </li>
+            )}
           </ul>
         </nav>
       )}

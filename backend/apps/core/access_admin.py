@@ -19,6 +19,7 @@ from .access_defaults import (
     SENSITIVE_AREA_LEVELS,
     SENSITIVE_AREAS,
 )
+from .audit import audit_context, audited
 from .models import AccessOverride, AccessReview, Role, User
 
 # --- Overrides --------------------------------------------------------------------------
@@ -61,7 +62,15 @@ def create_override(
     if ends_on and ends_on < timezone.localdate():
         raise AccessError("The end date cannot be in the past.")
 
-    override = AccessOverride.objects.create(
+    event = "access_granted" if effect == AccessOverride.Effect.GRANT else "access_removed"
+    with audit_context(event, reason):
+        override = _create_override_row(actor, target, effect, reason, area, level, action, ends_on)
+    target.__dict__.pop("_effective_access", None)
+    return override
+
+
+def _create_override_row(actor, target, effect, reason, area, level, action, ends_on):
+    return AccessOverride.objects.create(
         user=target,
         area=area,
         level=level,
@@ -72,10 +81,9 @@ def create_override(
         is_sensitive=effect == AccessOverride.Effect.GRANT and is_sensitive(area, level, action),
         created_by=actor,
     )
-    target.__dict__.pop("_effective_access", None)
-    return override
 
 
+@audited("access_confirmed")
 @transaction.atomic
 def confirm_override(actor: User, override: AccessOverride) -> AccessOverride:
     """The Director confirms a sensitive grant; only then does it take effect."""
@@ -91,6 +99,7 @@ def confirm_override(actor: User, override: AccessOverride) -> AccessOverride:
     return override
 
 
+@audited("access_ended", reason_arg="reason")
 @transaction.atomic
 def revoke_override(actor: User, override: AccessOverride, reason: str) -> AccessOverride:
     _not_self(actor, override.user)
@@ -103,20 +112,27 @@ def revoke_override(actor: User, override: AccessOverride, reason: str) -> Acces
     return override
 
 
+@audited("access_reset", reason_arg="reason")
 @transaction.atomic
 def reset_to_role_defaults(actor: User, target: User, reason: str) -> int:
     """End every override, so the user has exactly their roles' access."""
     _not_self(actor, target)
-    open_overrides = target.access_overrides.filter(revoked_at__isnull=True)
-    count = open_overrides.count()
-    open_overrides.update(
-        revoked_by=actor,
-        revoked_at=timezone.now(),
-        revoke_reason=(reason or "").strip() or "Reset to role defaults",
-    )
-    return count
+    return _end_open_overrides(target, actor, (reason or "").strip() or "Reset to role defaults")
 
 
+def _end_open_overrides(target: User, actor: User | None, reason: str) -> int:
+    """End each open override (one by one, so every change reaches the audit log)."""
+    ended = 0
+    for override in target.access_overrides.filter(revoked_at__isnull=True):
+        override.revoked_by = actor
+        override.revoked_at = timezone.now()
+        override.revoke_reason = reason
+        override.save(update_fields=["revoked_by", "revoked_at", "revoke_reason"])
+        ended += 1
+    return ended
+
+
+@audited("access_copied", reason_arg="reason")
 @transaction.atomic
 def copy_access(actor: User, target: User, source: User, reason: str) -> list[str]:
     """Give `target` the same roles, divisions and current overrides as `source`.
@@ -157,6 +173,7 @@ def end_sessions(user: User) -> int:
     return ended
 
 
+@audited("user_deactivated", reason_arg="reason")
 @transaction.atomic
 def deactivate_user(actor: User | None, target: User, reason: str) -> None:
     """A leaver: account off, signed out everywhere, overrides ended. Records stay."""
@@ -164,11 +181,7 @@ def deactivate_user(actor: User | None, target: User, reason: str) -> None:
         _not_self(actor, target, "account")
     target.is_active = False
     target.save(update_fields=["is_active"])
-    target.access_overrides.filter(revoked_at__isnull=True).update(
-        revoked_by=actor,
-        revoked_at=timezone.now(),
-        revoke_reason=f"Account deactivated: {reason}".strip(),
-    )
+    _end_open_overrides(target, actor, f"Account deactivated: {reason}".strip())
     end_sessions(target)
 
 
@@ -197,6 +210,7 @@ def deactivate_inactive_accounts(days: int | None = None) -> list[str]:
     return deactivated
 
 
+@audited("access_expired")
 def notify_expired_overrides() -> int:
     """Tell users when temporary access has ended (it already stopped working on its date)."""
     today = timezone.localdate()
@@ -339,6 +353,7 @@ def review_rows(period: str) -> list[dict]:
     return rows
 
 
+@audited("access_reviewed", reason_arg="note")
 @transaction.atomic
 def record_review(actor: User, target: User, period: str, outcome: str, note: str = ""):
     if not access.effective_access(actor).can("confirm_sensitive_grants"):

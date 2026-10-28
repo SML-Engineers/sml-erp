@@ -311,3 +311,46 @@ class AccessReview(models.Model):
 
     def __str__(self):
         return f"{self.period} review of {self.user_id}: {self.outcome}"
+
+
+class AuditEvent(models.Model):
+    """The audit log (P0-05): who changed what, when, from where, old and new values, and why.
+
+    Insert-only: a database trigger refuses updates and deletes, for everyone.
+    """
+
+    class Action(models.TextChoices):
+        CREATE = "create", "Created"
+        UPDATE = "update", "Changed"
+        DELETE = "delete", "Deleted"
+
+    occurred_at = models.DateTimeField(default=timezone.now, db_index=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    actor_email = models.CharField(max_length=254, blank=True, default="")  # "system" for jobs
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    action = models.CharField(max_length=10, choices=Action.choices)
+    object_type = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=64)
+    object_repr = models.CharField(max_length=255, blank=True, default="")
+    # The person the change concerns (their account, roles, overrides, reviews).
+    related_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="audit_events",
+    )
+    event = models.CharField(max_length=50, blank=True, default="")
+    reason = models.TextField(blank=True, default="")
+    changes = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-occurred_at", "-id"]
+        indexes = [models.Index(fields=["object_type", "object_id"], name="core_audit_object")]
+
+    def __str__(self):
+        return (
+            f"{self.occurred_at:%Y-%m-%d %H:%M} {self.actor_email} {self.action} {self.object_repr}"
+        )

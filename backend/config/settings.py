@@ -7,6 +7,7 @@ See `.env.example` at the repository root for the full list.
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -81,6 +82,7 @@ LOGIN_LOCK_THRESHOLD = 5  # failed attempts...
 LOGIN_LOCK_WINDOW_MINUTES = 15  # ...within this many minutes...
 LOGIN_LOCK_MINUTES = 15  # ...pause sign-in for this long
 TWO_FACTOR_PENDING_SECONDS = 300  # time allowed to enter the code after the password
+INACTIVE_ACCOUNT_DAYS = env.int("INACTIVE_ACCOUNT_DAYS", default=90)
 
 # Behind Nginx, the client's address is the last X-Forwarded-For entry Nginx adds.
 USE_X_FORWARDED_FOR = env.bool("USE_X_FORWARDED_FOR", default=False)
@@ -146,6 +148,26 @@ CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_BEAT_SCHEDULE = {
+    # Daily housekeeping for access (spec 1.3), shortly after midnight Sri Lanka time.
+    "notify-expired-access": {
+        "task": "apps.core.tasks.notify_expired_access",
+        "schedule": crontab(hour=0, minute=10),
+    },
+    "deactivate-inactive-accounts": {
+        "task": "apps.core.tasks.deactivate_inactive_accounts",
+        "schedule": crontab(hour=0, minute=20),
+    },
+}
+
+# --- Email ------------------------------------------------------------------------------
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="localhost")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="SML ERP <no-reply@localhost>")
 
 # --- Security ---------------------------------------------------------------------------
 SESSION_COOKIE_HTTPONLY = True

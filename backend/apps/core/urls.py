@@ -32,4 +32,38 @@ urlpatterns = [
     path("users/<int:pk>/", access_views.UserDetailView.as_view(), name="user-detail"),
     path("users/<int:pk>/roles/", access_views.UserRolesView.as_view(), name="user-roles"),
     path("users/<int:pk>/scope/", access_views.UserScopeView.as_view(), name="user-scope"),
+    path("users/<int:pk>/access/", access_views.UserAccessView.as_view(), name="user-access"),
+    path(
+        "users/<int:pk>/overrides/", access_views.UserOverridesView.as_view(), name="user-overrides"
+    ),
+    path(
+        "users/<int:pk>/reset-overrides/",
+        access_views.UserResetOverridesView.as_view(),
+        name="user-reset-overrides",
+    ),
+    path(
+        "users/<int:pk>/copy-access/",
+        access_views.UserCopyAccessView.as_view(),
+        name="user-copy-access",
+    ),
+    path(
+        "users/<int:pk>/deactivate/",
+        access_views.UserDeactivateView.as_view(),
+        name="user-deactivate",
+    ),
+    path("users/<int:pk>/history/", access_views.UserHistoryView.as_view(), name="user-history"),
+    path(
+        "overrides/pending/", access_views.PendingOverridesView.as_view(), name="overrides-pending"
+    ),
+    path(
+        "overrides/<int:pk>/confirm/",
+        access_views.OverrideConfirmView.as_view(),
+        name="override-confirm",
+    ),
+    path(
+        "overrides/<int:pk>/revoke/",
+        access_views.OverrideRevokeView.as_view(),
+        name="override-revoke",
+    ),
+    path("access-review/", access_views.AccessReviewView.as_view(), name="access-review"),
 ]

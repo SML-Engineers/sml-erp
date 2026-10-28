@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .access import effective_access, sees_all_divisions
-from .models import Division, Role, User
+from .models import AccessOverride, Division, Role, User
 
 
 class DivisionSerializer(serializers.ModelSerializer):
@@ -113,3 +113,57 @@ def access_payload(user: User) -> dict:
         "all" if sees_all_divisions(user) else sorted(user.divisions.values_list("code", flat=True))
     )
     return data
+
+
+class OverrideSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(read_only=True)
+    created_by = serializers.SlugRelatedField(read_only=True, slug_field="email")
+    confirmed_by = serializers.SlugRelatedField(read_only=True, slug_field="email")
+    revoked_by = serializers.SlugRelatedField(read_only=True, slug_field="email")
+
+    class Meta:
+        model = AccessOverride
+        fields = [
+            "id",
+            "user",
+            "area",
+            "level",
+            "action",
+            "effect",
+            "reason",
+            "ends_on",
+            "is_sensitive",
+            "status",
+            "created_by",
+            "created_at",
+            "confirmed_by",
+            "confirmed_at",
+            "revoked_by",
+            "revoked_at",
+            "revoke_reason",
+        ]
+
+
+class OverrideInput(serializers.Serializer):
+    effect = serializers.ChoiceField(choices=["grant", "remove"])
+    area = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
+    level = serializers.CharField(max_length=10, required=False, allow_blank=True, default="")
+    action = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
+    reason = serializers.CharField()
+    ends_on = serializers.DateField(required=False, allow_null=True, default=None)
+
+
+class ReasonInput(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class CopyAccessInput(serializers.Serializer):
+    source_user = serializers.IntegerField()
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class ReviewInput(serializers.Serializer):
+    user = serializers.IntegerField()
+    outcome = serializers.ChoiceField(choices=["confirmed", "changed"])
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+    period = serializers.CharField(max_length=7, required=False, default="")

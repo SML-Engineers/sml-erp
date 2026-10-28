@@ -144,3 +144,175 @@ button.secondary {
     padding: 24px 16px;
   }
 }
+
+/* --- Working pages (tables and forms) --- */
+
+.page {
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 0 16px 48px;
+}
+
+.breadcrumb {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.breadcrumb a,
+.page a {
+  color: var(--color-primary);
+}
+
+.panel {
+  background: var(--color-surface);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0;
+}
+
+.panel h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 12px;
+}
+
+label.check {
+  flex-direction: row;
+  align-items: center;
+  font-weight: 400;
+}
+
+select {
+  font: inherit;
+  padding: 9px 10px;
+  border: 1px solid #c9ced6;
+  border-radius: 6px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e6e8ec;
+  vertical-align: top;
+}
+
+thead th {
+  background: #f8f9fb;
+  font-weight: 600;
+}
+
+table.grid td {
+  text-align: center;
+  padding: 2px;
+}
+
+.cell-button {
+  width: 100%;
+  min-width: 48px;
+  min-height: 32px;
+  padding: 4px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.1rem;
+}
+
+.cell-button:disabled {
+  opacity: 1;
+}
+
+.cell.role .cell-button {
+  color: var(--color-primary);
+}
+
+.cell.granted .cell-button {
+  color: #067647;
+  font-weight: 700;
+}
+
+.cell.removed .cell-button {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.cell.pending .cell-button {
+  color: #b54708;
+}
+
+.action-list {
+  list-style: none;
+  padding: 0;
+  columns: 2 280px;
+}
+
+.action-list .cell-button {
+  width: auto;
+  min-width: 36px;
+}
+
+.override-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #e6e8ec;
+  border-radius: 8px;
+}
+
+.notice {
+  background: #eef4ff;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+button.small {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+button.danger {
+  background: #b42318;
+}
+
+tr.flagged {
+  background: #fffaeb;
+}
+
+.warning-text {
+  color: #b54708;
+  font-size: 0.85rem;
+}

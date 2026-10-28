@@ -8,10 +8,15 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import access
+from . import access, access_admin
 from .access_defaults import ACTIONS, AREAS, LEVELS
 from .access_serializers import (
+    CopyAccessInput,
     DivisionSerializer,
+    OverrideInput,
+    OverrideSerializer,
+    ReasonInput,
+    ReviewInput,
     RoleInput,
     RoleSerializer,
     UserCreateInput,
@@ -20,8 +25,9 @@ from .access_serializers import (
     UserSerializer,
     UserUpdateInput,
 )
-from .models import Division, Role, User
+from .models import AccessOverride, Division, Role, User
 from .permissions import AreaAccess
+from .serializers import LoginEventSerializer
 
 
 def _error(error: access.AccessError, code=status.HTTP_400_BAD_REQUEST):
@@ -145,9 +151,14 @@ class UserDetailView(APIView):
                 {"detail": "You cannot deactivate your own account."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        if data.validated_data.get("is_active") is False:
+            access_admin.deactivate_user(request.user, user, "Deactivated by administrator")
+            data.validated_data.pop("is_active")
         for field_name, value in data.validated_data.items():
             setattr(user, field_name, value)
-        user.save(update_fields=list(data.validated_data) or None)
+        if data.validated_data:
+            user.save(update_fields=list(data.validated_data))
+        user.refresh_from_db()
         return Response(UserSerializer(user).data)
 
 
@@ -196,3 +207,168 @@ class UserScopeView(APIView):
             return _error(error, status.HTTP_403_FORBIDDEN)
         user.refresh_from_db()
         return Response(UserSerializer(user).data)
+
+
+# --- P0-04b: overrides, account lifecycle, history, access review ------------------------
+
+
+class _UsersArea(APIView):
+    permission_classes = [AreaAccess]
+    access_area = "users"
+    access_write_level = "manage"
+
+
+class UserAccessView(_UsersArea):
+    """The User access grid: role defaults, overrides and the result, area by area."""
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        return Response({"user": UserSerializer(user).data, **access_admin.access_grid(user)})
+
+
+class UserOverridesView(_UsersArea):
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        return Response(OverrideSerializer(user.access_overrides.all(), many=True).data)
+
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        data = OverrideInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            override = access_admin.create_override(request.user, user, **data.validated_data)
+        except access.AccessError as error:
+            return _error(error, 403 if user.pk == request.user.pk else 400)
+        return Response(OverrideSerializer(override).data, status=status.HTTP_201_CREATED)
+
+
+class PendingOverridesView(_UsersArea):
+    """Sensitive grants waiting for the Director."""
+
+    def get(self, request):
+        waiting = [
+            o
+            for o in AccessOverride.objects.filter(
+                is_sensitive=True, confirmed_at__isnull=True, revoked_at__isnull=True
+            ).select_related("user", "created_by")
+            if o.status == "pending"
+        ]
+        return Response(OverrideSerializer(waiting, many=True).data)
+
+
+class OverrideConfirmView(_UsersArea):
+    # Viewing users is enough to reach this; the service requires the Director's action.
+    access_write_level = "view"
+
+    def post(self, request, pk):
+        override = get_object_or_404(AccessOverride, pk=pk)
+        try:
+            access_admin.confirm_override(request.user, override)
+        except access.AccessError as error:
+            return _error(error, status.HTTP_403_FORBIDDEN)
+        return Response(OverrideSerializer(override).data)
+
+
+class OverrideRevokeView(_UsersArea):
+    def post(self, request, pk):
+        override = get_object_or_404(AccessOverride, pk=pk)
+        data = ReasonInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            access_admin.revoke_override(request.user, override, data.validated_data["reason"])
+        except access.AccessError as error:
+            return _error(error, status.HTTP_403_FORBIDDEN)
+        return Response(OverrideSerializer(override).data)
+
+
+class UserResetOverridesView(_UsersArea):
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        data = ReasonInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            count = access_admin.reset_to_role_defaults(
+                request.user, user, data.validated_data["reason"]
+            )
+        except access.AccessError as error:
+            return _error(error, status.HTTP_403_FORBIDDEN)
+        return Response({"ended": count})
+
+
+class UserCopyAccessView(_UsersArea):
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        data = CopyAccessInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        source = get_object_or_404(User, pk=data.validated_data["source_user"])
+        try:
+            warnings = access_admin.copy_access(
+                request.user, user, source, data.validated_data["reason"]
+            )
+        except access.AccessError as error:
+            return _error(error, 403 if user.pk == request.user.pk else 400)
+        user.refresh_from_db()
+        return Response({"user": UserSerializer(user).data, "warnings": warnings})
+
+
+class UserDeactivateView(_UsersArea):
+    """A leaver: account off, signed out everywhere, overrides ended."""
+
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        data = ReasonInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            access_admin.deactivate_user(request.user, user, data.validated_data["reason"])
+        except access.AccessError as error:
+            return _error(error, status.HTTP_403_FORBIDDEN)
+        user.refresh_from_db()
+        return Response(UserSerializer(user).data)
+
+
+class UserHistoryView(_UsersArea):
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        return Response(
+            {
+                "roles": UserSerializer(user).data["roles"],
+                "overrides": OverrideSerializer(user.access_overrides.all(), many=True).data,
+                "reviews": [
+                    {
+                        "period": r.period,
+                        "outcome": r.outcome,
+                        "reviewed_by": r.reviewed_by.email,
+                        "reviewed_at": r.reviewed_at,
+                        "note": r.note,
+                    }
+                    for r in user.access_reviews.select_related("reviewed_by").order_by("-period")
+                ],
+                "sign_ins": LoginEventSerializer(user.login_events.all()[:50], many=True).data,
+            }
+        )
+
+
+class AccessReviewView(_UsersArea):
+    # Viewing users is enough to see the review; recording it needs the Director's action.
+    access_write_level = "view"
+
+    def get(self, request):
+        period = request.query_params.get("period") or access_admin.current_period()
+        return Response({"period": period, "rows": access_admin.review_rows(period)})
+
+    def post(self, request):
+        data = ReviewInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = get_object_or_404(User, pk=data.validated_data["user"])
+        period = data.validated_data["period"] or access_admin.current_period()
+        try:
+            access_admin.record_review(
+                request.user,
+                user,
+                period,
+                data.validated_data["outcome"],
+                data.validated_data["note"],
+            )
+        except access.AccessError as error:
+            return _error(error, status.HTTP_403_FORBIDDEN)
+        return Response({"period": period, "rows": access_admin.review_rows(period)})

@@ -13,7 +13,8 @@
     "unreachable": "Cannot reach the server",
     "version": "Version {{version}}",
     "welcome": "Welcome, {{name}}",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "administration": "Administration"
   },
   "login": {
     "title": "Sign in",
@@ -45,5 +46,77 @@
     "repeat": "Repeat new password",
     "mismatch": "The two new passwords do not match.",
     "submit": "Change password"
+  },
+  "users": {
+    "title": "Users",
+    "add": "Add a user",
+    "fullName": "Full name",
+    "create": "Create user",
+    "created": "Account created for {{email}}. Give them this temporary password (it is shown only once); they must change it at first sign-in:",
+    "roles": "Roles",
+    "divisions": "Divisions",
+    "status": "Status",
+    "lastSignIn": "Last sign-in",
+    "allDivisions": "All divisions",
+    "active": "Active",
+    "inactive": "Deactivated"
+  },
+  "access": {
+    "ownAccount": "This is your own account. Another administrator must change your access.",
+    "twoFactorOn": "two-factor on",
+    "twoFactorOwed": "two-factor not set up yet",
+    "account": "Account",
+    "reason": "Reason",
+    "deactivate": "Deactivate (leaver)",
+    "reactivate": "Reactivate",
+    "reset": "Reset to role defaults",
+    "copyFrom": "Copy access from",
+    "copy": "Copy access",
+    "saveRoles": "Save roles",
+    "savedWithWarnings": "Saved. The conflict and your reason have been recorded.",
+    "saveDivisions": "Save divisions",
+    "effective": "Effective access",
+    "legend": "● from roles   + granted for this user   − removed for this user   … waiting for the Director. Click a cell to grant or remove.",
+    "area": "Area",
+    "actions": "Special actions",
+    "level": {
+      "view": "View",
+      "enter": "Enter",
+      "approve": "Approve",
+      "manage": "Manage"
+    },
+    "grantTitle": "Grant",
+    "removeTitle": "Remove",
+    "grant": "Grant",
+    "remove": "Remove",
+    "cancel": "Cancel",
+    "until": "Until (optional)",
+    "waitingForDirector": "This is sensitive access: it takes effect once the Director confirms it.",
+    "overrides": "Changes for this user",
+    "noOverrides": "None. This user has exactly their roles' access.",
+    "change": "Change",
+    "by": "Requested by",
+    "confirm": "Confirm",
+    "end": "End",
+    "status": {
+      "active": "Active",
+      "pending": "Waiting for the Director",
+      "revoked": "Ended",
+      "expired": "Expired"
+    }
+  },
+  "review": {
+    "link": "Access review",
+    "title": "Access review {{period}}",
+    "help": "Check that each person's access is still right for their job. Rows with sensitive access still waiting for confirmation are highlighted.",
+    "sensitive": "Sensitive access",
+    "reviewed": "Review",
+    "confirm": "Confirm",
+    "changed": "Changed",
+    "notYet": "Not reviewed yet",
+    "outcome": {
+      "confirmed": "Confirmed",
+      "changed": "Changed"
+    }
   }
 }

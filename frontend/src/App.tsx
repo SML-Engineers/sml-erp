@@ -5,6 +5,9 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
+import AccessReviewPage from "./pages/admin/AccessReviewPage";
+import UserAccessPage from "./pages/admin/UserAccessPage";
+import UsersPage from "./pages/admin/UsersPage";
 
 export default function App() {
   return (
@@ -27,6 +30,15 @@ export default function App() {
         element={<AuthGate allowPending>{() => <TwoFactorSetupPage />}</AuthGate>}
       />
       <Route path="/" element={<AuthGate>{(user) => <HomePage user={user} />}</AuthGate>} />
+      <Route path="/admin/users" element={<AuthGate>{(me) => <UsersPage me={me} />}</AuthGate>} />
+      <Route
+        path="/admin/users/:id"
+        element={<AuthGate>{(me) => <UserAccessPage me={me} />}</AuthGate>}
+      />
+      <Route
+        path="/admin/access-review"
+        element={<AuthGate>{(me) => <AccessReviewPage me={me} />}</AuthGate>}
+      />
     </Routes>
   );
 }

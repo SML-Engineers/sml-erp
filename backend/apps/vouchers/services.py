@@ -185,6 +185,17 @@ def delete_type(user: User, vt: VoucherType, reason: str) -> None:
 # --- Who sees what ----------------------------------------------------------------------
 
 
+def approved_only(user: User) -> bool:
+    """True for a user (a Cashier) who sees only Director-approved vouchers."""
+    access = effective_access(user)
+    return (
+        access.has("vouchers", "view")
+        and not access.has("vouchers", "approve")
+        and not access.has("vouchers", "enter")
+        and access.can("record_payment")
+    )
+
+
 def visible(user: User, *, deleted: bool | None = False) -> QuerySet[Voucher]:
     """The vouchers this user may see: working vouchers; with deleted=True the deleted ones
     (the Deleted Vouchers report); with deleted=None both."""

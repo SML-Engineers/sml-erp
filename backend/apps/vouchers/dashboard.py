@@ -117,6 +117,9 @@ def figures(user: User, division: str = "") -> dict:
         "division": division,
         "can_approve": effective_access(user).has("vouchers", "approve"),
         "can_enter": effective_access(user).has("vouchers", "enter"),
+        # A Cashier sees approved vouchers only, so counts of vouchers waiting for approval
+        # would always be 0 for them: the dashboard leaves those out.
+        "sees_approvals": not services.approved_only(user),
         "waiting_for_me": {"count": queue_sum["n"], "total": _money(queue_sum["total"])},
         "my_vouchers": drafts,
         "by_level": by_level,

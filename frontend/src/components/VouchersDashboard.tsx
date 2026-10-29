@@ -81,11 +81,13 @@ export default function VouchersDashboard({ me }: { me: CurrentUser }) {
             <span className="muted">LKR {formatDecimal(d.my_vouchers.draft.total)}</span>
           </Link>
         )}
-        <Link className="tile" to={`/vouchers/reports?${inDivision("tab=pending")}`}>
-          <span className="tile-label">{t("dashboard.pending")}</span>
-          <strong className="tile-figure">{d.pending_count}</strong>
-          <span className="muted">{t("dashboard.allLevels")}</span>
-        </Link>
+        {d.sees_approvals && (
+          <Link className="tile" to={`/vouchers/reports?${inDivision("tab=pending")}`}>
+            <span className="tile-label">{t("dashboard.pending")}</span>
+            <strong className="tile-figure">{d.pending_count}</strong>
+            <span className="muted">{t("dashboard.allLevels")}</span>
+          </Link>
+        )}
         <Link
           className="tile"
           to={seesPayments ? `/payments${division ? `?division=${division}` : ""}` : `/vouchers?${inDivision("status=director_approved,partly_paid")}`}
@@ -148,7 +150,7 @@ export default function VouchersDashboard({ me }: { me: CurrentUser }) {
             <thead>
               <tr>
                 <th>{t("vouchers.division")}</th>
-                <th>{t("dashboard.pendingAmount")}</th>
+                {d.sees_approvals && <th>{t("dashboard.pendingAmount")}</th>}
                 <th>{t("dashboard.unpaidAmount")}</th>
                 {seesPayments && <th className="num">{t("dashboard.paidThisMonth")}</th>}
               </tr>
@@ -161,12 +163,14 @@ export default function VouchersDashboard({ me }: { me: CurrentUser }) {
                       {row.code} {row.name}
                     </button>
                   </td>
-                  <td>
-                    <Link to={`/vouchers/reports?tab=pending&division=${row.code}`} className="bar-cell">
-                      <span className="bar pending" style={{ width: `${share(row.pending_total, largest)}%` }} />
-                      {row.pending} · {formatDecimal(row.pending_total)}
-                    </Link>
-                  </td>
+                  {d.sees_approvals && (
+                    <td>
+                      <Link to={`/vouchers/reports?tab=pending&division=${row.code}`} className="bar-cell">
+                        <span className="bar pending" style={{ width: `${share(row.pending_total, largest)}%` }} />
+                        {row.pending} · {formatDecimal(row.pending_total)}
+                      </Link>
+                    </td>
+                  )}
                   <td>
                     <Link
                       to={seesPayments ? `/payments?division=${row.code}` : `/vouchers?status=director_approved,partly_paid&division=${row.code}`}

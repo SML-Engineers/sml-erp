@@ -81,6 +81,33 @@ SSHD
 sshd -t
 systemctl reload ssh || systemctl reload sshd
 
+say "Nightly backup at 01:30 (runs once backups are set up: docs/backups.md)"
+cat > /etc/systemd/system/sml-erp-backup.service <<UNIT
+[Unit]
+Description=SML ERP nightly backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=$DEPLOY_USER
+ExecStart=/srv/sml-erp/app/deploy/scripts/backup.sh
+UNIT
+cat > /etc/systemd/system/sml-erp-backup.timer <<'UNIT'
+[Unit]
+Description=SML ERP nightly backup at 01:30
+
+[Timer]
+OnCalendar=*-*-* 01:30:00
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now sml-erp-backup.timer
+
 say "Done"
 cat <<NEXT
 Next, sign in as $DEPLOY_USER (ssh $DEPLOY_USER@<server address>) and follow docs/hosting.md:

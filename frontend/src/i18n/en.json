@@ -269,7 +269,8 @@
     "settings": "Settings",
     "accounts": "Accounts",
     "vouchers": "Vouchers",
-    "waiting": "Waiting for my approval"
+    "waiting": "Waiting for my approval",
+    "approveVouchers": "Approve vouchers"
   },
   "layout": {
     "menu": "Menu",
@@ -1051,5 +1052,43 @@
     "return": "Return to Clerk",
     "reject": "Reject",
     "saveFirst": "Save the coding before approving: a voucher can only be approved at L2 when every line has its account and division."
+  },
+  "director": {
+    "title": "Approve vouchers",
+    "types": "Voucher types",
+    "all": "All ({{count}})",
+    "filters": "Filters",
+    "from": "From",
+    "to": "To",
+    "payee": "Payee",
+    "min": "Amount from",
+    "max": "Amount up to",
+    "division": "Division",
+    "allDivisions": "All divisions",
+    "empty": "No vouchers are waiting for you.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "reason": "Reason / comment",
+    "approveOne": "Approve {{number}}",
+    "rejectOne": "Reject {{number}}",
+    "reasonFor": "Reason for {{number}}",
+    "reasonNeeded": "Reason required",
+    "optional": "Optional",
+    "shown": "{{count}} shown",
+    "approveAll": "Approve all",
+    "rejectAll": "Reject all",
+    "clearAll": "Clear all",
+    "confirm": "Confirm",
+    "reset": "Reset",
+    "reasonsMissing": "Give a reason for every voucher you reject (highlighted).",
+    "check": "Check before confirming",
+    "summary": "Approve {{approve}} vouchers totalling LKR {{total}}, and reject {{reject}}?",
+    "yes": "Yes, confirm",
+    "no": "Cancel",
+    "done": "Done: {{approved}} approved, {{rejected}} rejected.",
+    "details": "Voucher {{number}}",
+    "close": "Close",
+    "accountantSaid": "Checked by {{name}}",
+    "noComment": "no comment"
   }
 }

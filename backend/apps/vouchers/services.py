@@ -745,3 +745,60 @@ def reject(user: User, voucher: Voucher, reason: str) -> Voucher:
         except ApprovalError as error:
             raise VoucherError(str(error)) from None
         return sync_status(voucher)
+
+
+# --- The Director's page: several decisions at once (P1-04) -----------------------------
+
+
+@dataclass
+class Decision:
+    voucher_id: int
+    decision: str  # "approve" or "reject"
+    reason: str = ""
+
+
+class BulkRefused(VoucherError):
+    def __init__(self, errors: dict[int, str]):
+        super().__init__("Nothing was confirmed: " + "; ".join(errors.values()))
+        self.errors = errors
+
+
+def decide_many(user: User, decisions: list[Decision]) -> list[Voucher]:
+    """Confirm the ticked Approve and Reject boxes together, all or nothing: if any row is
+    refused (a Reject without a reason, a voucher no longer waiting for this user…), nothing
+    is confirmed and every refused row is reported by voucher id."""
+    if not decisions:
+        raise VoucherError("Tick Approve or Reject on at least one voucher.")
+    errors: dict[int, str] = {}
+    seen = set()
+    for d in decisions:
+        if d.voucher_id in seen:
+            errors[d.voucher_id] = "The voucher is ticked twice."
+        seen.add(d.voucher_id)
+        if d.decision not in ("approve", "reject"):
+            errors[d.voucher_id] = "Choose Approve or Reject."
+        elif d.decision == "reject" and not (d.reason or "").strip():
+            errors[d.voucher_id] = "Give a reason for rejecting."
+    if errors:
+        raise BulkRefused(errors)
+    allowed = {v.pk: v for v in visible(user).filter(pk__in=seen)}
+    done = []
+    with transaction.atomic():
+        for d in decisions:
+            voucher = allowed.get(d.voucher_id)
+            if voucher is None:
+                errors[d.voucher_id] = "Voucher not found."
+                continue
+            try:
+                with transaction.atomic():
+                    if d.decision == "approve":
+                        done.append(approve(user, voucher, d.reason))
+                    else:
+                        done.append(reject(user, voucher, d.reason))
+            except VoucherError as error:
+                errors[d.voucher_id] = f"{voucher.number}: {error}"
+        if errors:
+            transaction.set_rollback(True)
+    if errors:
+        raise BulkRefused(errors)
+    return done

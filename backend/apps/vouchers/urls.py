@@ -20,6 +20,7 @@ urlpatterns += [
         name="voucher-payee-balance",
     ),
     path("vouchers/waiting/", v.WaitingView.as_view(), name="voucher-waiting"),
+    path("vouchers/decisions/", v.BulkDecisionView.as_view(), name="voucher-decisions"),
     path("vouchers/<int:pk>/", v.VoucherDetailView.as_view(), name="voucher-detail"),
     path("vouchers/<int:pk>/coding/", v.CodingView.as_view(), name="voucher-coding"),
     path(

@@ -10,6 +10,7 @@ import { listPayees } from "../api/payees";
 import { getTaxes, taxesKey } from "../api/taxes";
 import {
   createVoucher,
+  decideCancellation,
   getPayeeBalance,
   getVoucher,
   listTransferAccounts,
@@ -22,6 +23,7 @@ import {
   voucherFileUrl,
   voucherTypesKey,
   vouchersKey,
+  type Cancellation,
   type VoucherDetail,
   type VoucherLineInput,
 } from "../api/vouchers";
@@ -140,6 +142,7 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
       ) : (
         <ReadOnly voucher={data} />
       )}
+      {data?.cancellation && <CancellationPanel voucher={data} request={data.cancellation} />}
       {data && <Attachments voucher={data} />}
       {data?.can_edit && <Submit voucher={data} />}
       {data && data.approvals.length > 0 && <History voucher={data} />}
@@ -580,6 +583,59 @@ function History({ voucher }: { voucher: VoucherDetail }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/** The latest cancellation request: waiting, approved or rejected; the Director decides
+ * here (spec 4.2, P1-06). */
+function CancellationPanel({ voucher, request }: { voucher: VoucherDetail; request: Cancellation }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [reason, setReason] = useState("");
+  const decide = useMutation({
+    mutationFn: (decision: "approve" | "reject") => decideCancellation(request.id, decision, reason),
+    onSuccess: (latest) => {
+      queryClient.setQueryData([...vouchersKey, "one", voucher.id], latest);
+      void queryClient.invalidateQueries({ queryKey: vouchersKey });
+    },
+  });
+  return (
+    <section className="panel change-notice" aria-label={t("cancellations.panel")}>
+      <h2>{t("cancellations.panel")}</h2>
+      <p>
+        {t(`cancellations.statuses.${request.status}`)} ·{" "}
+        {t("cancellations.requestedBy", { name: request.requested_by, when: new Date(request.requested_at).toLocaleString() })}
+        : {request.reason}
+      </p>
+      {request.decided_by && (
+        <p className="muted">
+          {t("cancellations.decidedBy", { name: request.decided_by, when: new Date(request.decided_at ?? "").toLocaleString() })}
+          {request.decision_reason && `: ${request.decision_reason}`}
+        </p>
+      )}
+      {request.can_decide && (
+        <>
+          <label className="wide">
+            {t("cancellations.decisionReason")}
+            <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <div className="row-actions">
+            <button type="button" className="danger" disabled={decide.isPending} onClick={() => decide.mutate("approve")}>
+              {t("cancellations.approve")}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              disabled={decide.isPending || !reason.trim()}
+              onClick={() => decide.mutate("reject")}
+            >
+              {t("cancellations.reject")}
+            </button>
+          </div>
+        </>
+      )}
+      <ErrorLine error={decide.error} />
     </section>
   );
 }

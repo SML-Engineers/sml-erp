@@ -405,9 +405,19 @@ Status: `[ ]` to do · `[x]` done
   - An amendment started by the Accountant is theirs, so another Accountant approves it at
     L2 (rule 5); the Clerk normally starts amendments.
 
-- [ ] **P1-06 Cancellation** (spec 4.2)
+- [x] **P1-06 Cancellation** (spec 4.2)
   Accountant requests cancellation of an unpaid voucher; Director approves.
   - A voucher with any payment cannot be cancelled.
+  - Done. Request cancellation (⋯ menu, Accountant, Director-approved and unpaid vouchers,
+    reason required). The request is a document in the approval engine ("Voucher
+    cancellation", Director at level 2 in the approval matrix), so the Director is notified
+    and every step is in the approval log. The Director approves or rejects (comment
+    required) on the voucher's page; Vouchers → Cancellation requests lists them.
+  - While a request waits, the voucher cannot be amended or deleted (P1-07 will also block
+    payment). A voucher still being approved is rejected instead of cancelled.
+  - Cancelled is final: the database refuses cancelling a paid voucher, any later change
+    except marking it Deleted, and changes to its figures and lines. Prints say CANCELLED
+    (and REPLACED for an amended voucher).
 
 - [ ] **P1-07 Supplier payments and the payment lock** (spec 4.6)
   Cashier screen listing Director-approved unpaid vouchers; payment created from a voucher

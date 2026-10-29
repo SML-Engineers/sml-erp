@@ -64,7 +64,15 @@ export interface VoucherSummary {
 
 /** "edit": the Clerk's form; "edit_coding": the Accountant's review (L2); "revise": the
  * Director's changes (L3), which send the voucher back to the Accountant. */
-export type VoucherAction = "resources" | "print" | "edit" | "edit_coding" | "revise" | "amend" | "delete";
+export type VoucherAction =
+  | "resources"
+  | "print"
+  | "edit"
+  | "edit_coding"
+  | "revise"
+  | "amend"
+  | "cancel"
+  | "delete";
 
 export interface VoucherLineData {
   line_no: number;
@@ -103,6 +111,8 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
   /** The voucher this one amends, and the amendments of this one (P1-05). */
   parent: { id: number; number: string } | null;
   revisions: { id: number; number: string; status: VoucherStatus }[];
+  /** The latest cancellation request, if any (P1-06). */
+  cancellation?: Cancellation | null;
   lines: VoucherLineData[];
   attachments: VoucherAttachmentData[];
   warnings: string[];
@@ -185,3 +195,28 @@ export interface AmendmentRow extends VoucherSummary {
 export const amendVoucher = (id: number, reason: string) =>
   apiSend<VoucherDetail>("POST", `/vouchers/${id}/amend/`, { reason });
 export const listAmendments = () => apiGet<AmendmentRow[]>("/vouchers/amendments/");
+
+// --- Cancellation (P1-06) ---------------------------------------------------------------
+
+export interface Cancellation {
+  id: number;
+  status: "pending" | "approved" | "rejected";
+  reason: string;
+  requested_by: string;
+  requested_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_reason: string;
+  can_decide: boolean;
+}
+
+export interface CancellationRow extends Cancellation {
+  voucher: { id: number; number: string; status: VoucherStatus; payee: string; total_amount: string };
+}
+
+export const requestCancellation = (id: number, reason: string) =>
+  apiSend<VoucherDetail>("POST", `/vouchers/${id}/cancel/`, { reason });
+export const decideCancellation = (id: number, decision: "approve" | "reject", reason: string) =>
+  apiSend<VoucherDetail>("POST", `/vouchers/cancellations/${id}/${decision}/`, { reason });
+export const listCancellations = (pendingOnly: boolean) =>
+  apiGet<CancellationRow[]>(`/vouchers/cancellations/${pendingOnly ? "?pending=1" : ""}`);

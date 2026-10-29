@@ -16,7 +16,7 @@ from apps.masters.models import CompanyAccount, Supplier
 from apps.masters.services import is_in_use
 
 from . import printing, services
-from .models import Voucher, VoucherAttachment, VoucherType
+from .models import Voucher, VoucherAttachment, VoucherCancellation, VoucherType
 from .services import VoucherError
 
 
@@ -166,6 +166,7 @@ def _detail(v: Voucher, user) -> dict:
                 {"id": r.pk, "number": r.number, "status": r.status}
                 for r in v.revisions.order_by("revision", "id")
             ],
+            "cancellation": _cancellation(v.cancellations.first(), user),
             "lines": [
                 {
                     "line_no": line.line_no,
@@ -719,3 +720,74 @@ class AmendmentListView(_Vouchers):
             }
             result.append(row)
         return Response(result)
+
+
+# --- Cancellation (P1-06) ---------------------------------------------------------------
+
+
+def _cancellation(request: VoucherCancellation | None, user) -> dict | None:
+    if request is None:
+        return None
+    return {
+        "id": request.pk,
+        "status": request.status,
+        "reason": request.reason,
+        "requested_by": request.requested_by.full_name,
+        "requested_at": request.requested_at,
+        "decided_by": request.decided_by.full_name if request.decided_by else None,
+        "decided_at": request.decided_at,
+        "decision_reason": request.decision_reason,
+        "can_decide": services.can_decide(user, request),
+    }
+
+
+class CancelRequestView(_Approving):
+    """The Accountant asks the Director to cancel an approved, unpaid voucher."""
+
+    def post(self, request, pk):
+        voucher = _get(request.user, pk)
+        try:
+            services.request_cancellation(
+                request.user, voucher, str(request.data.get("reason", ""))
+            )
+        except VoucherError as error:
+            return _error(error)
+        return Response(_detail(Voucher.objects.get(pk=voucher.pk), request.user))
+
+
+class CancellationListView(_Vouchers):
+    """Cancellation requests, newest first; ?pending=1 for those waiting."""
+
+    def get(self, request):
+        rows = services.cancellations(request.user)
+        if request.query_params.get("pending") in ("1", "true"):
+            rows = rows.filter(status=VoucherCancellation.Status.PENDING)
+        return Response(
+            [
+                {
+                    **_cancellation(row, request.user),
+                    "voucher": {
+                        "id": row.voucher_id,
+                        "number": row.voucher.number,
+                        "status": row.voucher.status,
+                        "payee": row.voucher.payee.name if row.voucher.payee else "",
+                        "total_amount": f"{row.voucher.total_amount:.2f}",
+                    },
+                }
+                for row in rows[:500]
+            ]
+        )
+
+
+class CancellationDecisionView(_Approving):
+    """The Director approves or rejects a cancellation request (reject needs a reason)."""
+
+    def post(self, request, pk, decision):
+        row = get_object_or_404(services.cancellations(request.user), pk=pk)
+        try:
+            row = services.decide_cancellation(
+                request.user, row, decision == "approve", str(request.data.get("reason", ""))
+            )
+        except VoucherError as error:
+            return _error(error)
+        return Response(_detail(Voucher.objects.get(pk=row.voucher_id), request.user))

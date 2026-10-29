@@ -41,6 +41,10 @@ DOCUMENT_TYPES = {
     "voucher": DocumentType(
         "Payment voucher", min_approvals=2, final_role="director", subtype_label="Voucher type"
     ),
+    # The Accountant requests, the Director approves (spec 4.2, P1-06).
+    "voucher_cancellation": DocumentType(
+        "Voucher cancellation", min_approvals=1, final_role="director", subtype_label="Voucher type"
+    ),
 }
 
 

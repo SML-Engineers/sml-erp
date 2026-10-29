@@ -161,3 +161,60 @@ jobs:
       - name: make down
         if: always()
         run: make down
+
+  production:
+    name: Production stack (HTTPS, as on the servers)
+    runs-on: ubuntu-24.04
+    needs: [backend, frontend]
+    env:
+      ENV_FILE: ${{ github.workspace }}/.env.production
+      APP_VERSION: ci
+    steps:
+      - uses: actions/checkout@v7
+      - name: Scripts have no syntax errors
+        run: |
+          for f in deploy/scripts/*.sh; do bash -n "$f"; done
+          sh -n deploy/web/entrypoint.sh
+      - name: Environment file from the real script
+        run: deploy/scripts/make-env.sh production localhost it@example.com
+      - name: Build and start
+        run: |
+          docker compose -f deploy/docker-compose.prod.yml --env-file "$ENV_FILE" build 2>&1 | tail -n 40
+          docker compose -f deploy/docker-compose.prod.yml --env-file "$ENV_FILE" up -d
+      - name: The API answers over HTTPS
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsSk https://localhost/api/v1/health/; then echo; exit 0; fi
+            sleep 5
+          done
+          exit 1
+      - name: HTTP goes to HTTPS, the app is served, security headers are set
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/vouchers)
+          test "$code" = "301"
+          curl -fsSk https://localhost/vouchers/123 | grep -q 'id="root"'
+          headers=$(curl -fsSkI https://localhost/api/v1/health/)
+          echo "$headers"
+          echo "$headers" | grep -qi '^strict-transport-security:'
+          echo "$headers" | grep -qi '^content-security-policy:'
+          test "$(echo "$headers" | grep -ci '^x-frame-options:')" = "1"
+          # Debug pages are off: an unknown address gives a plain 404, not Django's error page.
+          ! curl -sk https://localhost/api/v1/no-such-page/ | grep -q 'Django'
+      - name: Background worker and scheduler are running
+        run: |
+          compose="docker compose -f deploy/docker-compose.prod.yml --env-file $ENV_FILE"
+          $compose ps worker --status running --quiet | grep -q .
+          $compose ps scheduler --status running --quiet | grep -q .
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          compose="docker compose -f deploy/docker-compose.prod.yml --env-file $ENV_FILE"
+          $compose ps -a
+          report() {
+            body=$(printf '%s' "$2" | tail -c 6000 | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=$1::$body"
+          }
+          report "Services" "$($compose ps -a --format '{{.Service}} {{.State}} {{.Status}}' 2>&1)"
+          for s in db storage migrate backend worker scheduler web; do
+            report "Log: $s" "$($compose logs --no-color --tail=40 $s 2>&1)"
+          done

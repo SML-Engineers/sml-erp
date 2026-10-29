@@ -40,6 +40,13 @@ developer's own machine only; servers get their own secrets, which are never com
 | http://localhost:8080 | The application (React app and API through Nginx) |
 | http://localhost:8080/api/v1/health/ | API health check |
 
+## Running it on the servers
+
+The test and production servers (Hostinger Ubuntu VPS) are set up and updated as described
+in [docs/hosting.md](docs/hosting.md): one setup script, an environment file with secrets
+generated on the server, HTTPS from Let's Encrypt, and updates with one click in GitHub
+(Actions → Deploy).
+
 ## Structure
 
 ```

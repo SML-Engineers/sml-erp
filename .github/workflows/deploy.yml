@@ -1,0 +1,63 @@
+name: Deploy
+
+# Puts a tested version on the test or production server (P1-10, docs/hosting.md).
+# Started by hand: Actions > Deploy > Run workflow. Only code that is on main and has passed
+# every check can be deployed. The server's address and SSH key are stored by the owner as
+# secrets of the GitHub environment ("test" or "production"); they are never in the code.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which server
+        type: choice
+        options: [test, production]
+        default: test
+      ref:
+        description: Version to deploy (main, or a release tag such as v1.0.0)
+        default: main
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.ref }} to ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: The version is on main and passed every check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          git fetch origin main
+          git merge-base --is-ancestor "$sha" origin/main || { echo "::error::$sha is not on main"; exit 1; }
+          bad=$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs" \
+            --jq '[.check_runs[] | select(.name != "Deploy ${{ inputs.ref }} to ${{ inputs.environment }}") | select(.conclusion != "success" and .conclusion != "skipped")] | length')
+          total=$(gh api "repos/${{ github.repository }}/commits/$sha/check-runs" --jq '.check_runs | length')
+          if [ "$total" = "0" ] || [ "$bad" != "0" ]; then
+            echo "::error::$sha has not passed every check ($bad of $total not green)"; exit 1
+          fi
+          echo "SHA=$sha" >> "$GITHUB_ENV"
+      - name: Deploy over SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_HOST" || { echo "::error::Set the secrets of the ${{ inputs.environment }} environment (docs/hosting.md, step 9)"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "${SSH_USER:-deploy}@$SSH_HOST" \
+            "/srv/sml-erp/app/deploy/scripts/deploy.sh $SHA"

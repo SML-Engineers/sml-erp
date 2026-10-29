@@ -20,6 +20,7 @@ urlpatterns += [
         name="voucher-payee-balance",
     ),
     path("vouchers/waiting/", v.WaitingView.as_view(), name="voucher-waiting"),
+    path("vouchers/deleted/", v.DeletedListView.as_view(), name="voucher-deleted"),
     path("vouchers/decisions/", v.BulkDecisionView.as_view(), name="voucher-decisions"),
     path("vouchers/<int:pk>/", v.VoucherDetailView.as_view(), name="voucher-detail"),
     path("vouchers/<int:pk>/coding/", v.CodingView.as_view(), name="voucher-coding"),
@@ -42,6 +43,9 @@ urlpatterns += [
         name="voucher-reject",
     ),
     path("vouchers/<int:pk>/submit/", v.SubmitView.as_view(), name="voucher-submit"),
+    path("vouchers/<int:pk>/print/", v.PrintView.as_view(), name="voucher-print"),
+    path("vouchers/<int:pk>/delete/", v.DeleteView.as_view(), name="voucher-delete"),
+    path("vouchers/<int:pk>/revise/", v.ReviseView.as_view(), name="voucher-revise"),
     path(
         "vouchers/<int:pk>/attachments/",
         v.AttachmentListView.as_view(),

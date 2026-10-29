@@ -359,7 +359,7 @@ Status: `[ ]` to do · `[x]` done
   - Supplier aging in the side panel waits for payments (P1-07); until then it shows the
     amount outstanding on the payee's vouchers.
 
-- [ ] **P1-04b Row actions: Resources, Print, Edit, Delete** (spec 4.4, as in the current system)
+- [x] **P1-04b Row actions: Resources, Print, Edit, Delete** (spec 4.4, as in the current system)
   Actions menu (⋯) on every voucher row, plus a paperclip icon when attachments exist.
   Resources opens an attachment viewer (page, zoom, rotate, download). Print produces the
   company-format payment voucher PDF (A4 default, A5 option) with prepared / checked /
@@ -374,6 +374,19 @@ Status: `[ ]` to do · `[x]` done
     its full history in a Deleted Vouchers report, number never reused.
   - Deleting a voucher with any payment is refused at service and database level.
   - Reprints are watermarked "Copy"; every edit, delete and print is in the audit log.
+  - Done: the ⋯ menu on the voucher list, the Director's page, the voucher page and Deleted
+    vouchers (Vouchers → Deleted vouchers). Edit opens the Clerk's form, the Accountant's
+    review page, or the Director's change form, depending on who and where the voucher is.
+  - The Director may correct the description and coding at L3; a change to the payee, an
+    amount, a line or the tax sends the voucher back to L2 with the changes listed in the
+    approval history and on the Accountant's review page. The Accountant returns the voucher
+    to the Clerk rather than changing amounts.
+  - Deleting a submitted voucher withdraws it from approval (recorded in the approval log).
+    The database refuses deleting a Partly paid or Paid voucher and any change to a deleted
+    one; P1-07 adds the same check against the payment records themselves.
+  - Printed voucher (reportlab, A4 or A5): a voucher not yet approved by the Director is
+    marked "Not approved", a deleted one "Deleted". Payment details are blank boxes until
+    payments exist (P1-07). Amend arrives with amendments (P1-05).
 
 - [ ] **P1-05 Returns and amendments** (spec 4.2)
   Returned vouchers go back to the Clerk; resubmission restarts at L2. Amending an approved,

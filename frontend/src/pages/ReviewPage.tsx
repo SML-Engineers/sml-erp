@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { chartKey, listLedgerAccounts } from "../api/accounts";
 import { listDivisions } from "../api/admin";
@@ -56,7 +56,8 @@ function ErrorLine({ error }: { error: unknown }) {
 export default function ReviewPage() {
   const { t } = useTranslation();
   const queue = useQuery({ queryKey: waitingKey, queryFn: () => apiGet<Waiting[]>("/vouchers/waiting/") });
-  const [selected, setSelected] = useState<number | null>(null);
+  const [search] = useSearchParams();
+  const [selected, setSelected] = useState<number | null>(Number(search.get("open")) || null);
 
   return (
     <main className="page">
@@ -183,6 +184,11 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
           ⚠ {w}
         </p>
       ))}
+      {voucher.approvals.at(-1)?.action === "send_down" && (
+        <p className="notice change-notice" role="status">
+          {t("voucherActions.sentBack", { name: voucher.approvals.at(-1)!.user })} {voucher.approvals.at(-1)!.reason}
+        </p>
+      )}
 
       <div className="preview" aria-label={t("voucherReview.preview")} role="group">
         {voucher.attachments.length > 1 && (

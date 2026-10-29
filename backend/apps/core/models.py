@@ -576,6 +576,8 @@ class ApprovalState(models.Model):
         APPROVED = "approved", "Approved"
         RETURNED = "returned", "Returned"
         REJECTED = "rejected", "Rejected"
+        # Taken out of approval by its module, e.g. a voucher deleted (P1-04b).
+        WITHDRAWN = "withdrawn", "Withdrawn"
 
     document_type = models.SlugField(max_length=30)
     document_id = models.BigIntegerField()
@@ -622,6 +624,9 @@ class ApprovalLog(models.Model):
         APPROVE = "approve", "Approved"
         RETURN = "return", "Returned"
         REJECT = "reject", "Rejected"
+        # Changed by a later approver and sent back to the first approval level (P1-04b).
+        SEND_DOWN = "send_down", "Changed and sent back"
+        WITHDRAW = "withdraw", "Withdrawn"
 
     document_type = models.SlugField(max_length=30)
     document_id = models.BigIntegerField()
@@ -639,9 +644,10 @@ class ApprovalLog(models.Model):
             models.Index(fields=["document_type", "document_id"], name="core_approvallog_doc"),
         ]
         constraints = [
-            # Return and Reject always carry a reason (spec 4.3).
+            # Return and Reject always carry a reason (spec 4.3); so do a change sent back
+            # and a withdrawal.
             models.CheckConstraint(
-                condition=~models.Q(action__in=["return", "reject"])
+                condition=~models.Q(action__in=["return", "reject", "send_down", "withdraw"])
                 | models.Q(reason__regex=r"\S"),
                 name="core_approvallog_reason_required",
             ),

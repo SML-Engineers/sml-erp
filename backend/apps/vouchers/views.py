@@ -1,7 +1,7 @@
 """Payment vouchers API (spec 4). Rules live in services.py."""
 
 from django.db.models import Q
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
@@ -15,7 +15,7 @@ from apps.core.permissions import AreaAccess, ReadForAllAreaWrite
 from apps.masters.models import CompanyAccount, Supplier
 from apps.masters.services import is_in_use
 
-from . import services
+from . import printing, services
 from .models import Voucher, VoucherAttachment, VoucherType
 from .services import VoucherError
 
@@ -112,8 +112,9 @@ class TypeDetailView(_Types):
 # --- Vouchers (P1-02) -------------------------------------------------------------------
 
 
-def _summary(v: Voucher) -> dict:
-    return {
+def _summary(v: Voucher, user=None, waiting=None) -> dict:
+    """One row of a voucher list; with `user`, also the row actions they may take."""
+    row = {
         "id": v.pk,
         "number": v.number,
         "status": v.status,
@@ -125,10 +126,19 @@ def _summary(v: Voucher) -> dict:
         "created_by": v.created_by.full_name,
         "attachments": v.attachments.count(),
     }
+    if user is not None:
+        row["actions"] = services.actions(user, v, waiting)
+    if v.status == Voucher.Status.DELETED:
+        row["deleted"] = {
+            "at": v.deleted_at,
+            "by": v.deleted_by.full_name if v.deleted_by else "",
+            "reason": v.delete_reason,
+        }
+    return row
 
 
 def _detail(v: Voucher, user) -> dict:
-    body = _summary(v)
+    body = _summary(v, user)
     body.update(
         {
             "voucher_type": _type(v.voucher_type),
@@ -296,9 +306,11 @@ class _Vouchers(APIView):
     access_write_level = "enter"
 
 
-def _get(user, pk) -> Voucher:
+def _get(user, pk, *, deleted_too=False) -> Voucher:
+    """A voucher the user may see. Deleted ones only for reading (details, files, print)."""
+    rows = services.visible(user, deleted=None if deleted_too else False)
     return get_object_or_404(
-        services.visible(user).select_related("voucher_type", "division", "payee", "created_by"),
+        rows.select_related("voucher_type", "division", "payee", "created_by", "deleted_by"),
         pk=pk,
     )
 
@@ -324,7 +336,8 @@ class VoucherListView(_Vouchers):
                 | Q(payee__name__icontains=text)
                 | Q(lines__invoice_no__icontains=text)
             ).distinct()
-        return Response([_summary(v) for v in rows[:500]])
+        waiting = services.waiting_levels(request.user)
+        return Response([_summary(v, request.user, waiting) for v in rows[:500]])
 
     def post(self, request):
         data = VoucherInput(data=request.data)
@@ -338,7 +351,7 @@ class VoucherListView(_Vouchers):
 
 class VoucherDetailView(_Vouchers):
     def get(self, request, pk):
-        return Response(_detail(_get(request.user, pk), request.user))
+        return Response(_detail(_get(request.user, pk, deleted_too=True), request.user))
 
     def patch(self, request, pk):
         voucher = _get(request.user, pk)
@@ -380,7 +393,7 @@ class AttachmentListView(_Vouchers):
 
 class AttachmentDetailView(_Vouchers):
     def get(self, request, pk, attachment_pk):
-        voucher = _get(request.user, pk)
+        voucher = _get(request.user, pk, deleted_too=True)
         attachment = get_object_or_404(VoucherAttachment, pk=attachment_pk, voucher=voucher)
         return FileResponse(
             attachment.file.open("rb"),
@@ -435,8 +448,9 @@ class WaitingView(_Approving):
             .order_by("submitted_at", "id")
         )
         result = []
+        waiting = services.waiting_levels(request.user)
         for v in rows:
-            row = _summary(v)
+            row = _summary(v, request.user, waiting)
             row["submitted_at"] = v.submitted_at
             row["waiting_level"] = _approval(v, request.user)["waiting_level"]
             checked = [h for h in approvals.history(services.DOC, v.pk) if h.action == "approve"]
@@ -592,3 +606,69 @@ class BulkDecisionView(_Approving):
                 "fully_approved": [v.number for v in approved],
             }
         )
+
+
+# --- Row actions: print, delete, edit while waiting (P1-04b) ---------------------------
+
+
+class DeletedListView(_Vouchers):
+    """The Deleted Vouchers report: who deleted each one, when and why."""
+
+    def get(self, request):
+        rows = (
+            services.visible(request.user, deleted=True)
+            .select_related("voucher_type", "division", "payee", "created_by", "deleted_by")
+            .order_by("-deleted_at", "-id")
+        )
+        return Response([_summary(v, request.user, {}) for v in rows[:1000]])
+
+
+class PrintView(_Vouchers):
+    """The payment voucher as a PDF (A4, or ?paper=A5). Each print is logged; reprints say
+    "COPY"."""
+
+    def get(self, request, pk):
+        voucher = _get(request.user, pk, deleted_too=True)
+        paper = (request.query_params.get("paper") or "A4").upper()
+        try:
+            record = services.record_print(request.user, voucher, paper)
+        except VoucherError as error:
+            return _error(error)
+        response = HttpResponse(printing.render(voucher, record), content_type="application/pdf")
+        suffix = "-copy" if record.is_copy else ""
+        response["Content-Disposition"] = f'inline; filename="{voucher.number}{suffix}.pdf"'
+        return response
+
+
+class DeleteView(_Vouchers):
+    # Who may delete is decided by the service: the creator of a draft, or the Director or
+    # the Admin for a submitted voucher (the Admin only views vouchers otherwise).
+    access_write_level = "view"
+
+    def post(self, request, pk):
+        voucher = _get(request.user, pk)
+        try:
+            voucher = services.delete(request.user, voucher, str(request.data.get("reason", "")))
+        except VoucherError as error:
+            return _error(error)
+        return Response(_detail(voucher, request.user))
+
+
+class ReviseView(_Approving):
+    """An approver's edit while the voucher waits for them (description at any level; the
+    payee, amounts and lines from the Director, which sends it back to the Accountant)."""
+
+    def patch(self, request, pk):
+        voucher = _get(request.user, pk)
+        data = VoucherInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            values = _resolve(data.validated_data)
+            if values["voucher_type"].pk != voucher.voucher_type_id:
+                raise VoucherError("The voucher type cannot change here.")
+            values.pop("voucher_type")
+            values.pop("division", None)
+            voucher = services.revise(request.user, voucher, **values)
+        except VoucherError as error:
+            return _error(error)
+        return Response(_detail(voucher, request.user))

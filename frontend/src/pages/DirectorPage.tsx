@@ -5,6 +5,7 @@ import { Link } from "react-router";
 
 import { ApiError, apiGet, apiSend } from "../api/client";
 import { getVoucher, voucherFileUrl, vouchersKey, type VoucherSummary } from "../api/vouchers";
+import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 
 interface Waiting extends VoucherSummary {
@@ -203,6 +204,7 @@ export default function DirectorPage() {
                       {v.number}
                     </button>
                     {v.attachments > 0 && <span aria-label={t("vouchers.hasFiles")}> 📎</span>}
+                    <VoucherActions voucher={v} />
                   </td>
                   <td>{v.voucher_date}</td>
                   <td>{v.payee?.name ?? v.voucher_type.name}</td>

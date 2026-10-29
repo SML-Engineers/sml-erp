@@ -33,6 +33,7 @@ from .models import (
     VoucherAttachment,
     VoucherLine,
     VoucherLineSplit,
+    VoucherPrint,
     VoucherType,
 )
 
@@ -183,11 +184,15 @@ def delete_type(user: User, vt: VoucherType, reason: str) -> None:
 # --- Who sees what ----------------------------------------------------------------------
 
 
-def visible(user: User) -> QuerySet[Voucher]:
+def visible(user: User, *, deleted: bool | None = False) -> QuerySet[Voucher]:
+    """The vouchers this user may see: working vouchers; with deleted=True the deleted ones
+    (the Deleted Vouchers report); with deleted=None both."""
     access = effective_access(user)
-    rows = Voucher.objects.filter(division__in=division_scope(user)).exclude(
-        status=Voucher.Status.DELETED
-    )
+    rows = Voucher.objects.filter(division__in=division_scope(user))
+    if deleted:
+        rows = rows.filter(status=Voucher.Status.DELETED)
+    elif deleted is not None:
+        rows = rows.exclude(status=Voucher.Status.DELETED)
     if not access.has("vouchers", "view"):
         return rows.none()
     if access.has("vouchers", "approve"):
@@ -451,7 +456,7 @@ STATUS_FROM_ENGINE = {
 def sync_status(voucher: Voucher) -> Voucher:
     """Keep the voucher's status in step with its approval (levels 2 and 3)."""
     state = approvals.state_of(DOC, voucher.pk)
-    if state is None:
+    if state is None or state.status == ApprovalState.Status.WITHDRAWN:
         return voucher
     if state.status == ApprovalState.Status.IN_PROGRESS:
         status = (
@@ -651,7 +656,8 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
     division or division split, tax and job reference. The amounts stay as entered."""
     with audit_context("voucher_coded"), transaction.atomic():
         voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
-        _acting_state(user, voucher)
+        state = _acting_state(user, voucher)
+        before = voucher.total_amount
         lines = {line.line_no: line for line in voucher.lines.select_for_update()}
         for coding in codings:
             where = f"Line {coding.line_no}"
@@ -691,6 +697,9 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
         if voucher.total_amount <= 0:
             raise VoucherError("The voucher total must be more than zero.")
         voucher.save()
+        if voucher.total_amount != before and state.current_level != state.route[0]["level"]:
+            # A later approver changed the tax and so the amount: the Accountant checks again.
+            _send_down(user, voucher, [f"Total: {before:,.2f} → {voucher.total_amount:,.2f}"])
         return voucher
 
 
@@ -802,3 +811,216 @@ def decide_many(user: User, decisions: list[Decision]) -> list[Voucher]:
     if errors:
         raise BulkRefused(errors)
     return done
+
+
+# --- Row actions: edit while waiting, delete, print (P1-04b) ----------------------------
+
+
+def _send_down(user: User, voucher: Voucher, changes: list[str]) -> Voucher:
+    try:
+        approvals.send_down(user, DOC, voucher.pk, "Changed: " + "; ".join(changes))
+    except ApprovalError as error:
+        raise VoucherError(str(error)) from None
+    return sync_status(voucher)
+
+
+def waiting_levels(user: User) -> dict[int, bool]:
+    """Vouchers this user can act on now: voucher id -> True when waiting at the first
+    approval level (the Accountant's), False at a later one (the Director's)."""
+    return {
+        state.document_id: state.current_level == state.route[0]["level"]
+        for state in approvals.waiting_for(user, DOC)
+    }
+
+
+def can_delete(user: User, voucher: Voucher) -> str | None:
+    """Why this user cannot delete the voucher, or None if they can (spec 4.4)."""
+    access = effective_access(user)
+    if voucher.status == Voucher.Status.DELETED:
+        return f"Voucher {voucher.number} is already deleted."
+    if voucher.status in (Voucher.Status.PARTLY_PAID, Voucher.Status.PAID):
+        return f"Voucher {voucher.number} has payments and cannot be deleted."
+    if voucher.status == Voucher.Status.DRAFT:
+        if voucher.created_by_id == user.pk or access.has("settings", "manage"):
+            return None
+        return "Only its creator or the Admin can delete a draft."
+    if not access.can("delete_submitted_voucher"):
+        return "Only the Director or the Admin can delete a submitted voucher."
+    return None
+
+
+def actions(user: User, voucher: Voucher, waiting: dict[int, bool] | None = None) -> list[str]:
+    """The row actions this user may take on the voucher (spec 4.4, row actions menu).
+    "edit": the Clerk's form; "edit_coding": the Accountant's review at L2; "revise": the
+    Director's changes at L3. The server checks each one again when it is used."""
+    allowed = ["resources", "print"]
+    if voucher.status == Voucher.Status.DELETED:
+        return allowed
+    if waiting is None:
+        waiting = waiting_levels(user)
+    if (
+        voucher.created_by_id == user.pk
+        and voucher.status in EDITABLE
+        and has_access(user, "vouchers", "enter")
+    ):
+        allowed.append("edit")
+    elif voucher.pk in waiting:
+        allowed.append("edit_coding" if waiting[voucher.pk] else "revise")
+    if can_delete(user, voucher) is None:
+        allowed.append("delete")
+    return allowed
+
+
+def delete(user: User, voucher: Voucher, reason: str = "") -> Voucher:
+    """Mark the voucher Deleted (spec 4.4). It leaves every working list but keeps its
+    number, lines, files and history, listed in the Deleted Vouchers report. A submitted
+    voucher needs the Director or the Admin and a reason; a voucher with payments cannot be
+    deleted (also refused by the database)."""
+    reason = (reason or "").strip()[:500]
+    with audit_context("voucher_deleted", reason), transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        refusal = can_delete(user, voucher)
+        if refusal:
+            raise VoucherError(refusal)
+        if voucher.status != Voucher.Status.DRAFT and not reason:
+            raise VoucherError("Give a reason for deleting a submitted voucher.")
+        if approvals.state_of(DOC, voucher.pk) is not None:
+            try:
+                approvals.withdraw(user, DOC, voucher.pk, reason or "Voucher deleted")
+            except ApprovalError as error:
+                raise VoucherError(str(error)) from None
+        voucher.status = Voucher.Status.DELETED
+        voucher.deleted_at = timezone.now()
+        voucher.deleted_by = user
+        voucher.delete_reason = reason
+        voucher.save()
+        return voucher
+
+
+def _line_text(line: VoucherLine) -> dict:
+    return {
+        "invoice": line.invoice_no,
+        "date": line.invoice_date,
+        "amount": line.amount,
+        "tax": line.tax_amount,
+        "tax_code": line.tax_code_id,
+    }
+
+
+def _changes(voucher: Voucher, payee, transfer_to, new_lines: list[VoucherLine]) -> list[str]:
+    """What a change by a later approver alters in the payee, amounts or lines."""
+    changes = []
+    if payee != voucher.payee:
+        changes.append(
+            f"Payee: {voucher.payee.name if voucher.payee else '—'} → "
+            f"{payee.name if payee else '—'}"
+        )
+    if transfer_to != voucher.transfer_to:
+        changes.append(
+            f"Transfer to: {voucher.transfer_to.code if voucher.transfer_to else '—'} → "
+            f"{transfer_to.code if transfer_to else '—'}"
+        )
+    old = {line.line_no: line for line in voucher.lines.all()}
+    new = {line.line_no: line for line in new_lines}
+    for number in sorted(set(old) | set(new)):
+        if number not in new:
+            changes.append(f"Line {number} removed ({old[number].total:,.2f})")
+        elif number not in old:
+            changes.append(f"Line {number} added ({new[number].total:,.2f})")
+        else:
+            a, b = _line_text(old[number]), _line_text(new[number])
+            labels = {
+                "invoice": "invoice no.",
+                "date": "invoice date",
+                "amount": "amount",
+                "tax": "tax",
+                "tax_code": "tax code",
+            }
+            for key, label in labels.items():
+                if a[key] != b[key]:
+                    if key in ("amount", "tax"):
+                        changes.append(f"Line {number} {label}: {a[key]:,.2f} → {b[key]:,.2f}")
+                    elif key != "tax_code" or a["tax"] == b["tax"]:
+                        changes.append(f"Line {number} {label}: {a[key] or '—'} → {b[key] or '—'}")
+    total = sum((line.total for line in new_lines), Decimal("0"))
+    if total != voucher.total_amount:
+        changes.append(f"Total: {voucher.total_amount:,.2f} → {total:,.2f}")
+    return changes
+
+
+def revise(
+    user: User,
+    voucher: Voucher,
+    *,
+    payee: Supplier | None = None,
+    transfer_to: CompanyAccount | None = None,
+    description: str = "",
+    lines: list[LineInput] = (),
+) -> Voucher:
+    """Edit by an approver while the voucher waits for them (spec 4.4). The description can
+    be corrected at any level (coding has its own page). A change to the payee, amounts or
+    lines can only come from a later level (the Director): it sends the voucher back to the
+    Accountant, with the changes listed in the approval history."""
+    with audit_context("voucher_revised"), transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        state = _acting_state(user, voucher)
+        vt = voucher.voucher_type
+        _check_payee(vt, payee, transfer_to)
+        if vt.needs_payee and payee is None:
+            raise VoucherError("Choose the payee.")
+        if not vt.needs_payee and transfer_to is None:
+            raise VoucherError("Choose the company account the money goes to.")
+        new_lines = _lines(voucher, list(lines))
+        if not new_lines:
+            raise VoucherError("Add at least one invoice line.")
+        changes = _changes(voucher, payee, transfer_to, new_lines)
+        if changes and state.current_level == state.route[0]["level"]:
+            raise VoucherError(
+                "Return the voucher to the Clerk to change its payee, amounts or lines."
+            )
+        voucher.description = (description or "").strip()[:500]
+        if not changes:
+            voucher.save()
+            return voucher
+        old = {line.line_no: line for line in voucher.lines.prefetch_related("splits")}
+        kept_splits = {}
+        for line in new_lines:
+            before = old.get(line.line_no)
+            if before is None:
+                continue
+            line.account_id, line.job_ref = before.account_id, before.job_ref
+            splits = list(before.splits.all())
+            if before.total == line.total and splits:
+                line.division_id = None
+                kept_splits[line.line_no] = [(p.division_id, p.amount, p.percent) for p in splits]
+            else:
+                # A changed amount needs its division split again (the Accountant checks).
+                line.division_id = before.division_id or (None if splits else voucher.division_id)
+        voucher.payee = payee
+        voucher.transfer_to = transfer_to
+        voucher.total_amount = sum((line.total for line in new_lines), Decimal("0"))
+        voucher.save()
+        voucher.lines.all().delete()
+        for line in new_lines:
+            line.save()
+            for division_id, amount, percent in kept_splits.get(line.line_no, []):
+                VoucherLineSplit.objects.create(
+                    line=line, division_id=division_id, amount=amount, percent=percent
+                )
+        if payee:
+            mark_used(payee)
+        return _send_down(user, voucher, changes)
+
+
+def record_print(user: User, voucher: Voucher, paper: str) -> VoucherPrint:
+    """Log a print (audit log too); every print after the first is a copy."""
+    if paper not in VoucherPrint.Paper.values:
+        raise VoucherError("Choose A4 or A5 paper.")
+    with audit_context("voucher_printed"), transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        return VoucherPrint.objects.create(
+            voucher=voucher,
+            printed_by=user,
+            paper=paper,
+            is_copy=voucher.prints.exists(),
+        )

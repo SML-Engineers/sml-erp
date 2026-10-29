@@ -7,6 +7,7 @@ import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { listVoucherTypes, listVouchers, voucherTypesKey, vouchersKey, type VoucherStatus } from "../api/vouchers";
 import DataTable from "../components/DataTable";
+import VoucherActions from "../components/VoucherActions";
 
 const STATUSES: VoucherStatus[] = [
   "draft",
@@ -61,6 +62,7 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
             ))}
           </select>
         </label>
+        <Link to="/vouchers/deleted">{t("deletedVouchers.title")}</Link>
         <label>
           {t("vouchers.search")}
           <input value={q} onChange={(e) => setQ(e.target.value)} />
@@ -90,6 +92,13 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
             { id: "payee", header: t("vouchers.payee"), value: (v) => v.payee?.name ?? "" },
             { id: "total", header: t("vouchers.total"), value: (v) => v.total_amount, money: true },
             { id: "status", header: t("vouchers.status"), value: (v) => t(`vouchers.statuses.${v.status}`) },
+            {
+              id: "actions",
+              header: t("voucherActions.header"),
+              value: () => "",
+              sortable: false,
+              cell: (v) => <VoucherActions voucher={v} />,
+            },
           ]}
         />
       )}

@@ -265,7 +265,10 @@
       "voucher_deleted": "Voucher deleted",
       "voucher_revised": "Voucher changed by an approver",
       "voucher_printed": "Voucher printed",
-      "voucher_amended": "Amendment of an approved voucher started"
+      "voucher_amended": "Amendment of an approved voucher started",
+      "voucher_cancellation_requested": "Cancellation of a voucher requested",
+      "voucher_cancelled": "Voucher cancelled",
+      "voucher_cancellation_rejected": "Voucher cancellation rejected"
     }
   },
   "menu": {
@@ -1136,7 +1139,12 @@
     "amendTitle": "Amend voucher {{number}}",
     "amendHelp": "An approved voucher is never changed. A new revision is created as a draft for you to correct and submit; it goes to the Accountant and the Director again. Until it is approved the original cannot be paid; if the amendment is rejected or deleted, the original stands.",
     "amendReason": "Why is it being amended? (required)",
-    "startAmendment": "Start amendment"
+    "startAmendment": "Start amendment",
+    "requestCancel": "Request cancellation",
+    "cancelTitle": "Request cancellation of {{number}}",
+    "cancelHelp": "The Director approves or rejects the cancellation. Until then the voucher cannot be amended, deleted or paid. A voucher with any payment can never be cancelled.",
+    "cancelReason": "Why should it be cancelled? (required)",
+    "sendRequest": "Send to the Director"
   },
   "deletedVouchers": {
     "title": "Deleted vouchers",
@@ -1159,5 +1167,26 @@
     "replacedBy": "This voucher is replaced and cannot be paid. Amendment:",
     "amendedBy": "Amendments of this voucher:",
     "returnedBy": "Returned to you by {{name}}:"
+  },
+  "cancellations": {
+    "title": "Cancellation requests",
+    "help": "The Accountant asks to cancel an approved voucher that has not been paid; the Director approves or rejects it on the voucher's page.",
+    "pendingOnly": "Only those waiting for the Director",
+    "none": "No cancellation requests.",
+    "by": "Requested by",
+    "reason": "Reason",
+    "decided": "Decision",
+    "decide": "Decide",
+    "panel": "Cancellation",
+    "statuses": {
+      "pending": "Waiting for the Director",
+      "approved": "Cancelled",
+      "rejected": "Cancellation rejected"
+    },
+    "requestedBy": "requested by {{name}} on {{when}}",
+    "decidedBy": "Decided by {{name}} on {{when}}",
+    "decisionReason": "Comment (required to reject)",
+    "approve": "Approve cancellation",
+    "reject": "Reject"
   }
 }

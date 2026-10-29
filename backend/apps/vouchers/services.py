@@ -31,6 +31,7 @@ from .models import (
     TYPE_CODE_REGEX,
     Voucher,
     VoucherAttachment,
+    VoucherCancellation,
     VoucherLine,
     VoucherLineSplit,
     VoucherPrint,
@@ -851,6 +852,8 @@ def can_delete(user: User, voucher: Voucher) -> str | None:
         return f"Voucher {voucher.number} has payments and cannot be deleted."
     if voucher.status == Voucher.Status.AMENDED:
         return f"Voucher {voucher.number} is replaced by an amendment; delete that instead."
+    if pending_cancellation(voucher):
+        return "A cancellation of this voucher is waiting for the Director."
     if voucher.status == Voucher.Status.DRAFT:
         if voucher.created_by_id == user.pk or access.has("settings", "manage"):
             return None
@@ -877,10 +880,14 @@ def actions(user: User, voucher: Voucher, waiting: dict[int, bool] | None = None
         allowed.append("edit")
     elif voucher.pk in waiting:
         allowed.append("edit_coding" if waiting[voucher.pk] else "revise")
-    elif voucher.status == Voucher.Status.DIRECTOR_APPROVED and has_access(
-        user, "vouchers", "enter"
+    elif (
+        voucher.status == Voucher.Status.DIRECTOR_APPROVED
+        and has_access(user, "vouchers", "enter")
+        and not pending_cancellation(voucher)
     ):
         allowed.append("amend")  # after Director approval, Edit becomes Amend
+    if why_not_cancel(user, voucher) is None:
+        allowed.append("cancel")
     if can_delete(user, voucher) is None:
         allowed.append("delete")
     return allowed
@@ -1081,6 +1088,8 @@ def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
                 f"Voucher {voucher.number} is {voucher.get_status_display().lower()}; only a "
                 "Director-approved voucher with no payment can be amended."
             )
+        if pending_cancellation(voucher):
+            raise VoucherError("A cancellation of this voucher is waiting for the Director.")
         base = REVISION_SUFFIX.sub("", voucher.number)
         family = Voucher.objects.filter(Q(number=base) | Q(number__startswith=f"{base}-R"))
         revision = (family.aggregate(top=Max("revision"))["top"] or 0) + 1
@@ -1119,3 +1128,116 @@ def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
 def amendments(user: User) -> QuerySet[Voucher]:
     """The Amendments List: every revision this user may see, deleted ones included."""
     return visible(user, deleted=None).filter(revision__gt=0)
+
+
+# --- Cancellation (P1-06) ---------------------------------------------------------------
+
+CANCEL_DOC = "voucher_cancellation"
+PAID = (Voucher.Status.PARTLY_PAID, Voucher.Status.PAID)
+
+
+def pending_cancellation(voucher: Voucher) -> VoucherCancellation | None:
+    return voucher.cancellations.filter(status=VoucherCancellation.Status.PENDING).first()
+
+
+def why_not_cancel(user: User, voucher: Voucher) -> str | None:
+    """Why this user cannot request the voucher's cancellation, or None if they can."""
+    if not approvals.holds_role(user, "accountant"):
+        return "Only the Accountant requests a cancellation."
+    if voucher.status in PAID:
+        return f"Voucher {voucher.number} has payments and cannot be cancelled."
+    if voucher.status != Voucher.Status.DIRECTOR_APPROVED:
+        return (
+            "Only a Director-approved voucher with no payment can be cancelled; a voucher still "
+            "being approved is rejected instead."
+        )
+    if pending_cancellation(voucher):
+        return "A cancellation of this voucher is already waiting for the Director."
+    return None
+
+
+def request_cancellation(user: User, voucher: Voucher, reason: str) -> VoucherCancellation:
+    """The Accountant asks to cancel an approved, unpaid voucher; the Director decides."""
+    reason = (reason or "").strip()[:500]
+    if not reason:
+        raise VoucherError("Say why the voucher should be cancelled.")
+    with audit_context("voucher_cancellation_requested", reason), transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        refusal = why_not_cancel(user, voucher)
+        if refusal:
+            raise VoucherError(refusal)
+        request = VoucherCancellation.objects.create(
+            voucher=voucher, reason=reason, requested_by=user
+        )
+        who = voucher.payee.name if voucher.payee else voucher.voucher_type.name
+        try:
+            approvals.submit(
+                user,
+                CANCEL_DOC,
+                request.pk,
+                created_by=user,
+                amount=voucher.total_amount,
+                division=voucher.division,
+                subtype=voucher.voucher_type.code,
+                comment=reason,
+                title=f"Cancellation of voucher {voucher.number} – {who} – "
+                f"LKR {voucher.total_amount:,.2f}",
+                link=f"/vouchers/{voucher.pk}",
+            )
+        except ApprovalError as error:
+            raise VoucherError(str(error)) from None
+        return request
+
+
+def can_decide(user: User, request: VoucherCancellation) -> bool:
+    state = approvals.state_of(CANCEL_DOC, request.pk)
+    return (
+        request.status == VoucherCancellation.Status.PENDING
+        and state is not None
+        and state.status == ApprovalState.Status.IN_PROGRESS
+        and approvals.why_not(user, state) is None
+    )
+
+
+def decide_cancellation(
+    user: User, request: VoucherCancellation, approve: bool, reason: str = ""
+) -> VoucherCancellation:
+    """The Director approves (the voucher becomes Cancelled, for good) or rejects (reason
+    required; the voucher stays approved). A voucher with any payment is never cancelled."""
+    event = "voucher_cancelled" if approve else "voucher_cancellation_rejected"
+    with audit_context(event, reason), transaction.atomic():
+        request = VoucherCancellation.objects.select_for_update().get(pk=request.pk)
+        voucher = Voucher.objects.select_for_update().get(pk=request.voucher_id)
+        if request.status != VoucherCancellation.Status.PENDING:
+            raise VoucherError("This cancellation request has already been decided.")
+        try:
+            if approve:
+                if voucher.status in PAID:
+                    raise VoucherError(
+                        f"Voucher {voucher.number} has payments and cannot be cancelled."
+                    )
+                state = approvals.approve(user, CANCEL_DOC, request.pk, reason)
+                if state.status != ApprovalState.Status.APPROVED:
+                    return request  # a further level in the matrix still has to approve
+            else:
+                approvals.reject(user, CANCEL_DOC, request.pk, reason)
+        except ApprovalError as error:
+            raise VoucherError(str(error)) from None
+        request.status = (
+            VoucherCancellation.Status.APPROVED if approve else VoucherCancellation.Status.REJECTED
+        )
+        request.decided_by = user
+        request.decided_at = timezone.now()
+        request.decision_reason = (reason or "").strip()[:500]
+        request.save()
+        if approve:
+            voucher.status = Voucher.Status.CANCELLED
+            voucher.save(update_fields=["status", "updated_at"])
+        return request
+
+
+def cancellations(user: User) -> QuerySet[VoucherCancellation]:
+    """Cancellation requests on the vouchers this user may see."""
+    return VoucherCancellation.objects.filter(
+        voucher__in=visible(user, deleted=None)
+    ).select_related("voucher", "voucher__payee", "requested_by", "decided_by")

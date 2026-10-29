@@ -17,5 +17,6 @@ class VouchersConfig(AppConfig):
             m.VoucherLine,
             m.VoucherAttachment,
             m.VoucherPrint,
+            m.VoucherCancellation,
         ):
             register(model)

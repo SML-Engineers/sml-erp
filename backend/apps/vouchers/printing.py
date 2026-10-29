@@ -3,7 +3,8 @@ invoice lines with account and division, tax, total in figures and words, paymen
 and who prepared, checked and approved it with dates and times from the approval log.
 
 A4 by default, A5 on request. Reprints say "COPY"; a voucher not yet approved by the Director
-says "NOT APPROVED" and a deleted one "DELETED", so neither can pass for an approved one.
+says "NOT APPROVED"; a deleted, cancelled or amended (replaced) one says so, so none of them
+can pass for an approved voucher to be paid.
 """
 
 from decimal import Decimal
@@ -318,6 +319,10 @@ def render(voucher: Voucher, record: VoucherPrint) -> bytes:
     marks = []
     if voucher.status == Voucher.Status.DELETED:
         marks.append("DELETED")
+    elif voucher.status == Voucher.Status.CANCELLED:
+        marks.append("CANCELLED")
+    elif voucher.status == Voucher.Status.AMENDED:
+        marks.append("REPLACED")
     elif voucher.status not in APPROVED:
         marks.append("NOT APPROVED")
     if record.is_copy:

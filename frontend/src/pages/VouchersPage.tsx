@@ -64,6 +64,7 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
           </select>
         </label>
         <Link to="/vouchers/amendments">{t("amendments.title")}</Link>
+        <Link to="/vouchers/cancellations">{t("cancellations.title")}</Link>
         <Link to="/vouchers/deleted">{t("deletedVouchers.title")}</Link>
         <label>
           {t("vouchers.search")}

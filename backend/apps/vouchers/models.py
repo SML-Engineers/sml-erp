@@ -239,3 +239,43 @@ class VoucherPrint(models.Model):
 
     def __str__(self):
         return f"{self.voucher_id} {self.printed_at:%Y-%m-%d %H:%M}"
+
+
+class VoucherCancellation(models.Model):
+    """The Accountant's request to cancel an approved, unpaid voucher; the Director approves
+    or rejects it through the approval engine (spec 4.2, P1-06). While it waits, the voucher
+    cannot be amended, deleted or paid."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Waiting for the Director"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    voucher = models.ForeignKey(Voucher, on_delete=models.PROTECT, related_name="cancellations")
+    reason = models.CharField(max_length=500)
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    requested_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        ordering = ["-requested_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["voucher"],
+                condition=models.Q(status="pending"),
+                name="vouchers_one_pending_cancellation",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(reason__regex=r"\S"), name="vouchers_cancellation_reason"
+            ),
+        ]
+
+    def __str__(self):
+        return f"Cancellation of {self.voucher_id} ({self.status})"

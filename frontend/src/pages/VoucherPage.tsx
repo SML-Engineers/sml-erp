@@ -145,6 +145,7 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
       {data?.cancellation && <CancellationPanel voucher={data} request={data.cancellation} />}
       {data && <Attachments voucher={data} />}
       {data?.can_edit && <Submit voucher={data} />}
+      {data && (data.payments?.length ?? 0) > 0 && <Payments voucher={data} />}
       {data && data.approvals.length > 0 && <History voucher={data} />}
     </main>
   );
@@ -636,6 +637,48 @@ function CancellationPanel({ voucher, request }: { voucher: VoucherDetail; reque
         </>
       )}
       <ErrorLine error={decide.error} />
+    </section>
+  );
+}
+
+/** Payments made against the voucher, and what is left to pay (P1-07). */
+function Payments({ voucher }: { voucher: VoucherDetail }) {
+  const { t } = useTranslation();
+  return (
+    <section className="panel" aria-label={t("payments.ofVoucher")}>
+      <h2>{t("payments.ofVoucher")}</h2>
+      <div className="table-wrap">
+        <table aria-label={t("payments.ofVoucher")}>
+          <thead>
+            <tr>
+              <th>{t("payments.number")}</th>
+              <th>{t("payments.date")}</th>
+              <th>{t("payments.account")}</th>
+              <th>{t("payments.method")}</th>
+              <th>{t("payments.reference")}</th>
+              <th className="num">{t("payments.amount")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {voucher.payments?.map((p) => (
+              <tr key={p.id}>
+                <td className="mono">{p.number}</td>
+                <td>{p.payment_date}</td>
+                <td>{p.account.code}</td>
+                <td>{t(`payments.methods.${p.method}`)}</td>
+                <td>{p.reference}</td>
+                <td className="num">{formatDecimal(p.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colSpan={5}>{t("payments.remaining")}</th>
+              <th className="num">{formatDecimal(voucher.remaining ?? "")}</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </section>
   );
 }

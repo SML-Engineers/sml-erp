@@ -92,6 +92,11 @@ export default function VoucherActions({ voucher, onDeleted }: { voucher: Row; o
               {t("voucherActions.amend")}
             </button>
           )}
+          {allowed.includes("pay") && (
+            <Link role="menuitem" to={`/payments/new?voucher=${voucher.id}`} onClick={() => setOpen(false)}>
+              {t("voucherActions.pay")}
+            </Link>
+          )}
           {allowed.includes("cancel") && (
             <button type="button" role="menuitem" onClick={() => choose("cancel")}>
               {t("voucherActions.requestCancel")}

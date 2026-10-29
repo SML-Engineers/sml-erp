@@ -167,6 +167,7 @@ def _detail(v: Voucher, user) -> dict:
                 for r in v.revisions.order_by("revision", "id")
             ],
             "cancellation": _cancellation(v.cancellations.first(), user),
+            **_payments(v, user),
             "lines": [
                 {
                     "line_no": line.line_no,
@@ -791,3 +792,27 @@ class CancellationDecisionView(_Approving):
         except VoucherError as error:
             return _error(error)
         return Response(_detail(Voucher.objects.get(pk=row.voucher_id), request.user))
+
+
+def _payments(v: Voucher, user) -> dict:
+    """Payments made against the voucher (P1-07), for those who may see payments."""
+    from apps.core.access import has_access
+    from apps.payments.services import paid_on
+    from apps.payments.views import payment_row
+
+    paid = paid_on(v)
+    rows = (
+        [
+            payment_row(p)
+            for p in v.payments.select_related(
+                "voucher", "voucher__payee", "account", "journal_entry", "created_by"
+            ).order_by("payment_date", "id")
+        ]
+        if has_access(user, "payments", "view")
+        else []
+    )
+    return {
+        "paid": f"{paid:.2f}",
+        "remaining": f"{v.total_amount - paid:.2f}",
+        "payments": rows,
+    }

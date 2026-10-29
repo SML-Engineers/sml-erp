@@ -30,6 +30,7 @@ export const MENU: MenuSection[] = [
       { label: "vouchers.title", path: "/vouchers", area: "vouchers" },
       { label: "menu.waiting", path: "/vouchers/review", area: "vouchers", level: "approve" },
       { label: "menu.approveVouchers", path: "/vouchers/approve", area: "vouchers", level: "approve" },
+      { label: "payments.title", path: "/payments", area: "payments" },
     ],
   },
   {

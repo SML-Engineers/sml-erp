@@ -261,23 +261,63 @@ def render(voucher: Voucher, record: VoucherPrint) -> bytes:
     story.append(p(f"Amount in words: {amount_in_words(voucher.total_amount)}", bold))
     story.append(Spacer(1, 4 * mm * scale))
 
-    # Payment details (filled in by the Cashier, P1-07)
+    # Payment details: the payments made, or boxes to fill in by hand before payment.
     story.append(p("Payment details", bold))
-    story.append(
-        Table(
-            [
-                [p("Paid from (bank / cash account)"), p("Cheque no. / transfer reference")],
-                [p("Cheque / payment date"), p("Amount paid")],
-            ],
-            colWidths=[width / 2, width / 2],
-            rowHeights=[9 * mm * scale] * 2,
-            style=[
-                ("GRID", (0, 0), (-1, -1), 0.4, LINE),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TEXTCOLOR", (0, 0), (-1, -1), GREY),
-            ],
-        )
+    payments = list(
+        voucher.payments.filter(cancelled=False)
+        .select_related("account")
+        .order_by("payment_date", "id")
     )
+    if payments:
+        rows = [
+            [p(h, bold) for h in ("Payment", "Date", "Paid from", "Method", "Reference")]
+            + [p("Amount", right_bold)]
+        ]
+        for pay in payments:
+            reference = pay.reference
+            if pay.cheque_date:
+                reference += f" (cheque date {pay.cheque_date:%d/%m/%Y})"
+            rows.append(
+                [
+                    p(pay.number),
+                    p(f"{pay.payment_date:%d/%m/%Y}"),
+                    p(f"{pay.account.code} {pay.account.name}"),
+                    p(pay.get_method_display()),
+                    p(reference),
+                    p(_money(pay.amount), right),
+                ]
+            )
+        widths = [0.16, 0.12, 0.26, 0.14, 0.18, 0.14]
+        story.append(
+            Table(
+                rows,
+                colWidths=[width * w for w in widths],
+                style=[
+                    ("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.black),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ],
+            )
+        )
+        paid = sum((pay.amount for pay in payments), Decimal("0"))
+        if paid < voucher.total_amount:
+            story.append(p(f"Still to pay: LKR {_money(voucher.total_amount - paid)}", bold))
+    else:
+        story.append(
+            Table(
+                [
+                    [p("Paid from (bank / cash account)"), p("Cheque no. / transfer reference")],
+                    [p("Cheque / payment date"), p("Amount paid")],
+                ],
+                colWidths=[width / 2, width / 2],
+                rowHeights=[9 * mm * scale] * 2,
+                style=[
+                    ("GRID", (0, 0), (-1, -1), 0.4, LINE),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TEXTCOLOR", (0, 0), (-1, -1), GREY),
+                ],
+            )
+        )
     story.append(Spacer(1, 5 * mm * scale))
 
     # Signatures

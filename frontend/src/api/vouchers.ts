@@ -1,4 +1,5 @@
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
+import type { Payment } from "./payments";
 
 export type PaymentMethod = "cheque" | "transfer" | "cheque_or_transfer" | "cash" | "internal" | "any";
 export const PAYMENT_METHODS: PaymentMethod[] = ["cheque", "transfer", "cheque_or_transfer", "cash", "internal", "any"];
@@ -72,6 +73,7 @@ export type VoucherAction =
   | "revise"
   | "amend"
   | "cancel"
+  | "pay"
   | "delete";
 
 export interface VoucherLineData {
@@ -113,6 +115,10 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
   revisions: { id: number; number: string; status: VoucherStatus }[];
   /** The latest cancellation request, if any (P1-06). */
   cancellation?: Cancellation | null;
+  /** Payments made against the voucher (P1-07). */
+  paid?: string;
+  remaining?: string;
+  payments?: Payment[];
   lines: VoucherLineData[];
   attachments: VoucherAttachmentData[];
   warnings: string[];

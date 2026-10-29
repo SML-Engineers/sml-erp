@@ -419,7 +419,7 @@ Status: `[ ]` to do · `[x]` done
     except marking it Deleted, and changes to its figures and lines. Prints say CANCELLED
     (and REPLACED for an amended voucher).
 
-- [ ] **P1-07 Supplier payments and the payment lock** (spec 4.6)
+- [x] **P1-07 Supplier payments and the payment lock** (spec 4.6)
   Cashier screen listing Director-approved unpaid vouchers; payment created from a voucher
   only; bank account, method, cheque/transfer reference, date; partial payments; posts the
   journal entry; prints the payment voucher. PostgreSQL trigger as in the spec.
@@ -429,6 +429,24 @@ Status: `[ ]` to do · `[x]` done
   - Fully paid voucher becomes Paid and locked.
   - Each payment produces a balanced journal entry (Dr supplier payable/expense, Cr bank).
   - Cheque numbers cannot be reused within a cheque book.
+  - Done (owner, 29 Oct 2026: methods cheque, bank transfer, cash, card and QR code). New app
+    `payments`: Vouchers → Supplier payments lists approved vouchers with what is left to pay
+    and the payments made; Pay (also in the voucher's ⋯ menu) opens the payment form.
+  - Which methods a voucher can be paid by follows its type (Cheque Payment: cheque; Online
+    Payment: transfer, card or QR; Supplier Advance: any of those or cheque; Petty Cash: cash;
+    Internal Transfer: transfer, cheque or cash). Cash from cash or petty cash accounts,
+    cheques from current accounts (next leaf filled in, register P0-14), the rest from bank
+    accounts; the account must be linked to its ledger. LKR only for now.
+  - Journal entry per payment (source "supplier_payment"): Dr the voucher's coded accounts by
+    division (splits included; VAT with a purchase account to VAT receivable), Cr the bank's
+    ledger. Part payments take their share of each line, cumulatively, so the entries of a
+    fully paid voucher cover its coding to the cent.
+  - Database: the spec's trigger (status, amount, row lock for simultaneous payments), plus no
+    payment while a cancellation waits; payments are insert-only; a voucher with payments
+    cannot be deleted, cancelled or amended; Paid is locked and only when fully paid.
+  - Printed voucher shows the payments made and what is left to pay.
+  - Not yet: cancelling a payment (a reversing entry and spoiled cheque) and foreign-currency
+    payments.
 
 - [ ] **P1-08 Lists and reports** (spec 4.4)
   Voucher List, Approved List, Amendments List; vouchers pending by approver and age;

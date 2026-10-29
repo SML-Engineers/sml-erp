@@ -31,7 +31,7 @@ test("tabs show the pending count of each type and filter the table", async () =
   renderAt("/vouchers/approve", <DirectorPage />);
 
   const tabs = await screen.findByRole("tablist", { name: "Voucher types" });
-  expect(within(tabs).getByRole("tab", { name: "All (3)" })).toHaveAttribute("aria-selected", "true");
+  expect(await within(tabs).findByRole("tab", { name: "All (3)" })).toHaveAttribute("aria-selected", "true");
   fireEvent.click(within(tabs).getByRole("tab", { name: "Cheque Payment (2)" }));
   const table = screen.getByRole("table", { name: "Approve vouchers" });
   expect(within(table).queryByText("CEB")).not.toBeInTheDocument();

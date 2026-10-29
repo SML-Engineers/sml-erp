@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import BankAccountsPage from "./pages/BankAccountsPage";
 import ChartOfAccountsPage from "./pages/ChartOfAccountsPage";
 import DirectorPage from "./pages/DirectorPage";
+import DeletedVouchersPage from "./pages/DeletedVouchersPage";
 import JournalPage from "./pages/JournalPage";
 import PeriodsPage from "./pages/PeriodsPage";
 import ReviewPage from "./pages/ReviewPage";
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="vouchers" element={<WithMe page={(me) => <VouchersPage me={me} />} />} />
         <Route path="vouchers/review" element={<ReviewPage />} />
         <Route path="vouchers/approve" element={<DirectorPage />} />
+        <Route path="vouchers/deleted" element={<DeletedVouchersPage />} />
         <Route path="vouchers/:id" element={<WithMe page={(me) => <VoucherPage me={me} />} />} />
         <Route
           path="accounting-periods"

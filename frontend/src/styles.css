@@ -1075,3 +1075,102 @@ legend {
     min-width: 8rem;
   }
 }
+
+/* --- Voucher row actions (P1-04b): ⋯ menu, dialogs, file viewer --- */
+.row-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.row-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(29, 36, 51, 0.12);
+}
+
+.row-menu-list button,
+.row-menu-list a {
+  padding: 10px 12px;
+  text-align: left;
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.row-menu-list button:hover,
+.row-menu-list a:hover {
+  background: var(--color-bg);
+}
+
+.row-menu-list .danger-text {
+  color: #b42318;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(29, 36, 51, 0.45);
+}
+
+.modal {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.modal.wide {
+  width: min(1000px, 100%);
+}
+
+.modal textarea {
+  width: 100%;
+  min-height: 5rem;
+}
+
+.viewer-tools {
+  flex-wrap: wrap;
+}
+
+.viewer {
+  overflow: auto;
+  height: min(70vh, 900px);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.viewer iframe,
+.viewer img {
+  display: block;
+  width: 100%;
+  min-height: 100%;
+  border: 0;
+  transform-origin: center top;
+}
+
+.viewer img {
+  object-fit: contain;
+}
+
+.button-link.small {
+  padding: 4px 10px;
+  font-size: 0.875rem;
+}
+
+.change-notice {
+  border-left: 4px solid var(--color-accent);
+}

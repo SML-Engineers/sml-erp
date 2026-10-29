@@ -56,7 +56,14 @@ export interface VoucherSummary {
   total_amount: string;
   created_by: string;
   attachments: number;
+  /** Row actions this user may take (spec 4.4); the server checks each one again. */
+  actions?: VoucherAction[];
+  deleted?: { at: string; by: string; reason: string };
 }
+
+/** "edit": the Clerk's form; "edit_coding": the Accountant's review (L2); "revise": the
+ * Director's changes (L3), which send the voucher back to the Accountant. */
+export type VoucherAction = "resources" | "print" | "edit" | "edit_coding" | "revise" | "delete";
 
 export interface VoucherLineData {
   line_no: number;
@@ -151,3 +158,13 @@ export const getPayeeBalance = (payeeId: number) =>
   apiGet<{ waiting_approval: string; approved_unpaid: string; outstanding: string }>(
     `/vouchers/payee-balance/${payeeId}/`,
   );
+
+// --- Row actions (P1-04b) ---------------------------------------------------------------
+
+export type Paper = "A4" | "A5";
+export const voucherPrintUrl = (id: number, paper: Paper) => `${API_BASE}/vouchers/${id}/print/?paper=${paper}`;
+export const deleteVoucher = (id: number, reason: string) =>
+  apiSend<VoucherDetail>("POST", `/vouchers/${id}/delete/`, { reason });
+export const reviseVoucher = (id: number, input: VoucherInput) =>
+  apiSend<VoucherDetail>("PATCH", `/vouchers/${id}/revise/`, input);
+export const listDeletedVouchers = () => apiGet<VoucherSummary[]>("/vouchers/deleted/");

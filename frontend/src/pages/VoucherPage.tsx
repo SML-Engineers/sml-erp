@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type DragEvent, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 
 import { listDivisions } from "../api/admin";
 import type { CurrentUser } from "../api/auth";
@@ -15,6 +15,7 @@ import {
   listTransferAccounts,
   listVoucherTypes,
   removeVoucherFile,
+  reviseVoucher,
   submitVoucher,
   updateVoucher,
   uploadVoucherFile,
@@ -24,6 +25,7 @@ import {
   type VoucherDetail,
   type VoucherLineInput,
 } from "../api/vouchers";
+import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -49,7 +51,9 @@ const emptyLine = (): VoucherLineInput => ({
 /** One voucher: the Clerk's form while it is a draft or returned, otherwise its details. */
 export default function VoucherPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const param = useParams().id;
+  const [search] = useSearchParams();
   const id = param === "new" ? null : Number(param);
   const voucher = useQuery({
     queryKey: [...vouchersKey, "one", id],
@@ -65,12 +69,31 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
     );
   }
   const data = voucher.data;
+  const revising = Boolean(data?.actions?.includes("revise") && search.get("edit") === "1");
+  const sentBack = data?.approvals.at(-1)?.action === "send_down" ? data.approvals.at(-1) : undefined;
   return (
     <main className="page">
       <p>
         <Link to="/vouchers">{t("vouchers.backToList")}</Link>
       </p>
-      <h1>{data ? `${t("vouchers.voucher")} ${data.number}` : t("vouchers.new")}</h1>
+      <div className="row-actions">
+        <h1>{data ? `${t("vouchers.voucher")} ${data.number}` : t("vouchers.new")}</h1>
+        {data && <VoucherActions voucher={data} onDeleted={() => navigate("/vouchers")} />}
+      </div>
+      {data?.deleted && (
+        <p className="notice change-notice" role="status">
+          {t("voucherActions.deletedBy", {
+            name: data.deleted.by,
+            when: new Date(data.deleted.at).toLocaleString(),
+          })}
+          {data.deleted.reason && ` — ${data.deleted.reason}`}
+        </p>
+      )}
+      {sentBack && (
+        <p className="notice change-notice" role="status">
+          {t("voucherActions.sentBack", { name: sentBack.user })} {sentBack.reason}
+        </p>
+      )}
       {data && (
         <p className="muted">
           {t(`vouchers.statuses.${data.status}`)} · {data.division} · {data.voucher_date} ·{" "}
@@ -82,7 +105,16 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
           ⚠ {w}
         </p>
       ))}
-      {!data || data.can_edit ? <VoucherForm key={data?.id ?? "new"} me={me} voucher={data} /> : <ReadOnly voucher={data} />}
+      {revising && data && (
+        <p className="notice" role="note">
+          {t("voucherActions.reviseHelp")}
+        </p>
+      )}
+      {!data || data.can_edit || revising ? (
+        <VoucherForm key={`${data?.id ?? "new"}-${revising}`} me={me} voucher={data} revise={revising} />
+      ) : (
+        <ReadOnly voucher={data} />
+      )}
       {data && <Attachments voucher={data} />}
       {data?.can_edit && <Submit voucher={data} />}
       {data && data.approvals.length > 0 && <History voucher={data} />}
@@ -90,7 +122,9 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
   );
 }
 
-function VoucherForm({ voucher }: { me: CurrentUser; voucher?: VoucherDetail }) {
+/** The voucher form: the Clerk's draft, or (revise) an approver's changes while it waits
+ * for them; the Director's change to the payee, amounts or lines goes back to the Accountant. */
+function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: VoucherDetail; revise?: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -138,12 +172,13 @@ function VoucherForm({ voucher }: { me: CurrentUser; voucher?: VoucherDetail }) 
         description,
         lines: lines.map((l) => ({ ...l, tax_amount: l.tax_code ? "0" : l.tax_amount || "0" })),
       };
+      if (voucher && revise) return reviseVoucher(voucher.id, input);
       return voucher ? updateVoucher(voucher.id, input) : createVoucher(input);
     },
     onSuccess: (saved) => {
       queryClient.setQueryData([...vouchersKey, "one", saved.id], saved);
       void queryClient.invalidateQueries({ queryKey: vouchersKey });
-      if (!voucher) navigate(`/vouchers/${saved.id}`);
+      if (!voucher || revise) navigate(`/vouchers/${saved.id}`);
     },
   });
 
@@ -175,7 +210,7 @@ function VoucherForm({ voucher }: { me: CurrentUser; voucher?: VoucherDetail }) 
       )}
       <label>
         {t("vouchers.type")}
-        <select value={typeCode} required onChange={(e) => setTypeCode(e.target.value)}>
+        <select value={typeCode} required disabled={revise} onChange={(e) => setTypeCode(e.target.value)}>
           <option value="">—</option>
           {types.data?.map((x) => (
             <option key={x.code} value={x.code}>
@@ -338,7 +373,7 @@ function VoucherForm({ voucher }: { me: CurrentUser; voucher?: VoucherDetail }) 
       )}
       <div className="wide">
         <button type="submit" disabled={save.isPending}>
-          {t("vouchers.saveDraft")}
+          {revise ? t("voucherActions.saveChanges") : t("vouchers.saveDraft")}
         </button>
       </div>
       <div className="wide">

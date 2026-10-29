@@ -259,7 +259,12 @@
       "document_approved": "Document approved",
       "document_returned": "Document returned",
       "document_rejected": "Document rejected",
-      "voucher_coded": "Voucher coded"
+      "voucher_coded": "Voucher coded",
+      "document_sent_down": "Document changed and sent back a level",
+      "document_withdrawn": "Document withdrawn from approval",
+      "voucher_deleted": "Voucher deleted",
+      "voucher_revised": "Voucher changed by an approver",
+      "voucher_printed": "Voucher printed"
     }
   },
   "menu": {
@@ -1020,7 +1025,9 @@
       "submit": "Submitted",
       "approve": "Approved",
       "return": "Returned",
-      "reject": "Rejected"
+      "reject": "Rejected",
+      "send_down": "Changed and sent back to the Accountant",
+      "withdraw": "Withdrawn (voucher deleted)"
     }
   },
   "voucherReview": {
@@ -1090,5 +1097,46 @@
     "close": "Close",
     "accountantSaid": "Checked by {{name}}",
     "noComment": "no comment"
+  },
+  "voucherActions": {
+    "header": "Actions",
+    "menu": "Actions for {{number}}",
+    "resources": "Resources",
+    "print": "Print",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "cancel": "Cancel",
+    "filesOf": "Files of voucher {{number}}",
+    "noFiles": "No files are attached to this voucher.",
+    "previous": "Previous",
+    "next": "Next",
+    "fileOf": "File {{n}} of {{total}}",
+    "zoom": "Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "rotate": "Rotate",
+    "download": "Download",
+    "printTitle": "Print voucher {{number}}",
+    "paper": "Paper size",
+    "printHelp": "The payment voucher opens as a PDF to print or save. Every print is logged; reprints are marked \"Copy\". A voucher not yet approved by the Director is marked \"Not approved\".",
+    "openPdf": "Open PDF",
+    "deleteTitle": "Delete voucher {{number}}",
+    "deleteHelp": "The voucher leaves the working lists but is kept, with its files and full history, in Deleted vouchers. Its number is never used again. This cannot be undone.",
+    "reason": "Reason (required)",
+    "reasonOptional": "Reason (optional)",
+    "confirmDelete": "Delete voucher",
+    "deletedBy": "Deleted by {{name}} on {{when}}",
+    "sentBack": "Changed by {{name}} and sent back for checking:",
+    "reviseHelp": "You can correct the description here (coding is on the review page). A change to the payee, amounts or lines sends the voucher back to the Accountant, with the changes listed.",
+    "saveChanges": "Save changes"
+  },
+  "deletedVouchers": {
+    "title": "Deleted vouchers",
+    "help": "Vouchers removed from the working lists, with who deleted them, when and why. Open one to see its full history.",
+    "none": "No deleted vouchers.",
+    "by": "Deleted by",
+    "at": "Deleted on",
+    "reason": "Reason"
   }
 }

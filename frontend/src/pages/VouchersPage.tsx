@@ -8,6 +8,7 @@ import type { CurrentUser } from "../api/auth";
 import { listVoucherTypes, listVouchers, voucherTypesKey, vouchersKey, type VoucherStatus } from "../api/vouchers";
 import DataTable from "../components/DataTable";
 import ExportLinks from "../components/ExportLinks";
+import FilesIcon from "../components/FilesIcon";
 import VoucherActions from "../components/VoucherActions";
 
 const STATUSES: VoucherStatus[] = [
@@ -106,10 +107,12 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
               header: t("vouchers.number"),
               value: (v) => v.number,
               cell: (v) => (
-                <Link to={`/vouchers/${v.id}`} className="mono">
-                  {v.number}
-                  {v.attachments > 0 && <span aria-label={t("vouchers.hasFiles")}> 📎</span>}
-                </Link>
+                <>
+                  <Link to={`/vouchers/${v.id}`} className="mono">
+                    {v.number}
+                  </Link>
+                  {v.attachments > 0 && <FilesIcon />}
+                </>
               ),
             },
             { id: "date", header: t("vouchers.date"), value: (v) => v.voucher_date },

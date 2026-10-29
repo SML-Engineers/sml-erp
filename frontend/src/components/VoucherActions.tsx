@@ -35,7 +35,16 @@ const EDIT_LINKS: Partial<Record<VoucherAction, (id: number) => string>> = {
  * Only the actions the server says this person may take are shown; the server refuses
  * the others even if called directly.
  */
-export default function VoucherActions({ voucher, onDeleted }: { voucher: Row; onDeleted?: () => void }) {
+export default function VoucherActions({
+  voucher,
+  onDeleted,
+  showLabel = false,
+}: {
+  voucher: Row;
+  onDeleted?: () => void;
+  /** Show the word "Actions" next to the dots (on a voucher's own page). */
+  showLabel?: boolean;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [dialog, setDialog] = useState<"resources" | "print" | "amend" | "cancel" | "delete" | null>(null);
@@ -62,13 +71,13 @@ export default function VoucherActions({ voucher, onDeleted }: { voucher: Row; o
     <div className="row-menu" ref={box}>
       <button
         type="button"
-        className="icon-button small"
+        className={showLabel ? "secondary small" : "icon-button small"}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("voucherActions.menu", { number: voucher.number })}
         onClick={() => setOpen((v) => !v)}
       >
-        ⋯
+        {showLabel ? `${t("voucherActions.header")} ▾` : "⋯"}
       </button>
       {open && (
         <div className="row-menu-list" role="menu" aria-label={t("voucherActions.menu", { number: voucher.number })}>

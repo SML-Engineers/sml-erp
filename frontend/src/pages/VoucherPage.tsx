@@ -80,9 +80,9 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
       <p>
         <Link to="/vouchers">{t("vouchers.backToList")}</Link>
       </p>
-      <div className="row-actions">
+      <div className="title-row">
         <h1>{data ? `${t("vouchers.voucher")} ${data.number}` : t("vouchers.new")}</h1>
-        {data && <VoucherActions voucher={data} onDeleted={() => navigate("/vouchers")} />}
+        {data && <VoucherActions voucher={data} showLabel onDeleted={() => navigate("/vouchers")} />}
       </div>
       {data?.deleted && (
         <p className="notice change-notice" role="status">
@@ -248,17 +248,29 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
           ))}
         </select>
       </label>
-      {type?.needs_payee && (
+      {(!type || type.needs_payee) && (
         <div className="wide">
           <label>
             {t("vouchers.findPayee")}
-            <input value={payeeSearch} onChange={(e) => setPayeeSearch(e.target.value)} />
+            <input
+              value={payeeSearch}
+              disabled={!type}
+              placeholder={type ? t("vouchers.payeeHint") : t("vouchers.chooseTypeFirst")}
+              onChange={(e) => setPayeeSearch(e.target.value)}
+            />
           </label>
           {candidates.length > 0 && (
             <ul className="changes" aria-label={t("vouchers.payeeResults")}>
               {candidates.slice(0, 10).map((p) => (
                 <li key={p.id}>
-                  <button type="button" className="link-button" onClick={() => setPayee({ id: p.id, name: p.name })}>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => {
+                      setPayee({ id: p.id, name: p.name });
+                      setPayeeSearch(""); // chosen: close the list
+                    }}
+                  >
                     {p.code} {p.name}
                   </button>
                 </li>
@@ -295,7 +307,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
       </label>
 
       <div className="wide table-wrap">
-        <table aria-label={t("vouchers.lines")}>
+        <table aria-label={t("vouchers.lines")} className="fit-inputs">
           <thead>
             <tr>
               <th>{t("vouchers.invoiceNo")}</th>

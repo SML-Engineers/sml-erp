@@ -4,7 +4,10 @@
   },
   "common": {
     "loading": "Loading…",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "typeToSearch": "Type to search",
+    "noMatches": "Nothing matches",
+    "moreMatches": "{{count}} more: type more to narrow the list"
   },
   "home": {
     "checking": "Checking connection to the server…",
@@ -994,6 +997,8 @@
     "findPayee": "Find the payee (name or code)",
     "payeeResults": "Matching payees",
     "noPayeeYet": "not chosen yet",
+    "payeeHint": "Type at least 2 letters of the name or code",
+    "chooseTypeFirst": "Choose the type first",
     "outstanding": "outstanding on vouchers: LKR {{amount}}",
     "transferTo": "Money goes to",
     "description": "Description",
@@ -1066,7 +1071,8 @@
     "approve": "Approve",
     "return": "Return to Clerk",
     "reject": "Reject",
-    "saveFirst": "Save the coding before approving: a voucher can only be approved at L2 when every line has its account and division."
+    "saveFirst": "Approve saves the coding first. A voucher is approved at L2 only when every line has its account and division.",
+    "unsaved": "Coding changed and not saved yet."
   },
   "director": {
     "title": "Approve vouchers",

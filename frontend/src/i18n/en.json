@@ -268,7 +268,8 @@
       "voucher_amended": "Amendment of an approved voucher started",
       "voucher_cancellation_requested": "Cancellation of a voucher requested",
       "voucher_cancelled": "Voucher cancelled",
-      "voucher_cancellation_rejected": "Voucher cancellation rejected"
+      "voucher_cancellation_rejected": "Voucher cancellation rejected",
+      "supplier_payment_recorded": "Supplier payment recorded"
     }
   },
   "menu": {
@@ -1144,7 +1145,8 @@
     "cancelTitle": "Request cancellation of {{number}}",
     "cancelHelp": "The Director approves or rejects the cancellation. Until then the voucher cannot be amended, deleted or paid. A voucher with any payment can never be cancelled.",
     "cancelReason": "Why should it be cancelled? (required)",
-    "sendRequest": "Send to the Director"
+    "sendRequest": "Send to the Director",
+    "pay": "Pay"
   },
   "deletedVouchers": {
     "title": "Deleted vouchers",
@@ -1188,5 +1190,45 @@
     "decisionReason": "Comment (required to reject)",
     "approve": "Approve cancellation",
     "reject": "Reject"
+  },
+  "payments": {
+    "title": "Supplier payments",
+    "help": "Vouchers approved by the Director and not yet fully paid. A payment always starts from a voucher; it can never be more than what is left to pay, and saving it posts the journal entry.",
+    "toPay": "To pay",
+    "nothingToPay": "Nothing waiting to be paid.",
+    "approved": "Approved",
+    "paid": "Paid",
+    "remaining": "Left to pay",
+    "pay": "Pay",
+    "made": "Payments made",
+    "none": "No payments yet.",
+    "number": "Payment no.",
+    "date": "Payment date",
+    "voucher": "Voucher",
+    "account": "Paid from",
+    "method": "Method",
+    "reference": "Reference",
+    "amount": "Amount (LKR)",
+    "entry": "Journal entry",
+    "methods": {
+      "cheque": "Cheque",
+      "transfer": "Bank transfer",
+      "cash": "Cash",
+      "card": "Card",
+      "qr": "QR code (LankaQR)"
+    },
+    "backToList": "← Supplier payments",
+    "recordTitle": "Record a payment",
+    "notPayable": "This voucher is not waiting to be paid: it is not approved by the Director, already paid, or its cancellation is waiting.",
+    "summary": "Approved LKR {{approved}} · paid so far {{paid}} · left to pay {{remaining}}",
+    "noAccount": "No account can be used for this method. The Accountant links bank and cash accounts to the chart of accounts under Bank accounts.",
+    "chequeNumber": "Cheque number",
+    "chequeDate": "Cheque date (if post-dated)",
+    "notes": "Notes (optional)",
+    "save": "Save payment",
+    "saved": "Payment saved",
+    "savedText": "Payment {{number}} of LKR {{amount}} against voucher {{voucher}} is saved, with journal entry {{entry}}.",
+    "print": "Print payment voucher",
+    "ofVoucher": "Payments"
   }
 }

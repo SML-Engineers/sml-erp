@@ -888,6 +888,11 @@ def actions(user: User, voucher: Voucher, waiting: dict[int, bool] | None = None
         allowed.append("amend")  # after Director approval, Edit becomes Amend
     if why_not_cancel(user, voucher) is None:
         allowed.append("cancel")
+    if effective_access(user).can("record_payment"):
+        from apps.payments.services import why_not_payable
+
+        if why_not_payable(voucher) is None:
+            allowed.append("pay")
     if can_delete(user, voucher) is None:
         allowed.append("delete")
     return allowed

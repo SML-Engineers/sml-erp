@@ -158,6 +158,14 @@ def _detail(v: Voucher, user) -> dict:
             "created_at": v.created_at,
             "submitted_at": v.submitted_at,
             "revision": v.revision,
+            "amendment_reason": v.amendment_reason,
+            "parent": None
+            if v.parent_id is None
+            else {"id": v.parent_id, "number": v.parent.number},
+            "revisions": [
+                {"id": r.pk, "number": r.number, "status": r.status}
+                for r in v.revisions.order_by("revision", "id")
+            ],
             "lines": [
                 {
                     "line_no": line.line_no,
@@ -672,3 +680,42 @@ class ReviseView(_Approving):
         except VoucherError as error:
             return _error(error)
         return Response(_detail(voucher, request.user))
+
+
+# --- Amendments (P1-05) -----------------------------------------------------------------
+
+
+class AmendView(_Vouchers):
+    """Start an amendment of a Director-approved voucher; returns the new draft revision."""
+
+    def post(self, request, pk):
+        voucher = _get(request.user, pk)
+        try:
+            amendment = services.amend(request.user, voucher, str(request.data.get("reason", "")))
+        except VoucherError as error:
+            return _error(error)
+        return Response(_detail(amendment, request.user), status=status.HTTP_201_CREATED)
+
+
+class AmendmentListView(_Vouchers):
+    """The Amendments List: each revision with the voucher it amends and why."""
+
+    def get(self, request):
+        rows = (
+            services.amendments(request.user)
+            .select_related("voucher_type", "division", "payee", "created_by", "parent")
+            .order_by("-created_at", "-id")
+        )
+        waiting = services.waiting_levels(request.user)
+        result = []
+        for v in rows[:1000]:
+            row = _summary(v, request.user, waiting)
+            row["revision"] = v.revision
+            row["amendment_reason"] = v.amendment_reason
+            row["parent"] = {
+                "id": v.parent_id,
+                "number": v.parent.number,
+                "total_amount": f"{v.parent.total_amount:.2f}",
+            }
+            result.append(row)
+        return Response(result)

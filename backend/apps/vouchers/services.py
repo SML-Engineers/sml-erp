@@ -13,7 +13,7 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.db import transaction
-from django.db.models import Q, QuerySet, Sum
+from django.db.models import Max, Q, QuerySet, Sum
 from django.utils import timezone
 
 from apps.accounting import taxes
@@ -374,7 +374,13 @@ def duplicate_invoices(voucher: Voucher) -> list[str]:
                 voucher__payee_id=voucher.payee_id, invoice_no__iexact=line.invoice_no
             )
             .exclude(voucher=voucher)
-            .exclude(voucher__status__in=[Voucher.Status.DELETED, Voucher.Status.REJECTED])
+            .exclude(
+                voucher__status__in=[
+                    Voucher.Status.DELETED,
+                    Voucher.Status.REJECTED,
+                    Voucher.Status.AMENDED,
+                ]
+            )
             .select_related("voucher")
         )
         numbers = sorted({o.voucher.number for o in others})
@@ -414,7 +420,8 @@ def add_attachment(user: User, voucher: Voucher, uploaded) -> tuple[VoucherAttac
         digest = hashlib.sha256(content).hexdigest()
         same = (
             VoucherAttachment.objects.filter(sha256=digest)
-            .exclude(voucher__status=Voucher.Status.DELETED)
+            .exclude(voucher=voucher)
+            .exclude(voucher__status__in=[Voucher.Status.DELETED, Voucher.Status.AMENDED])
             .select_related("voucher")
         )
         warnings = [
@@ -469,6 +476,8 @@ def sync_status(voucher: Voucher) -> Voucher:
     if voucher.status != status:
         voucher.status = status
         voucher.save(update_fields=["status", "updated_at"])
+        if status == Voucher.Status.REJECTED:
+            _restore_parent(voucher)
     return voucher
 
 
@@ -840,6 +849,8 @@ def can_delete(user: User, voucher: Voucher) -> str | None:
         return f"Voucher {voucher.number} is already deleted."
     if voucher.status in (Voucher.Status.PARTLY_PAID, Voucher.Status.PAID):
         return f"Voucher {voucher.number} has payments and cannot be deleted."
+    if voucher.status == Voucher.Status.AMENDED:
+        return f"Voucher {voucher.number} is replaced by an amendment; delete that instead."
     if voucher.status == Voucher.Status.DRAFT:
         if voucher.created_by_id == user.pk or access.has("settings", "manage"):
             return None
@@ -866,6 +877,10 @@ def actions(user: User, voucher: Voucher, waiting: dict[int, bool] | None = None
         allowed.append("edit")
     elif voucher.pk in waiting:
         allowed.append("edit_coding" if waiting[voucher.pk] else "revise")
+    elif voucher.status == Voucher.Status.DIRECTOR_APPROVED and has_access(
+        user, "vouchers", "enter"
+    ):
+        allowed.append("amend")  # after Director approval, Edit becomes Amend
     if can_delete(user, voucher) is None:
         allowed.append("delete")
     return allowed
@@ -889,11 +904,16 @@ def delete(user: User, voucher: Voucher, reason: str = "") -> Voucher:
                 approvals.withdraw(user, DOC, voucher.pk, reason or "Voucher deleted")
             except ApprovalError as error:
                 raise VoucherError(str(error)) from None
+        was_approved = voucher.status == Voucher.Status.DIRECTOR_APPROVED
         voucher.status = Voucher.Status.DELETED
         voucher.deleted_at = timezone.now()
         voucher.deleted_by = user
         voucher.delete_reason = reason
         voucher.save()
+        if not was_approved:
+            # An amendment dropped before approval: the original stands again. (Deleting an
+            # approved amendment does not bring the replaced voucher back to be paid.)
+            _restore_parent(voucher)
         return voucher
 
 
@@ -1024,3 +1044,78 @@ def record_print(user: User, voucher: Voucher, paper: str) -> VoucherPrint:
             paper=paper,
             is_copy=voucher.prints.exists(),
         )
+
+
+# --- Amendments (P1-05) ---------------------------------------------------------------
+
+REVISION_SUFFIX = re.compile(r"-R\d+$")
+
+
+def _restore_parent(voucher: Voucher) -> None:
+    """An amendment rejected or deleted: the voucher it would have replaced stands again,
+    approved as before."""
+    if voucher.parent_id is None:
+        return
+    parent = Voucher.objects.select_for_update().get(pk=voucher.parent_id)
+    if parent.status == Voucher.Status.AMENDED:
+        parent.status = Voucher.Status.DIRECTOR_APPROVED
+        parent.save(update_fields=["status", "updated_at"])
+
+
+def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
+    """Start an amendment of a Director-approved, unpaid voucher (spec 4.2). The approved
+    voucher is never changed: a new revision (number -R1, -R2, …, linked to it) is created
+    as a draft with the same payee, lines, coding and files, for the person who started it
+    to correct and submit; it passes the Accountant and the Director again. Until then the
+    original is marked Amended and cannot be paid; if the amendment is rejected or deleted,
+    the original stands again."""
+    reason = (reason or "").strip()[:500]
+    if not reason:
+        raise VoucherError("Say why the voucher is being amended.")
+    if not has_access(user, "vouchers", "enter"):
+        raise VoucherError("Only the Clerk or the Accountant starts an amendment.")
+    with audit_context("voucher_amended", reason), transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        if voucher.status != Voucher.Status.DIRECTOR_APPROVED:
+            raise VoucherError(
+                f"Voucher {voucher.number} is {voucher.get_status_display().lower()}; only a "
+                "Director-approved voucher with no payment can be amended."
+            )
+        base = REVISION_SUFFIX.sub("", voucher.number)
+        family = Voucher.objects.filter(Q(number=base) | Q(number__startswith=f"{base}-R"))
+        revision = (family.aggregate(top=Max("revision"))["top"] or 0) + 1
+        amendment = Voucher.objects.create(
+            number=f"{base}-R{revision}",
+            voucher_type=voucher.voucher_type,
+            division=voucher.division,
+            payee=voucher.payee,
+            transfer_to=voucher.transfer_to,
+            voucher_date=timezone.localdate(),
+            description=voucher.description,
+            total_amount=voucher.total_amount,
+            revision=revision,
+            parent=voucher,
+            created_by=user,
+            amendment_reason=reason,
+        )
+        for line in voucher.lines.prefetch_related("splits"):
+            splits = list(line.splits.all())
+            line.pk = None
+            line.voucher = amendment
+            line.save()
+            for part in splits:
+                part.pk = None
+                part.line = line
+                part.save()
+        for attachment in voucher.attachments.all():
+            attachment.pk = None  # the same stored file, now also on the amendment
+            attachment.voucher = amendment
+            attachment.save()
+        voucher.status = Voucher.Status.AMENDED
+        voucher.save(update_fields=["status", "updated_at"])
+        return amendment
+
+
+def amendments(user: User) -> QuerySet[Voucher]:
+    """The Amendments List: every revision this user may see, deleted ones included."""
+    return visible(user, deleted=None).filter(revision__gt=0)

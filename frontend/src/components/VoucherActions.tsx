@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { ApiError } from "../api/client";
 import {
+  amendVoucher,
   deleteVoucher,
   getVoucher,
   voucherFileUrl,
@@ -36,7 +37,7 @@ const EDIT_LINKS: Partial<Record<VoucherAction, (id: number) => string>> = {
 export default function VoucherActions({ voucher, onDeleted }: { voucher: Row; onDeleted?: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [dialog, setDialog] = useState<"resources" | "print" | "delete" | null>(null);
+  const [dialog, setDialog] = useState<"resources" | "print" | "amend" | "delete" | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const allowed = voucher.actions ?? [];
   const edit = allowed.find((a) => a in EDIT_LINKS);
@@ -51,7 +52,7 @@ export default function VoucherActions({ voucher, onDeleted }: { voucher: Row; o
   }, [open]);
 
   if (allowed.length === 0) return null;
-  const choose = (which: "resources" | "print" | "delete") => {
+  const choose = (which: "resources" | "print" | "amend" | "delete") => {
     setOpen(false);
     setDialog(which);
   };
@@ -85,6 +86,11 @@ export default function VoucherActions({ voucher, onDeleted }: { voucher: Row; o
               {t("voucherActions.edit")}
             </Link>
           )}
+          {allowed.includes("amend") && (
+            <button type="button" role="menuitem" onClick={() => choose("amend")}>
+              {t("voucherActions.amend")}
+            </button>
+          )}
           {allowed.includes("delete") && (
             <button type="button" role="menuitem" className="danger-text" onClick={() => choose("delete")}>
               {t("voucherActions.delete")}
@@ -94,6 +100,7 @@ export default function VoucherActions({ voucher, onDeleted }: { voucher: Row; o
       )}
       {dialog === "resources" && <FileViewer id={voucher.id} number={voucher.number} onClose={() => setDialog(null)} />}
       {dialog === "print" && <PrintDialog voucher={voucher} onClose={() => setDialog(null)} />}
+      {dialog === "amend" && <AmendDialog voucher={voucher} onClose={() => setDialog(null)} />}
       {dialog === "delete" && (
         <DeleteDialog
           voucher={voucher}
@@ -263,6 +270,46 @@ function DeleteDialog({ voucher, onClose, onDeleted }: { voucher: Row; onClose: 
           onClick={() => remove.mutate()}
         >
           {t("voucherActions.confirmDelete")}
+        </button>
+        <button type="button" className="secondary" onClick={onClose}>
+          {t("voucherActions.cancel")}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+/** Amend: an approved voucher is never edited; a new revision goes through the Accountant
+ * and the Director again, and the original cannot be paid meanwhile (spec 4.2). */
+function AmendDialog({ voucher, onClose }: { voucher: Row; onClose: () => void }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [reason, setReason] = useState("");
+  const start = useMutation({
+    mutationFn: () => amendVoucher(voucher.id, reason),
+    onSuccess: (amendment) => {
+      void queryClient.invalidateQueries({ queryKey: vouchersKey });
+      onClose();
+      navigate(`/vouchers/${amendment.id}`);
+    },
+  });
+  return (
+    <Modal label={t("voucherActions.amendTitle", { number: voucher.number })} onClose={onClose}>
+      <h2>{t("voucherActions.amendTitle", { number: voucher.number })}</h2>
+      <p>{t("voucherActions.amendHelp")}</p>
+      <label>
+        {t("voucherActions.amendReason")}
+        <textarea value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+      </label>
+      {start.error && (
+        <p className="form-error" role="alert">
+          {start.error instanceof ApiError && start.error.detail ? start.error.detail : t("common.error")}
+        </p>
+      )}
+      <div className="row-actions">
+        <button type="button" disabled={start.isPending || !reason.trim()} onClick={() => start.mutate()}>
+          {t("voucherActions.startAmendment")}
         </button>
         <button type="button" className="secondary" onClick={onClose}>
           {t("voucherActions.cancel")}

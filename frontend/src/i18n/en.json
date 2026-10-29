@@ -264,7 +264,8 @@
       "document_withdrawn": "Document withdrawn from approval",
       "voucher_deleted": "Voucher deleted",
       "voucher_revised": "Voucher changed by an approver",
-      "voucher_printed": "Voucher printed"
+      "voucher_printed": "Voucher printed",
+      "voucher_amended": "Amendment of an approved voucher started"
     }
   },
   "menu": {
@@ -977,7 +978,8 @@
       "partly_paid": "Partly paid",
       "paid": "Paid",
       "cancelled": "Cancelled",
-      "deleted": "Deleted"
+      "deleted": "Deleted",
+      "amended": "Amended (replaced)"
     },
     "createdBy": "created by {{name}}",
     "form": "Voucher details",
@@ -1129,7 +1131,12 @@
     "deletedBy": "Deleted by {{name}} on {{when}}",
     "sentBack": "Changed by {{name}} and sent back for checking:",
     "reviseHelp": "You can correct the description here (coding is on the review page). A change to the payee, amounts or lines sends the voucher back to the Accountant, with the changes listed.",
-    "saveChanges": "Save changes"
+    "saveChanges": "Save changes",
+    "amend": "Amend",
+    "amendTitle": "Amend voucher {{number}}",
+    "amendHelp": "An approved voucher is never changed. A new revision is created as a draft for you to correct and submit; it goes to the Accountant and the Director again. Until it is approved the original cannot be paid; if the amendment is rejected or deleted, the original stands.",
+    "amendReason": "Why is it being amended? (required)",
+    "startAmendment": "Start amendment"
   },
   "deletedVouchers": {
     "title": "Deleted vouchers",
@@ -1138,5 +1145,19 @@
     "by": "Deleted by",
     "at": "Deleted on",
     "reason": "Reason"
+  },
+  "amendments": {
+    "title": "Amendments",
+    "help": "Revisions of approved vouchers: each one with the voucher it amends, why, and how the amount changed.",
+    "none": "No amendments.",
+    "amendment": "Amendment",
+    "original": "Amends",
+    "reason": "Reason",
+    "was": "Was",
+    "change": "Change",
+    "amendmentOf": "Amendment (revision {{revision}}) of voucher",
+    "replacedBy": "This voucher is replaced and cannot be paid. Amendment:",
+    "amendedBy": "Amendments of this voucher:",
+    "returnedBy": "Returned to you by {{name}}:"
   }
 }

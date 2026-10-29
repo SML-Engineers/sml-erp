@@ -48,6 +48,9 @@ const detail: VoucherDetail = {
   created_at: "2026-10-29T08:00:00Z",
   submitted_at: "2026-10-29T08:05:00Z",
   revision: 0,
+  amendment_reason: "",
+  parent: null,
+  revisions: [],
   lines: [
     {
       line_no: 1, invoice_no: "LS-1", invoice_date: "2026-10-28", description: "", amount: "1000.00",

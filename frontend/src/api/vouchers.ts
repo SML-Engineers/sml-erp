@@ -43,7 +43,8 @@ export type VoucherStatus =
   | "partly_paid"
   | "paid"
   | "cancelled"
-  | "deleted";
+  | "deleted"
+  | "amended";
 
 export interface VoucherSummary {
   id: number;
@@ -63,7 +64,7 @@ export interface VoucherSummary {
 
 /** "edit": the Clerk's form; "edit_coding": the Accountant's review (L2); "revise": the
  * Director's changes (L3), which send the voucher back to the Accountant. */
-export type VoucherAction = "resources" | "print" | "edit" | "edit_coding" | "revise" | "delete";
+export type VoucherAction = "resources" | "print" | "edit" | "edit_coding" | "revise" | "amend" | "delete";
 
 export interface VoucherLineData {
   line_no: number;
@@ -98,6 +99,10 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
   created_at: string;
   submitted_at: string | null;
   revision: number;
+  amendment_reason: string;
+  /** The voucher this one amends, and the amendments of this one (P1-05). */
+  parent: { id: number; number: string } | null;
+  revisions: { id: number; number: string; status: VoucherStatus }[];
   lines: VoucherLineData[];
   attachments: VoucherAttachmentData[];
   warnings: string[];
@@ -168,3 +173,15 @@ export const deleteVoucher = (id: number, reason: string) =>
 export const reviseVoucher = (id: number, input: VoucherInput) =>
   apiSend<VoucherDetail>("PATCH", `/vouchers/${id}/revise/`, input);
 export const listDeletedVouchers = () => apiGet<VoucherSummary[]>("/vouchers/deleted/");
+
+// --- Amendments (P1-05) -----------------------------------------------------------------
+
+export interface AmendmentRow extends VoucherSummary {
+  revision: number;
+  amendment_reason: string;
+  parent: { id: number; number: string; total_amount: string };
+}
+
+export const amendVoucher = (id: number, reason: string) =>
+  apiSend<VoucherDetail>("POST", `/vouchers/${id}/amend/`, { reason });
+export const listAmendments = () => apiGet<AmendmentRow[]>("/vouchers/amendments/");

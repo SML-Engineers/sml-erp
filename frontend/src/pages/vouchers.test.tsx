@@ -40,6 +40,9 @@ const draft: VoucherDetail = {
   created_at: "2026-10-29T08:00:00Z",
   submitted_at: null,
   revision: 0,
+  amendment_reason: "",
+  parent: null,
+  revisions: [],
   lines: [
     {
       line_no: 1,

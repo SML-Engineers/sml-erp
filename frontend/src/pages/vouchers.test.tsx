@@ -95,10 +95,16 @@ test("the clerk creates a draft: division, type, payee with balance, a line", as
   await within(form).findByRole("option", { name: "WS Workshop" });
   fireEvent.change(within(form).getByLabelText("Division"), { target: { value: "WS" } });
   await within(form).findByRole("option", { name: "Cheque Payment" });
+  // The payee box is there from the start, waiting for the type.
+  expect(within(form).getByLabelText("Find the payee (name or code)")).toBeDisabled();
+  expect(within(form).getByPlaceholderText("Choose the type first")).toBeInTheDocument();
   fireEvent.change(within(form).getByLabelText("Type"), { target: { value: "CHQ" } });
   fireEvent.change(within(form).getByLabelText("Find the payee (name or code)"), { target: { value: "Lanka" } });
   fireEvent.click(await within(form).findByRole("button", { name: "S0003 Lanka Steel (Pvt) Ltd" }));
   expect(await within(form).findByText(/outstanding on vouchers: LKR 15,000.00/)).toBeInTheDocument();
+  // Once chosen, the list of matches closes.
+  expect(within(form).queryByRole("button", { name: "S0003 Lanka Steel (Pvt) Ltd" })).not.toBeInTheDocument();
+  expect(within(form).getByLabelText("Find the payee (name or code)")).toHaveValue("");
   fireEvent.change(within(form).getByLabelText("Invoice no., line 1"), { target: { value: "INV-1001" } });
   fireEvent.change(within(form).getByLabelText("Amount, line 1"), { target: { value: "25000.00" } });
   fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));

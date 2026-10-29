@@ -1247,3 +1247,113 @@ a.button-link.small {
 .bar.unpaid {
   background: var(--color-primary);
 }
+
+/* --- Testing feedback, round 2 --- */
+
+/* A page title with its actions button beside it, centred on the title's line. */
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-row h1 {
+  margin-right: 4px;
+}
+
+/* Tables of inputs (invoice lines) fit the box instead of scrolling sideways. */
+table.fit-inputs td input,
+table.fit-inputs td select {
+  width: 100%;
+  min-width: 5.5rem;
+}
+
+table.fit-inputs td input[type="date"] {
+  min-width: 9.5rem;
+}
+
+/* The Accountant's coding row: room for the account and the division split. */
+table.coding-table td {
+  vertical-align: top;
+}
+
+table.coding-table td:nth-child(3) {
+  min-width: 15rem;
+}
+
+table.coding-table td:nth-child(4) {
+  min-width: 13rem;
+}
+
+table.coding-table td input,
+table.coding-table td select {
+  width: 100%;
+}
+
+table.coding-table .check {
+  white-space: nowrap;
+  margin-top: 6px;
+}
+
+.split-row {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+/* Searchable drop-down (SearchSelect). */
+.search-select {
+  position: relative;
+}
+
+.search-select input {
+  width: 100%;
+}
+
+.search-select-list {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  max-height: 18rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+}
+
+.search-select-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.search-select-list li.active,
+.search-select-list li[role="option"]:hover {
+  background: var(--color-bg);
+}
+
+.search-select-list li.muted {
+  cursor: default;
+}
+
+.files-icon {
+  margin-left: 6px;
+  vertical-align: -2px;
+  color: var(--color-muted);
+}
+
+/* A table holding a searchable drop-down: let the list show below the table on a wide screen;
+   on a narrow one the table scrolls sideways (the list then scrolls with it). */
+@media (min-width: 901px) {
+  .table-wrap.no-clip {
+    overflow: visible;
+  }
+}

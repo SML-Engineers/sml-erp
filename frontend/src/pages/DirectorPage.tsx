@@ -5,6 +5,7 @@ import { Link } from "react-router";
 
 import { ApiError, apiGet, apiSend } from "../api/client";
 import { getVoucher, voucherFileUrl, vouchersKey, type VoucherSummary } from "../api/vouchers";
+import FilesIcon from "../components/FilesIcon";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 
@@ -203,7 +204,7 @@ export default function DirectorPage() {
                     <button type="button" className="link-button mono" onClick={() => setOpen(v.id)}>
                       {v.number}
                     </button>
-                    {v.attachments > 0 && <span aria-label={t("vouchers.hasFiles")}> 📎</span>}
+                    {v.attachments > 0 && <FilesIcon />}
                     <VoucherActions voucher={v} />
                   </td>
                   <td>{v.voucher_date}</td>

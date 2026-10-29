@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 
@@ -7,6 +7,7 @@ import { chartKey, listLedgerAccounts } from "../api/accounts";
 import { listDivisions } from "../api/admin";
 import { ApiError, apiGet, apiSend } from "../api/client";
 import { getTaxes, taxesKey } from "../api/taxes";
+import SearchSelect from "../components/SearchSelect";
 import {
   getVoucher,
   voucherFileUrl,
@@ -58,6 +59,13 @@ export default function ReviewPage() {
   const queue = useQuery({ queryKey: waitingKey, queryFn: () => apiGet<Waiting[]>("/vouchers/waiting/") });
   const [search] = useSearchParams();
   const [selected, setSelected] = useState<number | null>(Number(search.get("open")) || null);
+  // Open the first voucher in the queue, and the next one after a decision (skipping those
+  // just decided, which stay in the list until it is fetched again).
+  const [decided, setDecided] = useState<number[]>([]);
+  const first = queue.data?.find((v) => !decided.includes(v.id))?.id ?? null;
+  useEffect(() => {
+    if (selected === null && first !== null) setSelected(first);
+  }, [selected, first]);
 
   return (
     <main className="page">
@@ -81,7 +89,16 @@ export default function ReviewPage() {
           </ul>
           <ErrorLine error={queue.error} />
         </section>
-        {selected !== null && <ReviewPanel key={selected} id={selected} onDone={() => setSelected(null)} />}
+        {selected !== null && (
+          <ReviewPanel
+            key={selected}
+            id={selected}
+            onDone={() => {
+              setDecided((now) => [...now, selected]);
+              setSelected(null);
+            }}
+          />
+        )}
       </div>
     </main>
   );
@@ -125,6 +142,8 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
   const divisions = useQuery({ queryKey: ["divisions", "mine"], queryFn: listDivisions });
   const taxes = useQuery({ queryKey: taxesKey, queryFn: getTaxes });
   const [codings, setCodings] = useState<Coding[]>(voucher.lines.map((l) => toCoding(l, voucher.division)));
+  const [saved, setSaved] = useState(JSON.stringify(codings));
+  const unsaved = JSON.stringify(codings) !== saved;
   const [text, setText] = useState("");
   const [file, setFile] = useState(voucher.attachments[0]?.id ?? null);
   const purchaseCodes = (taxes.data?.codes ?? []).filter((c) => c.is_active && c.use !== "sales");
@@ -139,26 +158,36 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
       now.map((c, i) => (i === index ? { ...c, splits: c.splits.map((s, r) => (r === row ? { ...s, ...change } : s)) } : c)),
     );
 
+  const saveCoding = () =>
+    apiSend<VoucherDetail>("PATCH", `/vouchers/${voucher.id}/coding/`, {
+      lines: codings.map((c) => ({
+        line_no: c.line_no,
+        account: c.account ? Number(c.account) : null,
+        division: c.split ? null : c.division || null,
+        tax_code: c.tax_code || null,
+        tax_amount: c.tax_code ? "0" : c.tax_amount || "0",
+        job_ref: c.job_ref,
+        splits: c.split
+          ? c.splits.map((s) => (c.byPercent ? { division: s.division, percent: s.percent } : { division: s.division, amount: s.amount }))
+          : [],
+      })),
+    });
   const save = useMutation({
-    mutationFn: () =>
-      apiSend<VoucherDetail>("PATCH", `/vouchers/${voucher.id}/coding/`, {
-        lines: codings.map((c) => ({
-          line_no: c.line_no,
-          account: c.account ? Number(c.account) : null,
-          division: c.split ? null : c.division || null,
-          tax_code: c.tax_code || null,
-          tax_amount: c.tax_code ? "0" : c.tax_amount || "0",
-          job_ref: c.job_ref,
-          splits: c.split
-            ? c.splits.map((s) => (c.byPercent ? { division: s.division, percent: s.percent } : { division: s.division, amount: s.amount }))
-            : [],
-        })),
-      }),
-    onSuccess: props.onSaved,
+    mutationFn: saveCoding,
+    onSuccess: (data) => {
+      setSaved(JSON.stringify(codings));
+      props.onSaved(data);
+    },
   });
   const decide = useMutation({
-    mutationFn: (decision: "approve" | "return" | "reject") =>
-      apiSend<VoucherDetail>("POST", `/vouchers/${voucher.id}/${decision}/`, decision === "approve" ? { comment: text } : { reason: text }),
+    mutationFn: async (decision: "approve" | "return" | "reject") => {
+      // Approving uses the coding on the screen: save it first (it stops here if it is wrong).
+      if (decision === "approve" && unsaved) {
+        props.onSaved(await saveCoding());
+        setSaved(JSON.stringify(codings));
+      }
+      return apiSend<VoucherDetail>("POST", `/vouchers/${voucher.id}/${decision}/`, decision === "approve" ? { comment: text } : { reason: text });
+    },
     onSuccess: (data) => {
       props.onSaved(data);
       props.onDone();
@@ -209,8 +238,8 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         {!current && <p className="muted">{t("voucherReview.noScan")}</p>}
       </div>
 
-      <div className="table-wrap">
-        <table aria-label={t("voucherReview.coding")}>
+      <div className="table-wrap no-clip">
+        <table aria-label={t("voucherReview.coding")} className="coding-table">
           <thead>
             <tr>
               <th>{t("vouchers.invoiceNo")}</th>
@@ -235,26 +264,20 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                   </td>
                   <td className="num">{formatDecimal(line.amount)}</td>
                   <td>
-                    <select
-                      aria-label={t("voucherReview.accountOf", { n })}
+                    <SearchSelect
+                      label={t("voucherReview.accountOf", { n })}
+                      options={usable.map((a) => ({ value: String(a.id), label: `${a.number} ${a.full_name}`.trim() }))}
                       value={c.account}
-                      onChange={(e) => {
-                        const chosen = usable.find((a) => String(a.id) === e.target.value);
+                      onChange={(value) => {
+                        const chosen = usable.find((a) => String(a.id) === value);
                         set(index, {
-                          account: e.target.value,
+                          account: value,
                           // the account's defaults, as QuickBooks does
                           ...(chosen?.default_division && !c.split ? { division: chosen.default_division } : {}),
                           ...(chosen?.default_tax_code && !c.tax_code ? { tax_code: chosen.default_tax_code } : {}),
                         });
                       }}
-                    >
-                      <option value="">—</option>
-                      {usable.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {`${a.number} ${a.full_name}`.trim()}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </td>
                   <td>
                     {!c.split && (
@@ -278,7 +301,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                           {t("voucherReview.byPercent")}
                         </label>
                         {c.splits.map((s, row) => (
-                          <div key={row} className="inline-form">
+                          <div key={row} className="split-row">
                             <select
                               aria-label={t("voucherReview.splitDivision", { n, row: String(row + 1) })}
                               value={s.division}
@@ -353,6 +376,11 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         <button type="button" className="secondary" disabled={save.isPending} onClick={() => save.mutate()}>
           {t("voucherReview.saveCoding")}
         </button>
+        {unsaved && (
+          <span className="muted" role="status">
+            {t("voucherReview.unsaved")}
+          </span>
+        )}
       </div>
       <ErrorLine error={save.error} />
 

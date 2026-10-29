@@ -92,8 +92,10 @@ test("the accountant codes an electricity bill split across divisions and approv
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
   expect(within(panel).getByTitle("bill.pdf")).toHaveAttribute("src", "/api/v1/vouchers/9/attachments/4/");
 
-  await within(panel).findByRole("option", { name: "6100 Electricity" });
-  fireEvent.change(within(panel).getByLabelText("Account, line 1"), { target: { value: "61" } });
+  // The account is found by any part of its name, not only by its first characters.
+  fireEvent.change(within(panel).getByRole("combobox", { name: "Account, line 1" }), { target: { value: "elec" } });
+  fireEvent.mouseDown(await within(panel).findByRole("option", { name: "6100 Electricity" }));
+  expect(within(panel).getByRole("combobox", { name: "Account, line 1" })).toHaveValue("6100 Electricity");
   expect(within(panel).getByLabelText("Division, line 1")).toHaveValue("HO"); // the account's default
   fireEvent.click(within(panel).getByLabelText("Split across divisions"));
   const split = within(panel).getByRole("group", { name: "Split of line 1" });
@@ -147,4 +149,50 @@ test("returning sends the reason", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "Attach the meter reading" }) }),
     ),
   );
+});
+
+test("the first voucher in the queue opens by itself", async () => {
+  mockApi(api());
+  renderAt("/vouchers/review", <ReviewPage />);
+  expect(await screen.findByRole("region", { name: "Voucher WS261029001" })).toBeInTheDocument();
+});
+
+test("Approve saves the coding on the screen first", async () => {
+  const calls = mockApi(
+    api({
+      "PATCH /api/v1/vouchers/9/coding/": { body: { ...voucher, uncoded_lines: [] } },
+      "POST /api/v1/vouchers/9/approve/": { body: { ...voucher, status: "accountant_approved", can_act: false } },
+    }),
+  );
+  renderAt("/vouchers/review", <ReviewPage />);
+
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  fireEvent.change(within(panel).getByRole("combobox", { name: "Account, line 1" }), { target: { value: "6100" } });
+  fireEvent.mouseDown(await within(panel).findByRole("option", { name: "6100 Electricity" }));
+  expect(within(panel).getByText("Coding changed and not saved yet.")).toBeInTheDocument();
+  fireEvent.click(within(panel).getByRole("button", { name: "Approve" })); // without "Save coding"
+
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/approve/", expect.objectContaining({ method: "POST" })),
+  );
+  const order = calls.mock.calls.map(([url, init]) => `${init?.method ?? "GET"} ${String(url)}`);
+  expect(order.indexOf("PATCH /api/v1/vouchers/9/coding/")).toBeGreaterThan(-1);
+  expect(order.indexOf("PATCH /api/v1/vouchers/9/coding/")).toBeLessThan(order.indexOf("POST /api/v1/vouchers/9/approve/"));
+});
+
+test("if the coding cannot be saved, the voucher is not approved", async () => {
+  const calls = mockApi(
+    api({
+      "PATCH /api/v1/vouchers/9/coding/": { status: 400, body: { detail: "The split percentages must add up to 100." } },
+    }),
+  );
+  renderAt("/vouchers/review", <ReviewPage />);
+
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  fireEvent.change(within(panel).getByRole("combobox", { name: "Account, line 1" }), { target: { value: "elec" } });
+  fireEvent.mouseDown(await within(panel).findByRole("option", { name: "6100 Electricity" }));
+  fireEvent.click(within(panel).getByRole("button", { name: "Approve" }));
+
+  expect(await within(panel).findByText("The split percentages must add up to 100.")).toBeInTheDocument();
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/vouchers/9/approve/", expect.anything());
 });

@@ -1,21 +1,24 @@
 """Payment vouchers API (spec 4). Rules live in services.py."""
 
+from datetime import date
+
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounting.models import TaxCode
-from apps.core import approvals
+from apps.core import approvals, exports
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess, ReadForAllAreaWrite
 from apps.masters.models import CompanyAccount, Supplier
 from apps.masters.services import is_in_use
 
-from . import printing, services
+from . import printing, reports, services
 from .models import Voucher, VoucherAttachment, VoucherCancellation, VoucherType
 from .services import VoucherError
 
@@ -337,6 +340,10 @@ class VoucherListView(_Vouchers):
             rows = rows.filter(voucher_type__code=params["type"].upper())
         if params.get("division"):
             rows = rows.filter(division__code=params["division"].upper())
+        if _day(request, "from"):
+            rows = rows.filter(voucher_date__gte=_day(request, "from"))
+        if _day(request, "to"):
+            rows = rows.filter(voucher_date__lte=_day(request, "to"))
         if params.get("mine") in ("1", "true"):
             rows = rows.filter(created_by=request.user)
         text = (params.get("q") or "").strip()
@@ -346,6 +353,19 @@ class VoucherListView(_Vouchers):
                 | Q(payee__name__icontains=text)
                 | Q(lines__invoice_no__icontains=text)
             ).distinct()
+        fmt = _export_format(request)
+        if fmt:
+            keys = ("status", "type", "division", "from", "to", "q")
+            filters = [f"{k}: {params[k]}" for k in keys if params.get(k)]
+            return exports.response(
+                fmt,
+                title="Voucher list",
+                subtitle=", ".join(filters) or "All vouchers",
+                columns=reports.LIST_COLUMNS,
+                rows=reports.list_rows(rows[:5000]),
+                filename="vouchers",
+                user=request.user,
+            )
         waiting = services.waiting_levels(request.user)
         return Response([_summary(v, request.user, waiting) for v in rows[:500]])
 
@@ -708,6 +728,29 @@ class AmendmentListView(_Vouchers):
             .select_related("voucher_type", "division", "payee", "created_by", "parent")
             .order_by("-created_at", "-id")
         )
+        fmt = _export_format(request)
+        if fmt:
+            return exports.response(
+                fmt,
+                title="Amendments list",
+                subtitle="Revisions of approved vouchers",
+                columns=AMENDMENT_COLUMNS,
+                rows=[
+                    {
+                        "number": v.number,
+                        "original": v.parent.number,
+                        "voucher_date": v.voucher_date,
+                        "payee": v.payee.name if v.payee else "",
+                        "reason": v.amendment_reason,
+                        "was": f"{v.parent.total_amount:.2f}",
+                        "total_amount": f"{v.total_amount:.2f}",
+                        "status": v.get_status_display(),
+                    }
+                    for v in rows[:5000]
+                ],
+                filename="amendments",
+                user=request.user,
+            )
         waiting = services.waiting_levels(request.user)
         result = []
         for v in rows[:1000]:
@@ -816,3 +859,94 @@ def _payments(v: Voucher, user) -> dict:
         "remaining": f"{v.total_amount - paid:.2f}",
         "payments": rows,
     }
+
+
+# --- Lists and reports (P1-08) ----------------------------------------------------------
+
+AMENDMENT_COLUMNS = [
+    exports.Column("number", "Amendment", width=1.5),
+    exports.Column("original", "Amends", width=1.3),
+    exports.Column("voucher_date", "Date", "date"),
+    exports.Column("payee", "Payee", width=2),
+    exports.Column("reason", "Reason", width=2.5),
+    exports.Column("status", "Status", width=1.2),
+    exports.Column("was", "Was (LKR)", "money"),
+    exports.Column("total_amount", "Now (LKR)", "money"),
+]
+
+
+def _export_format(request) -> str | None:
+    """?export=xlsx or ?export=pdf asks for a download instead of the rows."""
+    fmt = (request.query_params.get("export") or "").lower()
+    return fmt if fmt in exports.FORMATS else None
+
+
+def _day(request, name):
+    value = request.query_params.get(name) or ""
+    try:
+        return date.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
+class ApprovedReportView(_Vouchers):
+    """The Approved List: vouchers approved by the Director in a period."""
+
+    def get(self, request):
+        start, end = _day(request, "from"), _day(request, "to")
+        division = request.query_params.get("division") or ""
+        rows = reports.approved(request.user, start=start, end=end, division=division)
+        fmt = _export_format(request)
+        if fmt:
+            period = f"{start or 'start'} to {end or 'today'}"
+            return exports.response(
+                fmt,
+                title="Approved vouchers",
+                subtitle=f"Approved by the Director, {period}"
+                + (f", division {division.upper()}" if division else ""),
+                columns=reports.APPROVED_COLUMNS,
+                rows=rows,
+                filename="approved-vouchers",
+                user=request.user,
+            )
+        return Response(rows)
+
+
+class PendingReportView(_Vouchers):
+    """Vouchers waiting for approval, by approver and age."""
+
+    def get(self, request):
+        rows = reports.pending(request.user)
+        fmt = _export_format(request)
+        if fmt:
+            return exports.response(
+                fmt,
+                title="Vouchers pending approval",
+                subtitle=f"By approver and age, as at {timezone.localtime():%d/%m/%Y %H:%M}",
+                columns=reports.PENDING_COLUMNS,
+                rows=rows,
+                filename="pending-vouchers",
+                user=request.user,
+            )
+        return Response({"rows": rows, "summary": reports.pending_summary(rows)})
+
+
+class HistoryView(_Vouchers):
+    """The full approval history of one voucher (cancellation requests included)."""
+
+    def get(self, request, pk):
+        voucher = _get(request.user, pk, deleted_too=True)
+        rows = reports.history(voucher)
+        fmt = _export_format(request)
+        if fmt:
+            return exports.response(
+                fmt,
+                title=f"Approval history of voucher {voucher.number}",
+                subtitle=f"{voucher.voucher_type.name}, {voucher.get_status_display()}, "
+                f"LKR {voucher.total_amount:,.2f}",
+                columns=reports.HISTORY_COLUMNS,
+                rows=rows,
+                filename=f"history-{voucher.number}",
+                user=request.user,
+            )
+        return Response(rows)

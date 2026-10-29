@@ -8,6 +8,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import exports
 from apps.core.permissions import AreaAccess
 from apps.masters import banking
 from apps.masters.models import CompanyAccount
@@ -39,6 +40,19 @@ def payment_row(p: SupplierPayment) -> dict:
         "created_by": p.created_by.full_name,
         "created_at": p.created_at,
     }
+
+
+PAYMENT_COLUMNS = [
+    exports.Column("number", "Payment", width=1.2),
+    exports.Column("payment_date", "Date", "date"),
+    exports.Column("voucher", "Voucher", width=1.3),
+    exports.Column("payee", "Payee", width=2),
+    exports.Column("account", "Paid from", width=1),
+    exports.Column("method", "Method", width=1),
+    exports.Column("reference", "Reference", width=1.2),
+    exports.Column("entry", "Journal entry", width=1.1),
+    exports.Column("amount", "Amount (LKR)", "money"),
+]
 
 
 class _Payments(APIView):
@@ -122,6 +136,35 @@ class PaymentListView(_Payments):
             rows = rows.filter(payment_date__gte=params["from"])
         if params.get("to"):
             rows = rows.filter(payment_date__lte=params["to"])
+        if params.get("method"):
+            rows = rows.filter(method=params["method"])
+        if params.get("account"):
+            rows = rows.filter(account_id=params["account"])
+        fmt = (params.get("export") or "").lower()
+        if fmt in exports.FORMATS:
+            period = f"{params.get('from') or 'start'} to {params.get('to') or 'today'}"
+            return exports.response(
+                fmt,
+                title="Payments made",
+                subtitle=f"Supplier payments, {period}",
+                columns=PAYMENT_COLUMNS,
+                rows=[
+                    {
+                        "number": p.number,
+                        "payment_date": p.payment_date,
+                        "voucher": p.voucher.number,
+                        "payee": p.voucher.payee.name if p.voucher.payee else "",
+                        "account": p.account.code,
+                        "method": p.get_method_display(),
+                        "reference": p.reference,
+                        "entry": p.journal_entry.number,
+                        "amount": f"{p.amount:.2f}",
+                    }
+                    for p in rows[:5000]
+                ],
+                filename="payments",
+                user=request.user,
+            )
         return Response([payment_row(p) for p in rows[:1000]])
 
     def post(self, request):

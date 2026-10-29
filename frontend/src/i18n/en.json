@@ -1230,5 +1230,38 @@
     "savedText": "Payment {{number}} of LKR {{amount}} against voucher {{voucher}} is saved, with journal entry {{entry}}.",
     "print": "Print payment voucher",
     "ofVoucher": "Payments"
+  },
+  "exports": {
+    "excel": "Excel",
+    "pdf": "PDF",
+    "of": "Download {{what}}",
+    "from": "From",
+    "to": "To"
+  },
+  "voucherReports": {
+    "title": "Voucher reports",
+    "approved": "Approved list",
+    "pending": "Pending by approver and age",
+    "history": "Approval history",
+    "approvedHelp": "Vouchers approved by the Director, by the date of that approval, with what has been paid.",
+    "pendingHelp": "Vouchers waiting for approval: at which level, who can approve them, and how long since anything happened to them. Oldest first.",
+    "none": "No vouchers.",
+    "nonePending": "Nothing is waiting for approval.",
+    "approvedOn": "Approved",
+    "approvedBy": "Approved by",
+    "summary": "Waiting, by approver and age",
+    "waitingFor": "Waiting for",
+    "count": "Vouchers",
+    "approvers": "Who can approve",
+    "since": "Waiting since",
+    "days": "Days",
+    "voucherNumber": "Voucher number",
+    "show": "Show history",
+    "notFound": "No voucher with that number that you can see.",
+    "when": "When",
+    "level": "Level",
+    "action": "Action",
+    "by": "By",
+    "reason": "Reason / comment"
   }
 }

@@ -1,5 +1,5 @@
-# Development image: runs the Vite dev server. A production build served by Nginx
-# is added with the hosting task (P1-10).
+# Development image: runs the Vite dev server. The production build, served by Nginx,
+# is made by deploy/web/Dockerfile (P1-10).
 FROM node:22-alpine
 
 WORKDIR /app

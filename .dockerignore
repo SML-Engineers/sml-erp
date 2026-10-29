@@ -1,0 +1,10 @@
+# Build context of the production web image (deploy/web/Dockerfile): only the frontend
+# and the web server files are needed.
+.git
+.github
+backend
+docs
+**/node_modules
+**/dist
+.env
+.env.*

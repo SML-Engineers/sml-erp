@@ -199,7 +199,9 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_ABSOLUTE_HOURS = env.int("SESSION_ABSOLUTE_HOURS", default=12)
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
-X_FRAME_OPTIONS = "DENY"
+# SAMEORIGIN: the ERP shows its own scanned PDFs in frames (review page, viewer); other
+# sites still cannot frame it (clickjacking).
+X_FRAME_OPTIONS = "SAMEORIGIN"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

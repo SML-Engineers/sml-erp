@@ -490,10 +490,24 @@ Status: `[ ]` to do · `[x]` done
 
 ## E. Release
 
-- [ ] **P1-10 Hosting setup** (spec 2)
+- [x] **P1-10 Hosting setup** (spec 2)
   Scripts and documentation for the Hostinger Ubuntu VPS: Docker, Nginx, Let's Encrypt,
   firewall (HTTPS + key-only SSH), test and production environments, deployment from GitHub.
   Server credentials are entered by the owner, never committed.
+  - Done: docs/hosting.md (step by step, plain language) with deploy/scripts/ server-setup.sh
+    (updates, Docker, firewall 22/80/443, key-only SSH, fail2ban, deploy user, swap),
+    make-env.sh (all secrets generated on the server, never overwritten), deploy.sh (from
+    GitHub: build, migrate, restart, health check) and get-certificate.sh (Let's Encrypt;
+    renewal by the certbot service). deploy/docker-compose.prod.yml runs every service with
+    restarts, health checks and size-limited logs; only the web container (Nginx with the
+    built React app, HTTPS, HSTS and security headers) is reachable from outside.
+  - GitHub Actions → Deploy (by hand, test or production) deploys only code on main that
+    passed every check; the server's address and key are environment secrets set by the owner.
+  - CI starts the production stack on every pull request and checks HTTPS, the redirect,
+    the security headers and that debug pages are off.
+  - Fixed on the way: Django sent X-Frame-Options DENY, so browsers would not show scanned
+    PDFs in the ERP's own frames (review page, side panel, viewer); now SAMEORIGIN.
+  - Still to do with the owner: buy the domain, create the two VPS and follow the guide.
 
 - [ ] **P1-11 Backups**
   Nightly encrypted database and file backups, 30-day retention, copied off the VPS;

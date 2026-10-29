@@ -159,14 +159,15 @@ test("resources pages through the files, zooms and rotates", async () => {
 });
 
 test("the Director changes the amount; the voucher goes back to the Accountant", async () => {
+  let latest: VoucherDetail = detail;
   const calls = mockApi({
-    "GET /api/v1/vouchers/5/": { body: detail },
+    "GET /api/v1/vouchers/5/": () => ({ body: latest }),
     "GET /api/v1/voucher-types/": { body: [cheque] },
     "GET /api/v1/taxes/": { body: { components: [], codes: [] } },
     "GET /api/v1/vouchers/transfer-accounts/": { body: [] },
     "GET /api/v1/vouchers/payee-balance/3/": { body: { waiting_approval: "0.00", approved_unpaid: "0.00", outstanding: "0.00" } },
-    "PATCH /api/v1/vouchers/5/revise/": {
-      body: {
+    "PATCH /api/v1/vouchers/5/revise/": () => {
+      latest = {
         ...detail,
         status: "submitted",
         total_amount: "1200.00",
@@ -177,7 +178,8 @@ test("the Director changes the amount; the voucher goes back to the Accountant",
             reason: "Changed: Line 1 amount: 1,000.00 → 1,200.00; Total: 1,000.00 → 1,200.00",
           },
         ],
-      },
+      };
+      return { body: latest };
     },
   });
   renderAt("/vouchers/5?edit=1", <VoucherPage me={director} />, "/vouchers/:id");

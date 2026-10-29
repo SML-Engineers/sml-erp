@@ -414,6 +414,46 @@ def reject(user: User, document_type: str, document_id: int, reason: str):
     )
 
 
+def send_down(user: User, document_type: str, document_id: int, reason: str):
+    """A later approver changed the document (e.g. the Director changed a voucher's amount):
+    it goes back to the first approval level, which approves it again before it comes up
+    the route once more. The reason says what changed."""
+    reason = (reason or "").strip()
+    if not reason:
+        raise ApprovalError("Say what was changed.")
+    with audit_context("document_sent_down", reason), transaction.atomic():
+        state = _acting(user, document_type, document_id)
+        first = state.route[0]["level"]
+        if state.current_level == first:
+            raise ApprovalError("The document is already at its first approval level.")
+        _log(state, user, state.current_level, ApprovalLog.Action.SEND_DOWN, reason)
+        state.current_level = first
+        state.save()
+        _tell_approvers(state)
+        return state
+
+
+def withdraw(user: User, document_type: str, document_id: int, reason: str):
+    """Take the document out of approval for good, e.g. a voucher deleted. The document's
+    module decides who may do this; the engine records it with the reason."""
+    reason = (reason or "").strip()
+    if not reason:
+        raise ApprovalError("Give a reason for withdrawing the document.")
+    with audit_context("document_withdrawn", reason), transaction.atomic():
+        state = (
+            ApprovalState.objects.select_for_update()
+            .filter(document_type=document_type, document_id=document_id)
+            .first()
+        )
+        if state is None or state.status == ApprovalState.Status.WITHDRAWN:
+            return state
+        _log(state, user, state.current_level or SUBMIT_LEVEL, ApprovalLog.Action.WITHDRAW, reason)
+        state.status = ApprovalState.Status.WITHDRAWN
+        state.current_level = None
+        state.save()
+        return state
+
+
 # --- Notifications (P0-18) ------------------------------------------------------------
 
 

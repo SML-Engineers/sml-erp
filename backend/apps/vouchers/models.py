@@ -102,6 +102,17 @@ class Voucher(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
+    # A deleted voucher keeps its row, number and history (P1-04b); these say who and why.
+    deleted_at = models.DateTimeField(null=True, blank=True, editable=False)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+        editable=False,
+    )
+    delete_reason = models.CharField(max_length=500, blank=True, editable=False)
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -109,6 +120,11 @@ class Voucher(models.Model):
             models.CheckConstraint(
                 condition=models.Q(status="draft") | models.Q(total_amount__gt=0),
                 name="vouchers_voucher_total_positive",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(status="deleted")
+                | models.Q(deleted_at__isnull=False, deleted_by__isnull=False),
+                name="vouchers_voucher_deleted_who",
             ),
         ]
 
@@ -196,3 +212,26 @@ class VoucherLineSplit(models.Model):
 
     def __str__(self):
         return f"{self.line_id} {self.division_id} {self.amount}"
+
+
+class VoucherPrint(models.Model):
+    """Each time the payment voucher is printed (spec 4.4). The first print is the original;
+    later ones are marked "Copy". Insert-only."""
+
+    class Paper(models.TextChoices):
+        A4 = "A4", "A4"
+        A5 = "A5", "A5"
+
+    voucher = models.ForeignKey(Voucher, on_delete=models.PROTECT, related_name="prints")
+    printed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    printed_at = models.DateTimeField(default=timezone.now)
+    paper = models.CharField(max_length=2, choices=Paper.choices, default=Paper.A4)
+    is_copy = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["printed_at", "id"]
+
+    def __str__(self):
+        return f"{self.voucher_id} {self.printed_at:%Y-%m-%d %H:%M}"

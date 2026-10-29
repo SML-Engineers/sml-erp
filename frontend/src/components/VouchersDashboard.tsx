@@ -23,7 +23,11 @@ function share(value: string, largest: string): number {
 export default function VouchersDashboard({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
   const [division, setDivision] = useState("");
-  const data = useQuery({ queryKey: [...vouchersKey, "dashboard", division], queryFn: () => voucherDashboard(division) });
+  const data = useQuery({
+    queryKey: [...vouchersKey, "dashboard", division],
+    queryFn: () => voucherDashboard(division),
+    placeholderData: (previous) => previous, // keep the board while another division loads
+  });
   const all = useQuery({ queryKey: [...vouchersKey, "dashboard", ""], queryFn: () => voucherDashboard("") });
   const d = data.data;
   if (!d) return null;

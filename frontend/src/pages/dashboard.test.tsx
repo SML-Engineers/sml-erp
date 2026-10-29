@@ -86,7 +86,7 @@ test("choosing a division shows its figures and keeps it in the links", async ()
   const picker = await screen.findByRole("group", { name: "Division" });
   fireEvent.click(within(picker).getByRole("button", { name: "IM" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/dashboard/?division=IM", expect.anything()));
-  const board = screen.getByRole("region", { name: "Vouchers" });
+  const board = await screen.findByRole("region", { name: "Vouchers" });
   expect(await within(board).findByRole("link", { name: /Waiting for my approval\s*1/ })).toBeInTheDocument();
   expect(within(board).getByRole("link", { name: /Waiting for approval/ })).toHaveAttribute(
     "href",

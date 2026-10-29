@@ -97,14 +97,16 @@ test("the Accountant requests a cancellation with a reason", async () => {
 });
 
 test("the Director decides on the voucher's page; rejecting needs a comment", async () => {
+  let latest: VoucherDetail = detail;
   const calls = mockApi({
-    "GET /api/v1/vouchers/1/": { body: detail },
-    "POST /api/v1/vouchers/cancellations/3/approve/": {
-      body: {
+    "GET /api/v1/vouchers/1/": () => ({ body: latest }),
+    "POST /api/v1/vouchers/cancellations/3/approve/": () => {
+      latest = {
         ...detail,
         status: "cancelled",
         cancellation: { ...pending, status: "approved", can_decide: false, decided_by: "Mewantha", decided_at: "2026-10-29T10:00:00Z" },
-      },
+      };
+      return { body: latest };
     },
   });
   renderAt("/vouchers/1", <VoucherPage me={director} />, "/vouchers/:id");
@@ -138,5 +140,7 @@ test("the requests list shows those waiting, with a link to decide", async () =>
   const table = await screen.findByRole("table", { name: "Cancellation requests" });
   expect(within(table).getByRole("link", { name: "Decide" })).toHaveAttribute("href", "/vouchers/1");
   fireEvent.click(screen.getByLabelText("Only those waiting for the Director"));
-  expect(await within(screen.getByRole("table", { name: "Cancellation requests" })).findByText("Mewantha: Pay it")).toBeInTheDocument();
+  await waitFor(() =>
+    expect(within(screen.getByRole("table", { name: "Cancellation requests" })).getByText("Mewantha: Pay it")).toBeInTheDocument(),
+  );
 });

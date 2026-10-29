@@ -205,6 +205,41 @@ jobs:
           compose="docker compose -f deploy/docker-compose.prod.yml --env-file $ENV_FILE"
           $compose ps worker --status running --quiet | grep -q .
           $compose ps scheduler --status running --quiet | grep -q .
+      - name: Backup, wipe everything, restore (round trip)
+        env:
+          APP_DIR: ${{ github.workspace }}
+          BACKUP_ENV: ${{ runner.temp }}/backup.env
+          BACKUP_WORK: ${{ runner.temp }}/backups
+        run: |
+          compose="docker compose -f deploy/docker-compose.prod.yml --env-file $ENV_FILE"
+          django() { $compose exec -T backend python manage.py shell -c "$1"; }
+          wait_up() {
+            for i in $(seq 1 60); do curl -fsSk https://localhost/api/v1/health/ >/dev/null && return 0; sleep 5; done
+            return 1
+          }
+          deploy/scripts/make-backup-env.sh "${{ runner.temp }}/backup-repository"
+          django "
+          from django.core.files.base import ContentFile
+          from django.core.files.storage import default_storage
+          from apps.core.models import User
+          User.objects.create_user('restore.check@example.com', 'Restore Check', 'Restore-Check-2026')
+          default_storage.save('checks/restore.txt', ContentFile(b'scanned invoice'))
+          "
+          CHECK=1 deploy/scripts/backup.sh
+          $compose down -v                 # every volume deleted: database and files gone
+          $compose up -d && wait_up
+          django "
+          from apps.core.models import User
+          assert not User.objects.filter(email='restore.check@example.com').exists()
+          "
+          RESTORE_CONFIRMED=yes deploy/scripts/restore.sh latest
+          django "
+          from django.core.files.storage import default_storage
+          from apps.core.models import User
+          assert User.objects.filter(email='restore.check@example.com').exists(), 'user not restored'
+          assert default_storage.open('checks/restore.txt').read() == b'scanned invoice', 'file not restored'
+          print('Restore check: database and files are back.')
+          "
       - name: Show logs on failure
         if: failure()
         run: |

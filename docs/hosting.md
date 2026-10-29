@@ -187,7 +187,7 @@ $ curl -k https://localhost/api/v1/health/   # the version and the database stat
 ```
 
 The data (database, scanned files, certificates) is in Docker volumes and survives updates
-and restarts. Backups are set up in P1-11.
+and restarts. Nightly off-site backups and restoring: [backups.md](backups.md).
 
 ## How the server is protected
 

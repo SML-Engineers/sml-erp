@@ -509,9 +509,19 @@ Status: `[ ]` to do · `[x]` done
     PDFs in the ERP's own frames (review page, side panel, viewer); now SAMEORIGIN.
   - Still to do with the owner: buy the domain, create the two VPS and follow the guide.
 
-- [ ] **P1-11 Backups**
+- [x] **P1-11 Backups**
   Nightly encrypted database and file backups, 30-day retention, copied off the VPS;
   documented restore procedure, tested once on the test server.
+  - Done: docs/backups.md. backup.sh (nightly at 01:30 by a systemd timer from
+    server-setup.sh): pg_dump, every stored file mirrored to a plain folder (new commands
+    export_files / import_files, so backups do not depend on SeaweedFS's own format) and the
+    environment file, sent encrypted with restic to S3-compatible storage outside Hostinger
+    (Backblaze B2 or Cloudflare R2 recommended); 30 daily + 12 month-end copies; weekly check;
+    optional healthchecks.io alert. restore.sh lists, fetches and restores (asks to type
+    RESTORE). make-backup-env.sh generates the backup password.
+  - CI does a full round trip on every pull request: backup, delete every volume, restore,
+    and check that a user and a stored file are back.
+  - Still to do with the owner: choose the storage, and the first restore on the test server.
 
 - [ ] **P1-12 User acceptance testing and go-live**
   Load real masters (chart of accounts, suppliers, bank accounts, users). Clerk, Accountant,

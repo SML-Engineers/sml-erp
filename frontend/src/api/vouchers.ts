@@ -152,7 +152,7 @@ export interface VoucherInput {
 
 export const vouchersKey = ["vouchers"];
 
-export function listVouchers(filter: { status?: string; type?: string; q?: string }) {
+export function listVouchers(filter: { status?: string; type?: string; q?: string; division?: string; from?: string; to?: string }) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filter)) if (value) params.set(key, value);
   const query = params.toString();
@@ -226,3 +226,69 @@ export const decideCancellation = (id: number, decision: "approve" | "reject", r
   apiSend<VoucherDetail>("POST", `/vouchers/cancellations/${id}/${decision}/`, { reason });
 export const listCancellations = (pendingOnly: boolean) =>
   apiGet<CancellationRow[]>(`/vouchers/cancellations/${pendingOnly ? "?pending=1" : ""}`);
+
+// --- Lists and reports (P1-08) -----------------------------------------------------------
+
+/** A list or report as an Excel or PDF download (the server builds it from the same rows). */
+export function exportUrl(path: string, params: Record<string, string>, format: "xlsx" | "pdf") {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
+  query.set("export", format);
+  return `${API_BASE}${path}?${query.toString()}`;
+}
+
+export interface ApprovedRow {
+  id: number;
+  number: string;
+  voucher_date: string;
+  type: string;
+  division: string;
+  payee: string;
+  approved_at: string | null;
+  approved_by: string;
+  status: string;
+  status_code: VoucherStatus;
+  total_amount: string;
+  paid: string;
+}
+
+export interface PendingRow {
+  id: number;
+  number: string;
+  type: string;
+  division: string;
+  payee: string;
+  level: number;
+  waiting_for: string;
+  approvers: string;
+  since: string;
+  days: number;
+  band: string;
+  total_amount: string;
+}
+
+export interface PendingReport {
+  rows: PendingRow[];
+  summary: { waiting_for: string; count: number; bands: Record<string, number> }[];
+}
+
+export interface HistoryRow {
+  acted_at: string;
+  round: number;
+  level: number;
+  action: string;
+  user: string;
+  reason: string;
+}
+
+const query = (params: Record<string, string>) => {
+  const q = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) if (value) q.set(key, value);
+  const text = q.toString();
+  return text ? `?${text}` : "";
+};
+
+export const approvedReport = (params: { from: string; to: string; division: string }) =>
+  apiGet<ApprovedRow[]>(`/vouchers/reports/approved/${query(params)}`);
+export const pendingReport = () => apiGet<PendingReport>("/vouchers/reports/pending/");
+export const voucherHistory = (id: number) => apiGet<HistoryRow[]>(`/vouchers/${id}/history/`);

@@ -4,6 +4,7 @@ import { Link } from "react-router";
 
 import { listAmendments, vouchersKey } from "../api/vouchers";
 import DataTable from "../components/DataTable";
+import ExportLinks from "../components/ExportLinks";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 
@@ -19,6 +20,7 @@ export default function AmendmentsPage() {
       </p>
       <h1>{t("amendments.title")}</h1>
       <p className="muted">{t("amendments.help")}</p>
+      <ExportLinks path="/vouchers/amendments/" label={t("amendments.title")} />
       {rows.data && (
         <DataTable
           label={t("amendments.title")}

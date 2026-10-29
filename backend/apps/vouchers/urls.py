@@ -23,6 +23,16 @@ urlpatterns += [
     path("vouchers/deleted/", v.DeletedListView.as_view(), name="voucher-deleted"),
     path("vouchers/amendments/", v.AmendmentListView.as_view(), name="voucher-amendments"),
     path(
+        "vouchers/reports/approved/",
+        v.ApprovedReportView.as_view(),
+        name="voucher-report-approved",
+    ),
+    path(
+        "vouchers/reports/pending/",
+        v.PendingReportView.as_view(),
+        name="voucher-report-pending",
+    ),
+    path(
         "vouchers/cancellations/",
         v.CancellationListView.as_view(),
         name="voucher-cancellations",
@@ -63,6 +73,7 @@ urlpatterns += [
     path("vouchers/<int:pk>/submit/", v.SubmitView.as_view(), name="voucher-submit"),
     path("vouchers/<int:pk>/print/", v.PrintView.as_view(), name="voucher-print"),
     path("vouchers/<int:pk>/amend/", v.AmendView.as_view(), name="voucher-amend"),
+    path("vouchers/<int:pk>/history/", v.HistoryView.as_view(), name="voucher-history"),
     path("vouchers/<int:pk>/cancel/", v.CancelRequestView.as_view(), name="voucher-cancel"),
     path("vouchers/<int:pk>/delete/", v.DeleteView.as_view(), name="voucher-delete"),
     path("vouchers/<int:pk>/revise/", v.ReviseView.as_view(), name="voucher-revise"),

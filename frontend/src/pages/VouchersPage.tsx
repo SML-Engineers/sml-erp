@@ -7,6 +7,7 @@ import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { listVoucherTypes, listVouchers, voucherTypesKey, vouchersKey, type VoucherStatus } from "../api/vouchers";
 import DataTable from "../components/DataTable";
+import ExportLinks from "../components/ExportLinks";
 import VoucherActions from "../components/VoucherActions";
 
 const STATUSES: VoucherStatus[] = [
@@ -28,7 +29,10 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
   const [status, setStatus] = useState("");
   const [type, setType] = useState("");
   const [q, setQ] = useState("");
-  const vouchers = useQuery({ queryKey: [...vouchersKey, status, type, q], queryFn: () => listVouchers({ status, type, q }) });
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const filter = { status, type, q, from, to };
+  const vouchers = useQuery({ queryKey: [...vouchersKey, filter], queryFn: () => listVouchers(filter) });
   const types = useQuery({ queryKey: [...voucherTypesKey, false], queryFn: () => listVoucherTypes(false) });
   const canEnter = can(me.access, "vouchers", "enter");
 
@@ -63,6 +67,7 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
             ))}
           </select>
         </label>
+        <Link to="/vouchers/reports">{t("voucherReports.title")}</Link>
         <Link to="/vouchers/amendments">{t("amendments.title")}</Link>
         <Link to="/vouchers/cancellations">{t("cancellations.title")}</Link>
         <Link to="/vouchers/deleted">{t("deletedVouchers.title")}</Link>
@@ -70,6 +75,15 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
           {t("vouchers.search")}
           <input value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
+        <label>
+          {t("exports.from")}
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        </label>
+        <label>
+          {t("exports.to")}
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </label>
+        <ExportLinks path="/vouchers/" params={filter} label={t("vouchers.title")} />
       </div>
       {vouchers.data && (
         <DataTable

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
@@ -6,6 +7,7 @@ import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { listPayments, listToPay, paymentsKey } from "../api/payments";
 import DataTable from "../components/DataTable";
+import ExportLinks from "../components/ExportLinks";
 
 /** Supplier payments (spec 4.4, Cashier): vouchers approved by the Director and not yet
  * fully paid, and the payments made. A payment always starts from a voucher. */
@@ -13,7 +15,9 @@ export default function PaymentsPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
   const canPay = me.access.actions.includes("record_payment");
   const toPay = useQuery({ queryKey: [...paymentsKey, "to-pay"], queryFn: listToPay });
-  const made = useQuery({ queryKey: [...paymentsKey, "made"], queryFn: listPayments });
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const made = useQuery({ queryKey: [...paymentsKey, "made", from, to], queryFn: () => listPayments({ from, to }) });
   return (
     <main className="page">
       <h1>{t("payments.title")}</h1>
@@ -63,6 +67,17 @@ export default function PaymentsPage({ me }: { me: CurrentUser }) {
       {can(me.access, "payments", "view") && (
         <section className="panel" aria-label={t("payments.made")}>
           <h2>{t("payments.made")}</h2>
+          <div className="toolbar">
+            <label>
+              {t("exports.from")}
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            </label>
+            <label>
+              {t("exports.to")}
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            </label>
+            <ExportLinks path="/payments/" params={{ from, to }} label={t("payments.made")} />
+          </div>
           {made.data && (
             <DataTable
               label={t("payments.made")}

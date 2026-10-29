@@ -63,7 +63,12 @@ export const paymentsKey = ["payments"];
 
 export const listToPay = () => apiGet<ToPayRow[]>("/payments/to-pay/");
 export const listPayAccounts = () => apiGet<PayAccount[]>("/payments/accounts/");
-export const listPayments = () => apiGet<Payment[]>("/payments/");
+export function listPayments(filter: { from?: string; to?: string } = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
+  const text = query.toString();
+  return apiGet<Payment[]>(`/payments/${text ? `?${text}` : ""}`);
+}
 export const recordPayment = (input: PaymentInput) => apiSend<Payment>("POST", "/payments/", input);
 
 /** Which accounts each method pays from: cash from cash boxes, cheques from current

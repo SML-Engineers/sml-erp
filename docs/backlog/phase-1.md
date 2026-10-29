@@ -448,9 +448,18 @@ Status: `[ ]` to do · `[x]` done
   - Not yet: cancelling a payment (a reversing entry and spoiled cheque) and foreign-currency
     payments.
 
-- [ ] **P1-08 Lists and reports** (spec 4.4)
+- [x] **P1-08 Lists and reports** (spec 4.4)
   Voucher List, Approved List, Amendments List; vouchers pending by approver and age;
   payments by period; approval history of any voucher; export to Excel and PDF.
+  - Done. Vouchers → Voucher reports: Approved list (by the date of the Director's approval,
+    division, with what has been paid), Pending by approver and age (who can approve, waiting
+    since the last action, days and age bands 0–2 / 3–7 / 8–14 / 15+, with a summary), and the
+    approval history of any voucher by its number (cancellation requests included).
+  - The Voucher List gained date filters; payments made can be filtered by period.
+  - Excel and PDF downloads on the Voucher List, Approved list, Pending, Amendments, history
+    and payments, built on the server from the same rows as the screen (shared helper
+    apps/core/exports.py: money as real numbers in Excel, totals, landscape PDF with page
+    numbers and who printed it).
 
 - [ ] **P1-08b Vouchers dashboard** (spec 7A, owner 29 Oct 2026)
   Home page tiles for the user's role and divisions: vouchers waiting for me, waiting by

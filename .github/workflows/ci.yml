@@ -193,7 +193,7 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/vouchers)
           test "$code" = "301"
           curl -fsSk https://localhost/vouchers/123 | grep -q 'id="root"'
-          headers=$(curl -fsSkI https://localhost/api/v1/health/)
+          headers=$(curl -fsSk -D - -o /dev/null https://localhost/api/v1/health/)
           echo "$headers"
           echo "$headers" | grep -qi '^strict-transport-security:'
           echo "$headers" | grep -qi '^content-security-policy:'

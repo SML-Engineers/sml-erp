@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
+import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { getHealth } from "../api/health";
+import VouchersDashboard from "../components/VouchersDashboard";
 
 /** The dashboard. Each module adds its summary tiles here as it is built. */
 export default function HomePage({ user }: { user: CurrentUser }) {
@@ -24,6 +26,7 @@ export default function HomePage({ user }: { user: CurrentUser }) {
           <p className="muted">{t("home.version", { version: health.data.version })}</p>
         )}
       </section>
+      {can(user.access, "vouchers", "view") && <VouchersDashboard me={user} />}
     </main>
   );
 }

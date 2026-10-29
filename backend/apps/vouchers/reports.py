@@ -137,18 +137,20 @@ def _band(days: int) -> str:
     return AGE_BANDS[-1][1]
 
 
-def pending(user: User) -> list[dict]:
+def pending(user: User, *, division: str = "", level: int | None = None) -> list[dict]:
     """Vouchers waiting for approval: at which level, who can approve, since when (the last
-    action on the voucher) and how long, oldest first."""
-    visible = {
-        v.pk: v
-        for v in services.visible(user).select_related(
-            "voucher_type", "division", "payee", "transfer_to"
-        )
-    }
+    action on the voucher) and how long, oldest first. Optionally one division or level."""
+    vouchers = services.visible(user).select_related(
+        "voucher_type", "division", "payee", "transfer_to"
+    )
+    if division:
+        vouchers = vouchers.filter(division__code=division.upper())
+    visible = {v.pk: v for v in vouchers}
     states = ApprovalState.objects.filter(
         document_type=DOC, status=ApprovalState.Status.IN_PROGRESS, document_id__in=visible
     )
+    if level is not None:
+        states = states.filter(current_level=level)
     now = timezone.now()
     rows = []
     for state in states:

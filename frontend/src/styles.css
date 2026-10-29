@@ -1181,3 +1181,68 @@ legend {
   gap: 6px;
   align-items: center;
 }
+
+/* --- Dashboard (P1-08b) --- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.tile:hover {
+  border-color: var(--color-primary);
+}
+
+.tile.attention {
+  border-left: 4px solid var(--color-accent);
+}
+
+.tile-label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.tile-figure {
+  font-size: 1.5rem;
+  color: var(--color-primary);
+}
+
+.bars td {
+  min-width: 9rem;
+}
+
+.bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.bar {
+  display: inline-block;
+  height: 10px;
+  max-width: 60%;
+  border-radius: 3px;
+}
+
+.bar.pending {
+  background: #f0a35e;
+}
+
+.bar.unpaid {
+  background: var(--color-primary);
+}

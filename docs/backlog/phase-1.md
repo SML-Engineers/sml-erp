@@ -461,12 +461,21 @@ Status: `[ ]` to do · `[x]` done
     apps/core/exports.py: money as real numbers in Excel, totals, landscape PDF with page
     numbers and who printed it).
 
-- [ ] **P1-08b Vouchers dashboard** (spec 7A, owner 29 Oct 2026)
+- [x] **P1-08b Vouchers dashboard** (spec 7A, owner 29 Oct 2026)
   Home page tiles for the user's role and divisions: vouchers waiting for me, waiting by
   level and age, approved and unpaid (total), paid this month, by division. Each tile and
   chart opens the filtered list behind it, and each row opens the voucher.
   - Figures match the lists they open (same filters, same totals).
   - A user only sees vouchers of their divisions.
+  - Done. On the home page for everyone who can see vouchers: waiting for my approval,
+    returned to me, my drafts, waiting for approval (all levels), approved and not yet paid
+    (amount left and approved total), paid this month; waiting by level and age band; by
+    division (bars for waiting and unpaid amounts, paid this month); the five waiting longest.
+    A division switch shows one division's figures.
+  - Each figure links to its list with the same filters (voucher list, pending report with
+    division and level, Cashier's list and payments made with division and period); the
+    server works the figures out with the same rules as those lists, and tests check that
+    they agree.
 
 - [ ] **P1-09 Reminders**
   Daily reminder to approvers for vouchers waiting longer than a configurable number of days.

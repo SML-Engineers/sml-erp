@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
@@ -26,12 +26,14 @@ const STATUSES: VoucherStatus[] = [
 /** Payment vouchers: the list (spec 4.4). The Clerk sees their own, approvers all. */
 export default function VouchersPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
-  const [status, setStatus] = useState("");
+  const [search] = useSearchParams();
+  const [status, setStatus] = useState(search.get("status") ?? "");
+  const [division, setDivision] = useState(search.get("division") ?? "");
   const [type, setType] = useState("");
   const [q, setQ] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const filter = { status, type, q, from, to };
+  const [from, setFrom] = useState(search.get("from") ?? "");
+  const [to, setTo] = useState(search.get("to") ?? "");
+  const filter = { status, type, q, from, to, division };
   const vouchers = useQuery({ queryKey: [...vouchersKey, filter], queryFn: () => listVouchers(filter) });
   const types = useQuery({ queryKey: [...voucherTypesKey, false], queryFn: () => listVoucherTypes(false) });
   const canEnter = can(me.access, "vouchers", "enter");
@@ -49,6 +51,7 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
           {t("vouchers.status")}
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="">{t("vouchers.allStatuses")}</option>
+            <option value="director_approved,partly_paid">{t("dashboard.unpaidStatus")}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {t(`vouchers.statuses.${s}`)}
@@ -83,6 +86,11 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
           {t("exports.to")}
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
+        {division && (
+          <button type="button" className="small secondary" onClick={() => setDivision("")}>
+            {t("dashboard.divisionChip", { code: division })} ✕
+          </button>
+        )}
         <ExportLinks path="/vouchers/" params={filter} label={t("vouchers.title")} />
       </div>
       {vouchers.data && (

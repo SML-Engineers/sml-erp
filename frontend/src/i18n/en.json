@@ -1263,5 +1263,28 @@
     "action": "Action",
     "by": "By",
     "reason": "Reason / comment"
+  },
+  "dashboard": {
+    "vouchers": "Vouchers",
+    "division": "Division",
+    "allDivisions": "All",
+    "waitingForMe": "Waiting for my approval",
+    "returnedToMe": "Returned to me",
+    "myDrafts": "My drafts",
+    "pending": "Waiting for approval",
+    "allLevels": "at all levels",
+    "unpaid": "Approved, not yet paid",
+    "unpaidDetail": "{{count}} vouchers, approved LKR {{total}}",
+    "paidThisMonth": "Paid this month",
+    "payments": "{{count}} payments",
+    "byLevel": "Waiting by level and age",
+    "byDivision": "By division",
+    "pendingAmount": "Waiting for approval (LKR)",
+    "unpaidAmount": "Approved, unpaid (LKR)",
+    "oldest": "Waiting longest",
+    "days": "{{count}} days",
+    "unpaidStatus": "Approved, not fully paid",
+    "divisionChip": "Division {{code}}",
+    "showAll": "Show all"
   }
 }

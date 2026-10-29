@@ -66,7 +66,10 @@ class ToPayView(_Payments):
 
     def get(self, request):
         rows = []
-        for v in services.to_pay(request.user):
+        vouchers = services.to_pay(request.user)
+        if request.query_params.get("division"):
+            vouchers = vouchers.filter(division__code=request.query_params["division"].upper())
+        for v in vouchers:
             paid = services.paid_on(v)
             suggested = services.suggested_account(v)
             rows.append(
@@ -136,6 +139,8 @@ class PaymentListView(_Payments):
             rows = rows.filter(payment_date__gte=params["from"])
         if params.get("to"):
             rows = rows.filter(payment_date__lte=params["to"])
+        if params.get("division"):
+            rows = rows.filter(voucher__division__code=params["division"].upper())
         if params.get("method"):
             rows = rows.filter(method=params["method"])
         if params.get("account"):

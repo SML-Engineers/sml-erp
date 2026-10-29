@@ -20,6 +20,7 @@ urlpatterns += [
         name="voucher-payee-balance",
     ),
     path("vouchers/waiting/", v.WaitingView.as_view(), name="voucher-waiting"),
+    path("vouchers/dashboard/", v.DashboardView.as_view(), name="voucher-dashboard"),
     path("vouchers/deleted/", v.DeletedListView.as_view(), name="voucher-deleted"),
     path("vouchers/amendments/", v.AmendmentListView.as_view(), name="voucher-amendments"),
     path(

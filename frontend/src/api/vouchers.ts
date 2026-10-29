@@ -281,7 +281,7 @@ export interface HistoryRow {
   reason: string;
 }
 
-const query = (params: Record<string, string>) => {
+const query = (params: Record<string, string | undefined>) => {
   const q = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) if (value) q.set(key, value);
   const text = q.toString();
@@ -290,5 +290,37 @@ const query = (params: Record<string, string>) => {
 
 export const approvedReport = (params: { from: string; to: string; division: string }) =>
   apiGet<ApprovedRow[]>(`/vouchers/reports/approved/${query(params)}`);
-export const pendingReport = () => apiGet<PendingReport>("/vouchers/reports/pending/");
+export const pendingReport = (params: { division?: string; level?: string } = {}) =>
+  apiGet<PendingReport>(`/vouchers/reports/pending/${query(params)}`);
+
+// --- Dashboard (P1-08b) -----------------------------------------------------------------
+
+export interface Figure {
+  count: number;
+  total: string;
+}
+
+export interface VoucherDashboard {
+  division: string;
+  can_approve: boolean;
+  can_enter: boolean;
+  waiting_for_me: Figure;
+  my_vouchers: { draft?: Figure; returned?: Figure };
+  by_level: { level: number; waiting_for: string; count: number; total: string; bands: Record<string, number> }[];
+  pending_count: number;
+  unpaid: Figure & { remaining: string };
+  paid_this_month: (Figure & { from: string; to: string }) | null;
+  by_division: {
+    code: string;
+    name: string;
+    pending: number;
+    pending_total: string;
+    unpaid: Figure & { remaining: string };
+    paid_this_month: string | null;
+  }[];
+  oldest: PendingRow[];
+}
+
+export const voucherDashboard = (division: string) =>
+  apiGet<VoucherDashboard>(`/vouchers/dashboard/${query({ division })}`);
 export const voucherHistory = (id: number) => apiGet<HistoryRow[]>(`/vouchers/${id}/history/`);

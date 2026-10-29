@@ -425,7 +425,8 @@ class _Approving(_Vouchers):
 
 
 class WaitingView(_Approving):
-    """Vouchers waiting for this user's approval, oldest first."""
+    """Vouchers waiting for this user's approval, oldest first, with what the Director's
+    page shows in its table (division, Accountant's comment)."""
 
     def get(self, request):
         rows = (
@@ -438,6 +439,8 @@ class WaitingView(_Approving):
             row = _summary(v)
             row["submitted_at"] = v.submitted_at
             row["waiting_level"] = _approval(v, request.user)["waiting_level"]
+            checked = [h for h in approvals.history(services.DOC, v.pk) if h.action == "approve"]
+            row["last_comment"] = checked[-1].reason if checked else ""
             result.append(row)
         return Response(result)
 
@@ -546,3 +549,46 @@ class DecisionView(_Approving):
         except VoucherError as error:
             return _error(error)
         return Response(_detail(voucher, request.user))
+
+
+class DecisionItem(serializers.Serializer):
+    id = serializers.IntegerField()
+    decision = serializers.CharField(max_length=10)
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class BulkInput(serializers.Serializer):
+    decisions = DecisionItem(many=True)
+
+
+class BulkDecisionView(_Approving):
+    """Confirm several Approve / Reject decisions at once (the Director's page)."""
+
+    def post(self, request):
+        data = BulkInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        items = [
+            services.Decision(voucher_id=d["id"], decision=d["decision"], reason=d["reason"])
+            for d in data.validated_data["decisions"]
+        ]
+        try:
+            done = services.decide_many(request.user, items)
+        except services.BulkRefused as refused:
+            return Response(
+                {
+                    "detail": "Nothing was confirmed.",
+                    "errors": {str(k): v for k, v in refused.errors.items()},
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except VoucherError as error:
+            return _error(error)
+        approved = [v for v in done if v.status == Voucher.Status.DIRECTOR_APPROVED]
+        return Response(
+            {
+                "confirmed": len(done),
+                "approved": len([v for v in done if v.status != Voucher.Status.REJECTED]),
+                "rejected": len([v for v in done if v.status == Voucher.Status.REJECTED]),
+                "fully_approved": [v.number for v in approved],
+            }
+        )

@@ -269,7 +269,7 @@ Status: `[ ]` to do · `[x]` done
   - The reminder for vouchers waiting too long (spec 4.3, optional) is left for later.
   - Servers need an SMTP account (EMAIL_* settings) and APP_URL for links in emails.
 
-- [ ] **P0-19 Sending documents and reports by email** (spec 3B; owner, 29 Oct 2026)
+- [x] **P0-19 Sending documents and reports by email** (spec 3B; owner, 29 Oct 2026)
   Settings → Document email: the sending mailbox (e.g. finance@domain.com) with its mail
   server, password stored encrypted, a test email; default subject and body per kind of
   document or report, with placeholders. A send form whose message can be edited before
@@ -344,12 +344,20 @@ Status: `[ ]` to do · `[x]` done
   - The Accountant may change a line's tax; the voucher total follows. Amounts stay as entered
     by the Clerk (a wrong amount is returned to the Clerk).
 
-- [ ] **P1-04 Director approval page** (spec 4.4; replaces the current page)
+- [x] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk
   Approve all / Reject all / Clear all, Confirm and Reset; side panel with invoice preview,
   lines, Accountant's comment, supplier balance and aging; filters and totals; phone layout.
   - Confirm with any Reject lacking a reason is refused and the row is highlighted.
   - Bulk approval shows the count and total amount before confirming.
+  - Done as Vouchers → Approve vouchers (/vouchers/approve). Confirm sends every tick in one
+    request and is all or nothing: if any voucher cannot be decided (a reason missing, the
+    Director created it, someone else acted first), nothing is confirmed and those rows are
+    highlighted with the reason.
+  - Filters: date range, payee, amount range and division; the footer shows the count and
+    total of the rows shown. Tabs, ticks and the side panel work on a phone.
+  - Supplier aging in the side panel waits for payments (P1-07); until then it shows the
+    amount outstanding on the payee's vouchers.
 
 - [ ] **P1-04b Row actions: Resources, Print, Edit, Delete** (spec 4.4, as in the current system)
   Actions menu (⋯) on every voucher row, plus a paperclip icon when attachments exist.

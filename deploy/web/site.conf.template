@@ -31,6 +31,11 @@ server {
     ssl_session_tickets off;
 
     client_max_body_size 25m;  # scanned invoices; the API itself allows 20 MB
+
+    # Look the backend up again on every request (Docker's own DNS), so an update that
+    # recreates only the backend is found without restarting this web server.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $backend http://backend:8000;
     gzip on;
     gzip_types text/css application/javascript application/json image/svg+xml;
 
@@ -38,7 +43,7 @@ server {
     # so the login history and audit log record the real address.
     location /api/ {
         include /etc/nginx/conf.d/security-headers.inc;
-        proxy_pass http://backend:8000;
+        proxy_pass $backend;
         proxy_hide_header X-Frame-Options;          # set once, above, for every response
         proxy_hide_header X-Content-Type-Options;
         proxy_hide_header Referrer-Policy;

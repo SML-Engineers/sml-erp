@@ -26,7 +26,7 @@ export default function PayPage() {
   const { t } = useTranslation();
   const [search] = useSearchParams();
   const id = Number(search.get("voucher"));
-  const toPay = useQuery({ queryKey: [...paymentsKey, "to-pay"], queryFn: listToPay });
+  const toPay = useQuery({ queryKey: [...paymentsKey, "to-pay"], queryFn: () => listToPay() });
   const accounts = useQuery({ queryKey: [...paymentsKey, "accounts"], queryFn: listPayAccounts });
   const [done, setDone] = useState<Payment | null>(null);
   const voucher = toPay.data?.find((v) => v.id === id);

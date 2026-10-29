@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
@@ -14,14 +14,24 @@ import ExportLinks from "../components/ExportLinks";
 export default function PaymentsPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
   const canPay = me.access.actions.includes("record_payment");
-  const toPay = useQuery({ queryKey: [...paymentsKey, "to-pay"], queryFn: listToPay });
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const made = useQuery({ queryKey: [...paymentsKey, "made", from, to], queryFn: () => listPayments({ from, to }) });
+  const [search] = useSearchParams();
+  const division = search.get("division") ?? "";
+  const toPay = useQuery({ queryKey: [...paymentsKey, "to-pay", division], queryFn: () => listToPay(division) });
+  const [from, setFrom] = useState(search.get("from") ?? "");
+  const [to, setTo] = useState(search.get("to") ?? "");
+  const made = useQuery({
+    queryKey: [...paymentsKey, "made", from, to, division],
+    queryFn: () => listPayments({ from, to, division }),
+  });
   return (
     <main className="page">
       <h1>{t("payments.title")}</h1>
       <p className="muted">{t("payments.help")}</p>
+      {division && (
+        <p>
+          {t("dashboard.divisionChip", { code: division })} <Link to="/payments">{t("dashboard.showAll")}</Link>
+        </p>
+      )}
       <section className="panel" aria-label={t("payments.toPay")}>
         <h2>{t("payments.toPay")}</h2>
         {toPay.data && (
@@ -76,7 +86,7 @@ export default function PaymentsPage({ me }: { me: CurrentUser }) {
               {t("exports.to")}
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </label>
-            <ExportLinks path="/payments/" params={{ from, to }} label={t("payments.made")} />
+            <ExportLinks path="/payments/" params={{ from, to, division }} label={t("payments.made")} />
           </div>
           {made.data && (
             <DataTable

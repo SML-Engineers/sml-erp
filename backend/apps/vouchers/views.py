@@ -18,7 +18,7 @@ from apps.core.permissions import AreaAccess, ReadForAllAreaWrite
 from apps.masters.models import CompanyAccount, Supplier
 from apps.masters.services import is_in_use
 
-from . import printing, reports, services
+from . import dashboard, printing, reports, services
 from .models import Voucher, VoucherAttachment, VoucherCancellation, VoucherType
 from .services import VoucherError
 
@@ -916,13 +916,19 @@ class PendingReportView(_Vouchers):
     """Vouchers waiting for approval, by approver and age."""
 
     def get(self, request):
-        rows = reports.pending(request.user)
+        division = request.query_params.get("division") or ""
+        level = request.query_params.get("level") or ""
+        rows = reports.pending(
+            request.user, division=division, level=int(level) if level.isdigit() else None
+        )
         fmt = _export_format(request)
         if fmt:
             return exports.response(
                 fmt,
                 title="Vouchers pending approval",
-                subtitle=f"By approver and age, as at {timezone.localtime():%d/%m/%Y %H:%M}",
+                subtitle=f"By approver and age, as at {timezone.localtime():%d/%m/%Y %H:%M}"
+                + (f", division {division.upper()}" if division else "")
+                + (f", level {level}" if level.isdigit() else ""),
                 columns=reports.PENDING_COLUMNS,
                 rows=rows,
                 filename="pending-vouchers",
@@ -950,3 +956,10 @@ class HistoryView(_Vouchers):
                 user=request.user,
             )
         return Response(rows)
+
+
+class DashboardView(_Vouchers):
+    """The vouchers dashboard on the home page (P1-08b); ?division=WS for one division."""
+
+    def get(self, request):
+        return Response(dashboard.figures(request.user, request.query_params.get("division", "")))

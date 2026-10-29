@@ -61,9 +61,10 @@ export interface PaymentInput {
 
 export const paymentsKey = ["payments"];
 
-export const listToPay = () => apiGet<ToPayRow[]>("/payments/to-pay/");
+export const listToPay = (division = "") =>
+  apiGet<ToPayRow[]>(`/payments/to-pay/${division ? `?division=${division}` : ""}`);
 export const listPayAccounts = () => apiGet<PayAccount[]>("/payments/accounts/");
-export function listPayments(filter: { from?: string; to?: string } = {}) {
+export function listPayments(filter: { from?: string; to?: string; division?: string } = {}) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
   const text = query.toString();

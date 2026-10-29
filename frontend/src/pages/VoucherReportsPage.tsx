@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { approvedReport, listVouchers, pendingReport, voucherHistory, vouchersKey } from "../api/vouchers";
 import DataTable from "../components/DataTable";
@@ -14,7 +14,11 @@ const TABS: Tab[] = ["approved", "pending", "history"];
  * the approval history of any voucher; each can be exported to Excel or PDF. */
 export default function VoucherReportsPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>("approved");
+  const [search] = useSearchParams();
+  const asked = search.get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(asked && TABS.includes(asked) ? asked : "approved");
+  const division = search.get("division") ?? "";
+  const level = search.get("level") ?? "";
   return (
     <main className="page">
       <p>
@@ -35,18 +39,18 @@ export default function VoucherReportsPage() {
           </button>
         ))}
       </div>
-      {tab === "approved" && <Approved />}
-      {tab === "pending" && <Pending />}
+      {tab === "approved" && <Approved division={division} />}
+      {tab === "pending" && <Pending division={division} level={level} />}
       {tab === "history" && <History />}
     </main>
   );
 }
 
-function Approved() {
+function Approved(props: { division: string }) {
   const { t } = useTranslation();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [division, setDivision] = useState("");
+  const [division, setDivision] = useState(props.division);
   const params = { from, to, division };
   const rows = useQuery({ queryKey: [...vouchersKey, "approved-report", params], queryFn: () => approvedReport(params) });
   return (
@@ -105,14 +109,21 @@ function Approved() {
   );
 }
 
-function Pending() {
+function Pending({ division, level }: { division: string; level: string }) {
   const { t } = useTranslation();
-  const report = useQuery({ queryKey: [...vouchersKey, "pending-report"], queryFn: pendingReport });
+  const params = { division, level };
+  const report = useQuery({ queryKey: [...vouchersKey, "pending-report", params], queryFn: () => pendingReport(params) });
   const bands = report.data?.summary[0] ? Object.keys(report.data.summary[0].bands) : [];
   return (
     <section className="panel" aria-label={t("voucherReports.pending")}>
       <p className="muted">{t("voucherReports.pendingHelp")}</p>
-      <ExportLinks path="/vouchers/reports/pending/" label={t("voucherReports.pending")} />
+      {(division || level) && (
+        <p>
+          {[division && t("dashboard.divisionChip", { code: division }), level && `L${level}`].filter(Boolean).join(" · ")}{" "}
+          <Link to="/vouchers/reports?tab=pending">{t("dashboard.showAll")}</Link>
+        </p>
+      )}
+      <ExportLinks path="/vouchers/reports/pending/" params={params} label={t("voucherReports.pending")} />
       {report.data && report.data.summary.length > 0 && (
         <div className="table-wrap">
           <table aria-label={t("voucherReports.summary")}>

@@ -103,6 +103,20 @@ def test_a_voucher_not_waiting_for_the_director_stops_the_whole_confirmation(
     assert Voucher.objects.get(pk=ready.pk).status == "accountant_approved"
 
 
+def test_approving_at_two_levels_stops_the_whole_confirmation(clerk, accountant, director):
+    """Segregation of duties holds in a batch too: someone who approved a voucher as
+    Accountant cannot give it the Director's approval as well."""
+    both = person("both@sml.lk", "accountant", "director", all_divisions=True)
+    ready = at_director(clerk, accountant, code="S0001")
+    twice = at_director(clerk, both, code="S0002")  # L2 approval given by `both`
+    with pytest.raises(BulkRefused) as refused:
+        services.decide_many(both, [Decision(ready.pk, "approve"), Decision(twice.pk, "approve")])
+    assert list(refused.value.errors) == [twice.pk]
+    assert "another level" in refused.value.errors[twice.pk]
+    assert Voucher.objects.get(pk=ready.pk).status == "accountant_approved"
+    assert Voucher.objects.get(pk=twice.pk).status == "accountant_approved"
+
+
 def test_the_director_page_through_the_api(clerk, accountant, director):
     first = at_director(clerk, accountant, code="S0001", comment="coded to machine repairs")
     second = at_director(clerk, accountant, code="S0002")

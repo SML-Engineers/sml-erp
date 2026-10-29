@@ -139,5 +139,7 @@ def test_the_admin_sets_the_reminders(admin, accountant):
 
 
 def test_each_person_can_turn_reminder_emails_off(accountant):
-    events = {p["event"] for p in as_user(accountant).get("/api/v1/notifications/preferences/").json()}
+    events = {
+        p["event"] for p in as_user(accountant).get("/api/v1/notifications/preferences/").json()
+    }
     assert "approval_reminder" in events

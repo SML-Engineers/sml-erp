@@ -152,6 +152,12 @@ Edit the file (`nano /srv/sml-erp/.env.production`), fill `EMAIL_HOST`, `EMAIL_H
 `EMAIL_HOST_PASSWORD` and `DEFAULT_FROM_EMAIL`, save, and run `deploy.sh` again. (Quotations,
 invoices and reports are sent from the mailbox set in **Settings → Document email**.)
 
+**On the test server only**, you can load demo data so people can try every step at once:
+`docker compose -f deploy/docker-compose.prod.yml --env-file /srv/sml-erp/.env.production run --rm backend python manage.py load_demo_data`.
+It creates a Clerk, Accountant, Director and Cashier (all `@demo.sml.lk`, sharing one
+authenticator entry it prints), suppliers, a bank account and vouchers at every stage. It
+refuses to run on the production server.
+
 ## 9. Updates: one click in GitHub
 
 Once, for each server, in GitHub: **Settings → Environments → New environment**, named

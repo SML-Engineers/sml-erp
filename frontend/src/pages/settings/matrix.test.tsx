@@ -42,6 +42,7 @@ const matrix: ApprovalMatrix = {
 test("the Admin sees the voucher route and adds a rule for large amounts", async () => {
   const calls = mockApi({
     "GET /api/v1/settings/approval-matrix/": { body: matrix },
+    "GET /api/v1/settings/approval-reminders/": { body: [] },
     "POST /api/v1/settings/approval-matrix/": { status: 201, body: matrix },
   });
   renderAt("/settings/approval-matrix", <ApprovalMatrixPage me={admin} />);
@@ -71,6 +72,7 @@ test("the Admin sees the voucher route and adds a rule for large amounts", async
 test("others see the matrix read-only and can check a document's route", async () => {
   mockApi({
     "GET /api/v1/settings/approval-matrix/": { body: matrix },
+    "GET /api/v1/settings/approval-reminders/": { body: [] },
     "GET /api/v1/settings/approval-matrix/route/?document_type=voucher&amount=5000": {
       body: [
         { level: 2, role: "accountant", role_name: "Accountant" },

@@ -19,10 +19,21 @@ from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 
 from .access import division_scope
 from .audit import _ip, audit_context
-from .models import ApprovalLog, ApprovalRule, ApprovalState, Division, Role, User, UserRole
+from .models import (
+    ApprovalLog,
+    ApprovalReminder,
+    ApprovalRule,
+    ApprovalState,
+    Division,
+    Notification,
+    Role,
+    User,
+    UserRole,
+)
 
 SUBMIT_LEVEL = 1
 
@@ -528,3 +539,97 @@ def waiting_for(user: User, document_type: str | None = None) -> list[ApprovalSt
         if any(step["level"] == s.current_level and step["role"] in codes for step in s.route)
         and why_not(user, s) is None
     ]
+
+
+# --- Reminders (P1-09) ----------------------------------------------------------------
+
+
+def reminder_settings() -> list[dict]:
+    """The reminder setting of every document type (the default when none is stored)."""
+    stored = {r.document_type: r for r in ApprovalReminder.objects.all()}
+    rows = []
+    for code, kind in DOCUMENT_TYPES.items():
+        row = stored.get(code)
+        rows.append(
+            {
+                "document_type": code,
+                "name": kind.name,
+                "enabled": row.enabled if row else False,
+                "after_days": row.after_days if row else 3,
+            }
+        )
+    return rows
+
+
+def set_reminder(user: User, document_type: str, *, enabled: bool, after_days, reason=""):
+    _settings_manager(user)
+    _doc_type(document_type)
+    try:
+        days = int(after_days)
+    except (TypeError, ValueError):
+        raise ApprovalError("The number of days must be a whole number.") from None
+    if not 1 <= days <= 60:
+        raise ApprovalError("Remind after 1 to 60 days.")
+    with audit_context("approval_reminder_changed", reason), transaction.atomic():
+        row, _ = ApprovalReminder.objects.get_or_create(document_type=document_type)
+        row.enabled = bool(enabled)
+        row.after_days = days
+        row.updated_by = user
+        row.save()
+    return reminder_settings()
+
+
+def waiting_since(state: ApprovalState):
+    """When the document started waiting at its level: the last action on it."""
+    last = (
+        ApprovalLog.objects.filter(document_type=state.document_type, document_id=state.document_id)
+        .order_by("-acted_at", "-id")
+        .first()
+    )
+    return last.acted_at if last else state.updated_at
+
+
+def send_reminders(now=None) -> int:
+    """Once a day: remind everyone who can act on a document that has waited at least the
+    set number of days, until someone acts. Never twice on the same day for the same
+    person and document. Returns the number of reminders made."""
+    from .notifications import notify
+
+    now = now or timezone.now()
+    today = timezone.localtime(now).date()
+    made = 0
+    for setting in ApprovalReminder.objects.filter(enabled=True):
+        if setting.document_type not in DOCUMENT_TYPES:
+            continue
+        states = ApprovalState.objects.filter(
+            document_type=setting.document_type, status=ApprovalState.Status.IN_PROGRESS
+        )
+        for state in states:
+            since = waiting_since(state)
+            days = (today - timezone.localtime(since).date()).days
+            if days < setting.after_days:
+                continue
+            already = set(
+                Notification.objects.filter(
+                    event="approval_reminder",
+                    document_type=state.document_type,
+                    document_id=state.document_id,
+                    created_at__date=today,
+                ).values_list("user_id", flat=True)
+            )
+            people = [p for p in approvers(state) if p.pk not in already]
+            if not people:
+                continue
+            with transaction.atomic():
+                made += len(
+                    notify(
+                        people,
+                        "approval_reminder",
+                        title=f"Reminder: {_title(state)} has waited {days} days for your "
+                        f"approval (level {state.current_level})",
+                        link=state.link,
+                        document_type=state.document_type,
+                        document_id=state.document_id,
+                    )
+                )
+    return made

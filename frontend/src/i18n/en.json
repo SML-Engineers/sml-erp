@@ -269,7 +269,8 @@
       "voucher_cancellation_requested": "Cancellation of a voucher requested",
       "voucher_cancelled": "Voucher cancelled",
       "voucher_cancellation_rejected": "Voucher cancellation rejected",
-      "supplier_payment_recorded": "Supplier payment recorded"
+      "supplier_payment_recorded": "Supplier payment recorded",
+      "approval_reminder_changed": "Approval reminders changed"
     }
   },
   "menu": {
@@ -794,6 +795,7 @@
     "emailFor": "By email: {{event}}",
     "events": {
       "approval_waiting": "A document is waiting for my approval",
+      "approval_reminder": "Reminder: a document has been waiting a long time for my approval",
       "document_returned": "A document I created was returned to me",
       "document_approved": "A document I created was approved",
       "document_rejected": "A document I created was rejected"
@@ -1286,5 +1288,12 @@
     "unpaidStatus": "Approved, not fully paid",
     "divisionChip": "Division {{code}}",
     "showAll": "Show all"
+  },
+  "reminders": {
+    "title": "Reminders",
+    "help": "When a document has waited at one level for this many days, everyone who can approve it there is reminded again, under the bell and by email, once a day until someone acts. Each person can turn reminder emails off in My notifications.",
+    "on": "Remind",
+    "afterDays": "after days",
+    "save": "Save"
   }
 }

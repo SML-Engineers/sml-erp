@@ -477,8 +477,16 @@ Status: `[ ]` to do · `[x]` done
     server works the figures out with the same rules as those lists, and tests check that
     they agree.
 
-- [ ] **P1-09 Reminders**
+- [x] **P1-09 Reminders**
   Daily reminder to approvers for vouchers waiting longer than a configurable number of days.
+  - Done, in the approval engine, so every approval document gets it (vouchers and
+    cancellation requests now; quotations and others later). Settings → Approval matrix →
+    Reminders: on or off and after how many days (1–60) per document type, by the Admin;
+    vouchers and cancellations start on, after 3 days.
+  - Every morning at 07:40 everyone who can approve a document at its waiting level is
+    reminded (bell and email, "approval_reminder"; each person can turn the email off in My
+    notifications), once a day until someone acts. The days count from the last action on
+    the document, so they start again at each level.
 
 ## E. Release
 

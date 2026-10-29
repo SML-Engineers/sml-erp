@@ -91,6 +91,11 @@ urlpatterns = [
     ),
     path("settings/approval-matrix/", approval_views.MatrixView.as_view(), name="approval-matrix"),
     path(
+        "settings/approval-reminders/",
+        approval_views.ReminderView.as_view(),
+        name="approval-reminders",
+    ),
+    path(
         "settings/approval-matrix/route/",
         approval_views.RoutePreviewView.as_view(),
         name="approval-route",

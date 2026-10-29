@@ -6,6 +6,10 @@ import { can } from "../../api/access";
 import {
   addRule,
   getMatrix,
+  getReminders,
+  remindersKey,
+  setReminder,
+  type ReminderSetting,
   matrixKey,
   previewRoute,
   switchOffRule,
@@ -111,6 +115,7 @@ export default function ApprovalMatrixPage({ me }: { me: CurrentUser }) {
         );
       })}
       <ErrorLine error={matrix.error} />
+      <Reminders canManage={canManage} />
     </main>
   );
 }
@@ -226,5 +231,60 @@ function RouteCheck(props: { documentType: string; subtypeLabel: string }) {
       )}
       <ErrorLine error={check.error} />
     </form>
+  );
+}
+
+/** Reminders: approvers are reminded again, once a day, when a document has waited at
+ * their level for the set number of days (spec 4.3, P1-09). */
+function Reminders({ canManage }: { canManage: boolean }) {
+  const { t } = useTranslation();
+  const rows = useQuery({ queryKey: remindersKey, queryFn: getReminders });
+  return (
+    <section className="panel" aria-label={t("reminders.title")}>
+      <h2>{t("reminders.title")}</h2>
+      <p className="muted">{t("reminders.help")}</p>
+      {rows.data?.map((row) => (
+        <ReminderRow key={row.document_type} row={row} canManage={canManage} />
+      ))}
+      <ErrorLine error={rows.error} />
+    </section>
+  );
+}
+
+function ReminderRow({ row, canManage }: { row: ReminderSetting; canManage: boolean }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [enabled, setEnabled] = useState(row.enabled);
+  const [days, setDays] = useState(String(row.after_days));
+  const save = useMutation({
+    mutationFn: () => setReminder({ document_type: row.document_type, enabled, after_days: Number(days), reason: "" }),
+    onSuccess: (data) => queryClient.setQueryData(remindersKey, data),
+  });
+  const changed = enabled !== row.enabled || days !== String(row.after_days);
+  return (
+    <div className="inline-form" role="group" aria-label={row.name}>
+      <strong>{row.name}</strong>
+      <label>
+        <input type="checkbox" checked={enabled} disabled={!canManage} onChange={(e) => setEnabled(e.target.checked)} />{" "}
+        {t("reminders.on")}
+      </label>
+      <label>
+        {t("reminders.afterDays")}
+        <input
+          type="number"
+          min={1}
+          max={60}
+          value={days}
+          disabled={!canManage || !enabled}
+          onChange={(e) => setDays(e.target.value)}
+        />
+      </label>
+      {canManage && (
+        <button type="button" className="small" disabled={!changed || save.isPending} onClick={() => save.mutate()}>
+          {t("reminders.save")}
+        </button>
+      )}
+      <ErrorLine error={save.error} />
+    </div>
   );
 }

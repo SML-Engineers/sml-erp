@@ -168,6 +168,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.core.tasks.send_waiting_notification_emails",
         "schedule": crontab(minute="*/5"),
     },
+    # Approvers reminded of documents waiting too long (P1-09), early on working mornings.
+    "send-approval-reminders": {
+        "task": "apps.core.tasks.send_approval_reminders",
+        "schedule": crontab(hour=7, minute=40),
+    },
     "tidy-old-notifications": {
         "task": "apps.core.tasks.tidy_old_notifications",
         "schedule": crontab(hour=1, minute=10),

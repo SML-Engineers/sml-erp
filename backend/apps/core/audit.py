@@ -211,6 +211,7 @@ def register_core_models():
     register(m.Company, exclude=("updated_at",))
     register(m.NumberSeries, exclude=("updated_at",))
     register(m.ApprovalRule)
+    register(m.ApprovalReminder, exclude=("updated_at",))
     register(
         m.MailAccount,
         exclude=("updated_at", "last_test_at", "last_test_ok", "last_test_error"),

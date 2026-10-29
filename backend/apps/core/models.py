@@ -567,6 +567,32 @@ class ApprovalRule(models.Model):
         return f"{self.document_type} L{self.level}: {self.role.code}"
 
 
+class ApprovalReminder(models.Model):
+    """Reminding approvers again when a document has waited too long at their level
+    (spec 4.3, backlog P1-09): once a day, from `after_days` days after the last action on
+    it, until someone acts. One setting per document type, kept by the Admin."""
+
+    document_type = models.SlugField(max_length=30, unique=True)
+    enabled = models.BooleanField(default=True)
+    after_days = models.PositiveSmallIntegerField(default=3)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["document_type"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(after_days__gte=1) & models.Q(after_days__lte=60),
+                name="core_approvalreminder_days",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.document_type}: after {self.after_days} days"
+
+
 class ApprovalState(models.Model):
     """Where one document is in its approval: its route (copied when submitted), the level
     waiting, and the result. The document module keeps its own status in step with it."""

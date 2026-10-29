@@ -40,3 +40,10 @@ def tidy_old_notifications() -> int:
     from .notifications import tidy_old
 
     return tidy_old()
+
+
+@shared_task
+def send_approval_reminders() -> int:
+    from .approvals import send_reminders
+
+    return send_reminders()

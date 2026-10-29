@@ -56,3 +56,17 @@ export function previewRoute(params: { document_type: string; amount?: string; d
   for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
   return apiGet<RouteStep[]>(`/settings/approval-matrix/route/?${query.toString()}`);
 }
+
+// --- Reminders (P1-09) -------------------------------------------------------------------
+
+export interface ReminderSetting {
+  document_type: string;
+  name: string;
+  enabled: boolean;
+  after_days: number;
+}
+
+export const remindersKey = ["settings", "approval-reminders"];
+export const getReminders = () => apiGet<ReminderSetting[]>("/settings/approval-reminders/");
+export const setReminder = (change: { document_type: string; enabled: boolean; after_days: number; reason: string }) =>
+  apiSend<ReminderSetting[]>("PUT", "/settings/approval-reminders/", change);

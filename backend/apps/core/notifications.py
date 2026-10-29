@@ -21,6 +21,7 @@ from .models import Notification, NotificationPreference, User
 
 EVENTS = {
     "approval_waiting": "A document is waiting for my approval",
+    "approval_reminder": "Reminder: a document has been waiting a long time for my approval",
     "document_returned": "A document I created was returned to me",
     "document_approved": "A document I created was approved",
     "document_rejected": "A document I created was rejected",

@@ -133,3 +133,23 @@ class RoutePreviewView(_Matrix):
         except ApprovalError as error:
             return _error(error)
         return Response(route)
+
+
+class ReminderView(_Matrix):
+    """Reminders for documents waiting too long, per document type (P1-09)."""
+
+    def get(self, request):
+        return Response(approvals.reminder_settings())
+
+    def put(self, request):
+        try:
+            rows = approvals.set_reminder(
+                request.user,
+                str(request.data.get("document_type", "")),
+                enabled=request.data.get("enabled") in (True, "true", "1", 1),
+                after_days=request.data.get("after_days"),
+                reason=str(request.data.get("reason", "")),
+            )
+        except ApprovalError as error:
+            return _error(error)
+        return Response(rows)

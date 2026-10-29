@@ -159,6 +159,9 @@ def test_each_person_sees_their_own_part(clerk, director, cashier, scene):
     }
     cashier_view = as_user(cashier).get("/api/v1/vouchers/dashboard/").json()
     assert cashier_view["pending_count"] == 0  # the Cashier sees approved vouchers only
+    assert cashier_view["sees_approvals"] is False  # so the dashboard leaves that count out
+    assert clerk_view["sees_approvals"] is True
+    assert as_user(director).get("/api/v1/vouchers/dashboard/").json()["sees_approvals"] is True
     assert cashier_view["unpaid"]["remaining"] == "600.00"
 
 

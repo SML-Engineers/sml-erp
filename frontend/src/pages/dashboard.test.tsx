@@ -22,6 +22,7 @@ const figures: VoucherDashboard = {
   division: "",
   can_approve: true,
   can_enter: true,
+  sees_approvals: true,
   waiting_for_me: { count: 2, total: "550.00" },
   my_vouchers: { draft: { count: 0, total: "0.00" }, returned: { count: 1, total: "75.00" } },
   by_level: [
@@ -111,4 +112,15 @@ test("the lists open with the filters the dashboard gave them", async () => {
   renderAt("/vouchers/reports?tab=pending&level=2", <VoucherReportsPage />, "/vouchers/reports");
   expect(await screen.findByRole("tab", { name: "Pending by approver and age" })).toHaveAttribute("aria-selected", "true");
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/reports/pending/?level=2", expect.anything()));
+});
+
+test("a Cashier, who sees approved vouchers only, is not shown approval counts", async () => {
+  const cashierView = { ...figures, can_approve: false, can_enter: false, sees_approvals: false, pending_count: 0 };
+  mockApi(homeApi({ "GET /api/v1/vouchers/dashboard/": { body: cashierView } }));
+  renderAt("/dashboard", <HomePage user={accountant} />);
+
+  const board = await screen.findByRole("region", { name: "Vouchers" });
+  await within(board).findByText("Approved, not yet paid");
+  expect(within(board).queryByText("Waiting for approval")).not.toBeInTheDocument();
+  expect(within(board).queryByRole("columnheader", { name: /Waiting for approval/ })).not.toBeInTheDocument();
 });

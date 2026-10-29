@@ -304,6 +304,7 @@ export interface VoucherDashboard {
   division: string;
   can_approve: boolean;
   can_enter: boolean;
+  sees_approvals: boolean;
   waiting_for_me: Figure;
   my_vouchers: { draft?: Figure; returned?: Figure };
   by_level: { level: number; waiting_for: string; count: number; total: string; bands: Record<string, number> }[];

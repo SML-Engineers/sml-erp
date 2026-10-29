@@ -177,6 +177,16 @@ def render(voucher: Voucher, record: VoucherPrint) -> bytes:
         )
     if voucher.description:
         rows.append([p("Description", bold), p(voucher.description)])
+    if voucher.parent_id:
+        rows.append(
+            [
+                p("Amendment", bold),
+                p(
+                    f"Revision {voucher.revision} of voucher {voucher.parent.number}"
+                    + (f": {voucher.amendment_reason}" if voucher.amendment_reason else "")
+                ),
+            ]
+        )
     if rows:
         story.append(
             Table(

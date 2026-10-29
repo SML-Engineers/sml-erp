@@ -388,10 +388,22 @@ Status: `[ ]` to do · `[x]` done
     marked "Not approved", a deleted one "Deleted". Payment details are blank boxes until
     payments exist (P1-07). Amend arrives with amendments (P1-05).
 
-- [ ] **P1-05 Returns and amendments** (spec 4.2)
+- [x] **P1-05 Returns and amendments** (spec 4.2)
   Returned vouchers go back to the Clerk; resubmission restarts at L2. Amending an approved,
   unpaid voucher creates a new revision that goes through L2 and L3 again; Amendments List.
   - An approved voucher cannot be edited directly.
+  - Done. Returns: the Clerk sees who returned the voucher and why at the top of it; on
+    resubmission approval restarts at the Accountant (also after a return by the Director).
+  - Amend (⋯ menu, Clerk or Accountant, Director-approved and unpaid only): a reason is
+    required; a new draft numbered like the original plus -R1, -R2… is created with the same
+    payee, lines, coding, splits and files, linked to the original. The original is marked
+    Amended (replaced): it never changes and cannot be paid. If the amendment is rejected or
+    deleted before approval, the original stands again; a revision number is never reused.
+  - The database refuses changes to the payee, type, division, description, total, lines
+    and splits of a voucher once it is Director-approved, paid, amended or deleted.
+  - Amendments List: Vouchers → Amendments (original, reason, old and new amount, change).
+  - An amendment started by the Accountant is theirs, so another Accountant approves it at
+    L2 (rule 5); the Clerk normally starts amendments.
 
 - [ ] **P1-06 Cancellation** (spec 4.2)
   Accountant requests cancellation of an unpaid voucher; Director approves.

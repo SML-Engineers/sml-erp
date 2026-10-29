@@ -69,6 +69,8 @@ class Voucher(models.Model):
         PAID = "paid", "Paid"
         CANCELLED = "cancelled", "Cancelled"
         DELETED = "deleted", "Deleted"
+        # Replaced by an amendment (a new revision); never paid (P1-05).
+        AMENDED = "amended", "Amended"
 
     number = models.CharField(max_length=40, unique=True)
     voucher_type = models.ForeignKey(VoucherType, on_delete=models.PROTECT, related_name="vouchers")
@@ -113,6 +115,8 @@ class Voucher(models.Model):
         editable=False,
     )
     delete_reason = models.CharField(max_length=500, blank=True, editable=False)
+    # Why an approved voucher was amended (on the amendment, revision 1, 2, …).
+    amendment_reason = models.CharField(max_length=500, blank=True, editable=False)
 
     class Meta:
         ordering = ["-created_at", "-id"]

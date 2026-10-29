@@ -19,6 +19,7 @@ const STATUSES: VoucherStatus[] = [
   "partly_paid",
   "paid",
   "cancelled",
+  "amended",
 ];
 
 /** Payment vouchers: the list (spec 4.4). The Clerk sees their own, approvers all. */
@@ -62,6 +63,7 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
             ))}
           </select>
         </label>
+        <Link to="/vouchers/amendments">{t("amendments.title")}</Link>
         <Link to="/vouchers/deleted">{t("deletedVouchers.title")}</Link>
         <label>
           {t("vouchers.search")}

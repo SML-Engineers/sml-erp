@@ -71,6 +71,8 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
   const data = voucher.data;
   const revising = Boolean(data?.actions?.includes("revise") && search.get("edit") === "1");
   const sentBack = data?.approvals.at(-1)?.action === "send_down" ? data.approvals.at(-1) : undefined;
+  const returned =
+    data?.status === "returned" ? [...data.approvals].reverse().find((a) => a.action === "return") : undefined;
   return (
     <main className="page">
       <p>
@@ -87,6 +89,29 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
             when: new Date(data.deleted.at).toLocaleString(),
           })}
           {data.deleted.reason && ` — ${data.deleted.reason}`}
+        </p>
+      )}
+      {data?.parent && (
+        <p className="notice" role="status">
+          {t("amendments.amendmentOf", { revision: String(data.revision) })}{" "}
+          <Link to={`/vouchers/${data.parent.id}`}>{data.parent.number}</Link>
+          {data.amendment_reason && ` — ${data.amendment_reason}`}
+        </p>
+      )}
+      {data && data.revisions.length > 0 && (
+        <p className="notice change-notice" role="status">
+          {data.status === "amended" ? t("amendments.replacedBy") : t("amendments.amendedBy")}{" "}
+          {data.revisions.map((r, i) => (
+            <span key={r.id}>
+              {i > 0 && ", "}
+              <Link to={`/vouchers/${r.id}`}>{r.number}</Link> ({t(`vouchers.statuses.${r.status}`)})
+            </span>
+          ))}
+        </p>
+      )}
+      {returned && (
+        <p className="notice change-notice" role="status">
+          {t("amendments.returnedBy", { name: returned.user })} {returned.reason}
         </p>
       )}
       {sentBack && (

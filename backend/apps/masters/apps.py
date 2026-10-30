@@ -25,5 +25,7 @@ class MastersConfig(AppConfig):
         register(m.SupplierBankAccount)
         register(m.Customer)
         register(m.CustomerContact)
+        for model in (m.Material, m.MaterialRate, m.CostingRate):
+            register(model)
         for model in (m.CompanyAccount, m.DivisionBankDefault, m.ChequeBook, m.ChequeLeaf):
             register(model)

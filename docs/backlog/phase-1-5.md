@@ -33,7 +33,7 @@ Status: `[ ]` to do · `[x]` done
   - Duplicate warning on the same name or VAT number.
   - The Sales Executive and Sales Manager roles are switched on so they can be assigned.
 
-- [ ] **P15-02 Costing rates** (spec 5.1, rule 11)
+- [x] **P15-02 Costing rates** (spec 5.1, rule 11)
   Dated rate tables maintained by the Accountant: material rates (material or resin grade,
   form, LKR per kg; masterbatch per kg), overhead % and default margin % per division,
   setup labour rate. Machine hourly rates already exist per machine (P0-09).
@@ -59,8 +59,9 @@ Status: `[ ]` to do · `[x]` done
   quantity, subcontract (heat treatment, plating, transport), overhead %, margin %. Shows
   the suggested unit price and the margin of the price actually quoted; per quantity break.
   - Rates come from the tables in force on the quotation date (P15-02).
-  - Costing is never sent to the customer: not in the PDF, the email or any customer page,
-    and not visible to roles without costing access (tested).
+  - Costing is never sent to the customer: not in the PDF, the email or any customer page.
+  - Who sees costing (owner, 31 Oct 2026): the Sales Manager, the Accountant, the Director and
+    the quotation's creator; not other Sales Executives (tested on the server).
 
 - [ ] **P15-05 Moulding costing and tooling** (spec 5.1)
   Per line, internal only: material ((part weight + runner weight ÷ cavities) × resin rate +
@@ -69,12 +70,14 @@ Status: `[ ]` to do · `[x]` done
   as a separate line: charged once, amortised over a quantity, or customer-owned.
 
 - [ ] **P15-06 Approval, revisions and status** (spec 5.1, 3)
-  Submitting checks the division's confirmed limits (P0-12): below the minimum margin or above
-  the value needs the Director's approval through the approval engine before it can be sent;
-  within limits it is ready to send. A revision keeps the number and adds Rev 1, Rev 2, … with
+  **Every quotation needs the Director's approval before it can be printed or sent**, by
+  email or otherwise (owner, 31 Oct 2026), through the approval engine. The division's
+  confirmed limits (P0-12) are shown to the Director as warnings: margin below the minimum,
+  value above the limit. A revision keeps the number and adds Rev 1, Rev 2, … with
   the full history of what was offered. Status: Draft, Awaiting Approval, Sent, Accepted,
   Lost (reason required), Expired (daily job after the validity date).
   - Segregation of duties: nobody approves a quotation they created (rule 5).
+  - Until approved, the PDF is only a draft marked NOT APPROVED and cannot be emailed.
   - A sent quotation is never edited; a change is a new revision.
   - Win / loss reasons are kept for the sales reports.
 
@@ -85,6 +88,7 @@ Status: `[ ]` to do · `[x]` done
   the rate used for an export quotation), payment terms, validity, delivery term (Incoterm),
   signature (Managing Director), the slogan "Excellence through expertise". No SVAT line.
   Sent by email from the system with the PDF attached (P0-19); every send is recorded.
+  Only an approved quotation is printed as final or emailed (P15-06).
   - The PDF and email contain no costing figures (tested on the generated PDF text).
 
 ## C. Proforma invoices, advances and sales orders
@@ -92,12 +96,15 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P15-08 Proforma invoices** (spec 5.2, 5.5)
   Created from an accepted quotation (or a sales order); prices and terms carried over.
   Number PI-{YYYY}-{NNNN}; titled "Proforma Invoice"; PDF and email; export fields (Incoterm,
-  port of loading and destination, bank details for payment, packing summary).
+  port of loading and destination, bank details for payment).
+  **Packing list with the proforma** (owner, 31 Oct 2026): per line the cartons, quantity per
+  carton, net and gross weight and carton dimensions, with totals; printed as its own page.
   - Records no sale and no receivable: no journal entry is made (tested).
 
 - [ ] **P15-09 Customer advances** (spec 5.2)
   An advance received against a proforma (or a sales order) is recorded by the Cashier with
-  the Accountant's approval: Dr Bank, Cr Customer Advances (a liability account), in the
+  the Accountant's approval, which is enough (owner, 31 Oct 2026): Dr Bank, Cr Customer
+  Advances (a liability account), in the
   receipt currency with the rate of the day. Receipt number from its own series; receipt PDF.
   - The journal entry balances and is never edited; a mistake is reversed (rules 2 and 3).
   - The advance waits for set-off against the tax invoice, which is built in Phase 2.
@@ -123,15 +130,14 @@ Status: `[ ]` to do · `[x]` done
 
 ---
 
-## Questions for the owner (answers needed before the task named)
+## Owner's decisions (31 Oct 2026)
 
-1. **Within the limits, does anyone approve a quotation before it is sent** (for example the
-   Sales Manager), or can the salesperson send it directly? (P15-06)
-2. **Who sees costing?** Proposed: Sales Manager, Accountant, Director and the quotation's
-   creator; not other Sales Executives. (P15-04)
-3. **Customer advance approval:** is the Accountant's approval enough, or must the Director
-   approve too, as for payments? (P15-09)
-4. **A sample of the current quotation and proforma** (a PDF or photo, prices can be hidden)
-   to copy the layout and wording. (P15-07, P15-08)
-5. **Export documents:** the commercial invoice and packing list go with the tax invoice in
-   Phase 2. Do you need a packing list earlier, with the proforma? (P15-08)
+1. **Quotation approval:** the Director approves every quotation before it is printed or
+   sent, including by email (P15-06, P15-07).
+2. **Who sees costing:** the Sales Manager, the Accountant, the Director and the quotation's
+   creator; not other Sales Executives (P15-04).
+3. **Customer advances:** the Accountant's approval is enough (P15-09).
+4. **Packing list:** needed with the proforma (P15-08).
+
+Still awaited: a sample of the current quotation and proforma, to copy the layout and wording
+(P15-07, P15-08).

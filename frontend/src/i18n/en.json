@@ -284,7 +284,8 @@
     "accounts": "Accounts",
     "vouchers": "Vouchers",
     "waiting": "Waiting for my approval",
-    "approveVouchers": "Approve vouchers"
+    "approveVouchers": "Approve vouchers",
+    "sales": "Sales"
   },
   "layout": {
     "menu": "Menu",
@@ -1301,5 +1302,69 @@
     "on": "Remind",
     "afterDays": "after days",
     "save": "Save"
+  },
+  "customers": {
+    "title": "Customers",
+    "help": "Customers for quotations, proforma invoices and sales orders. A customer used on a document keeps its code and can only be deactivated, by the Sales Manager or the Director.",
+    "searchHint": "Name, code, VAT number or contact",
+    "showInactive": "Show deactivated customers",
+    "add": "Add customer",
+    "none": "No customers yet.",
+    "export": "Export to Excel",
+    "import": "Import from Excel",
+    "importHelp": "One sheet named Customers, in the layout of the export. Leave Code empty for a new customer; put the code to update one. Check the file first: nothing is saved until every row is accepted.",
+    "checked": "The file is fine. Importing it would add {{created}} and update {{updated}} customers.",
+    "imported": "Imported: {{created}} customers added, {{updated}} updated.",
+    "code": "Code",
+    "currency": "Currency",
+    "mainContact": "Main contact",
+    "exportCustomer": "Export customer",
+    "noLimit": "No limit",
+    "sameAsBilling": "Leave empty if the same as the billing address",
+    "creditLimitShown": "Credit limit {{currency}} {{amount}} (shown for information; checked against invoices from Phase 2).",
+    "confirmDuplicate": "I have checked: this is a different customer. Save anyway.",
+    "field": {
+      "name": "Name",
+      "vat_no": "VAT registration no.",
+      "tin": "TIN (9 digits)",
+      "phone": "Phone",
+      "email": "Email",
+      "billing_address": "Billing address",
+      "delivery_address": "Delivery address",
+      "payment_terms_days": "Payment terms (days; 0 = on receipt)",
+      "credit_limit": "Credit limit",
+      "country": "Country",
+      "incoterm": "Delivery term (Incoterm)",
+      "port_of_destination": "Port of destination",
+      "notes": "Notes"
+    },
+    "incoterms": {
+      "EXW": "EXW – Ex works",
+      "FCA": "FCA – Free carrier",
+      "FAS": "FAS – Free alongside ship",
+      "FOB": "FOB – Free on board",
+      "CFR": "CFR – Cost and freight",
+      "CIF": "CIF – Cost, insurance and freight",
+      "CPT": "CPT – Carriage paid to",
+      "CIP": "CIP – Carriage and insurance paid to",
+      "DAP": "DAP – Delivered at place",
+      "DPU": "DPU – Delivered at place unloaded",
+      "DDP": "DDP – Delivered duty paid"
+    },
+    "contacts": "Contacts",
+    "noContacts": "No contacts yet. The first one added becomes the main contact.",
+    "contact": {
+      "name": "Name",
+      "position": "Position",
+      "phone": "Phone",
+      "email": "Email"
+    },
+    "main": "main",
+    "left": "left",
+    "makeMain": "Make main contact",
+    "hasLeft": "Has left",
+    "isBack": "Back again",
+    "addContact": "Add a contact",
+    "editContact": "Change contact"
   }
 }

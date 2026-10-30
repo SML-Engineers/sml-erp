@@ -83,6 +83,8 @@ services:
       context: ../frontend
     environment:
       API_PROXY_TARGET: http://backend:8000
+      # Notice changed files on Windows and macOS too (see vite.config.ts).
+      VITE_WATCH_POLLING: "1"
     volumes:
       - ../frontend:/app
       - /app/node_modules

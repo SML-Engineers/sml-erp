@@ -27,8 +27,8 @@ Status: `[ ]` to do · `[x]` done
   export customer flag with country, default Incoterm and port of destination; contacts
   (name, position, phone, email; one is the main contact). Search, Excel export, import in
   the same layout (checked first, all or nothing, as for sections and machines).
-  - Sales Executive and Sales Manager enter and edit; the Sales Manager or Director
-    deactivates (with a reason); the Accountant can look. A customer with documents is
+  - The Sales Executive enters and edits; the Sales Manager or Director deactivates (with a
+    reason); the Accountant can look. A customer with documents is
     deactivated, never deleted (rule 9, database guard); every change is in the audit log.
   - Duplicate warning on the same name or VAT number.
   - The Sales Executive and Sales Manager roles are switched on so they can be assigned.

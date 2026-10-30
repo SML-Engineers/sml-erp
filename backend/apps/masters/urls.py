@@ -99,6 +99,7 @@ urlpatterns = [
     path("customers/export/", cu.CustomerExportView.as_view(), name="customer-export"),
     path("customers/import/", cu.CustomerImportView.as_view(), name="customer-import"),
     path("customers/<int:pk>/", cu.CustomerDetailView.as_view(), name="customer-detail"),
+    path("customers/<int:pk>/active/", cu.CustomerActiveView.as_view(), name="customer-active"),
     path("customers/<int:pk>/contacts/", cu.ContactListView.as_view(), name="customer-contacts"),
     path(
         "customers/<int:pk>/contacts/<int:contact_pk>/",

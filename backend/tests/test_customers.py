@@ -106,14 +106,32 @@ def test_a_likely_duplicate_must_be_confirmed(executive, unilever):
 
 def test_only_the_sales_manager_or_director_deactivates_with_a_reason(executive, manager, unilever):
     with pytest.raises(MastersError, match="Sales Manager or the Director"):
-        customers.update_customer(executive, unilever, {"is_active": False}, reason="Closed")
+        customers.set_active(executive, unilever, False, reason="Closed")
     with pytest.raises(MastersError, match="Give a reason"):
-        customers.update_customer(manager, unilever, {"is_active": False})
-    customers.update_customer(manager, unilever, {"is_active": False}, reason="Closed down")
+        customers.set_active(manager, unilever, False)
+    customers.set_active(manager, unilever, False, reason="Closed down")
     unilever.refresh_from_db()
     assert not unilever.is_active
     event = AuditEvent.objects.get(event="customer_deactivated")
     assert event.reason == "Closed down"
+    director = person("director@sml.lk", "director", all_divisions=True)
+    customers.set_active(director, unilever, True)
+    unilever.refresh_from_db()
+    assert unilever.is_active
+
+
+def test_deactivating_through_the_api_needs_sales_approval(executive, manager, unilever):
+    url = f"/api/v1/customers/{unilever.pk}/active/"
+    body = {"is_active": False, "reason": "Closed down"}
+    assert as_user(executive).post(url, body, format="json").status_code == 403
+    done = as_user(manager).post(url, body, format="json")
+    assert done.status_code == 200 and done.json()["is_active"] is False
+    # Changing details does not deactivate, even if asked to.
+    as_user(executive).patch(
+        f"/api/v1/customers/{unilever.pk}/", {"is_active": True, "phone": "011"}, format="json"
+    )
+    unilever.refresh_from_db()
+    assert not unilever.is_active and unilever.phone == "011"
 
 
 def test_people_without_sales_access_cannot_add_or_change_customers(clerk, unilever):

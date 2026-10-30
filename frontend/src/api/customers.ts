@@ -68,6 +68,8 @@ export function listCustomers(q: string, includeInactive: boolean) {
 export const createCustomer = (change: CustomerChange) => apiSend<Customer>("POST", "/customers/", change);
 export const updateCustomer = (id: number, change: CustomerChange) =>
   apiSend<Customer>("PATCH", `/customers/${id}/`, change);
+export const setCustomerActive = (id: number, is_active: boolean, reason: string) =>
+  apiSend<Customer>("POST", `/customers/${id}/active/`, { is_active, reason });
 export const listContacts = (id: number) => apiGet<Contact[]>(`/customers/${id}/contacts/`);
 export const addContact = (id: number, change: ContactChange) =>
   apiSend<Contact>("POST", `/customers/${id}/contacts/`, change);

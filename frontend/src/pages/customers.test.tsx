@@ -12,7 +12,7 @@ const executive: CurrentUser = {
 
 const manager: CurrentUser = {
   ...sampleUser,
-  access: { areas: { sales: ["approve", "enter", "view"] }, actions: [], divisions: "all" },
+  access: { areas: { sales: ["approve", "view"] }, actions: [], divisions: "all" },
 };
 
 const viewer: CurrentUser = {
@@ -188,4 +188,20 @@ test("an import is checked first and refused rows are listed", async () => {
   fireEvent.change(within(panel).getByLabelText("Excel file (.xlsx)"), { target: { files: [file] } });
   fireEvent.click(within(panel).getByRole("button", { name: "Check file" }));
   expect(await within(panel).findByText(/Row 4: The TIN must be nine digits/)).toBeInTheDocument();
+});
+
+test("the Sales Manager deactivates a customer with a reason", async () => {
+  const calls = mockApi(api({ "POST /api/v1/customers/1/active/": { body: { ...unilever, is_active: false } } }));
+  renderAt("/customers", <CustomersPage me={manager} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Unilever Sri Lanka" }));
+  const form = await screen.findByRole("region", { name: "C0001 Unilever Sri Lanka" });
+  expect(within(form).queryByRole("button", { name: "Save" })).not.toBeInTheDocument(); // approves, does not edit
+  fireEvent.change(within(form).getByLabelText("Reason"), { target: { value: "Closed down" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Deactivate" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/customers/1/active/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ is_active: false, reason: "Closed down" }) }),
+    ),
+  );
 });

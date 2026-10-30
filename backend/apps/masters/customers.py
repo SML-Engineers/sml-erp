@@ -157,21 +157,12 @@ def create_customer(user: User, values: dict, *, confirmed: bool = False) -> Cus
 def update_customer(
     user: User, customer: Customer, values: dict, *, reason: str = "", confirmed: bool = False
 ) -> Customer:
+    """Change a customer's details (Sales: Enter). Deactivating is set_active()."""
     if not can_enter(user):
         raise MastersError("You cannot change customers.")
     with transaction.atomic():
         customer = Customer.objects.select_for_update().get(pk=customer.pk)
         cleaned = _check_details(values)
-        event = "customer_changed"
-        if "is_active" in values and bool(values["is_active"]) != customer.is_active:
-            if not can_deactivate(user):
-                raise MastersError(
-                    "Only the Sales Manager or the Director can deactivate or reactivate customers."
-                )
-            if not values["is_active"] and not (reason or "").strip():
-                raise MastersError("Give a reason for deactivating the customer.")
-            customer.is_active = bool(values["is_active"])
-            event = "customer_deactivated" if not customer.is_active else "customer_reactivated"
         check = {k: cleaned[k] for k in ("vat_no", "name") if k in cleaned}
         new_values = {
             k: v for k, v in check.items() if (getattr(customer, k) or "").lower() != v.lower()
@@ -183,8 +174,28 @@ def update_customer(
             setattr(customer, key, value)
         _check_export(customer)
         note = "; ".join(filter(None, [reason, *warnings]))
-        with audit_context(event, note):
+        with audit_context("customer_changed", note):
             customer.save()
+        return customer
+
+
+def set_active(user: User, customer: Customer, active: bool, *, reason: str = "") -> Customer:
+    """Deactivate or reactivate a customer: the Sales Manager or Director (Sales: Approve),
+    with a reason for deactivating. A deactivated customer keeps its history and code."""
+    if not can_deactivate(user):
+        raise MastersError(
+            "Only the Sales Manager or the Director can deactivate or reactivate customers."
+        )
+    if not active and not (reason or "").strip():
+        raise MastersError("Give a reason for deactivating the customer.")
+    with transaction.atomic():
+        customer = Customer.objects.select_for_update().get(pk=customer.pk)
+        if customer.is_active == active:
+            return customer
+        customer.is_active = active
+        event = "customer_reactivated" if active else "customer_deactivated"
+        with audit_context(event, reason):
+            customer.save(update_fields=["is_active"])
         return customer
 
 
@@ -367,8 +378,9 @@ def _import_row(row: dict, *, user: User, reason: str) -> str:
         customer = Customer.objects.filter(code=code).first()
         if customer is None:
             raise MastersError(f"There is no customer {code} (leave Code empty for a new one).")
-        values["is_active"] = active
         customer = update_customer(user, customer, values, reason=reason, confirmed=False)
+        if active != customer.is_active:
+            customer = set_active(user, customer, active, reason=reason)
         outcome = "updated"
     else:
         if not active:

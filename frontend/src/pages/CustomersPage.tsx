@@ -15,6 +15,7 @@ import {
   listContacts,
   listCustomers,
   listPickerCurrencies,
+  setCustomerActive,
   updateContact,
   updateCustomer,
   type Contact,
@@ -175,7 +176,7 @@ function CustomerForm(props: { me: CurrentUser; customer?: Customer; onDone: (id
     onSuccess: done,
   });
   const toggle = useMutation({
-    mutationFn: () => updateCustomer(customer!.id, { is_active: !customer!.is_active, reason }),
+    mutationFn: () => setCustomerActive(customer!.id, !customer!.is_active, reason),
     onSuccess: done,
   });
   const warnings = warningsOf(save.error);
@@ -284,7 +285,7 @@ function CustomerForm(props: { me: CurrentUser; customer?: Customer; onDone: (id
           {t("customers.field.notes")}
           <textarea rows={2} value={values.notes} disabled={!canEnter} onChange={(e) => set("notes")(e.target.value)} />
         </label>
-        {canEnter && (
+        {(canEnter || canDeactivate) && (
           <>
             {customer && (
               <label className="wide">
@@ -306,9 +307,11 @@ function CustomerForm(props: { me: CurrentUser; customer?: Customer; onDone: (id
               </div>
             )}
             <div className="wide row-actions">
-              <button type="submit" disabled={save.isPending || (warnings.length > 0 && !confirmed)}>
-                {t("divisions.save")}
-              </button>
+              {canEnter && (
+                <button type="submit" disabled={save.isPending || (warnings.length > 0 && !confirmed)}>
+                  {t("divisions.save")}
+                </button>
+              )}
               {customer && canDeactivate && (
                 <button type="button" className={customer.is_active ? "danger" : "secondary"} onClick={() => toggle.mutate()}>
                   {customer.is_active ? t("divisions.deactivate") : t("divisions.reactivate")}

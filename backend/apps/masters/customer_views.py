@@ -148,9 +148,36 @@ class CustomerDetailView(_Sales):
         values = dict(data.validated_data)
         confirmed = values.pop("confirm_duplicates")
         reason = values.pop("reason")
+        values.pop("is_active", None)  # deactivating is its own action (CustomerActiveView)
         try:
             customers.update_customer(
                 request.user, customer, values, reason=reason, confirmed=confirmed
+            )
+        except MastersError as error:
+            return _error(error)
+        return Response(CustomerSerializer(_rows().get(pk=pk)).data)
+
+
+class ActiveInput(serializers.Serializer):
+    is_active = serializers.BooleanField()
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class CustomerActiveView(_Sales):
+    """Deactivate or reactivate: the Sales Manager or Director (Sales: Approve)."""
+
+    access_write_level = "approve"
+
+    def post(self, request, pk):
+        customer = get_object_or_404(Customer, pk=pk)
+        data = ActiveInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            customers.set_active(
+                request.user,
+                customer,
+                data.validated_data["is_active"],
+                reason=data.validated_data["reason"],
             )
         except MastersError as error:
             return _error(error)

@@ -22,6 +22,8 @@ export interface Column<T> {
   cell?: (row: T) => ReactNode;
   /** Money or quantity: right-aligned, thousands separators, total in the footer. */
   money?: boolean;
+  /** For a money column that must not be added up (a rate or price): no total. */
+  noTotal?: boolean;
   sortable?: boolean;
 }
 
@@ -102,7 +104,8 @@ export default function DataTable<T>({
   const { pageIndex, pageSize: perPage } = table.getState().pagination;
   const first = filtered.length === 0 ? 0 : pageIndex * perPage + 1;
   const last = Math.min(filtered.length, (pageIndex + 1) * perPage);
-  const hasMoney = columns.some((c) => c.money);
+  const totalled = (c: Column<T>) => Boolean(c.money && !c.noTotal);
+  const hasMoney = columns.some(totalled);
 
   return (
     <div className="data-table">
@@ -203,7 +206,7 @@ export default function DataTable<T>({
               <tr>
                 {columns.map((col, i) => (
                   <td key={col.id} className={col.money ? "num" : undefined}>
-                    {col.money
+                    {totalled(col)
                       ? formatDecimal(sumDecimal(filtered.map((r) => toText(col.value(r.original)))))
                       : i === 0
                         ? t("table.total")

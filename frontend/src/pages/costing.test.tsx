@@ -42,7 +42,8 @@ test("the rates in force are shown to sales staff, who cannot change them", asyn
   expect(within(divisions).getByText("In force")).toBeInTheDocument();
   expect(within(divisions).getByText("20.00%")).toBeInTheDocument();
   const materials = await screen.findByRole("table", { name: "Materials" });
-  expect(within(materials).getByText("400.00")).toBeInTheDocument();
+  expect(within(materials).getByText("400.00")).toBeInTheDocument(); // prices are not added up
+  expect(within(materials).queryByText("Total")).not.toBeInTheDocument();
   expect(screen.queryByRole("form", { name: "New division rates" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Add material" })).not.toBeInTheDocument();
 });

@@ -97,7 +97,7 @@ function DivisionRates({ canManage }: { canManage: boolean }) {
             { id: "from", header: t("costing.from"), value: (r) => r.effective_from },
             { id: "overhead", header: t("costing.overhead"), value: (r) => `${formatDecimal(r.overhead_pct)}%` },
             { id: "margin", header: t("costing.margin"), value: (r) => `${formatDecimal(r.margin_pct)}%` },
-            { id: "setup", header: t("costing.setupRate"), value: (r) => r.setup_rate, money: true },
+            { id: "setup", header: t("costing.setupRate"), value: (r) => r.setup_rate, money: true, noTotal: true },
             {
               id: "state",
               header: t("users.status"),
@@ -215,7 +215,7 @@ function Materials({ canManage }: { canManage: boolean }) {
             { id: "kind", header: t("costing.kind"), value: (m) => t(`costing.kinds.${m.kind}`) },
             { id: "form", header: t("costing.form"), value: (m) => t(`costing.forms.${m.form}`) },
             { id: "grade", header: t("costing.grade"), value: (m) => m.grade },
-            { id: "price", header: t("costing.priceToday"), value: (m) => m.current_rate ?? "", money: true },
+            { id: "price", header: t("costing.priceToday"), value: (m) => m.current_rate ?? "", money: true, noTotal: true },
             {
               id: "status",
               header: t("users.status"),

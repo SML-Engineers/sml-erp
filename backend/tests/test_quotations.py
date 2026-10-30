@@ -214,8 +214,9 @@ def test_the_customer_is_now_in_use_and_keeps_its_code(executive, unilever):
     draft(executive, unilever)
     unilever.refresh_from_db()
     assert unilever.first_used_at is not None
-    with pytest.raises(DatabaseError, match="cannot be deleted"), transaction.atomic():
-        Customer.objects.filter(pk=unilever.pk).delete()
+    # Django refuses to delete it (the quotation points to it); the database refuses too.
+    with pytest.raises(DatabaseError, match="code cannot change"), transaction.atomic():
+        Customer.objects.filter(pk=unilever.pk).update(code="C9999")
 
 
 # --- Changing a draft -------------------------------------------------------------------

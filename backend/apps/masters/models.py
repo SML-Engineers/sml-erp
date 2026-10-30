@@ -671,3 +671,99 @@ class ChequeLeaf(models.Model):
 
     def __str__(self):
         return f"{self.account.code} cheque {self.number} ({self.status})"
+
+
+# --- Customers (spec 5.4, 5.5; backlog P15-01) ------------------------------------------
+
+
+class Customer(models.Model):
+    """A customer, for quotations, proformas and sales orders (spec 5). Its code comes from
+    the number series "customer" (C0001, ...); once a document uses it the code is fixed
+    and the customer can only be made inactive (rule 9; masters_customer_guard)."""
+
+    class Incoterm(models.TextChoices):
+        EXW = "EXW", "EXW – Ex works"
+        FCA = "FCA", "FCA – Free carrier"
+        FAS = "FAS", "FAS – Free alongside ship"
+        FOB = "FOB", "FOB – Free on board"
+        CFR = "CFR", "CFR – Cost and freight"
+        CIF = "CIF", "CIF – Cost, insurance and freight"
+        CPT = "CPT", "CPT – Carriage paid to"
+        CIP = "CIP", "CIP – Carriage and insurance paid to"
+        DAP = "DAP", "DAP – Delivered at place"
+        DPU = "DPU", "DPU – Delivered at place unloaded"
+        DDP = "DDP", "DDP – Delivered duty paid"
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=200)
+    billing_address = models.TextField(blank=True)
+    delivery_address = models.TextField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    vat_no = models.CharField("VAT registration no.", max_length=50, blank=True)
+    tin = models.CharField("TIN", max_length=20, blank=True)
+    currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name="customers")
+    payment_terms_days = models.PositiveSmallIntegerField(default=30)
+    # Shown on the customer and its documents; enforcing it comes with invoices (Phase 2).
+    credit_limit = models.DecimalField(
+        "Credit limit", max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    is_export = models.BooleanField("Export customer", default=False)
+    country = models.CharField(max_length=60, blank=True)
+    incoterm = models.CharField(max_length=3, choices=Incoterm.choices, blank=True)
+    port_of_destination = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["name"]
+        indexes = [models.Index(fields=["vat_no"], name="masters_customer_vat")]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(credit_limit__isnull=True) | models.Q(credit_limit__gte=0),
+                name="masters_customer_credit_not_negative",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
+class CustomerContact(models.Model):
+    """A person at a customer. One active contact is the main one, used on documents."""
+
+    is_structure = True
+
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="contacts")
+    name = models.CharField(max_length=100)
+    position = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    is_main = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["customer", "-is_main", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer"],
+                condition=models.Q(is_main=True),
+                name="masters_customer_one_main_contact",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(is_main=False) | models.Q(is_active=True),
+                name="masters_customer_main_contact_active",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.customer.code})"

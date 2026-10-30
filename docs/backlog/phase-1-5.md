@@ -21,15 +21,17 @@ Status: `[ ]` to do · `[x]` done
 
 ## A. Customers and rates
 
-- [ ] **P15-01 Customers and contacts** (spec 5.4, 5.5)
+- [x] **P15-01 Customers and contacts** (spec 5.4, 5.5)
   Customer master: code (C0001, immutable once used), name, addresses (billing and delivery),
   VAT / TIN number, default currency, payment terms, credit limit (shown, not yet enforced),
   export customer flag with country, default Incoterm and port of destination; contacts
-  (name, role, phone, email; one is the main contact). Search, Excel export, import from an
-  Excel template (checked first, all or nothing, as for suppliers).
-  - Sales Executive enters; Sales Manager and Accountant can edit; a customer with documents
-    is deactivated, never deleted (rule 9); every change is in the audit log.
+  (name, position, phone, email; one is the main contact). Search, Excel export, import in
+  the same layout (checked first, all or nothing, as for sections and machines).
+  - The Sales Executive enters and edits; the Sales Manager or Director deactivates (with a
+    reason); the Accountant can look. A customer with documents is
+    deactivated, never deleted (rule 9, database guard); every change is in the audit log.
   - Duplicate warning on the same name or VAT number.
+  - The Sales Executive and Sales Manager roles are switched on so they can be assigned.
 
 - [ ] **P15-02 Costing rates** (spec 5.1, rule 11)
   Dated rate tables maintained by the Accountant: material rates (material or resin grade,

@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import banking_views as bv
 from . import currency_views as cv
+from . import customer_views as cu
 from . import limit_views as lv
 from . import roster_views as rv
 from . import supplier_views as sv
@@ -93,6 +94,17 @@ urlpatterns = [
         "payees/<int:pk>/acknowledge-bank-change/",
         sv.AcknowledgeBankChangeView.as_view(),
         name="payee-acknowledge-bank-change",
+    ),
+    path("customers/", cu.CustomerListView.as_view(), name="customer-list"),
+    path("customers/export/", cu.CustomerExportView.as_view(), name="customer-export"),
+    path("customers/import/", cu.CustomerImportView.as_view(), name="customer-import"),
+    path("customers/<int:pk>/", cu.CustomerDetailView.as_view(), name="customer-detail"),
+    path("customers/<int:pk>/active/", cu.CustomerActiveView.as_view(), name="customer-active"),
+    path("customers/<int:pk>/contacts/", cu.ContactListView.as_view(), name="customer-contacts"),
+    path(
+        "customers/<int:pk>/contacts/<int:contact_pk>/",
+        cu.ContactDetailView.as_view(),
+        name="customer-contact-detail",
     ),
     path("company-accounts/", bv.AccountListView.as_view(), name="company-account-list"),
     path(

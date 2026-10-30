@@ -42,11 +42,12 @@ def admin():
 # --- Standard roles and defaults --------------------------------------------------------
 
 
-def test_standard_roles_are_loaded_with_phase_one_roles_active():
+def test_standard_roles_are_loaded_with_phase_one_and_sales_roles_active():
     active = set(
         Role.objects.filter(is_standard=True, is_active=True).values_list("code", flat=True)
     )
-    assert active == {"system_admin", "director", "accountant", "clerk", "cashier", "auditor"}
+    phase_one = {"system_admin", "director", "accountant", "clerk", "cashier", "auditor"}
+    assert active == phase_one | {"sales_executive", "sales_manager"}  # Phase 1.5, P15-01
     assert Role.objects.filter(is_standard=True).count() == len(STANDARD_ROLES_V1)
 
 
@@ -301,7 +302,7 @@ def test_admin_cannot_change_their_own_roles_or_scope(admin):
 def test_later_phase_roles_cannot_be_assigned_yet(admin):
     user = person("s@sml.lk")
     response = as_user(admin).put(
-        f"/api/v1/users/{user.pk}/roles/", {"roles": ["sales_executive"]}, format="json"
+        f"/api/v1/users/{user.pk}/roles/", {"roles": ["purchasing_officer"]}, format="json"
     )
     assert response.status_code == 400
 

@@ -35,6 +35,10 @@ export const MENU: MenuSection[] = [
     ],
   },
   {
+    label: "menu.sales",
+    items: [{ label: "customers.title", path: "/customers", area: "sales" }],
+  },
+  {
     label: "menu.accounts",
     items: [
       { label: "payees.title", path: "/payees", area: "payees" },

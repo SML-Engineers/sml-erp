@@ -23,5 +23,7 @@ class MastersConfig(AppConfig):
         register(m.QuotationLimit)
         register(m.Supplier)
         register(m.SupplierBankAccount)
+        register(m.Customer)
+        register(m.CustomerContact)
         for model in (m.CompanyAccount, m.DivisionBankDefault, m.ChequeBook, m.ChequeLeaf):
             register(model)

@@ -5,6 +5,7 @@ import type { CurrentUser } from "./api/auth";
 import AuthGate from "./components/AuthGate";
 import AppLayout, { useMe } from "./layout/AppLayout";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import CustomersPage from "./pages/CustomersPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import BankAccountsPage from "./pages/BankAccountsPage";
@@ -80,6 +81,7 @@ export default function App() {
           element={<WithMe page={(me) => <BankAccountsPage me={me} />} />}
         />
         <Route path="payees" element={<WithMe page={(me) => <PayeesPage me={me} />} />} />
+        <Route path="customers" element={<WithMe page={(me) => <CustomersPage me={me} />} />} />
         <Route
           path="chart-of-accounts"
           element={<WithMe page={(me) => <ChartOfAccountsPage me={me} />} />}

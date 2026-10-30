@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import banking_views as bv
+from . import costing_views as co
 from . import currency_views as cv
 from . import customer_views as cu
 from . import limit_views as lv
@@ -94,6 +95,22 @@ urlpatterns = [
         "payees/<int:pk>/acknowledge-bank-change/",
         sv.AcknowledgeBankChangeView.as_view(),
         name="payee-acknowledge-bank-change",
+    ),
+    path("costing/materials/", co.MaterialListView.as_view(), name="material-list"),
+    path("costing/materials/<int:pk>/", co.MaterialDetailView.as_view(), name="material-detail"),
+    path(
+        "costing/materials/<int:pk>/rates/", co.MaterialRatesView.as_view(), name="material-rates"
+    ),
+    path(
+        "costing/materials/<int:pk>/rates/<int:rate_pk>/",
+        co.MaterialRateDetailView.as_view(),
+        name="material-rate-detail",
+    ),
+    path("costing/division-rates/", co.CostingRateListView.as_view(), name="costing-rate-list"),
+    path(
+        "costing/division-rates/<int:pk>/",
+        co.CostingRateDetailView.as_view(),
+        name="costing-rate-detail",
     ),
     path("customers/", cu.CustomerListView.as_view(), name="customer-list"),
     path("customers/export/", cu.CustomerExportView.as_view(), name="customer-export"),

@@ -748,7 +748,8 @@ Minimum order quantity is stated on each line.
 **Controls and tracking**
 
 - Number QL{YY}{MM}{DD}{XX}, e.g. QL26102105 (section 3, Number series). Revisions keep the number and add Rev 0, Rev 1, … with full history of what was offered.
-- Approval through the shared approval engine: quotations below a minimum margin, or above a set value, need Director approval before sending.
+- Approval through the shared approval engine: **every quotation needs the Director's approval before it is printed or sent**, by email or otherwise (owner's decision, 31 Oct 2026). Quotations below the division's minimum margin, or above its set value, are flagged to the Director as warnings.
+- Costing is seen by the Sales Manager, the Accountant, the Director and the quotation's creator; not by other Sales Executives (owner's decision, 31 Oct 2026).
 - Status: Draft, Awaiting Approval, Sent, Accepted, Lost (reason required), Expired.
 - Customer copy shows only description, quantity, unit price, terms. Costing never appears on it.
 - Output as PDF with company letterhead, and sent by email from the system.
@@ -761,7 +762,7 @@ Minimum order quantity is stated on each line.
 - Used to request an advance payment, or for the customer's import, LC or bank documents.
 - **Not an accounting entry.** Issuing it records no sale and no receivable.
 - Own number series (e.g. PI-2026-0001) and clearly titled "Proforma Invoice".
-- Advance received against it posts as a customer advance: Dr Bank, Cr Customer Advances (liability).
+- Advance received against it posts as a customer advance: Dr Bank, Cr Customer Advances (liability). The Accountant's approval is enough (owner's decision, 31 Oct 2026).
 - When the tax invoice is raised, the advance is set off automatically against it.
 - One click converts it to the sales order, and later to the tax invoice.
 
@@ -791,7 +792,7 @@ Export customers are quoted, invoiced and paid in their own currency from Phase 
 - Each customer has a default currency (LKR, USD, EUR or any other added by the Admin).
 - Quotations, proformas, sales orders and invoices are issued in that currency; costing stays in LKR, and the quotation shows the exchange rate used to convert.
 - Exchange rates are kept in a dated table, entered daily or imported.
-- Export documents: commercial invoice, packing list (cartons, net and gross weight, dimensions), and proforma for the buyer's bank or LC.
+- Export documents: commercial invoice, packing list (cartons, net and gross weight, dimensions), and proforma for the buyer's bank or LC. The packing list is issued with the proforma from Phase 1.5 (owner's decision, 31 Oct 2026).
 - Shipping terms (Incoterms such as FOB, CIF) and port of loading and destination on each document.
 - Foreign-currency bank accounts; receipts recorded in the invoice currency.
 - In Phase 2, exchange gains and losses are posted on receipt and revalued at month-end; export sales are treated under the applicable VAT rules (confirm with the tax advisor).

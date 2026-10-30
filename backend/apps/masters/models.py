@@ -767,3 +767,121 @@ class CustomerContact(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.customer.code})"
+
+
+# --- Costing rates (spec 5.1, rule 11; backlog P15-02) ----------------------------------
+
+
+class Material(models.Model):
+    """A material priced by weight for quotation costing: steel and other metals for the
+    workshop, resins and masterbatches for moulding. The code is fixed once a quotation has
+    used it (masters_material_guard)."""
+
+    class Kind(models.TextChoices):
+        METAL = "metal", "Metal"
+        RESIN = "resin", "Plastic resin"
+        MASTERBATCH = "masterbatch", "Masterbatch"
+        OTHER = "other", "Other"
+
+    class Form(models.TextChoices):
+        ROUND_BAR = "round_bar", "Round bar"
+        HEX_BAR = "hex_bar", "Hexagon bar"
+        FLAT_BAR = "flat_bar", "Flat or square bar"
+        PLATE = "plate", "Plate or sheet"
+        TUBE = "tube", "Tube or pipe"
+        GRANULES = "granules", "Granules"
+        OTHER = "other", "Other"
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    form = models.CharField(max_length=20, choices=Form.choices, default=Form.OTHER)
+    grade = models.CharField(max_length=50, blank=True)
+    # For working out a bar's or plate's weight from its size (machining costing, P15-04).
+    density = models.DecimalField(
+        "Density (g/cm³)", max_digits=6, decimal_places=3, null=True, blank=True
+    )
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["kind", "code"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(density__isnull=True) | models.Q(density__gt=0),
+                name="masters_material_density_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
+class MaterialRate(models.Model):
+    """A material's price per kg in LKR from a date (rule 11). Once its date has arrived it
+    is never changed or removed; a new rate from a later date replaces it."""
+
+    is_structure = True
+
+    material = models.ForeignKey(Material, on_delete=models.PROTECT, related_name="rates")
+    effective_from = models.DateField()
+    rate = models.DecimalField("Price per kg (LKR)", max_digits=18, decimal_places=2)
+    reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["material", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["material", "effective_from"], name="masters_materialrate_one_per_day"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rate__gte=0), name="masters_materialrate_not_negative"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.material.code} from {self.effective_from}: LKR {self.rate}/kg"
+
+
+class CostingRate(models.Model):
+    """A division's costing percentages and setup rate from a date (rule 11): overhead on
+    direct cost, the default margin, and the hourly rate for setting up a job."""
+
+    is_structure = True
+
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, related_name="costing_rates")
+    effective_from = models.DateField()
+    overhead_pct = models.DecimalField("Overhead %", max_digits=5, decimal_places=2)
+    margin_pct = models.DecimalField("Default margin %", max_digits=5, decimal_places=2)
+    setup_rate = models.DecimalField("Setup rate per hour (LKR)", max_digits=18, decimal_places=2)
+    reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["division", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["division", "effective_from"], name="masters_costingrate_one_per_day"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(overhead_pct__gte=0)
+                & models.Q(margin_pct__gte=0)
+                & models.Q(setup_rate__gte=0),
+                name="masters_costingrate_not_negative",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.division.code} from {self.effective_from}"

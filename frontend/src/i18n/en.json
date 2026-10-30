@@ -1366,5 +1366,53 @@
     "isBack": "Back again",
     "addContact": "Add a contact",
     "editContact": "Change contact"
+  },
+  "costing": {
+    "title": "Costing rates",
+    "help": "The rates quotation costing uses: each material's price per kg, and each division's overhead, default margin and setup rate. Machine hourly rates are kept with each machine. A rate starts today or later, so a quotation keeps the rates of its date. Kept by the Accountant.",
+    "divisionRates": "Division rates",
+    "divisionHelp": "Overhead is added to the direct cost (material, machine, setup, subcontract); the margin is then added to give the suggested price.",
+    "noDivisionRates": "No division rates yet.",
+    "addDivisionRates": "New division rates",
+    "from": "From",
+    "overhead": "Overhead %",
+    "margin": "Default margin %",
+    "setupRate": "Setup rate per hour (LKR)",
+    "inForce": "In force",
+    "replaced": "Replaced",
+    "future": "Not started yet",
+    "started": "Started",
+    "remove": "Remove",
+    "removeReason": "Removes a rate that has not started yet; type the reason in the Reason box first.",
+    "add": "Add",
+    "materials": "Materials",
+    "noMaterials": "No materials yet.",
+    "showInactive": "Show deactivated materials",
+    "addMaterial": "Add material",
+    "name": "Name",
+    "kind": "Kind",
+    "form": "Form",
+    "grade": "Grade",
+    "density": "Density (g/cm³)",
+    "priceToday": "Price per kg today (LKR)",
+    "pricesOf": "Prices of {{code}}",
+    "noPrices": "No price yet.",
+    "pricePerKg": "Price per kg (LKR)",
+    "addPrice": "Add price",
+    "kinds": {
+      "metal": "Metal",
+      "resin": "Plastic resin",
+      "masterbatch": "Masterbatch",
+      "other": "Other"
+    },
+    "forms": {
+      "round_bar": "Round bar",
+      "hex_bar": "Hexagon bar",
+      "flat_bar": "Flat or square bar",
+      "plate": "Plate or sheet",
+      "tube": "Tube or pipe",
+      "granules": "Granules",
+      "other": "Other"
+    }
   }
 }

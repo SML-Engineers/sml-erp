@@ -1,0 +1,281 @@
+"""Quotations API (P15-03). Rules live in services.py; every endpoint checks Sales access and
+returns only quotations the user may see."""
+
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers, status
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.accounting.models import TaxCode
+from apps.core.models import Division
+from apps.core.permissions import AreaAccess
+from apps.masters.models import Customer, CustomerContact
+
+from . import services
+from .models import Quotation, QuotationFile
+from .services import BreakInput, LineInput, SalesError
+
+
+def _error(error):
+    return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class _Sales(APIView):
+    permission_classes = [AreaAccess]
+    access_area = "sales"
+    access_write_level = "enter"
+
+
+def _get(user, pk) -> Quotation:
+    return get_object_or_404(services.visible(user), pk=pk)
+
+
+# --- Output -----------------------------------------------------------------------------
+
+
+def _summary(q: Quotation) -> dict:
+    return {
+        "id": q.id,
+        "number": q.number,
+        "revision": q.revision,
+        "status": q.status,
+        "quote_date": q.quote_date,
+        "valid_until": q.valid_until,
+        "division": q.division.code,
+        "customer": {"id": q.customer_id, "code": q.customer.code, "name": q.customer.name},
+        "enquiry_ref": q.enquiry_ref,
+        "currency": q.currency.code,
+        "total_amount": str(q.total_amount),
+        "total_lkr": str(q.total_lkr),
+        "created_by": q.created_by.full_name,
+    }
+
+
+def _detail(q: Quotation, user) -> dict:
+    body = _summary(q)
+    contact = q.contact
+    body |= {
+        "contact": None
+        if contact is None
+        else {"id": contact.id, "name": contact.name, "email": contact.email},
+        "exchange_rate": str(q.exchange_rate),
+        "rate_date": q.rate_date,
+        "payment_terms": q.payment_terms,
+        "delivery_lead_time": q.delivery_lead_time,
+        "incoterm": q.incoterm,
+        "notes": q.notes,
+        "subtotal": str(q.subtotal),
+        "tax_total": str(q.tax_total),
+        "created_by_id": q.created_by_id,
+        "created_at": q.created_at,
+        "lines": [
+            {
+                "line_no": line.line_no,
+                "description": line.description,
+                "drawing_no": line.drawing_no,
+                "drawing_rev": line.drawing_rev,
+                "quantity": str(line.quantity),
+                "unit": line.unit,
+                "min_order_qty": None if line.min_order_qty is None else str(line.min_order_qty),
+                "unit_price": str(line.unit_price),
+                "tax_code": line.tax_code.code if line.tax_code else None,
+                "amount": str(line.amount),
+                "tax_amount": str(line.tax_amount),
+                "total": str(line.total),
+                "breaks": [
+                    {"quantity": str(b.quantity), "unit_price": str(b.unit_price)}
+                    for b in line.breaks.all()
+                ],
+            }
+            for line in q.lines.select_related("tax_code").prefetch_related("breaks")
+        ],
+        "files": [
+            {
+                "id": f.id,
+                "line_no": f.line_no,
+                "file_name": f.file_name,
+                "content_type": f.content_type,
+                "size": f.size,
+                "uploaded_at": f.uploaded_at,
+            }
+            for f in q.files.all()
+        ],
+        "can_edit": services.can_edit(user, q),
+    }
+    return body
+
+
+# --- Input ------------------------------------------------------------------------------
+
+
+class BreakSerializer(serializers.Serializer):
+    quantity = serializers.CharField(max_length=30)
+    unit_price = serializers.CharField(max_length=30)
+
+
+class LineSerializer(serializers.Serializer):
+    description = serializers.CharField(allow_blank=True)
+    drawing_no = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    drawing_rev = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    quantity = serializers.CharField(max_length=30)
+    unit = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    min_order_qty = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    unit_price = serializers.CharField(max_length=30)
+    tax_code = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, allow_null=True
+    )
+    breaks = BreakSerializer(many=True, required=False)
+
+
+class QuotationInput(serializers.Serializer):
+    customer = serializers.IntegerField(required=False)
+    contact = serializers.IntegerField(required=False, allow_null=True)
+    division = serializers.CharField(max_length=2, required=False)
+    currency = serializers.CharField(max_length=3, required=False, allow_blank=True)
+    valid_until = serializers.DateField(required=False)
+    enquiry_ref = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    payment_terms = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    delivery_lead_time = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    incoterm = serializers.CharField(max_length=3, required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    lines = LineSerializer(many=True)
+
+
+def _values(data: dict) -> tuple[dict, list[LineInput]]:
+    """Turn the request into the service's inputs; unknown references become errors."""
+    values = {}
+    if "customer" in data:
+        values["customer"] = Customer.objects.filter(pk=data["customer"]).first()
+    if "contact" in data:
+        values["contact"] = (
+            None
+            if data["contact"] is None
+            else CustomerContact.objects.filter(pk=data["contact"]).first() or "unknown"
+        )
+    if "division" in data:
+        values["division"] = Division.objects.filter(code=data["division"].upper()).first()
+    for name in (
+        "currency",
+        "valid_until",
+        "enquiry_ref",
+        "payment_terms",
+        "delivery_lead_time",
+        "incoterm",
+        "notes",
+    ):
+        if name in data:
+            values[name] = data[name]
+    lines = []
+    for n, line in enumerate(data["lines"], start=1):
+        code = (line.get("tax_code") or "").strip().upper()
+        tax_code = None
+        if code:
+            tax_code = TaxCode.objects.filter(code=code).first()
+            if tax_code is None:
+                raise SalesError(f"Line {n}: there is no tax code {code}.")
+        lines.append(
+            LineInput(
+                description=line["description"],
+                quantity=line["quantity"],
+                unit_price=line["unit_price"],
+                drawing_no=line.get("drawing_no", ""),
+                drawing_rev=line.get("drawing_rev", ""),
+                unit=line.get("unit") or "pcs",
+                min_order_qty=line.get("min_order_qty"),
+                tax_code=tax_code,
+                breaks=[BreakInput(b["quantity"], b["unit_price"]) for b in line.get("breaks", [])],
+            )
+        )
+    return values, lines
+
+
+# --- Views ------------------------------------------------------------------------------
+
+
+class QuotationListView(_Sales):
+    def get(self, request):
+        rows = services.visible(request.user).select_related(
+            "division", "customer", "currency", "created_by"
+        )
+        rows = services.search(rows, request.query_params.get("q", ""))
+        params = request.query_params
+        if params.get("status"):
+            rows = rows.filter(status__in=params["status"].split(","))
+        if params.get("division"):
+            rows = rows.filter(division__code=params["division"].upper())
+        if params.get("customer"):
+            rows = rows.filter(customer_id=params["customer"])
+        return Response([_summary(q) for q in rows[:2000]])
+
+    def post(self, request):
+        data = QuotationInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            values, lines = _values(data.validated_data)
+            quotation = services.save(request.user, None, lines=lines, **values)
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(quotation, request.user), status=status.HTTP_201_CREATED)
+
+
+class QuotationDetailView(_Sales):
+    def get(self, request, pk):
+        return Response(_detail(_get(request.user, pk), request.user))
+
+    def put(self, request, pk):
+        quotation = _get(request.user, pk)
+        data = QuotationInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            values, lines = _values(data.validated_data)
+            quotation = services.save(request.user, quotation, lines=lines, **values)
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(quotation, request.user))
+
+
+class QuotationFileListView(_Sales):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, pk):
+        quotation = _get(request.user, pk)
+        uploaded = request.FILES.get("file")
+        if uploaded is None:
+            return _error("Choose a file to attach.")
+        line = str(request.data.get("line_no", "")).strip()
+        if line and not line.isdigit():
+            return _error("The line number must be a whole number.")
+        try:
+            _record, warnings = services.add_file(
+                request.user, quotation, uploaded, int(line) if line else None
+            )
+        except SalesError as error:
+            return _error(error)
+        body = _detail(Quotation.objects.get(pk=quotation.pk), request.user)
+        body["upload_warnings"] = warnings
+        return Response(body, status=status.HTTP_201_CREATED)
+
+
+class QuotationFileDetailView(_Sales):
+    def get(self, request, pk, file_pk):
+        quotation = _get(request.user, pk)
+        record = get_object_or_404(QuotationFile, pk=file_pk, quotation=quotation)
+        return FileResponse(
+            record.file.open("rb"),
+            content_type=record.content_type,
+            filename=record.file_name,
+            as_attachment=request.query_params.get("download") in ("1", "true"),
+        )
+
+    def delete(self, request, pk, file_pk):
+        quotation = _get(request.user, pk)
+        record = get_object_or_404(QuotationFile, pk=file_pk, quotation=quotation)
+        try:
+            services.remove_file(request.user, record)
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(Quotation.objects.get(pk=quotation.pk), request.user))

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.accounting",
     "apps.vouchers",
     "apps.payments",
+    "apps.sales",
 ]
 
 MIDDLEWARE = [

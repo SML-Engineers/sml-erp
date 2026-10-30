@@ -26,6 +26,8 @@ import VoucherPage from "./pages/VoucherPage";
 import VouchersPage from "./pages/VouchersPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import PayeesPage from "./pages/PayeesPage";
+import QuotationPage from "./pages/QuotationPage";
+import QuotationsPage from "./pages/QuotationsPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
 import AccessReviewPage from "./pages/admin/AccessReviewPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
@@ -83,6 +85,9 @@ export default function App() {
         />
         <Route path="payees" element={<WithMe page={(me) => <PayeesPage me={me} />} />} />
         <Route path="customers" element={<WithMe page={(me) => <CustomersPage me={me} />} />} />
+        <Route path="quotations" element={<WithMe page={(me) => <QuotationsPage me={me} />} />} />
+        <Route path="quotations/new" element={<QuotationPage />} />
+        <Route path="quotations/:id" element={<QuotationPage />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
         <Route
           path="chart-of-accounts"

@@ -37,6 +37,7 @@ export interface Division {
   id: number;
   code: string;
   name: string;
+  division_type?: "production" | "shared";
 }
 
 export interface OverrideInfo {

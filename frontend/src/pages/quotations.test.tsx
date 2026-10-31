@@ -51,6 +51,8 @@ const saved: QuotationDetail = {
   can_record_outcome: false,
   can_revise: false,
   can_email: false,
+  can_make_proforma: false,
+  proformas: [],
   emails: [],
   approval: null,
   revisions: [{ id: 12, revision: 0, status: "draft", quote_date: "2026-10-31" }],
@@ -544,4 +546,19 @@ test("a discount % is entered on the quotation and shown in the totals", async (
   const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/" && i?.method === "PUT")!;
   expect(JSON.parse(String(init!.body)).discount_pct).toBe("3");
   expect(await screen.findByText(/Discount 3.00%/)).toBeInTheDocument();
+});
+
+// --- Proforma from an accepted quotation (P15-08) -------------------------------------------
+
+test("an accepted quotation makes a proforma invoice", async () => {
+  const won: QuotationDetail = { ...saved, status: "accepted", can_edit: false, can_submit: false, is_final: true, can_make_proforma: true };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/": { body: won },
+    "POST /api/v1/proformas/": { status: 201, body: { id: 40 } },
+  });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Make a proforma invoice" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/proformas/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/proformas/")!;
+  expect(JSON.parse(String(init!.body))).toEqual({ quotation: 12 });
 });

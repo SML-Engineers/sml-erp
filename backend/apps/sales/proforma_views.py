@@ -121,6 +121,21 @@ def _detail(p: ProformaInvoice, user) -> dict:
             for line in p.quotation.lines.prefetch_related("breaks")
         ],
         "can_edit": proformas.can_edit(user, p),
+        # The company's bank accounts the customer may be asked to pay into (draft only).
+        "bank_choices": [
+            {
+                "id": a.id,
+                "code": a.code,
+                "name": a.name,
+                "bank_name": a.bank_name,
+                "currency": a.currency.code,
+            }
+            for a in CompanyAccount.objects.filter(
+                is_active=True, kind__in=proformas.BANK_KINDS
+            ).select_related("currency")
+        ]
+        if proformas.can_edit(user, p)
+        else [],
         "can_cancel": proformas.can_cancel(user, p),
         "can_email": proformas.can_email(user, p),
         "emails": proforma_email.history(p),

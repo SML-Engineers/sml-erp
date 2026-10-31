@@ -104,6 +104,7 @@ function NewAdvance() {
   const options = useQuery({ queryKey: [...advancesKey, "options"], queryFn: getAdvanceOptions });
   const [values, setValues] = useState({
     customer: "",
+    proforma: "",
     quotation: "",
     division: "",
     account: "",
@@ -126,7 +127,8 @@ function NewAdvance() {
       recordAdvance({
         customer: Number(values.customer),
         quotation: values.quotation ? Number(values.quotation) : null,
-        division: values.quotation ? "" : values.division,
+        proforma: values.proforma ? Number(values.proforma) : null,
+        division: values.quotation || values.proforma ? "" : values.division,
         account: Number(values.account),
         method: values.method,
         amount: values.amount,
@@ -153,9 +155,23 @@ function NewAdvance() {
           label={t("quotations.customer")}
           options={(options.data?.customers ?? []).map((c) => ({ value: String(c.id), label: `${c.code} ${c.name}` }))}
           value={values.customer}
-          onChange={(value) => setValues((now) => ({ ...now, customer: value, quotation: "" }))}
+          onChange={(value) => setValues((now) => ({ ...now, customer: value, quotation: "", proforma: "" }))}
         />
       </div>
+      {customer && customer.proformas.length > 0 && (
+        <label>
+          {t("advances.againstProforma")}
+          <select value={values.proforma} onChange={(e) => setValues((now) => ({ ...now, proforma: e.target.value, quotation: "" }))}>
+            <option value="">{t("advances.noProforma")}</option>
+            {customer.proformas.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.number} ({p.currency} {formatDecimal(p.total_amount)})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {!values.proforma && (
       <label>
         {t("advances.againstQuotation")}
         <select value={values.quotation} onChange={(e) => set("quotation")(e.target.value)}>
@@ -167,7 +183,8 @@ function NewAdvance() {
           ))}
         </select>
       </label>
-      {!values.quotation && (
+      )}
+      {!values.quotation && !values.proforma && (
         <label>
           {t("vouchers.division")}
           <select value={values.division} onChange={(e) => set("division")(e.target.value)}>

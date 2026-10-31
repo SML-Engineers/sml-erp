@@ -24,6 +24,7 @@ const options: AdvanceOptions = {
       code: "C0004",
       name: "Unilever Sri Lanka",
       quotations: [{ id: 12, label: "QL26103101 Rev 0", division: 2, currency: "LKR", total_amount: "150000.00" }],
+      proformas: [],
     },
   ],
   divisions: [
@@ -38,7 +39,7 @@ const options: AdvanceOptions = {
 
 const made: AdvanceDetail = {
   id: 7, number: "RC26100001", receipt_date: "2026-10-31", customer: { id: 4, code: "C0004", name: "Unilever Sri Lanka" },
-  quotation: { id: 12, label: "QL26103101 Rev 0" }, division: "IM", currency: "LKR", amount: "75000.00", amount_lkr: "75000.00",
+  quotation: { id: 12, label: "QL26103101 Rev 0" }, proforma: null, division: "IM", currency: "LKR", amount: "75000.00", amount_lkr: "75000.00",
   balance_lkr: "0.00", method: "transfer", status: "awaiting_approval", created_by: "Cashier",
   account: { id: 1, code: "COM-CUR", name: "Commercial Bank current" }, reference: "CEFT 88812", exchange_rate: "1.000000",
   rate_date: null, set_off_lkr: "0.00", notes: "", journal_entry: null, approved_at: null, can_approve: false,
@@ -70,6 +71,7 @@ test("the Cashier records an advance against an approved quotation", async () =>
   expect(JSON.parse(String(init!.body))).toMatchObject({
     customer: 4,
     quotation: 12,
+    proforma: null,
     division: "",
     account: 1,
     method: "transfer",

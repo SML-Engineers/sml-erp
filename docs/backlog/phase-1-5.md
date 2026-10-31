@@ -73,7 +73,7 @@ Status: `[ ]` to do · `[x]` done
   reject % on material and machine, packing per piece or carton, overhead and margin. Tooling
   as a separate line: charged once, amortised over a quantity, or customer-owned.
 
-- [ ] **P15-06 Approval, revisions and status** (spec 5.1, 3)
+- [x] **P15-06 Approval, revisions and status** (spec 5.1, 3)
   **Every quotation needs the Director's approval before it can be printed or sent**, by
   email or otherwise (owner, 31 Oct 2026), through the approval engine. The division's
   confirmed limits (P0-12) are shown to the Director as warnings: margin below the minimum,
@@ -145,6 +145,10 @@ Status: `[ ]` to do · `[x]` done
 5. **Margin %** is on the cost: a cost of LKR 1,000 (overhead included) with a 20% margin
    gives a price of LKR 1,200. The Director's margin warnings (P15-06) use the same meaning.
 6. **The Auditor does not see quotation costing** (P15-04).
+7. **Masterbatch %** is added on top of the resin weight (P15-05).
+8. **Rejects** add their % to material and machine cost (P15-05).
+9. **Tooling** is charged once on its own quotation line, spread over a quantity, or owned
+   by the customer (P15-05).
 
 Still awaited: a sample of the current quotation and proforma, to copy the layout and wording
 (P15-07, P15-08).

@@ -70,7 +70,35 @@ export interface QuotationDetail extends QuotationSummary {
   /** Whether this user may open the costing (creator, Sales Manager, Accountant, Director). */
   can_see_costing: boolean;
   upload_warnings?: string[];
+  approved_at: string | null;
+  sent_at: string | null;
+  outcome: { reason: string; reason_label: string; note: string; at: string; by: string } | null;
+  /** Approved by the Director: may be printed as final and emailed. */
+  is_final: boolean;
+  can_submit: boolean;
+  can_approve: boolean;
+  can_mark_sent: boolean;
+  can_record_outcome: boolean;
+  can_revise: boolean;
+  approval: {
+    status: "in_progress" | "approved" | "returned" | "rejected" | "withdrawn";
+    /** The role the quotation waits for, e.g. "Director"; empty when nothing waits. */
+    waiting_with: string;
+    history: { action: string; action_label: string; level: number; by: string; at: string; reason: string }[];
+  } | null;
+  /** Every revision of this number the user may see, oldest first. */
+  revisions: { id: number; revision: number; status: QuotationStatus; quote_date: string }[];
+  /** For those who see costing: overall margin, value and the Director's warnings. */
+  review?: {
+    margin_pct: string | null;
+    value_lkr: string;
+    min_margin_pct: string | null;
+    limit_lkr: string | null;
+    warnings: string[];
+  };
 }
+
+export const OUTCOME_REASONS = ["price", "lead_time", "quality", "relationship", "competitor", "cancelled", "no_response", "other"];
 
 export interface LineInput {
   /** The saved line this is; left out for a new line. Kept lines keep their costing. */
@@ -103,7 +131,7 @@ export interface QuotationInput {
 
 export const quotationsKey = ["quotations"];
 
-export function listQuotations(filters: { q?: string; status?: string; division?: string } = {}) {
+export function listQuotations(filters: { q?: string; status?: string; division?: string; waiting?: string } = {}) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
   const query = params.toString();
@@ -275,3 +303,16 @@ export const saveLineCosting = (id: number, lineNo: number, input: CostingInput)
   apiSend<CostingPage>("PUT", `/quotations/${id}/costing/${lineNo}/`, input);
 export const removeLineCosting = (id: number, lineNo: number) =>
   apiSend<CostingPage>("DELETE", `/quotations/${id}/costing/${lineNo}/`);
+
+// --- Approval, sending, outcome and revisions (P15-06) ----------------------------------
+
+export const submitQuotation = (id: number, comment: string) =>
+  apiSend<QuotationDetail>("POST", `/quotations/${id}/submit/`, { comment });
+export const approveQuotation = (id: number, comment: string) =>
+  apiSend<QuotationDetail>("POST", `/quotations/${id}/approve/`, { comment });
+export const returnQuotation = (id: number, reason: string) =>
+  apiSend<QuotationDetail>("POST", `/quotations/${id}/return/`, { reason });
+export const markQuotationSent = (id: number) => apiSend<QuotationDetail>("POST", `/quotations/${id}/sent/`, {});
+export const recordOutcome = (id: number, outcome: "accepted" | "lost", reason: string, note: string) =>
+  apiSend<QuotationDetail>("POST", `/quotations/${id}/outcome/`, { outcome, reason, note });
+export const reviseQuotation = (id: number) => apiSend<QuotationDetail>("POST", `/quotations/${id}/revise/`, {});

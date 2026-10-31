@@ -9,7 +9,7 @@ import { listQuotations, quotationsKey } from "../api/quotations";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
-const STATUSES = ["draft", "awaiting_approval", "approved", "sent", "accepted", "lost", "expired"];
+const STATUSES = ["draft", "awaiting_approval", "approved", "sent", "accepted", "lost", "expired", "revised"];
 
 /** Quotations (spec 5.1): a Sales Executive sees their own, managers see all. */
 export default function QuotationsPage({ me }: { me: CurrentUser }) {
@@ -18,7 +18,11 @@ export default function QuotationsPage({ me }: { me: CurrentUser }) {
   const [text, setText] = useState(params.get("q") ?? "");
   const status = params.get("status") ?? "";
   const q = params.get("q") ?? "";
-  const rows = useQuery({ queryKey: [...quotationsKey, "list", q, status], queryFn: () => listQuotations({ q, status }) });
+  const waiting = params.get("waiting") ?? "";
+  const rows = useQuery({
+    queryKey: [...quotationsKey, "list", q, status, waiting],
+    queryFn: () => listQuotations({ q, status, waiting }),
+  });
   const set = (key: string, value: string) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
@@ -46,6 +50,12 @@ export default function QuotationsPage({ me }: { me: CurrentUser }) {
             ))}
           </select>
         </label>
+        {can(me.access, "sales", "approve") && (
+          <label>
+            <input type="checkbox" checked={waiting === "me"} onChange={(e) => set("waiting", e.target.checked ? "me" : "")} />{" "}
+            {t("quotations.waitingForMe")}
+          </label>
+        )}
         <form
           className="inline-form"
           onSubmit={(e) => {

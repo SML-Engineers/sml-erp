@@ -734,12 +734,12 @@ Quantity breaks show unit prices for several quantities (e.g. 10, 50, 100) on on
 
 | Cost element | How it is calculated |
 | --- | --- |
-| Material | (Part weight + runner weight ÷ cavities) × resin rate, plus masterbatch % |
+| Material | (Part weight + runner weight ÷ cavities) × resin rate, plus masterbatch % **on top of** the resin weight (owner, 31 Oct 2026) |
 | Machine | Cycle time ÷ cavities → machine hours per 1,000 pcs × machine hourly rate |
-| Rejects | Expected reject % added to material and machine cost |
+| Rejects | Expected reject % added to material and machine cost (cost × (1 + reject %); owner, 31 Oct 2026) |
 | Packing | Per piece or per carton |
 | Overhead and margin | As for machining |
-| Tooling (separate line) | Mould cost: charged once, amortised over a quantity, or customer-owned |
+| Tooling (separate line) | Mould cost: charged once (a quotation line marked as tooling), amortised over a quantity (added to the price without overhead or margin), or customer-owned (owner, 31 Oct 2026) |
 
 Minimum order quantity is stated on each line.
 

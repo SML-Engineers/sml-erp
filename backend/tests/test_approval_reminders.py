@@ -115,6 +115,7 @@ def test_the_admin_sets_the_reminders(admin, accountant):
     assert {(r["document_type"], r["enabled"], r["after_days"]) for r in rows} == {
         ("voucher", True, 3),
         ("voucher_cancellation", True, 3),
+        ("quotation", True, 3),
     }
     changed = client.put(
         "/api/v1/settings/approval-reminders/",

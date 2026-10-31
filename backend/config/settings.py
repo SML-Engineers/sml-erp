@@ -174,6 +174,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.core.tasks.send_approval_reminders",
         "schedule": crontab(hour=7, minute=40),
     },
+    # Quotations past their validity date (P15-06), just after midnight Sri Lanka time.
+    "expire-quotations": {
+        "task": "apps.sales.tasks.expire_quotations",
+        "schedule": crontab(hour=0, minute=30),
+    },
     "tidy-old-notifications": {
         "task": "apps.core.tasks.tidy_old_notifications",
         "schedule": crontab(hour=1, minute=10),

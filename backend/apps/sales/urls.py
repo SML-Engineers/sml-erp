@@ -23,4 +23,34 @@ urlpatterns = [
         views.QuotationLineCostingView.as_view(),
         name="quotation-line-costing",
     ),
+    path(
+        "quotations/<int:pk>/submit/",
+        views.QuotationSubmitView.as_view(),
+        name="quotation-submit",
+    ),
+    path(
+        "quotations/<int:pk>/approve/",
+        views.QuotationApproveView.as_view(),
+        name="quotation-approve",
+    ),
+    path(
+        "quotations/<int:pk>/return/",
+        views.QuotationReturnView.as_view(),
+        name="quotation-return",
+    ),
+    path(
+        "quotations/<int:pk>/sent/",
+        views.QuotationSentView.as_view(),
+        name="quotation-sent",
+    ),
+    path(
+        "quotations/<int:pk>/outcome/",
+        views.QuotationOutcomeView.as_view(),
+        name="quotation-outcome",
+    ),
+    path(
+        "quotations/<int:pk>/revise/",
+        views.QuotationReviseView.as_view(),
+        name="quotation-revise",
+    ),
 ]

@@ -174,6 +174,7 @@ The Admin can give or remove access for an individual user, overriding their rol
 
 - **New user:** created by the Admin from a role template, with divisions and sections; temporary password and two-factor setup on first login. The account is created switched off and can only be activated once it has at least one role and its divisions (owner's decision, 31 Oct 2026).
 - **Password reset:** the Admin requests it with a reason (optionally resetting the authenticator too, for a lost phone); a Director other than the requester and the person approves it; within 24 hours the Admin makes a temporary password, shown once and never stored. The person is signed out everywhere and must choose a new password at the next sign-in. Every step is audited (owner's decision, 31 Oct 2026).
+- **One Admin, no backup Admin account** (owner's decision, 31 Oct 2026). If the Admin forgets the password, it is reset on the server with a technical command run by the owner with support (`manage.py changepassword`); this bypasses the Director's approval and the ERP's audit log, so the owner records each use in writing. Recovery codes cover a lost phone.
 - **Change of job:** roles changed and old overrides reviewed on the same screen, so access from the old job is not carried over.
 - **Leaver:** one action deactivates the account, ends all sessions and removes overrides. The user's records and history stay.
 - Accounts unused for 90 days are deactivated automatically (configurable).
@@ -820,9 +821,11 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
 **Owner's decisions (31 Oct 2026)**
 
 1. Built next, as its own phase, while Phase 1.5 is in user testing.
-2. Stores receive the goods (Stores Executive enters the GRN, Stores Manager confirms it); a
-   QC Inspector accepts or rejects (section 6A). Only accepted quantities go to available
-   stock and can be paid.
+2. Stores receive the goods; a QC Inspector accepts or rejects (section 6A). Only accepted
+   quantities go to available stock and can be paid. SML has **one stores person**, who both
+   enters and confirms the GRN; the independent checks are QC acceptance (always a different
+   person: holding a stores role and the QC Inspector role together is refused) and the
+   Accounts three-way match.
 3. Three-way match with **no tolerance**: any difference in quantity or price between the
    PO, the accepted GRN quantity and the supplier invoice blocks payment until the
    Accountant investigates and the Director approves the exception, with a reason.
@@ -848,9 +851,11 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
 - Made against an approved PO: supplier, items, ordered and still-to-receive quantities and
   agreed prices are filled in from it. Header: delivery note number, vehicle, supplier's
   invoice number if delivered with the goods, date and time.
-- The Stores Executive enters the quantities actually received (package by package where the
-  item needs it, section 6A.2), damaged quantities and photos; the Stores Manager confirms
-  it (not the same person). Numbered GRN{YY}{MM}{DD}{XX}.
+- The stores person enters the quantities actually received (package by package where the
+  item needs it, section 6A.2), damaged quantities and photos, and confirms the GRN.
+  Numbered GRN{YY}{MM}{DD}{XX}. (With one stores person, entry and confirmation are one
+  person; QC acceptance by someone else is the check. If a second stores person joins, a
+  second confirmation can be added.)
 - Partial deliveries and several GRNs per PO. A delivery above the PO's remaining quantity
   is flagged as an excess: the excess cannot be accepted or paid unless the Director
   approves it (or the PO is revised).
@@ -902,7 +907,9 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
 
 - Segregation: the Purchasing Officer orders, Stores receive, QC accepts, Accounts invoice and
   prepare vouchers, the Director approves, the Cashier pays. Conflicting role pairs warn the
-  Admin (Purchasing Officer with Stores, Stores with Accounts Clerk or Cashier).
+  Admin (Purchasing Officer with Stores, Stores with Accounts Clerk or Cashier); a stores
+  role with the QC Inspector role is refused, because QC is the check on the single stores
+  person.
 - Nobody approves a document they created, or at two levels of one document (rule 5).
 - Confirmed GRNs, matched invoices and posted entries are never edited; reversals and
   amendments are documents of their own, approved and linked.

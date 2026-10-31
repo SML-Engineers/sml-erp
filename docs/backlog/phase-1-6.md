@@ -14,7 +14,7 @@ Purchase Order → GRN (Stores) → QC acceptance → Supplier Invoice (3-way ma
 ```
 
 **Owner's decisions (31 Oct 2026):** built next, while Phase 1.5 is tested; Stores receive and
-QC accepts; no tolerance in the three-way match (differences need the Director); the
+QC accepts (one stores person enters and confirms the GRN); no tolerance in the three-way match (differences need the Director); the
 Purchasing Officer raises POs and the Director approves every PO; supplier + invoice number
 is unique everywhere (spec 5A, decisions 1–5).
 
@@ -38,8 +38,9 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P16-02 Roles and access** (spec 5A.6, 6A.5)
   Switch on the Purchasing Officer, Stores Executive (today's "Store Supervisor"), Stores
   Manager and QC Inspector roles. Conflicting pairs warn the Admin: Purchasing Officer with
-  Stores; Stores with Accounts Clerk or Cashier. The Director approves POs; stores staff never
-  approve payments.
+  Stores; Stores with Accounts Clerk or Cashier. A stores role together with QC Inspector is
+  refused (QC is the check on the single stores person). The Director approves POs; stores
+  staff never approve payments.
 
 - [ ] **P16-03 Item master and stores** (spec 5A.3, 6A)
   Items: code (immutable once used), description, unit, category, stock or non-stock, package
@@ -63,9 +64,9 @@ Status: `[ ]` to do · `[x]` done
 ## D. Receiving and inspection
 
 - [ ] **P16-06 Goods receiving note** (spec 5A.2)
-  Against an approved PO only, filled from it; the Stores Executive enters received and
-  damaged quantities, delivery note, vehicle, photos; the Stores Manager confirms (a different
-  person). Numbered GRN{YY}{MM}{DD}{XX}.
+  Against an approved PO only, filled from it; the stores person enters received and damaged
+  quantities, delivery note, vehicle, photos, and confirms it (one stores person, owner's
+  decision; QC acceptance by someone else is the check). Numbered GRN{YY}{MM}{DD}{XX}.
   - Partial deliveries and several GRNs per PO; the PO's received quantities and status
     update.
   - Excess over the PO is flagged and cannot be accepted without the Director.

@@ -63,7 +63,9 @@ export default function UsersPage({ me }: { me: CurrentUser }) {
           {create.data && (
             <p className="notice" role="status">
               {t("users.created", { email: create.data.email })}{" "}
-              <code>{create.data.temporary_password}</code>
+              <code>{create.data.temporary_password}</code>{" "}
+              {t("users.thenActivate")}{" "}
+              <Link to={`/admin/users/${create.data.id}`}>{t("users.setUp", { name: create.data.full_name })}</Link>
             </p>
           )}
         </section>
@@ -96,7 +98,7 @@ export default function UsersPage({ me }: { me: CurrentUser }) {
             {
               id: "status",
               header: t("users.status"),
-              value: (u) => (u.is_active ? t("users.active") : t("users.inactive")),
+              value: (u) => (u.is_active ? t("users.active") : u.last_login ? t("users.inactive") : t("users.notYetActive")),
             },
             {
               id: "last",

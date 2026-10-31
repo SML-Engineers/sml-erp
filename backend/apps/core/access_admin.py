@@ -173,6 +173,19 @@ def end_sessions(user: User) -> int:
     return ended
 
 
+def not_ready(user: User) -> str:
+    """Why an account cannot be switched on yet ("" when it can): a new user stays inactive
+    until the Admin has given at least one role and the divisions they work in."""
+    missing = []
+    if not user.role_assignments.filter(role__is_active=True).exists():
+        missing.append("at least one role")
+    if not user.all_divisions and not user.divisions.exists():
+        missing.append("the divisions they work in")
+    if not missing:
+        return ""
+    return f"Give {user.full_name} {' and '.join(missing)} before activating the account."
+
+
 @audited("user_deactivated", reason_arg="reason")
 @transaction.atomic
 def deactivate_user(actor: User | None, target: User, reason: str) -> None:

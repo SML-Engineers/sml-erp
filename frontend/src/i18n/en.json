@@ -62,7 +62,10 @@
     "lastSignIn": "Last sign-in",
     "allDivisions": "All divisions",
     "active": "Active",
-    "inactive": "Deactivated"
+    "inactive": "Deactivated",
+    "notYetActive": "Not yet activated",
+    "thenActivate": "The account stays switched off until you give it roles and divisions and activate it.",
+    "setUp": "Set up {{name}} now"
   },
   "access": {
     "ownAccount": "This is your own account. Another administrator must change your access.",
@@ -106,7 +109,8 @@
       "pending": "Waiting for the Director",
       "revoked": "Ended",
       "expired": "Expired"
-    }
+    },
+    "activate": "Activate"
   },
   "review": {
     "link": "Access review",

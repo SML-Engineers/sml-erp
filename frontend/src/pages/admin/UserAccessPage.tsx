@@ -81,7 +81,7 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
       </p>
       <h1>{user.full_name}</h1>
       <p className="muted">
-        {user.email} · {user.is_active ? t("users.active") : t("users.inactive")}
+        {user.email} · {user.is_active ? t("users.active") : user.last_login ? t("users.inactive") : t("users.notYetActive")}
         {user.two_factor_required &&
           ` · ${user.two_factor_enabled ? t("access.twoFactorOn") : t("access.twoFactorOwed")}`}
       </p>
@@ -220,7 +220,7 @@ function Lifecycle({ user, onDone }: { user: UserRecord; onDone: () => void }) {
           </button>
         ) : (
           <button type="button" onClick={() => act.mutate("reactivate")}>
-            {t("access.reactivate")}
+            {user.last_login ? t("access.reactivate") : t("access.activate")}
           </button>
         )}
         <button type="button" className="secondary" onClick={() => act.mutate("reset")}>

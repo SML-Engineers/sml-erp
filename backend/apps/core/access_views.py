@@ -139,6 +139,8 @@ class UserListView(APIView):
                 data.validated_data["full_name"],
                 temporary_password,
                 must_change_password=True,
+                # Off until the Admin has given roles and divisions and activates the account.
+                is_active=False,
             )
         body = UserSerializer(user).data
         body["temporary_password"] = temporary_password  # shown once, never stored in clear
@@ -165,10 +167,18 @@ class UserDetailView(APIView):
         if data.validated_data.get("is_active") is False:
             access_admin.deactivate_user(request.user, user, "Deactivated by administrator")
             data.validated_data.pop("is_active")
+        first_time = False
+        if data.validated_data.get("is_active") and not user.is_active:
+            missing = access_admin.not_ready(user)
+            if missing:
+                return Response({"detail": missing}, status=status.HTTP_400_BAD_REQUEST)
+            first_time = user.last_login is None
         for field_name, value in data.validated_data.items():
             setattr(user, field_name, value)
         if data.validated_data:
-            event = "user_reactivated" if data.validated_data.get("is_active") else "user_updated"
+            event = "user_updated"
+            if data.validated_data.get("is_active"):
+                event = "user_activated" if first_time else "user_reactivated"
             with audit_context(event):
                 user.save(update_fields=list(data.validated_data))
         user.refresh_from_db()

@@ -34,6 +34,8 @@ export interface QuotationLine {
   unit: string;
   min_order_qty: string | null;
   unit_price: string;
+  /** The mould or other tooling, charged once. */
+  is_tooling: boolean;
   tax_code: string | null;
   amount: string;
   tax_amount: string;
@@ -80,6 +82,7 @@ export interface LineInput {
   unit: string;
   min_order_qty: string | null;
   unit_price: string;
+  is_tooling?: boolean;
   tax_code: string | null;
   breaks: QtyBreak[];
 }
@@ -156,21 +159,49 @@ export interface LineCosting {
   notes: string;
   operations: CostingOperation[];
   extras: CostingExtra[];
+  method: CostingMethod;
+  masterbatch: { id: number; code: string; name: string } | null;
+  masterbatch_rate: string | null;
+  masterbatch_pct: string;
+  part_weight_g: string | null;
+  runner_weight_g: string | null;
+  cavities: number | null;
+  machine: { id: number; code: string; name: string } | null;
+  machine_rate: string | null;
+  cycle_time_s: string | null;
+  reject_pct: string;
+  packing_amount: string;
+  packing_per: PackingPer;
+  pcs_per_carton: number | null;
+  tooling: ToolingMode;
+  tooling_cost: string;
+  tooling_qty: string | null;
   updated_by: string;
   updated_at: string;
 }
+
+export type CostingMethod = "machining" | "moulding";
+export type PackingPer = "piece" | "carton";
+export type ToolingMode = "none" | "separate" | "amortised" | "customer";
+export const TOOLING_MODES: ToolingMode[] = ["none", "separate", "amortised", "customer"];
 
 /** One piece, at the line's quantity or at a quantity break. LKR unless said. */
 export interface CostingResult {
   quantity: string;
   material: string;
   machining: string;
+  /** Moulding: press hours per 1,000 pieces; null for machining. */
+  hours_per_1000: string | null;
+  rejects: string;
   setup: string;
+  packing: string;
   subcontract: string;
   direct_cost: string;
   overhead: string;
   cost: string;
   margin: string;
+  /** A mould spread over a quantity: added to the price without overhead or margin. */
+  tooling: string;
   suggested_price_lkr: string;
   /** In the quotation's currency. */
   suggested_price: string;
@@ -188,6 +219,7 @@ export interface CostingLine {
   quantity: string;
   unit: string;
   unit_price: string;
+  is_tooling: boolean;
   costing: LineCosting | null;
   results: CostingResult[] | null;
 }
@@ -201,8 +233,9 @@ export interface CostingPage {
   exchange_rate: string;
   quote_date: string;
   can_edit: boolean;
+  default_method: CostingMethod;
   defaults: { overhead_pct: string; margin_pct: string; setup_rate: string } | null;
-  materials: { id: number; code: string; name: string; form: string; density: string | null; rate: string }[];
+  materials: { id: number; code: string; name: string; kind: string; form: string; density: string | null; rate: string }[];
   machines: { id: number; code: string; name: string; rate: string }[];
   lines: CostingLine[];
 }
@@ -220,6 +253,21 @@ export interface CostingInput {
   notes: string;
   operations: { machine: number | null; minutes: string; description: string }[];
   extras: CostingExtra[];
+  method: CostingMethod;
+  masterbatch: number | null;
+  masterbatch_pct: string | null;
+  part_weight_g: string | null;
+  runner_weight_g: string | null;
+  cavities: string | null;
+  machine: number | null;
+  cycle_time_s: string | null;
+  reject_pct: string | null;
+  packing_amount: string | null;
+  packing_per: PackingPer;
+  pcs_per_carton: string | null;
+  tooling: ToolingMode;
+  tooling_cost: string | null;
+  tooling_qty: string | null;
 }
 
 export const getCosting = (id: number) => apiGet<CostingPage>(`/quotations/${id}/costing/`);

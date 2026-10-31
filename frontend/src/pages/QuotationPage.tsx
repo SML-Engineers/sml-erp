@@ -39,6 +39,7 @@ const emptyLine = (): LineInput => ({
   unit: "pcs",
   min_order_qty: null,
   unit_price: "",
+  is_tooling: false,
   tax_code: null,
   breaks: [],
 });
@@ -118,6 +119,7 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
       unit: l.unit,
       min_order_qty: l.min_order_qty,
       unit_price: l.unit_price,
+      is_tooling: l.is_tooling,
       tax_code: l.tax_code,
       breaks: l.breaks,
     })) ?? [emptyLine()],
@@ -314,6 +316,15 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
                   />
                 </label>
                 <label>
+                  <input
+                    type="checkbox"
+                    aria-label={t("quotations.toolingOf", { n })}
+                    checked={l.is_tooling ?? false}
+                    onChange={(e) => setLine(index, { is_tooling: e.target.checked })}
+                  />{" "}
+                  {t("quotations.tooling")}
+                </label>
+                <label>
                   {t("vouchers.taxCode")}
                   <select aria-label={t("quotations.taxCodeOf", { n })} value={l.tax_code ?? ""} onChange={(e) => setLine(index, { tax_code: e.target.value || null })}>
                     <option value="">{t("quotations.noTax")}</option>
@@ -441,6 +452,7 @@ function ReadOnly({ quotation }: { quotation: QuotationDetail }) {
                 <td>{l.line_no}</td>
                 <td>
                   {l.description}
+                  {l.is_tooling && <span className="muted"> ({t("quotations.toolingShort")})</span>}
                   {l.breaks.length > 0 && (
                     <div className="muted">
                       {l.breaks.map((b) => `${formatQuantity(b.quantity)} @ ${formatDecimal(b.unit_price)}`).join(" · ")}

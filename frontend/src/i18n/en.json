@@ -1477,7 +1477,10 @@
     "noFiles": "No files yet. Attach the customer's drawing for each line.",
     "fileFor": "For",
     "forLine": "Line {{n}}",
-    "forQuotation": "The whole quotation"
+    "forQuotation": "The whole quotation",
+    "tooling": "Tooling (charged once)",
+    "toolingOf": "Tooling, line {{n}}",
+    "toolingShort": "tooling, charged once"
   },
   "quoteCosting": {
     "open": "Costing",
@@ -1554,8 +1557,48 @@
       "suggested": "Suggested price",
       "suggestedIn": "Suggested price in {{currency}}",
       "quoted": "Price quoted",
-      "quotedMargin": "Margin of the price quoted"
+      "quotedMargin": "Margin of the price quoted",
+      "machine": "Machine",
+      "rejects": "Rejects",
+      "packing": "Packing",
+      "tooling": "Mould share"
     },
-    "belowCost": "The price quoted is below cost for {{quantities}}."
+    "belowCost": "The price quoted is below cost for {{quantities}}.",
+    "method": "Costing for",
+    "methods": {
+      "machining": "Machining",
+      "moulding": "Moulding"
+    },
+    "resin": "Resin",
+    "partWeight": "Part weight (g)",
+    "runnerWeight": "Runner weight per shot (g)",
+    "cavities": "Cavities",
+    "masterbatch": "Masterbatch",
+    "noMasterbatch": "No masterbatch",
+    "masterbatchPct": "Masterbatch % (on top of the resin)",
+    "press": "Moulding machine",
+    "cycleTime": "Cycle time (seconds)",
+    "rejectPct": "Rejects %",
+    "packing": "Packing",
+    "packingAmount": "Packing cost (LKR)",
+    "packingPer": "Packing cost is",
+    "perPieceOption": "per piece",
+    "perCartonOption": "per carton",
+    "pcsPerCarton": "Pieces per carton",
+    "toolingTitle": "Tooling (the mould)",
+    "toolingMode": "How the mould is charged",
+    "toolingModes": {
+      "none": "No tooling",
+      "separate": "Charged once, as its own line",
+      "amortised": "Spread over a quantity",
+      "customer": "Owned by the customer"
+    },
+    "toolingCost": "Mould cost (LKR)",
+    "toolingQty": "Spread over (pieces)",
+    "noToolingLine": "Add the mould as its own line on the quotation, ticked as tooling, so it is charged once.",
+    "hoursPer1000": "Machine time: {{hours}} hours per 1,000 pieces.",
+    "mouldingSummary": "Part {{part}} g, runner {{runner}} g, {{cavities}} cavities on {{machine}}, cycle {{cycle}} s, rejects {{rejects}}%.",
+    "masterbatchSummary": "Masterbatch {{code}} {{pct}}%.",
+    "resinUsed": "{{material}} at LKR {{rate}} per kg."
   }
 }

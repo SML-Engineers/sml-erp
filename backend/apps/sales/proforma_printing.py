@@ -52,7 +52,7 @@ def packing_page(proforma: ProformaInvoice, doc: Document):
                 p("Net kg", s.head),
                 p("Gross kg", s.head),
                 p("Carton size (cm)", s.head),
-                p("Volume m³", s.head),
+                p("Volume (CBM)", s.head),
             ]
         ]
         for line in proforma.lines.all():
@@ -87,7 +87,7 @@ def packing_page(proforma: ProformaInvoice, doc: Document):
             ]
         )
         end = len(rows) - 1
-        widths = [0.05, 0.27, 0.09, 0.08, 0.1, 0.09, 0.09, 0.13, 0.1]
+        widths = [0.04, 0.25, 0.09, 0.1, 0.1, 0.09, 0.09, 0.13, 0.11]
         return heading(doc, s, title="PACKING LIST") + [
             Table(
                 rows,

@@ -247,6 +247,8 @@ def lines_table(doc: Document, s: Styles) -> list:
         if doc.rate_date:
             text += f" ({doc.rate_date:%d-%b-%Y})"
         story.append(p(text, s.small))
+    if doc.after_totals:
+        story.append(Spacer(1, 2 * mm))
     for text in doc.after_totals:
         story.append(p(text, s.bold))
     return story

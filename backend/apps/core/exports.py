@@ -6,6 +6,7 @@ numbers in Excel (with thousands separators) and are totalled at the foot.
 """
 
 import io
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -69,7 +70,8 @@ def _totals(columns: list[Column], rows: list[dict]) -> dict:
 def xlsx(title: str, subtitle: str, columns: list[Column], rows: list[dict]) -> bytes:
     book = Workbook()
     sheet = book.active
-    sheet.title = title[:31]
+    # Excel refuses some characters in a sheet name (e.g. "Open sales orders: deliveries").
+    sheet.title = re.sub(r"[\\/*?:\[\]]", "", title)[:31] or "Report"
     sheet.append([title])
     sheet["A1"].font = Font(bold=True, size=13)
     sheet.append([subtitle])

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import advance_views, order_views, proforma_views, views
+from . import advance_views, order_views, proforma_views, report_views, views
 
 urlpatterns = [
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
@@ -124,4 +124,14 @@ urlpatterns = [
         order_views.SalesOrderCancelView.as_view(),
         name="sales-order-cancel",
     ),
+    path("sales/reports/register/", report_views.RegisterView.as_view(), name="sales-register"),
+    path("sales/reports/win-loss/", report_views.WinLossView.as_view(), name="sales-win-loss"),
+    path("sales/reports/attention/", report_views.AttentionView.as_view(), name="sales-attention"),
+    path(
+        "sales/reports/open-orders/",
+        report_views.OpenOrdersView.as_view(),
+        name="sales-open-orders",
+    ),
+    path("sales/reports/advances/", report_views.AdvancesOpenView.as_view(), name="sales-advances"),
+    path("sales/dashboard/", report_views.DashboardView.as_view(), name="sales-dashboard"),
 ]

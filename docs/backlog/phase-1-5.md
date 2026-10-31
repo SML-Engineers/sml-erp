@@ -143,16 +143,22 @@ Status: `[ ]` to do · `[x]` done
     quantity. Cancelling needs a reason and is refused once an approved advance stands against
     the order. Advances can be recorded against an open order. An order posts nothing to the
     accounts. Partly delivered is set by deliveries in Phase 2.
-  - Waiting for the owner to confirm (built this way meanwhile): the number format, and the
-    Director's approval of repeat orders typed in.
+  - The number format and the Director's approval of repeat orders were confirmed by the owner
+    (decisions 12 and 13).
 
 ## D. Reports and go-live
 
-- [ ] **P15-11 Sales reports and dashboard**
+- [x] **P15-11 Sales reports and dashboard**
   Quotation register (by status, customer, division, salesperson), win / loss with reasons,
   quotations awaiting approval and expiring this week, open sales orders and their delivery
   dates, advances received and not yet set off. Excel and PDF (P1-08 pattern); sales tiles on
   the dashboard. A user sees only their divisions (and a Sales Executive their own quotations).
+  - Done: Sales → Sales reports, five tabs, each with Excel and PDF. Win rate by number and
+    by value, per reason and per salesperson. "Expiring this week" means approved or sent
+    quotations whose validity ends within 7 days. Open orders are listed per delivery, overdue
+    ones in red. A Sales Executive sees advances against their own documents; the Sales
+    Manager and the payments roles see all of their divisions. Sales tiles on the home page
+    for anyone with Sales: View.
 
 - [ ] **P15-12 User acceptance testing and go-live**
   Sales staff and the Director run test scripts for each role on the test server; the owner
@@ -178,6 +184,11 @@ Status: `[ ]` to do · `[x]` done
 10. **Proforma numbers** keep the old style, the date and the number of the day:
     PI{YY}{MM}{DD}-{XX}, e.g. PI261031-01 (P15-08).
 11. **Discount**: an optional discount % on both quotations and proformas (P15-07b, P15-08).
+12. **Sales order numbers** follow the quotations: SO{YY}{MM}{DD}{XX}, e.g. SO26103101
+    (P15-10).
+13. **Repeat orders typed in** without a quotation are allowed for the Sales Executive; the
+    Director approves the order before it is open, so typed prices never reach the customer
+    unchecked (P15-10).
 
 Samples received 31 Oct 2026: quotation QL26061501, proforma PI191120-02 and purchase order
 PO26061701 (for the purchasing phase). The printed quotation follows QL26061501 (P15-07).

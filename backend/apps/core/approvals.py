@@ -59,6 +59,8 @@ DOCUMENT_TYPES = {
     # Every quotation is approved by the Director before it is printed or sent (owner, 31 Oct
     # 2026; P15-06).
     "quotation": DocumentType("Quotation", min_approvals=1, final_role="director"),
+    # Recorded by the Cashier; the Accountant's approval is enough (owner, 31 Oct 2026; P15-09).
+    "customer_advance": DocumentType("Customer advance", min_approvals=1, final_role="accountant"),
 }
 
 

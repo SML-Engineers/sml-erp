@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import advance_views, views
 
 urlpatterns = [
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
@@ -52,5 +52,23 @@ urlpatterns = [
         "quotations/<int:pk>/revise/",
         views.QuotationReviseView.as_view(),
         name="quotation-revise",
+    ),
+    path("advances/", advance_views.AdvanceListView.as_view(), name="advance-list"),
+    path("advances/options/", advance_views.AdvanceOptionsView.as_view(), name="advance-options"),
+    path("advances/<int:pk>/", advance_views.AdvanceDetailView.as_view(), name="advance-detail"),
+    path(
+        "advances/<int:pk>/approve/",
+        advance_views.AdvanceApproveView.as_view(),
+        name="advance-approve",
+    ),
+    path(
+        "advances/<int:pk>/reject/",
+        advance_views.AdvanceRejectView.as_view(),
+        name="advance-reject",
+    ),
+    path(
+        "advances/<int:pk>/receipt/",
+        advance_views.AdvanceReceiptView.as_view(),
+        name="advance-receipt",
     ),
 ]

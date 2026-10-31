@@ -33,7 +33,7 @@ from apps.masters import currencies, customers
 from apps.masters.models import CompanyAccount, Customer
 from apps.masters.services import MastersError, mark_used
 
-from .models import CustomerAdvance, ProformaInvoice, Quotation
+from .models import CustomerAdvance, ProformaInvoice, Quotation, SalesOrder
 from .services import SalesError
 
 DOC = "customer_advance"
@@ -106,6 +106,7 @@ def record(
     reference: str = "",
     notes: str = "",
     proforma: ProformaInvoice | None = None,
+    sales_order: SalesOrder | None = None,
 ) -> CustomerAdvance:
     """The Cashier records an advance; it goes to the Accountant for approval. Against an
     issued proforma (P15-08), an approved quotation, or for a division."""
@@ -123,6 +124,23 @@ def record(
         raise SalesError("Choose the customer.")
     if not customer.is_active:
         raise SalesError(f"Customer {customer.code} is inactive.")
+    if sales_order is not None:
+        if sales_order.customer_id != customer.pk:
+            raise SalesError(f"Sales order {sales_order.number} is for another customer.")
+        if sales_order.status not in (
+            SalesOrder.Status.OPEN,
+            SalesOrder.Status.PARTLY_DELIVERED,
+        ):
+            raise SalesError(
+                f"Sales order {sales_order.number} is "
+                f"{sales_order.get_status_display().lower()}: an advance is against an open order."
+            )
+        issued = sales_order.proforma
+        if proforma is None and issued and issued.status == ProformaInvoice.Status.ISSUED:
+            proforma = issued
+        division = sales_order.division
+        if sales_order.quotation_id:
+            quotation = sales_order.quotation
     if proforma is not None:
         if proforma.customer_id != customer.pk:
             raise SalesError(f"Proforma {proforma.number} is for another customer.")
@@ -163,6 +181,7 @@ def record(
             customer=customer,
             quotation=quotation,
             proforma=proforma,
+            sales_order=sales_order,
             division=division,
             receipt_date=receipt_date,
             account=account,

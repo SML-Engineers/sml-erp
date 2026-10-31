@@ -61,6 +61,8 @@ DOCUMENT_TYPES = {
     "quotation": DocumentType("Quotation", min_approvals=1, final_role="director"),
     # Recorded by the Cashier; the Accountant's approval is enough (owner, 31 Oct 2026; P15-09).
     "customer_advance": DocumentType("Customer advance", min_approvals=1, final_role="accountant"),
+    # A repeat order entered without a quotation: the Director approves its prices (P15-10).
+    "sales_order": DocumentType("Sales order", min_approvals=1, final_role="director"),
 }
 
 

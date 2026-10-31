@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import advance_views, proforma_views, views
+from . import advance_views, order_views, proforma_views, views
 
 urlpatterns = [
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
@@ -92,5 +92,36 @@ urlpatterns = [
         "proformas/<int:pk>/email/",
         proforma_views.ProformaEmailView.as_view(),
         name="proforma-email",
+    ),
+    path("sales-orders/", order_views.SalesOrderListView.as_view(), name="sales-order-list"),
+    path(
+        "sales-orders/<int:pk>/",
+        order_views.SalesOrderDetailView.as_view(),
+        name="sales-order-detail",
+    ),
+    path(
+        "sales-orders/<int:pk>/confirm/",
+        order_views.SalesOrderConfirmView.as_view(),
+        name="sales-order-confirm",
+    ),
+    path(
+        "sales-orders/<int:pk>/approve/",
+        order_views.SalesOrderApproveView.as_view(),
+        name="sales-order-approve",
+    ),
+    path(
+        "sales-orders/<int:pk>/return/",
+        order_views.SalesOrderReturnView.as_view(),
+        name="sales-order-return",
+    ),
+    path(
+        "sales-orders/<int:pk>/complete/",
+        order_views.SalesOrderCompleteView.as_view(),
+        name="sales-order-complete",
+    ),
+    path(
+        "sales-orders/<int:pk>/cancel/",
+        order_views.SalesOrderCancelView.as_view(),
+        name="sales-order-cancel",
     ),
 ]

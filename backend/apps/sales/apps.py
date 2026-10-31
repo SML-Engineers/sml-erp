@@ -22,5 +22,8 @@ class SalesConfig(AppConfig):
             m.CustomerAdvance,
             m.ProformaInvoice,
             m.ProformaLine,
+            m.SalesOrder,
+            m.SalesOrderLine,
+            m.DeliverySchedule,
         ):
             register(model)

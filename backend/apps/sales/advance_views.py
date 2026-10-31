@@ -15,7 +15,7 @@ from apps.core.permissions import AreaAccess
 from apps.masters.models import CompanyAccount, Customer
 
 from . import advances, receipt
-from .models import CustomerAdvance, ProformaInvoice, Quotation
+from .models import CustomerAdvance, ProformaInvoice, Quotation, SalesOrder
 from .services import SalesError
 
 
@@ -45,6 +45,9 @@ def _row(a: CustomerAdvance) -> dict:
         "proforma": None
         if a.proforma_id is None
         else {"id": a.proforma_id, "number": a.proforma.number},
+        "sales_order": None
+        if a.sales_order_id is None
+        else {"id": a.sales_order_id, "number": a.sales_order.number},
         "division": a.division.code,
         "currency": a.currency.code,
         "amount": str(a.amount),
@@ -88,6 +91,7 @@ class AdvanceInput(serializers.Serializer):
     customer = serializers.IntegerField()
     quotation = serializers.IntegerField(required=False, allow_null=True)
     proforma = serializers.IntegerField(required=False, allow_null=True)
+    sales_order = serializers.IntegerField(required=False, allow_null=True)
     division = serializers.CharField(max_length=2, required=False, allow_blank=True)
     account = serializers.IntegerField()
     method = serializers.CharField(max_length=10)
@@ -100,7 +104,7 @@ class AdvanceInput(serializers.Serializer):
 class AdvanceListView(_Advances):
     def get(self, request):
         rows = advances.visible(request.user).select_related(
-            "customer", "quotation", "proforma", "division", "currency", "created_by"
+            "customer", "quotation", "proforma", "sales_order", "division", "currency", "created_by"
         )
         params = request.query_params
         if params.get("status"):
@@ -126,6 +130,11 @@ class AdvanceListView(_Advances):
             proforma = ProformaInvoice.objects.filter(pk=values["proforma"]).first()
             if proforma is None:
                 return _error("That proforma does not exist.")
+        sales_order = None
+        if values.get("sales_order"):
+            sales_order = SalesOrder.objects.filter(pk=values["sales_order"]).first()
+            if sales_order is None:
+                return _error("That sales order does not exist.")
         division = None
         if values.get("division"):
             division = Division.objects.filter(code=values["division"].upper()).first()
@@ -139,6 +148,7 @@ class AdvanceListView(_Advances):
                 receipt_date=values["receipt_date"],
                 quotation=quotation,
                 proforma=proforma,
+                sales_order=sales_order,
                 division=division,
                 reference=values.get("reference", ""),
                 notes=values.get("notes", ""),
@@ -166,6 +176,19 @@ class AdvanceOptionsView(_Advances):
                     "advance_amount": str(p.advance_amount),
                 }
             )
+        open_orders = {}
+        for o in SalesOrder.objects.filter(
+            status__in=(SalesOrder.Status.OPEN, SalesOrder.Status.PARTLY_DELIVERED)
+        ).select_related("currency"):
+            open_orders.setdefault(o.customer_id, []).append(
+                {
+                    "id": o.id,
+                    "number": o.number,
+                    "customer_po": o.customer_po,
+                    "currency": o.currency.code,
+                    "total_amount": str(o.total_amount),
+                }
+            )
         quotations = {}
         for q in Quotation.objects.filter(status__in=advances.QUOTATION_OPEN).select_related(
             "currency"
@@ -189,6 +212,7 @@ class AdvanceOptionsView(_Advances):
                         "name": c.name,
                         "quotations": quotations.get(c.id, []),
                         "proformas": issued.get(c.id, []),
+                        "sales_orders": open_orders.get(c.id, []),
                     }
                     for c in Customer.objects.filter(is_active=True).order_by("name")
                 ],

@@ -1487,7 +1487,7 @@
     "ratesOf": "Rates in force on the quotation's date, {{date}}.",
     "divisionDefaults": "{{division}}: overhead {{overhead}}%, margin {{margin}}%, setup LKR {{setup}} per hour.",
     "inLkr": "Costing is in LKR; prices in {{currency}} use 1 {{currency}} = LKR {{rate}}.",
-    "noDefaults": "There are no costing rates for {{division}} on the quotation's date. Ask the Accountant to enter them (Settings → Costing rates).",
+    "noDefaults": "There are no costing rates for {{division}} on the quotation's date. Ask the Accountant to enter them (Sales → Costing rates).",
     "savedLines": "The costing uses the quotation's saved lines: save the quotation first after changing quantities or prices.",
     "lineN": "Costing, line {{n}}",
     "formOf": "Costing of line {{n}}",

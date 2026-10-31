@@ -22,6 +22,9 @@ them in GitHub. The setup creates every secret on the server itself.
 | Location | the data centre closest to Sri Lanka (India) | the same |
 | Web address | `test.smlerp.com.lk` | `smlerp.com.lk` |
 
+For now only the production server is bought, after all user testing has passed on the
+owner's PC (owner's decision, 31 Oct 2026); a test server can be added later the same way.
+
 The domain is **smlerp.com.lk**, used only for the ERP: the live system is at the domain
 itself and the test server at `test.` in front of it (owner's decision, 31 Oct 2026). You need
 access to its DNS settings (step 7). Below, `<yourdomain>` and `erp.<yourdomain>` mean

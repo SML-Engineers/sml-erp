@@ -293,6 +293,7 @@ def revise(user: User, quotation: Quotation) -> Quotation:
             delivery_lead_time=old.delivery_lead_time,
             incoterm=old.incoterm,
             notes=old.notes,
+            discount_pct=old.discount_pct,
             created_by=user,
         )
         old_lines = list(old.lines.prefetch_related("breaks").select_related("tax_code"))

@@ -68,6 +68,8 @@ def _detail(q: Quotation, user) -> dict:
         "delivery_lead_time": q.delivery_lead_time,
         "incoterm": q.incoterm,
         "notes": q.notes,
+        "discount_pct": str(q.discount_pct),
+        "discount_total": str(q.discount_total),
         "subtotal": str(q.subtotal),
         "tax_total": str(q.tax_total),
         "created_by_id": q.created_by_id,
@@ -86,6 +88,7 @@ def _detail(q: Quotation, user) -> dict:
                 "is_tooling": line.is_tooling,
                 "tax_code": line.tax_code.code if line.tax_code else None,
                 "amount": str(line.amount),
+                "discount": str(line.discount),
                 "tax_amount": str(line.tax_amount),
                 "total": str(line.total),
                 "breaks": [
@@ -208,6 +211,9 @@ class QuotationInput(serializers.Serializer):
     delivery_lead_time = serializers.CharField(max_length=100, required=False, allow_blank=True)
     incoterm = serializers.CharField(max_length=3, required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
+    discount_pct = serializers.CharField(
+        max_length=10, required=False, allow_blank=True, allow_null=True
+    )
     lines = LineSerializer(many=True)
 
 
@@ -232,6 +238,7 @@ def _values(data: dict) -> tuple[dict, list[LineInput]]:
         "delivery_lead_time",
         "incoterm",
         "notes",
+        "discount_pct",
     ):
         if name in data:
             values[name] = data[name]

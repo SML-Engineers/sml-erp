@@ -261,9 +261,17 @@ def figures(costing: QuotationCosting, quantity: Decimal, unit_price, exchange_r
 
 
 def results(costing: QuotationCosting, line: QuotationLine, exchange_rate) -> list[dict]:
-    """The figures for the line's quantity, then for each quantity break."""
-    rows = [figures(costing, line.quantity, line.unit_price, exchange_rate)]
-    rows += [figures(costing, b.quantity, b.unit_price, exchange_rate) for b in line.breaks.all()]
+    """The figures for the line's quantity, then for each quantity break, at the prices
+    after the quotation's discount."""
+    keep = 1 - line.quotation.discount_pct / 100
+
+    def after(price):
+        return (Decimal(price) * keep).quantize(CENT, ROUND_HALF_UP)
+
+    rows = [figures(costing, line.quantity, after(line.unit_price), exchange_rate)]
+    rows += [
+        figures(costing, b.quantity, after(b.unit_price), exchange_rate) for b in line.breaks.all()
+    ]
     return rows
 
 

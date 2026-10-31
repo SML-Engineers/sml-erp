@@ -715,7 +715,7 @@ Delivery notes and tax invoices are completed in Phase 2; job and work orders in
 
 ### 5.1 Quotations
 
-**Header:** customer, contact, enquiry reference, division (Machining or Moulding), currency, validity date, payment terms, delivery lead time, revision number.
+**Header:** customer, contact, enquiry reference, division (Machining or Moulding), currency, validity date, payment terms, delivery lead time, revision number. An optional **discount %** comes off every line before taxes and is printed as its own line (owner's decision, 31 Oct 2026).
 
 **Machining costing (per line, internal only)**
 
@@ -761,7 +761,7 @@ Minimum order quantity is stated on each line.
 - Created from an accepted quotation or a sales order; prices and terms carried over.
 - Used to request an advance payment, or for the customer's import, LC or bank documents.
 - **Not an accounting entry.** Issuing it records no sale and no receivable.
-- Own number series (e.g. PI-2026-0001) and clearly titled "Proforma Invoice".
+- Own number series in the old style, PI{YY}{MM}{DD}-{XX}, e.g. PI261031-01 (owner's decision, 31 Oct 2026), and clearly titled "Proforma Invoice". Discount as on quotations.
 - Advance received against it posts as a customer advance: Dr Bank, Cr Customer Advances (liability). The Accountant's approval is enough (owner's decision, 31 Oct 2026).
 - When the tax invoice is raised, the advance is set off automatically against it.
 - One click converts it to the sales order, and later to the tax invoice.

@@ -233,7 +233,21 @@ def _header(user: User, quotation: Quotation | None, values: dict) -> dict:
         "delivery_lead_time": text("delivery_lead_time", "", 100),
         "incoterm": incoterm,
         "notes": text("notes", "", 5000),
+        "discount_pct": _discount(values, quotation),
     }
+
+
+def _discount(values: dict, quotation: Quotation | None) -> Decimal:
+    """The discount %: 0 or more, below 100, at most two decimals."""
+    if "discount_pct" not in values:
+        return quotation.discount_pct if quotation else Decimal("0")
+    value = values["discount_pct"]
+    if value in (None, ""):
+        return Decimal("0")
+    pct = _decimal(value, "discount %", CENT, positive=False)
+    if pct >= 100:
+        raise SalesError("The discount must be below 100%.")
+    return pct
 
 
 # --- Saving -----------------------------------------------------------------------------
@@ -275,14 +289,24 @@ def save(user: User, quotation: Quotation | None, *, lines: list[LineInput], **v
 
         kept, kept_no = _keep_lines(quotation, checked)
 
-        subtotal = tax_total = Decimal("0")
+        subtotal = tax_total = discount_total = Decimal("0")
+        pct = quotation.discount_pct
         for n, line in enumerate(checked, start=1):
             amount = (line["quantity"] * line["unit_price"]).quantize(CENT, ROUND_HALF_UP)
+            # The discount comes off each line before its taxes (owner, 31 Oct 2026).
+            discount = (amount * pct / 100).quantize(CENT, ROUND_HALF_UP)
+            net = amount - discount
             tax = Decimal("0")
             if line["tax_code"] is not None:
-                tax = taxes.calculate(line["tax_code"], amount, quotation.quote_date).tax
+                tax = taxes.calculate(line["tax_code"], net, quotation.quote_date).tax
             fields = {k: v for k, v in line.items() if k not in ("breaks", "id")}
-            fields |= {"line_no": n, "amount": amount, "tax_amount": tax, "total": amount + tax}
+            fields |= {
+                "line_no": n,
+                "amount": amount,
+                "discount": discount,
+                "tax_amount": tax,
+                "total": net + tax,
+            }
             row = kept.get(line["id"])
             if row is None:
                 row = QuotationLine.objects.create(quotation=quotation, **fields)
@@ -294,17 +318,21 @@ def save(user: User, quotation: Quotation | None, *, lines: list[LineInput], **v
             QuotationQtyBreak.objects.bulk_create(
                 QuotationQtyBreak(line=row, quantity=q, unit_price=p) for q, p in line["breaks"]
             )
-            subtotal += amount
+            subtotal += net
+            discount_total += discount
             tax_total += tax
             if line["tax_code"] is not None:
                 taxes.mark_used(line["tax_code"])
                 for part in line["tax_code"].lines.select_related("component"):
                     taxes.mark_used(part.component)
+        quotation.discount_total = discount_total
         quotation.subtotal = subtotal
         quotation.tax_total = tax_total
         quotation.total_amount = subtotal + tax_total
         quotation.total_lkr = currencies.to_lkr(quotation.total_amount, lookup)
-        quotation.save(update_fields=["subtotal", "tax_total", "total_amount", "total_lkr"])
+        quotation.save(
+            update_fields=["discount_total", "subtotal", "tax_total", "total_amount", "total_lkr"]
+        )
         # Drawings follow their line when lines are renumbered, and the files of removed
         # lines stay, tied to the whole quotation. (Lines sent without their id are new
         # lines: files then keep their line number while that line exists.)

@@ -95,6 +95,13 @@ Status: `[ ]` to do · `[x]` done
   Only an approved quotation is printed as final or emailed (P15-06).
   - The PDF and email contain no costing figures (tested on the generated PDF text).
 
+- [x] **P15-07b Discount on quotations** (owner, 31 Oct 2026)
+  An optional discount % on the quotation, taken off every line before its taxes (SSCL then
+  VAT on what is left), as on the owner's proforma sample ("Discount – 3%"). Shown as its own
+  line on the printed quotation; the costing margin uses the price after the discount;
+  revisions keep it; the database refuses changing it once out of draft. Proformas carry it
+  over (P15-08).
+
 ## C. Proforma invoices, advances and sales orders
 
 - [ ] **P15-08 Proforma invoices** (spec 5.2, 5.5)
@@ -153,6 +160,9 @@ Status: `[ ]` to do · `[x]` done
 8. **Rejects** add their % to material and machine cost (P15-05).
 9. **Tooling** is charged once on its own quotation line, spread over a quantity, or owned
    by the customer (P15-05).
+10. **Proforma numbers** keep the old style, the date and the number of the day:
+    PI{YY}{MM}{DD}-{XX}, e.g. PI261031-01 (P15-08).
+11. **Discount**: an optional discount % on both quotations and proformas (P15-07b, P15-08).
 
 Samples received 31 Oct 2026: quotation QL26061501, proforma PI191120-02 and purchase order
 PO26061701 (for the purchasing phase). The printed quotation follows QL26061501 (P15-07).

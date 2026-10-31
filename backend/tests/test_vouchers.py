@@ -1,5 +1,6 @@
 """The Clerk's payment voucher: entry, attachments, submission (backlog P1-02)."""
 
+import itertools
 from datetime import date
 from decimal import Decimal
 
@@ -69,7 +70,12 @@ def ws():
     return Division.objects.get(code="WS")
 
 
+_INVOICES = itertools.count(1001)
+
+
 def draft(user, the_payee, *lines, code="CHQ"):
+    """A draft voucher; without lines, one line with a new invoice number (a supplier invoice
+    can be on one voucher only)."""
     return services.save(
         user,
         None,
@@ -77,7 +83,7 @@ def draft(user, the_payee, *lines, code="CHQ"):
         division=ws(),
         payee=the_payee,
         description="Steel for job 145",
-        lines=list(lines) or [LineInput(amount="25000.00", invoice_no="INV-1001")],
+        lines=list(lines) or [LineInput(amount="25000.00", invoice_no=f"INV-{next(_INVOICES)}")],
     )
 
 
@@ -205,7 +211,7 @@ def test_the_database_refuses_a_duplicate_supplier_invoice(clerk, supplier):
     first = draft(clerk, supplier, LineInput(amount="10.00", invoice_no="INV-88"))
     second = draft(clerk, supplier, LineInput(amount="10.00", invoice_no="INV-89"))
     with pytest.raises(DatabaseError, match="already on voucher"), transaction.atomic():
-        VoucherLine.objects.filter(voucher=second).update(invoice_no="inv88")
+        VoucherLine.objects.filter(voucher=second).update(invoice_no="inv-88 ")
     assert first.lines.count() == 1
 
 

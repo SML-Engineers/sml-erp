@@ -540,7 +540,7 @@ A return at either level sends the voucher back to the clerk, and approval resta
 3. Upload scanned invoices (PDF, JPG, PNG; multiple files; drag and drop, or camera on a phone).
 4. Save as draft or submit.
 
-The system warns if the same supplier and invoice number already exist in any voucher, and if an uploaded file is identical (same hash) to one already in the system.
+The system **refuses** the same supplier and invoice number (ignoring case and spaces) if it is already on another voucher, checked by the service and by the database; the same number from a different supplier is accepted, and a deleted, rejected, amended or cancelled voucher frees its invoices (owner's decision, 31 Oct 2026). It warns if an uploaded file is identical (same hash) to one already in the system.
 
 **Accountant: review**
 
@@ -803,6 +803,122 @@ Export customers are quoted, invoiced and paid in their own currency from Phase 
 - In Phase 2, exchange gains and losses are posted on receipt and revalued at month-end; export sales are treated under the applicable VAT rules (confirm with the tax advisor).
 - Profitability (7.7) is always reported in LKR, using the rate at invoice date.
 
+## 5A. Phase 1.6: Purchasing, goods receipt and supplier invoices
+
+Owner's requirement (31 Oct 2026), treated as a critical financial and inventory control:
+suppliers are paid only for goods actually received, accepted and verified. This phase brings
+forward from Phase 2 the purchase orders, goods receipt and incoming inspection (section 6A),
+stock and supplier invoices with three-way matching; the rest of Phase 2 (full ledger, tax
+invoices, receivables, banking) stays where it was.
+
+```
+Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Invoice
+   (Director)        (Stores)                    (QC)          (Accounts, 3-way match)
+             → Payment Voucher (Clerk → Accountant → Director) → Payment (Cashier)
+```
+
+**Owner's decisions (31 Oct 2026)**
+
+1. Built next, as its own phase, while Phase 1.5 is in user testing.
+2. Stores receive the goods (Stores Executive enters the GRN, Stores Manager confirms it); a
+   QC Inspector accepts or rejects (section 6A). Only accepted quantities go to available
+   stock and can be paid.
+3. Three-way match with **no tolerance**: any difference in quantity or price between the
+   PO, the accepted GRN quantity and the supplier invoice blocks payment until the
+   Accountant investigates and the Director approves the exception, with a reason.
+4. A Purchasing Officer raises purchase orders; the Director approves every PO before it is
+   sent.
+5. The same supplier invoice number (supplier + invoice number, ignoring case and spaces)
+   can never be entered twice, on a supplier invoice or a payment voucher; the same number
+   from another supplier is accepted. Enforced by the service and the database.
+
+### 5A.1 Purchase orders
+
+- Supplier, division, items (from the item master) with quantity, unit, agreed price, tax
+  code and delivery date; terms and delivery address. Numbered PO{YY}{MM}{DD}{XX}, as on the
+  owner's sample PO26061701.
+- Raised by the Purchasing Officer; approved by the Director (approval engine, never by the
+  person who raised it); printed and emailed to the supplier only once approved.
+- An approved PO never changes: a revision (Rev 1) goes through approval again. Status:
+  Draft, Awaiting approval, Approved (open), Partly received, Received, Closed (short-closed
+  with a reason), Cancelled (with a reason; not once goods are received).
+
+### 5A.2 Goods receiving note (GRN)
+
+- Made against an approved PO: supplier, items, ordered and still-to-receive quantities and
+  agreed prices are filled in from it. Header: delivery note number, vehicle, supplier's
+  invoice number if delivered with the goods, date and time.
+- The Stores Executive enters the quantities actually received (package by package where the
+  item needs it, section 6A.2), damaged quantities and photos; the Stores Manager confirms
+  it (not the same person). Numbered GRN{YY}{MM}{DD}{XX}.
+- Partial deliveries and several GRNs per PO. A delivery above the PO's remaining quantity
+  is flagged as an excess: the excess cannot be accepted or paid unless the Director
+  approves it (or the PO is revised).
+- A confirmed GRN never changes (database guard). Corrections are a GRN reversal with a
+  reason, approved by the Director, recorded and linked.
+- Goods go into the **Quarantine** store on confirmation, then QC acceptance moves accepted
+  quantities to available stock and rejected ones to the Rejected store (section 6A).
+- Who received, confirmed, inspected and approved, with date and time, is on the GRN and in
+  the audit log.
+
+### 5A.3 Stock and its accounting (IAS 2)
+
+- Item master: code, description, unit, category (raw material, consumable, spare,
+  bought-out part, packing), stock or non-stock, package type and inspection need (6A),
+  inventory account, division.
+- Stock is held by item, store and lot, with every movement recorded (receipt, acceptance,
+  rejection, return, issue, adjustment); balances are never typed.
+- Valuation at weighted average cost (spec 6). Inventory is recognised when goods are
+  accepted, at the PO price: Dr Inventory, Cr Goods received not invoiced (GRNI). The
+  supplier invoice then clears it: Dr GRNI, Dr VAT input, Cr Accounts payable (the supplier).
+  Payment: Dr Accounts payable, Cr Bank. All postings balance and are never edited (rules 2,
+  3).
+
+### 5A.4 Supplier invoices and three-way match
+
+- Entered by the Accounts Clerk with the scanned invoice: supplier, invoice number and date,
+  lines linked to the GRN lines they bill (from one or more GRNs of the supplier).
+- Supplier + invoice number is unique (decision 5).
+- The match, line by line: invoiced quantity ≤ accepted quantity not yet invoiced; invoiced
+  price = PO price; tax as on the PO. Any difference marks the invoice **Held:
+  discrepancy**, with the differences listed; the Accountant investigates and either the
+  supplier corrects (credit note, new invoice) or the Director approves the exception with
+  a reason.
+- Goods not yet received or not accepted can never be invoiced for payment.
+
+### 5A.5 Payment vouchers from supplier invoices
+
+- For goods bought on a PO, the payment voucher is prepared from matched (or
+  exception-approved) supplier invoices; it carries the invoice, GRN and PO links, and its
+  amount can never exceed what is unpaid on those invoices, so an invoice is never paid
+  twice.
+- The voucher still passes the Clerk, the Accountant and the Director (rule 6), and the
+  Cashier pays it (rule 4). The voucher shows PO, GRN and invoice quantities and prices side
+  by side for the approvers.
+- Services, utilities and other purchases with no goods (non-stock) continue as today's
+  vouchers. A payment in advance of delivery on a PO is an exception the Director approves.
+
+### 5A.6 Internal controls (COSO) and standards
+
+- Segregation: the Purchasing Officer orders, Stores receive, QC accepts, Accounts invoice and
+  prepare vouchers, the Director approves, the Cashier pays. Conflicting role pairs warn the
+  Admin (Purchasing Officer with Stores, Stores with Accounts Clerk or Cashier).
+- Nobody approves a document they created, or at two levels of one document (rule 5).
+- Confirmed GRNs, matched invoices and posted entries are never edited; reversals and
+  amendments are documents of their own, approved and linked.
+- Traceability both ways on every document: PO ↔ GRN ↔ QC result ↔ supplier invoice ↔
+  payment voucher ↔ payment, and down to the lot used in production (Phase 3).
+- Standards followed: IAS 2 (recognition and cost of inventories), IFRS accrual of supplier
+  liabilities (GRNI), three-way matching, COSO (authorisation, verification, segregation,
+  audit trail), ISO 9001 (documented process, traceability, control of nonconforming goods).
+  The accounting treatment is confirmed with the company's auditors before go-live.
+
+### 5A.7 Reports
+
+Open POs and overdue deliveries; goods received not invoiced (GRNI); invoices held for
+discrepancies; three-way-match exceptions approved; receipts and rejections by supplier;
+stock on hand by store and lot, with value; the full trail of any PO, GRN or invoice.
+
 ## 6. Phase 2: Financial accounting
 
 Phase 2 extends the Phase 0 ledger to cover what QuickBooks provides, with the voucher system remaining the only route for supplier payments.
@@ -810,7 +926,7 @@ Phase 2 extends the Phase 0 ledger to cover what QuickBooks provides, with the v
 | Module | Main features |
 | --- | --- |
 | General ledger | Chart of accounts, manual journals (with approval), recurring journals, period close, year-end close and carry-forward |
-| Accounts payable | Purchase requests, purchase orders, goods received notes, supplier bills with 3-way match (PO, GRN, bill), debit notes, supplier statements, aging. Payments only via approved vouchers |
+| Accounts payable | Purchase requests, debit notes, supplier statements, aging (purchase orders, GRNs and supplier invoices with 3-way match come first, in Phase 1.6, section 5A). Payments only via approved vouchers |
 | Accounts receivable | Delivery notes, tax invoices, credit notes, receipts, advance set-off, customer statements, aging, credit limits, reminders |
 | Banking | Bank and cash accounts, cheque register (issued and received), post-dated cheques, bank reconciliation with statement import (CSV/Excel), deposits, inter-account transfers |
 | Petty cash | Imprest float per custodian, replenishment through a petty cash voucher |
@@ -928,7 +1044,7 @@ An inspection plan per item, or per material category, defines what is checked, 
 - Lots in quarantine and how long they have waited.
 - Lot traceability: from a supplier lot to the production batches that used it, and back.
 
-**Phasing:** this module belongs with purchasing and inventory in Phase 2. The goods receipt and weight entry page can be brought forward into Phase 1.5 if you want vouchers checked against received quantities from the start.
+**Phasing:** brought forward into Phase 1.6 with purchase orders and supplier invoices (section 5A; owner's decision, 31 Oct 2026).
 
 ## 7. Phase 3: Production
 
@@ -1261,6 +1377,7 @@ The owner asked for the interactive features of QuickBooks Online and Desktop. E
 | --- | --- | --- |
 | 0 + 1 | Core foundation, voucher approval, supplier payments | 3–4 months |
 | 1.5 | Customers, quotations with costing, proforma invoices, sales orders | 2 months |
+| 1.6 | Purchase orders, goods receipt with QC acceptance, stock, supplier invoices with three-way match, vouchers from matched invoices (section 5A) | 2–3 months |
 | 2 | Full financial accounting, migration, one-month parallel run; payroll follows as Phase 2b | 9–12 months |
 | 3 | Moulding production and supervisor pages first, then machining job cards and costing, QC, OEE | 6–9 months |
 

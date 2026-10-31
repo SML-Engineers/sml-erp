@@ -1,0 +1,123 @@
+# Backlog — Phase 1.6 (purchasing, goods receipt and supplier invoices)
+
+Purchase orders, goods receiving notes with QC acceptance, stock, supplier invoices with
+three-way matching, and payment vouchers made from matched invoices (spec 5A, with the
+receiving details of spec 6A). Owner's requirement of 31 Oct 2026: suppliers are paid only for
+goods actually received, accepted and verified. Same rules as before: work top to bottom, one
+task per pull request, and a task is done when every acceptance criterion is a passing test
+(or, for pure UI items, checked by the owner).
+
+```
+Purchase Order → GRN (Stores) → QC acceptance → Supplier Invoice (3-way match)
+   (Director)                                    → Payment Voucher (Clerk → Accountant → Director)
+                                                 → Payment (Cashier)
+```
+
+**Owner's decisions (31 Oct 2026):** built next, while Phase 1.5 is tested; Stores receive and
+QC accepts; no tolerance in the three-way match (differences need the Director); the
+Purchasing Officer raises POs and the Director approves every PO; supplier + invoice number
+is unique everywhere (spec 5A, decisions 1–5).
+
+**Already built, used here:** suppliers and their bank details (P1), the approval engine and
+reminders, number series, tax codes, the chart of accounts and journal entries, payment
+vouchers and payments with the Director lock, divisions, sections and the audit log.
+
+Status: `[ ]` to do · `[x]` done
+
+---
+
+## A. Controls available at once
+
+- [x] **P16-01 Duplicate supplier invoices refused** (spec 4.4, 5A decision 5)
+  The same supplier and invoice number (ignoring case and spaces) cannot be on two vouchers
+  that still count; another supplier may use the same number; a deleted, rejected, amended or
+  cancelled voucher frees it. Service message and a database trigger.
+
+## B. Masters and roles
+
+- [ ] **P16-02 Roles and access** (spec 5A.6, 6A.5)
+  Switch on the Purchasing Officer, Stores Executive (today's "Store Supervisor"), Stores
+  Manager and QC Inspector roles. Conflicting pairs warn the Admin: Purchasing Officer with
+  Stores; Stores with Accounts Clerk or Cashier. The Director approves POs; stores staff never
+  approve payments.
+
+- [ ] **P16-03 Item master and stores** (spec 5A.3, 6A)
+  Items: code (immutable once used), description, unit, category, stock or non-stock, package
+  type, inspection needed, inventory account, division; Excel import and export. Stores per
+  division: Main, Quarantine, Rejected. Deactivated, never deleted, once used.
+
+## C. Purchase orders
+
+- [ ] **P16-04 Purchase orders** (spec 5A.1)
+  Raised by the Purchasing Officer from the supplier and item master; numbered
+  PO{YY}{MM}{DD}{XX}; quantities, agreed prices, tax, delivery dates, terms.
+  - Director approval for every PO through the approval engine (never the creator); reminders.
+  - An approved PO never changes (database guard); a revision goes through approval again.
+  - Status: draft, awaiting approval, approved, partly received, received, closed (reason),
+    cancelled (reason; refused once goods are received).
+
+- [ ] **P16-05 Printing and emailing the PO**
+  PDF in the layout of the owner's sample PO26061701, the company letterhead, emailed to the
+  supplier's contact; a draft prints marked DRAFT and cannot be emailed.
+
+## D. Receiving and inspection
+
+- [ ] **P16-06 Goods receiving note** (spec 5A.2)
+  Against an approved PO only, filled from it; the Stores Executive enters received and
+  damaged quantities, delivery note, vehicle, photos; the Stores Manager confirms (a different
+  person). Numbered GRN{YY}{MM}{DD}{XX}.
+  - Partial deliveries and several GRNs per PO; the PO's received quantities and status
+    update.
+  - Excess over the PO is flagged and cannot be accepted without the Director.
+  - A confirmed GRN never changes (database guard); a reversal with a reason needs the
+    Director and is linked.
+  - Confirmed goods go to the Quarantine store.
+
+- [ ] **P16-07 Package-level receiving** (spec 6A.2)
+  Bags, bars, plates, coils, boxes: one row per package with lot or heat number, gross, tare,
+  net, count; "40 bags × 25 kg" fast entry; variance against declared and invoiced weight;
+  QR labels per package.
+
+- [ ] **P16-08 QC inspection and acceptance** (spec 6A.3, 6A.4)
+  Inspection plans per item or category; the QC Inspector records results and accepts,
+  rejects, or accepts under deviation (Production Manager, Director for critical materials).
+  Accepted quantities move to available stock; rejected ones to the Rejected store for return.
+  The QC Inspector cannot change received quantities.
+
+## E. Stock and accounting
+
+- [ ] **P16-09 Stock movements and valuation** (spec 5A.3, IAS 2)
+  Every movement recorded by item, store and lot; balances computed, never typed; weighted
+  average cost. On acceptance: Dr Inventory, Cr Goods received not invoiced (GRNI), at the PO
+  price, balanced and never edited. Stock on hand report with value.
+
+## F. Supplier invoices and payment
+
+- [ ] **P16-10 Supplier invoices with three-way match** (spec 5A.4)
+  Entered by the Accounts Clerk with the scan, linked to GRN lines; supplier + invoice number
+  unique (service and database). Line by line: invoiced quantity ≤ accepted and not yet
+  invoiced; price = PO price; tax as on the PO. Any difference: **Held: discrepancy**, listed;
+  the Accountant investigates; the Director approves an exception with a reason. Posting: Dr
+  GRNI, Dr VAT input, Cr Accounts payable.
+
+- [ ] **P16-11 Payment vouchers from matched invoices** (spec 5A.5)
+  A voucher for PO goods is made from matched or exception-approved invoices, carries the PO,
+  GRN and invoice links, and can never exceed what is unpaid on them; the approvers see PO,
+  GRN and invoice side by side. Clerk → Accountant → Director → Cashier as today. Advance
+  payment on a PO only as a Director-approved exception. Non-stock purchases stay as today.
+
+- [ ] **P16-12 Supplier returns and debit notes**
+  Rejected or short goods returned to the supplier with a return note; a debit note reduces
+  what is owed; linked to the GRN and invoice.
+
+## G. Reports and go-live
+
+- [ ] **P16-13 Traceability and reports** (spec 5A.7, 6A.7)
+  The full trail on every document (PO ↔ GRN ↔ QC ↔ invoice ↔ voucher ↔ payment); open POs
+  and overdue deliveries; GRNI; invoices held; exceptions approved; receipts and rejections
+  by supplier; stock on hand. Excel and PDF; purchasing and stores tiles on the dashboard.
+
+- [ ] **P16-14 User acceptance testing and go-live**
+  Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,
+  Accounts Clerk, Accountant, Director, Cashier); items, stores and open POs loaded; the
+  accounting treatment confirmed with the auditors; the owner signs off.

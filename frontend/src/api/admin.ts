@@ -137,3 +137,29 @@ export const reactivateUser = (id: number) =>
 export const getReview = () => apiGet<{ period: string; rows: ReviewRow[] }>("/access-review/");
 export const recordReview = (user: number, outcome: "confirmed" | "changed", note = "") =>
   apiPost<{ period: string; rows: ReviewRow[] }>("/access-review/", { user, outcome, note });
+
+// --- Password resets: the Admin asks, the Director approves, the Admin makes the password ---
+
+export interface PasswordResetRow {
+  id: number;
+  status: "waiting" | "approved" | "refused" | "done" | "lapsed";
+  with_authenticator: boolean;
+  reason: string;
+  requested_by: string;
+  requested_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_reason: string;
+  issued_at: string | null;
+  can_decide: boolean;
+  can_issue: boolean;
+}
+
+export const listPasswordResets = (userId: number) =>
+  apiGet<{ can_request: boolean; resets: PasswordResetRow[] }>(`/users/${userId}/password-resets/`);
+export const requestPasswordReset = (userId: number, reason: string, withAuthenticator: boolean) =>
+  apiPost<PasswordResetRow>(`/users/${userId}/password-resets/`, { reason, with_authenticator: withAuthenticator });
+export const decidePasswordReset = (id: number, approve: boolean, reason: string) =>
+  apiPost<PasswordResetRow>(`/password-resets/${id}/${approve ? "approve" : "refuse"}/`, { reason });
+export const issuePasswordReset = (id: number) =>
+  apiPost<PasswordResetRow & { temporary_password: string }>(`/password-resets/${id}/issue/`);

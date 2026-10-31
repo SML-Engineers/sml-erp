@@ -5,7 +5,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } fro
 
 import { signOut, type CurrentUser } from "../api/auth";
 import NotificationBell from "../components/NotificationBell";
-import { visibleMenu } from "./menu";
+import { pageAllowed, visibleMenu } from "./menu";
 
 /** Pages inside the layout read the signed-in user from here. */
 export function useMe(): CurrentUser {
@@ -72,7 +72,17 @@ export default function AppLayout({ user }: { user: CurrentUser }) {
       )}
 
       <div className="content">
-        <Outlet context={user} />
+        {pageAllowed(location.pathname, user.access) ? (
+          <Outlet context={user} />
+        ) : (
+          <main className="page">
+            <h1>{t("noAccess.title")}</h1>
+            <p>{t("noAccess.help")}</p>
+            <p>
+              <Link to="/">{t("noAccess.home")}</Link>
+            </p>
+          </main>
+        )}
       </div>
     </div>
   );

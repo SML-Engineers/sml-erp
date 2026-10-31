@@ -10,6 +10,7 @@ export interface AdvanceRow {
   receipt_date: string;
   customer: { id: number; code: string; name: string };
   quotation: { id: number; label: string } | null;
+  proforma: { id: number; number: string } | null;
   division: string;
   currency: string;
   /** Decimals as text, e.g. "75000.00". */
@@ -42,6 +43,7 @@ export interface AdvanceOptions {
     code: string;
     name: string;
     quotations: { id: number; label: string; division: number; currency: string; total_amount: string }[];
+    proformas: { id: number; number: string; currency: string; total_amount: string; advance_amount: string }[];
   }[];
   divisions: { code: string; name: string }[];
   accounts: { id: number; code: string; name: string; kind: string; currency: string }[];
@@ -50,6 +52,7 @@ export interface AdvanceOptions {
 export interface AdvanceInput {
   customer: number;
   quotation: number | null;
+  proforma: number | null;
   division: string;
   account: number;
   method: ReceiptMethod;

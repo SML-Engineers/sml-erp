@@ -19,6 +19,8 @@ import VoucherReportsPage from "./pages/VoucherReportsPage";
 import AdvancePage from "./pages/AdvancePage";
 import AdvancesPage from "./pages/AdvancesPage";
 import PaymentsPage from "./pages/PaymentsPage";
+import ProformaPage from "./pages/ProformaPage";
+import ProformasPage from "./pages/ProformasPage";
 import PayPage from "./pages/PayPage";
 import JournalPage from "./pages/JournalPage";
 import PeriodsPage from "./pages/PeriodsPage";
@@ -92,6 +94,8 @@ export default function App() {
         <Route path="quotations/new" element={<QuotationPage />} />
         <Route path="quotations/:id" element={<QuotationPage />} />
         <Route path="quotations/:id/costing" element={<QuotationCostingPage />} />
+        <Route path="proformas" element={<ProformasPage />} />
+        <Route path="proformas/:id" element={<ProformaPage />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
         <Route
           path="chart-of-accounts"

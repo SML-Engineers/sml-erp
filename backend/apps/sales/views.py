@@ -15,7 +15,7 @@ from apps.core.models import ApprovalState, Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Customer, CustomerContact, Machine, Material
 
-from . import costing, printing, quotation_email, services, workflow
+from . import costing, printing, proformas, quotation_email, services, workflow
 from .models import Quotation, QuotationFile
 from .services import BreakInput, LineInput, SalesError
 
@@ -128,6 +128,13 @@ def _detail(q: Quotation, user) -> dict:
         "can_record_outcome": workflow.can_record_outcome(user, q),
         "can_revise": workflow.can_revise(user, q),
         "can_email": quotation_email.can_email(user, q),
+        "can_make_proforma": q.status == Quotation.Status.ACCEPTED
+        and q.created_by_id == user.pk
+        and services.can_enter(user),
+        "proformas": [
+            {"id": p.id, "number": p.number, "status": p.status}
+            for p in proformas.visible(user).filter(quotation=q)
+        ],
         "emails": quotation_email.history(q),
         "approval": _approval(q),
         "revisions": [

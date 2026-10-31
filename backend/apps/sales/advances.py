@@ -8,8 +8,8 @@
   account, Cr Customer advances (a liability), in LKR. It balances (rule 2) and is never
   changed; a mistake is reversed (rule 3).
 - A rejected receipt posts nothing.
-- An advance may be against one of the customer's approved quotations; proforma invoices
-  (P15-08) and sales orders (P15-10) will be linked the same way. It waits for set-off
+- An advance may be against one of the customer's issued proformas (P15-08) or approved
+  quotations; sales orders (P15-10) will be linked the same way. It waits for set-off
   against the tax invoice, built in Phase 2.
 """
 
@@ -33,7 +33,7 @@ from apps.masters import currencies, customers
 from apps.masters.models import CompanyAccount, Customer
 from apps.masters.services import MastersError, mark_used
 
-from .models import CustomerAdvance, Quotation
+from .models import CustomerAdvance, ProformaInvoice, Quotation
 from .services import SalesError
 
 DOC = "customer_advance"
@@ -105,8 +105,10 @@ def record(
     division: Division | None = None,
     reference: str = "",
     notes: str = "",
+    proforma: ProformaInvoice | None = None,
 ) -> CustomerAdvance:
-    """The Cashier records an advance; it goes to the Accountant for approval."""
+    """The Cashier records an advance; it goes to the Accountant for approval. Against an
+    issued proforma (P15-08), an approved quotation, or for a division."""
     if not can_record(user):
         raise SalesError("Only the Cashier records customer receipts.")
     amount = _money(amount)
@@ -121,6 +123,15 @@ def record(
         raise SalesError("Choose the customer.")
     if not customer.is_active:
         raise SalesError(f"Customer {customer.code} is inactive.")
+    if proforma is not None:
+        if proforma.customer_id != customer.pk:
+            raise SalesError(f"Proforma {proforma.number} is for another customer.")
+        if proforma.status != ProformaInvoice.Status.ISSUED:
+            raise SalesError(
+                f"Proforma {proforma.number} is {proforma.get_status_display().lower()}: an "
+                "advance is against an issued proforma."
+            )
+        quotation = proforma.quotation
     if quotation is not None:
         if quotation.customer_id != customer.pk:
             raise SalesError(f"Quotation {quotation.label} is for another customer.")
@@ -151,6 +162,7 @@ def record(
             number=number,
             customer=customer,
             quotation=quotation,
+            proforma=proforma,
             division=division,
             receipt_date=receipt_date,
             account=account,

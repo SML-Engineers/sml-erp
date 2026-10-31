@@ -27,6 +27,7 @@ import {
   type LineInput,
   type QuotationDetail,
 } from "../api/quotations";
+import { createProforma } from "../api/proformas";
 import { getTaxes, taxesKey } from "../api/taxes";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
@@ -87,6 +88,7 @@ export default function QuotationPage() {
         </p>
       )}
       {data && (data.can_email || data.emails.length > 0) && <EmailPanel key={`email-${data.id}`} quotation={data} />}
+      {data && (data.can_make_proforma || data.proformas.length > 0) && <ProformaLinks quotation={data} />}
       {data?.can_see_costing && (
         <p>
           <Link className="button-link" to={`/quotations/${data.id}/costing`}>
@@ -838,6 +840,33 @@ function EmailPanel({ quotation }: { quotation: QuotationDetail }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** Proformas made from this quotation, and making one from an accepted quotation (P15-08). */
+function ProformaLinks({ quotation }: { quotation: QuotationDetail }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const make = useMutation({ mutationFn: () => createProforma(quotation.id), onSuccess: (made) => navigate(`/proformas/${made.id}`) });
+  return (
+    <section className="panel" aria-label={t("proformas.title")}>
+      <h2>{t("proformas.title")}</h2>
+      {quotation.proformas.length > 0 && (
+        <ul className="changes">
+          {quotation.proformas.map((p) => (
+            <li key={p.id}>
+              <Link to={`/proformas/${p.id}`}>{p.number}</Link> <span className="muted">({t(`proformas.statuses.${p.status}`)})</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {quotation.can_make_proforma && (
+        <button type="button" disabled={make.isPending} onClick={() => make.mutate()}>
+          {t("proformas.make")}
+        </button>
+      )}
+      <ErrorLine error={make.error} />
     </section>
   );
 }

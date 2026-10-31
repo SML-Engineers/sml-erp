@@ -172,13 +172,22 @@ def test_the_admin_can_widen_the_running_number():
 
 
 def test_a_format_without_a_division_shares_one_running_number():
-    proforma = series("proforma")  # PI-{YYYY}-{NNNN}, reset yearly
+    receipts = series("customer_receipt")  # RC{YY}{MM}{NNNN}, reset monthly
     with transaction.atomic():
-        first = allocate("proforma", division=division("IM"), on_date=DAY)
-        second = allocate("proforma", division=division("WS"), on_date=DAY)
-        third = allocate("proforma", on_date=date(2027, 1, 2))
-    assert (first, second, third) == ("PI-2026-0001", "PI-2026-0002", "PI-2027-0001")
-    assert proforma.counters.count() == 2
+        first = allocate("customer_receipt", division=division("IM"), on_date=DAY)
+        second = allocate("customer_receipt", division=division("WS"), on_date=DAY)
+        third = allocate("customer_receipt", on_date=date(2027, 1, 2))
+    assert (first, second, third) == ("RC26100001", "RC26100002", "RC27010001")
+    assert receipts.counters.count() == 2
+
+
+def test_proformas_keep_the_owners_old_numbers():
+    """PI{YY}{MM}{DD}-{XX}, the number of the day (owner, 31 Oct 2026; P15-08)."""
+    with transaction.atomic():
+        first = allocate("proforma", on_date=DAY)
+        second = allocate("proforma", on_date=DAY)
+        next_day = allocate("proforma", on_date=date(2026, 10, 24))
+    assert (first, second, next_day) == ("PI261023-01", "PI261023-02", "PI261024-01")
 
 
 def test_a_document_numbered_by_division_needs_a_division():

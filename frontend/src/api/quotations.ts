@@ -86,6 +86,8 @@ export interface QuotationDetail extends QuotationSummary {
   can_revise: boolean;
   /** Approved and the user is its creator or the Sales Manager (P15-07). */
   can_email: boolean;
+  can_make_proforma: boolean;
+  proformas: { id: number; number: string; status: "draft" | "issued" | "cancelled" }[];
   emails: { to: string; cc: string; subject: string; status: "sent" | "failed"; error: string; sent_at: string; by: string }[];
   approval: {
     status: "in_progress" | "approved" | "returned" | "rejected" | "withdrawn";

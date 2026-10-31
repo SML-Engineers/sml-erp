@@ -1694,6 +1694,54 @@
     "decision": "Accountant's decision",
     "approve": "Approve and post",
     "rejectReason": "Reason for rejecting",
-    "reject": "Reject"
+    "reject": "Reject",
+    "againstProforma": "Against proforma invoice",
+    "noProforma": "No proforma"
+  },
+  "proformas": {
+    "title": "Proforma invoices",
+    "help": "Made from an accepted quotation, with its prices and terms. For the customer's advance payment, import, LC or bank documents. A proforma records no sale.",
+    "proforma": "Proforma invoice",
+    "make": "Make a proforma invoice",
+    "backToList": "← All proforma invoices",
+    "none": "No proforma invoices.",
+    "number": "Proforma no.",
+    "statuses": {
+      "draft": "Draft",
+      "issued": "Issued",
+      "cancelled": "Cancelled"
+    },
+    "printPdf": "Print with packing list (PDF)",
+    "printsAsDraft": "Prints as DRAFT – NOT ISSUED until it is issued.",
+    "noSale": "A proforma records no sale and no receivable: nothing is posted to the accounts.",
+    "form": "Proforma details",
+    "details": "Proforma details",
+    "customerPo": "Customer's PO no.",
+    "portOfLoading": "Port of loading",
+    "portOfDestination": "Port of destination",
+    "bankAccount": "Bank account for payment (printed)",
+    "advancePct": "Advance %",
+    "linesAndPacking": "Lines and packing list",
+    "priceHelp": "Prices come from the quotation for each quantity (its quantity breaks apply). Packing details print as the packing list page.",
+    "packing": {
+      "cartons": "Cartons",
+      "qty_per_carton": "Qty per carton",
+      "net_weight_kg": "Net weight (kg)",
+      "gross_weight_kg": "Gross weight (kg)",
+      "carton_length_cm": "Carton length (cm)",
+      "carton_width_cm": "Carton width (cm)",
+      "carton_height_cm": "Carton height (cm)"
+    },
+    "packingOf": "{{what}}, line {{n}}",
+    "addQuotationLine": "Add a line of the quotation",
+    "advanceLine": "Advance {{pct}}%: {{amount}}",
+    "packingTotals": "Packing: {{cartons}} cartons, net {{net}} kg, gross {{gross}} kg, {{volume}} m³",
+    "actions": "Issue, email or cancel",
+    "issue": "Issue the proforma",
+    "issueHelp": "Once issued it cannot be changed; it can then be printed as final and emailed.",
+    "cancelReason": "Reason for cancelling",
+    "cancel": "Cancel the proforma",
+    "cancelledBecause": "Cancelled: {{reason}}",
+    "advancesReceived": "Advances received"
   }
 }

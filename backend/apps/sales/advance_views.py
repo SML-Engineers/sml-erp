@@ -15,7 +15,7 @@ from apps.core.permissions import AreaAccess
 from apps.masters.models import CompanyAccount, Customer
 
 from . import advances, receipt
-from .models import CustomerAdvance, Quotation
+from .models import CustomerAdvance, ProformaInvoice, Quotation
 from .services import SalesError
 
 
@@ -42,6 +42,9 @@ def _row(a: CustomerAdvance) -> dict:
         "quotation": None
         if a.quotation_id is None
         else {"id": a.quotation_id, "label": a.quotation.label},
+        "proforma": None
+        if a.proforma_id is None
+        else {"id": a.proforma_id, "number": a.proforma.number},
         "division": a.division.code,
         "currency": a.currency.code,
         "amount": str(a.amount),
@@ -84,6 +87,7 @@ def _detail(a: CustomerAdvance, user) -> dict:
 class AdvanceInput(serializers.Serializer):
     customer = serializers.IntegerField()
     quotation = serializers.IntegerField(required=False, allow_null=True)
+    proforma = serializers.IntegerField(required=False, allow_null=True)
     division = serializers.CharField(max_length=2, required=False, allow_blank=True)
     account = serializers.IntegerField()
     method = serializers.CharField(max_length=10)
@@ -96,7 +100,7 @@ class AdvanceInput(serializers.Serializer):
 class AdvanceListView(_Advances):
     def get(self, request):
         rows = advances.visible(request.user).select_related(
-            "customer", "quotation", "division", "currency", "created_by"
+            "customer", "quotation", "proforma", "division", "currency", "created_by"
         )
         params = request.query_params
         if params.get("status"):
@@ -117,6 +121,11 @@ class AdvanceListView(_Advances):
             quotation = Quotation.objects.filter(pk=values["quotation"]).first()
             if quotation is None:
                 return _error("That quotation does not exist.")
+        proforma = None
+        if values.get("proforma"):
+            proforma = ProformaInvoice.objects.filter(pk=values["proforma"]).first()
+            if proforma is None:
+                return _error("That proforma does not exist.")
         division = None
         if values.get("division"):
             division = Division.objects.filter(code=values["division"].upper()).first()
@@ -129,6 +138,7 @@ class AdvanceListView(_Advances):
                 amount=values["amount"],
                 receipt_date=values["receipt_date"],
                 quotation=quotation,
+                proforma=proforma,
                 division=division,
                 reference=values.get("reference", ""),
                 notes=values.get("notes", ""),
@@ -143,6 +153,19 @@ class AdvanceOptionsView(_Advances):
     divisions they work in, and the accounts money is received into."""
 
     def get(self, request):
+        issued = {}
+        for p in ProformaInvoice.objects.filter(
+            status=ProformaInvoice.Status.ISSUED
+        ).select_related("currency"):
+            issued.setdefault(p.customer_id, []).append(
+                {
+                    "id": p.id,
+                    "number": p.number,
+                    "currency": p.currency.code,
+                    "total_amount": str(p.total_amount),
+                    "advance_amount": str(p.advance_amount),
+                }
+            )
         quotations = {}
         for q in Quotation.objects.filter(status__in=advances.QUOTATION_OPEN).select_related(
             "currency"
@@ -165,6 +188,7 @@ class AdvanceOptionsView(_Advances):
                         "code": c.code,
                         "name": c.name,
                         "quotations": quotations.get(c.id, []),
+                        "proformas": issued.get(c.id, []),
                     }
                     for c in Customer.objects.filter(is_active=True).order_by("name")
                 ],

@@ -6,6 +6,8 @@ the number series in the saving transaction (rule 10). Revisions keep the number
 up (Rev 0, Rev 1, ...; P15-06).
 """
 
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -423,6 +425,13 @@ class CustomerAdvance(models.Model):
     quotation = models.ForeignKey(
         Quotation, null=True, blank=True, on_delete=models.PROTECT, related_name="advances"
     )
+    proforma = models.ForeignKey(
+        "ProformaInvoice",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="advances",
+    )
     division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
     receipt_date = models.DateField()
     account = models.ForeignKey(
@@ -473,3 +482,130 @@ class CustomerAdvance(models.Model):
 
     def __str__(self):
         return self.number
+
+
+# --- Proforma invoices and packing list (P15-08, spec 5.2, 5.5) ---------------------------
+
+
+class ProformaInvoice(models.Model):
+    """A proforma made from an accepted quotation, with its prices and terms carried over:
+    for the customer's advance payment, import, LC or bank documents. It records no sale and
+    no receivable: nothing is posted (spec 5.2). Numbered PI{YY}{MM}{DD}-{XX} (owner, 31 Oct
+    2026). A packing list (cartons, weights, carton sizes) prints as its own page."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        ISSUED = "issued", "Issued"
+        CANCELLED = "cancelled", "Cancelled"
+
+    number = models.CharField(max_length=30, unique=True)
+    quotation = models.ForeignKey(Quotation, on_delete=models.PROTECT, related_name="proformas")
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="proformas"
+    )
+    contact = models.ForeignKey(
+        "masters.CustomerContact", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    issue_date = models.DateField()
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
+    rate_date = models.DateField(null=True, blank=True)
+    customer_po = models.CharField("Customer's PO no.", max_length=50, blank=True)
+    payment_terms = models.CharField(max_length=200, blank=True)
+    delivery_lead_time = models.CharField(max_length=100, blank=True)
+    incoterm = models.CharField("Delivery term", max_length=3, blank=True)
+    port_of_loading = models.CharField(max_length=100, blank=True)
+    port_of_destination = models.CharField(max_length=100, blank=True)
+    # Where the customer pays the advance: printed with its bank details.
+    bank_account = models.ForeignKey(
+        "masters.CompanyAccount", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    advance_pct = models.DecimalField("Advance %", max_digits=5, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+    discount_pct = models.DecimalField("Discount %", max_digits=5, decimal_places=2, default=0)
+    discount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    tax_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_lkr = models.DecimalField("Total (LKR)", max_digits=18, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    cancel_reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    issued_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-issue_date", "-number"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(exchange_rate__gt=0)
+                & models.Q(advance_pct__gte=0)
+                & models.Q(advance_pct__lte=100)
+                & models.Q(discount_pct__gte=0)
+                & models.Q(discount_pct__lt=100),
+                name="sales_proforma_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+    @property
+    def advance_amount(self):
+        """The advance asked for, in the proforma's currency."""
+        return (self.total_amount * self.advance_pct / 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+
+class ProformaLine(models.Model):
+    """A line of the proforma, from a quotation line at the quotation's price for the
+    quantity (the quantity break that applies), with its packing."""
+
+    is_structure = True
+
+    proforma = models.ForeignKey(ProformaInvoice, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    quotation_line = models.ForeignKey(
+        QuotationLine, on_delete=models.PROTECT, related_name="proforma_lines"
+    )
+    description = models.TextField()
+    drawing_no = models.CharField(max_length=50, blank=True)
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    unit = models.CharField(max_length=20, default="pcs")
+    unit_price = models.DecimalField(max_digits=18, decimal_places=2)
+    is_tooling = models.BooleanField(default=False)
+    tax_code = models.ForeignKey(
+        "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    discount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=18, decimal_places=2)
+    # Packing list (owner, 31 Oct 2026): cartons, quantity per carton, net and gross weight
+    # of the line, and the size of one carton.
+    cartons = models.PositiveIntegerField(null=True, blank=True)
+    qty_per_carton = models.DecimalField(max_digits=18, decimal_places=3, null=True, blank=True)
+    net_weight_kg = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    gross_weight_kg = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    carton_length_cm = models.DecimalField(max_digits=8, decimal_places=1, null=True, blank=True)
+    carton_width_cm = models.DecimalField(max_digits=8, decimal_places=1, null=True, blank=True)
+    carton_height_cm = models.DecimalField(max_digits=8, decimal_places=1, null=True, blank=True)
+
+    class Meta:
+        ordering = ["proforma", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["proforma", "line_no"], name="sales_proforma_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0) & models.Q(unit_price__gte=0),
+                name="sales_proforma_line_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.proforma.number} line {self.line_no}"
+
+    @property
+    def net(self):
+        return self.amount - self.discount

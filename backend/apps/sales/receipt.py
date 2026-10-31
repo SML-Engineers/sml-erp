@@ -96,7 +96,9 @@ def render(advance: CustomerAdvance) -> bytes:
         paid += f" {advance.reference}"
     rows.append(["Paid by", paid, "Into", advance.account.name])
     towards = "Advance payment"
-    if advance.quotation_id:
+    if advance.proforma_id:
+        towards += f" against proforma invoice {advance.proforma.number}"
+    elif advance.quotation_id:
         towards += f" against quotation {advance.quotation.label}"
     rows.append(["For", towards, "", ""])
     if advance.notes:

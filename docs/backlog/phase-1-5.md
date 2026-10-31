@@ -104,13 +104,19 @@ Status: `[ ]` to do · `[x]` done
 
 ## C. Proforma invoices, advances and sales orders
 
-- [ ] **P15-08 Proforma invoices** (spec 5.2, 5.5)
+- [x] **P15-08 Proforma invoices** (spec 5.2, 5.5)
   Created from an accepted quotation (or a sales order); prices and terms carried over.
   Number PI-{YYYY}-{NNNN}; titled "Proforma Invoice"; PDF and email; export fields (Incoterm,
   port of loading and destination, bank details for payment).
   **Packing list with the proforma** (owner, 31 Oct 2026): per line the cartons, quantity per
   carton, net and gross weight and carton dimensions, with totals; printed as its own page.
   - Records no sale and no receivable: no journal entry is made (tested).
+  - Built (31 Oct 2026): numbered PI{YY}{MM}{DD}-{XX}; each line's price is the quotation's
+    price for its quantity (quantity breaks apply), so prices are never typed again; discount,
+    advance % (advance and balance printed), bank details for payment; draft → issued (never
+    changed, database guard) → cancelled with a reason, unless an advance was received
+    against it. Customer advances can now be recorded against an issued proforma (P15-09).
+    The PDF follows the owner's sample PI191120-02, titled PROFORMA INVOICE.
 
 - [x] **P15-09 Customer advances** (spec 5.2)
   An advance received against a proforma (or a sales order) is recorded by the Cashier with

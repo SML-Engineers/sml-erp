@@ -1637,5 +1637,46 @@
     "mouldingSummary": "Part {{part}} g, runner {{runner}} g, {{cavities}} cavities on {{machine}}, cycle {{cycle}} s, rejects {{rejects}}%.",
     "masterbatchSummary": "Masterbatch {{code}} {{pct}}%.",
     "resinUsed": "{{material}} at LKR {{rate}} per kg."
+  },
+  "advances": {
+    "title": "Customer advances",
+    "help": "Money received from customers before invoicing. The Cashier records it; the Accountant approves it, and the entry is then posted (Dr bank, Cr Customer advances).",
+    "new": "Receive an advance",
+    "allStatuses": "All",
+    "statuses": {
+      "awaiting_approval": "Awaiting approval",
+      "approved": "Approved and posted",
+      "rejected": "Rejected"
+    },
+    "none": "No advances.",
+    "number": "Receipt no.",
+    "amount": "Amount",
+    "amountLkr": "Amount (LKR)",
+    "againstQuotation": "Against quotation",
+    "noQuotation": "No quotation (choose the division)",
+    "method": "Received by",
+    "methods": {
+      "transfer": "Bank transfer",
+      "cheque": "Cheque",
+      "cash": "Cash",
+      "card": "Card",
+      "qr": "QR (LankaQR)"
+    },
+    "account": "Into account",
+    "amountIn": "Amount {{currency}}",
+    "receiptDate": "Date received",
+    "reference": "Cheque no. or reference",
+    "record": "Record and send to the Accountant",
+    "recordHelp": "Nothing is posted until the Accountant approves it.",
+    "backToList": "← All advances",
+    "receipt": "Receipt",
+    "details": "Receipt details",
+    "journal": "Journal entry",
+    "balance": "Still to be set off",
+    "printReceipt": "Print the receipt (PDF)",
+    "decision": "Accountant's decision",
+    "approve": "Approve and post",
+    "rejectReason": "Reason for rejecting",
+    "reject": "Reject"
   }
 }

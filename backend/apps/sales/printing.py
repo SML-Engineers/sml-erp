@@ -82,7 +82,7 @@ def tax_summary(quotation: Quotation):
         bases = {
             row.component_id: row.base for row in TaxCodeLine.objects.filter(tax_code=line.tax_code)
         }
-        for part in taxes.calculate(line.tax_code, line.amount, quotation.quote_date).lines:
+        for part in taxes.calculate(line.tax_code, line.net, quotation.quote_date).lines:
             key = (part.component.code, part.rate)
             group = (
                 after if bases.get(part.component.pk) == TaxCodeLine.Base.NET_AND_TAX else before
@@ -215,6 +215,15 @@ def render(quotation: Quotation, *, compress: bool = True) -> bytes:
                 ),
                 p(_money(line.unit_price), right),
                 p(_money(line.amount), right),
+            ]
+        )
+    if quotation.discount_total:
+        rows.append(
+            [
+                p(f"Discount – {_rate(quotation.discount_pct)}"),
+                "",
+                p(f"-{_rate(quotation.discount_pct)}", right),
+                p(f"-{_money(quotation.discount_total)}", right),
             ]
         )
     before, after = tax_summary(quotation)

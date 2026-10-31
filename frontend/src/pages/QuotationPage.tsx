@@ -128,6 +128,7 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
     delivery_lead_time: quotation?.delivery_lead_time ?? "",
     incoterm: quotation?.incoterm ?? "",
     notes: quotation?.notes ?? "",
+    discount_pct: quotation && Number(quotation.discount_pct) !== 0 ? quotation.discount_pct : "",
   });
   const [lines, setLines] = useState<LineInput[]>(
     quotation?.lines.map((l) => ({
@@ -178,13 +179,15 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
         delivery_lead_time: values.delivery_lead_time,
         incoterm: values.incoterm,
         notes: values.notes,
+        discount_pct: values.discount_pct.trim(),
         lines: lines.map((l) => ({ ...l, min_order_qty: l.min_order_qty?.trim() ? l.min_order_qty : null })),
       };
       return quotation ? updateQuotation(quotation.id, input) : createQuotation(input);
     },
     onSuccess: (saved) => {
       queryClient.setQueryData([...quotationsKey, "one", String(saved.id)], saved);
-      void queryClient.invalidateQueries({ queryKey: quotationsKey });
+      // The answer is the quotation as saved; only the lists need fetching again.
+      void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "list"] });
       if (!quotation) navigate(`/quotations/${saved.id}`);
     },
   });
@@ -267,6 +270,10 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
             </option>
           ))}
         </select>
+      </label>
+      <label>
+        {t("quotations.discountPct")}
+        <input inputMode="decimal" className="num" value={values.discount_pct} placeholder="0" onChange={(e) => set("discount_pct")(e.target.value)} />
       </label>
       <label className="wide">
         {t("customers.field.notes")}
@@ -418,6 +425,11 @@ function Totals({ quotation }: { quotation: QuotationDetail }) {
   const { t } = useTranslation();
   return (
     <div className="wide">
+      {Number(quotation.discount_total) !== 0 && (
+        <p>
+          {t("quotations.discountLine", { pct: quotation.discount_pct })}: <strong>−{formatDecimal(quotation.discount_total)}</strong>
+        </p>
+      )}
       <p>
         {t("quotations.subtotal")}: <strong>{quotation.currency} {formatDecimal(quotation.subtotal)}</strong> · {t("vouchers.tax")}:{" "}
         <strong>{formatDecimal(quotation.tax_total)}</strong> · {t("vouchers.total")}:{" "}

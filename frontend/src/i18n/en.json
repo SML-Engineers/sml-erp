@@ -1532,7 +1532,9 @@
     "emailAttachment": "The quotation PDF is attached. Sending it marks the quotation Sent.",
     "sendEmail": "Send",
     "cancel": "Cancel",
-    "emailsSent": "Emails sent"
+    "emailsSent": "Emails sent",
+    "discountPct": "Discount % (on every line, before tax)",
+    "discountLine": "Discount {{pct}}%"
   },
   "quoteCosting": {
     "open": "Costing",

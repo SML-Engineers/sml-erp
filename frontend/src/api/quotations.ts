@@ -38,6 +38,7 @@ export interface QuotationLine {
   is_tooling: boolean;
   tax_code: string | null;
   amount: string;
+  discount: string;
   tax_amount: string;
   total: string;
   breaks: QtyBreak[];
@@ -60,6 +61,9 @@ export interface QuotationDetail extends QuotationSummary {
   delivery_lead_time: string;
   incoterm: string;
   notes: string;
+  /** A % off every line before taxes (P15-07b); the subtotal is after it. */
+  discount_pct: string;
+  discount_total: string;
   subtotal: string;
   tax_total: string;
   created_by_id: number;
@@ -129,6 +133,7 @@ export interface QuotationInput {
   delivery_lead_time?: string;
   incoterm?: string;
   notes?: string;
+  discount_pct?: string;
   lines: LineInput[];
 }
 

@@ -30,11 +30,11 @@ const saved: QuotationDetail = {
   division: "IM", customer: { id: 4, code: "C0004", name: "Nordic Plast AB" }, enquiry_ref: "", currency: "EUR",
   total_amount: "235.00", total_lkr: "76469.00", created_by: "Sales", contact: { id: 7, name: "Lars", email: "" },
   exchange_rate: "325.400000", rate_date: "2026-10-29", payment_terms: "60 days", delivery_lead_time: "", incoterm: "FOB",
-  notes: "", subtotal: "235.00", tax_total: "0.00", created_by_id: 1, created_at: "",
+  notes: "", discount_pct: "0.00", discount_total: "0.00", subtotal: "235.00", tax_total: "0.00", created_by_id: 1, created_at: "",
   lines: [
     {
       id: 31, line_no: 1, description: "Cap, PP, white", drawing_no: "NP-77", drawing_rev: "B", quantity: "100.000", unit: "pcs",
-      min_order_qty: null, unit_price: "2.35", is_tooling: false, tax_code: null, amount: "235.00", tax_amount: "0.00", total: "235.00",
+      min_order_qty: null, unit_price: "2.35", is_tooling: false, tax_code: null, amount: "235.00", discount: "0.00", tax_amount: "0.00", total: "235.00",
       breaks: [{ quantity: "1000.000", unit_price: "2.10" }],
     },
   ],
@@ -529,4 +529,19 @@ test("an approved quotation is emailed to the customer with its PDF", async () =
     body: "Dear Lars,",
   });
   expect(await screen.findByRole("list", { name: "Emails sent" })).toHaveTextContent("lars@nordic.se");
+});
+
+// --- Discount (P15-07b) ----------------------------------------------------------------------
+
+test("a discount % is entered on the quotation and shown in the totals", async () => {
+  const discounted: QuotationDetail = { ...saved, discount_pct: "3.00", discount_total: "7.05", subtotal: "227.95", total_amount: "227.95" };
+  const calls = mockApi(formApi({ "GET /api/v1/quotations/12/": { body: saved }, "PUT /api/v1/quotations/12/": { body: discounted } }));
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const form = await screen.findByRole("form", { name: "Quotation details" });
+  fireEvent.change(within(form).getByLabelText("Discount % (on every line, before tax)"), { target: { value: "3" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/", expect.objectContaining({ method: "PUT" })));
+  const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/" && i?.method === "PUT")!;
+  expect(JSON.parse(String(init!.body)).discount_pct).toBe("3");
+  expect(await screen.findByText(/Discount 3.00%/)).toBeInTheDocument();
 });

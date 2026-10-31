@@ -64,6 +64,10 @@ class Quotation(models.Model):
     incoterm = models.CharField("Delivery term", max_length=3, blank=True)
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    # A discount on every line, before taxes (owner, 31 Oct 2026; P15-07b). The subtotal is
+    # after the discount.
+    discount_pct = models.DecimalField("Discount %", max_digits=5, decimal_places=2, default=0)
+    discount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     tax_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
@@ -102,6 +106,10 @@ class Quotation(models.Model):
             models.CheckConstraint(
                 condition=models.Q(exchange_rate__gt=0), name="sales_quotation_rate_positive"
             ),
+            models.CheckConstraint(
+                condition=models.Q(discount_pct__gte=0) & models.Q(discount_pct__lt=100),
+                name="sales_quotation_discount_range",
+            ),
         ]
 
     def __str__(self):
@@ -133,7 +141,9 @@ class QuotationLine(models.Model):
     tax_code = models.ForeignKey(
         "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
+    # Quantity × unit price; the quotation's discount on it; taxes on what is left.
     amount = models.DecimalField(max_digits=18, decimal_places=2)
+    discount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     tax_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=18, decimal_places=2)
 
@@ -149,6 +159,11 @@ class QuotationLine(models.Model):
 
     def __str__(self):
         return f"{self.quotation.number} line {self.line_no}"
+
+    @property
+    def net(self):
+        """What the line is worth after the quotation's discount, before taxes."""
+        return self.amount - self.discount
 
 
 class QuotationQtyBreak(models.Model):

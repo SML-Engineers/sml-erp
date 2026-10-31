@@ -105,13 +105,17 @@ Status: `[ ]` to do · `[x]` done
   carton, net and gross weight and carton dimensions, with totals; printed as its own page.
   - Records no sale and no receivable: no journal entry is made (tested).
 
-- [ ] **P15-09 Customer advances** (spec 5.2)
+- [x] **P15-09 Customer advances** (spec 5.2)
   An advance received against a proforma (or a sales order) is recorded by the Cashier with
   the Accountant's approval, which is enough (owner, 31 Oct 2026): Dr Bank, Cr Customer
   Advances (a liability account), in the
   receipt currency with the rate of the day. Receipt number from its own series; receipt PDF.
   - The journal entry balances and is never edited; a mistake is reversed (rules 2 and 3).
   - The advance waits for set-off against the tax invoice, which is built in Phase 2.
+  - Built before P15-08 (the quotation sample is still awaited): an advance is linked to one
+    of the customer's approved quotations, or to a division; the links to proformas and sales
+    orders are added with P15-08 and P15-10. The Cashier needs the new "Record customer
+    receipts" action (given to the Cashier role, core migration 0017).
 
 - [ ] **P15-10 Sales orders** (spec 5.3)
   Created from an accepted quotation or a proforma, or entered directly for a repeat order:

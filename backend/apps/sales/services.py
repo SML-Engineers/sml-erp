@@ -67,6 +67,7 @@ class LineInput:
     min_order_qty: object = None
     tax_code: TaxCode | None = None
     breaks: list[BreakInput] = field(default_factory=list)
+    is_tooling: bool = False
     # The saved line this one is (from the quotation as loaded); None for a new line. Kept
     # lines keep their costing (P15-04) and their drawings follow them when renumbered.
     id: int | None = None
@@ -167,6 +168,7 @@ def _check_line(n: int, line: LineInput) -> dict:
         "min_order_qty": moq,
         "unit_price": unit_price,
         "tax_code": line.tax_code,
+        "is_tooling": bool(line.is_tooling),
         "breaks": sorted(breaks),
     }
 

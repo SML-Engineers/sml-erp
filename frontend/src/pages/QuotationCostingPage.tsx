@@ -9,11 +9,15 @@ import {
   quotationsKey,
   removeLineCosting,
   saveLineCosting,
+  TOOLING_MODES,
   type CostingExtra,
   type CostingInput,
+  type CostingMethod,
   type CostingLine,
   type CostingPage,
   type CostingResult,
+  type PackingPer,
+  type ToolingMode,
 } from "../api/quotations";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 
@@ -25,6 +29,9 @@ const SIZES: Record<string, string[]> = {
   plate: ["width", "thickness"],
   tube: ["outside", "inside"],
 };
+
+/** A stored "0.00" shown as an empty box, so the default reads as "nothing entered". */
+const nonZero = (value: string | null | undefined) => (value && Number(value) !== 0 ? value : "");
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -116,7 +123,23 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
     overhead_pct: c?.overhead_pct ?? "",
     margin_pct: c?.margin_pct ?? "",
     notes: c?.notes ?? "",
+    method: c?.method ?? page.default_method,
+    masterbatch: c?.masterbatch ? String(c.masterbatch.id) : "",
+    masterbatch_pct: nonZero(c?.masterbatch_pct),
+    part_weight_g: c?.part_weight_g ?? "",
+    runner_weight_g: c?.runner_weight_g ?? "",
+    cavities: c?.cavities ? String(c.cavities) : "",
+    machine: c?.machine ? String(c.machine.id) : "",
+    cycle_time_s: c?.cycle_time_s ?? "",
+    reject_pct: nonZero(c?.reject_pct),
+    packing_amount: nonZero(c?.packing_amount),
+    packing_per: c?.packing_per ?? "piece",
+    pcs_per_carton: c?.pcs_per_carton ? String(c.pcs_per_carton) : "",
+    tooling: c?.tooling ?? "none",
+    tooling_cost: nonZero(c?.tooling_cost),
+    tooling_qty: c?.tooling_qty ?? "",
   });
+  const moulding = values.method === "moulding";
   const [operations, setOperations] = useState(
     c?.operations.map((op) => ({ machine: String(op.machine.id), minutes: op.minutes, description: op.description })) ?? [],
   );
@@ -127,12 +150,18 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
   // A material the costing uses but that has no price today can still be shown.
   const materials = [...page.materials];
   if (c?.material && !materials.some((m) => m.id === c.material!.id)) {
-    materials.push({ ...c.material, form: c.form, density: c.density, rate: c.material_rate ?? "" });
+    materials.push({ ...c.material, kind: "", form: c.form, density: c.density, rate: c.material_rate ?? "" });
   }
+  if (c?.masterbatch && !materials.some((m) => m.id === c.masterbatch!.id)) {
+    materials.push({ ...c.masterbatch, kind: "masterbatch", form: "granules", density: null, rate: c.masterbatch_rate ?? "" });
+  }
+  const resins = materials.filter((m) => m.kind !== "masterbatch");
+  const masterbatches = materials.filter((m) => m.kind === "masterbatch");
   const machines = [...page.machines];
   for (const op of c?.operations ?? []) {
     if (!machines.some((m) => m.id === op.machine.id)) machines.push({ ...op.machine, rate: op.rate });
   }
+  if (c?.machine && !machines.some((m) => m.id === c.machine!.id)) machines.push({ ...c.machine, rate: c.machine_rate ?? "" });
   const done = (latest: CostingPage) => queryClient.setQueryData([...quotationsKey, "costing", String(page.quotation_id)], latest);
 
   const save = useMutation({
@@ -149,8 +178,23 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
         overhead_pct: blank(values.overhead_pct),
         margin_pct: blank(values.margin_pct),
         notes: values.notes,
-        operations: operations.map((op) => ({ machine: op.machine ? Number(op.machine) : null, minutes: op.minutes, description: op.description })),
+        operations: (moulding ? [] : operations).map((op) => ({ machine: op.machine ? Number(op.machine) : null, minutes: op.minutes, description: op.description })),
         extras,
+        method: values.method as CostingMethod,
+        masterbatch: moulding && values.masterbatch ? Number(values.masterbatch) : null,
+        masterbatch_pct: blank(values.masterbatch_pct),
+        part_weight_g: blank(values.part_weight_g),
+        runner_weight_g: blank(values.runner_weight_g),
+        cavities: blank(values.cavities),
+        machine: moulding && values.machine ? Number(values.machine) : null,
+        cycle_time_s: blank(values.cycle_time_s),
+        reject_pct: blank(values.reject_pct),
+        packing_amount: blank(values.packing_amount),
+        packing_per: values.packing_per as PackingPer,
+        pcs_per_carton: blank(values.pcs_per_carton),
+        tooling: values.tooling as ToolingMode,
+        tooling_cost: blank(values.tooling_cost),
+        tooling_qty: blank(values.tooling_qty),
       };
       return saveLineCosting(page.quotation_id, line.line_no, input);
     },
@@ -165,88 +209,208 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
 
   return (
     <form className="form-grid" aria-label={t("quoteCosting.formOf", { n })} onSubmit={submit}>
-      <h3 className="wide">{t("quoteCosting.material")}</h3>
       <label>
-        {t("quoteCosting.material")}
-        <select value={values.material} onChange={(e) => set("material")(e.target.value)}>
-          <option value="">{t("quoteCosting.noMaterial")}</option>
-          {materials.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.code} {m.name} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
-            </option>
-          ))}
+        {t("quoteCosting.method")}
+        <select value={values.method} onChange={(e) => set("method")(e.target.value)}>
+          <option value="machining">{t("quoteCosting.methods.machining")}</option>
+          <option value="moulding">{t("quoteCosting.methods.moulding")}</option>
         </select>
       </label>
-      {material && (
+      {moulding ? (
         <>
-          {sizes.map((size, i) => {
-            const field = i === 0 ? "size_a_mm" : "size_b_mm";
-            return (
-              <label key={size}>
-                {t(`quoteCosting.sizes.${size}`)}
-                <input inputMode="decimal" className="num" value={values[field]} onChange={(e) => set(field)(e.target.value)} />
-              </label>
-            );
-          })}
-          {sizes.length > 0 && (
-            <>
-              <label>
-                {t("quoteCosting.length")}
-                <input inputMode="decimal" className="num" value={values.length_mm} onChange={(e) => set("length_mm")(e.target.value)} />
-              </label>
-              <label>
-                {t("quoteCosting.allowance")}
-                <input inputMode="decimal" className="num" value={values.cutting_allowance_mm} onChange={(e) => set("cutting_allowance_mm")(e.target.value)} />
-              </label>
-            </>
-          )}
+          <h3 className="wide">{t("quoteCosting.material")}</h3>
           <label>
-            {sizes.length > 0 ? t("quoteCosting.weightOrSize") : t("quoteCosting.weight")}
-            <input inputMode="decimal" className="num" value={values.weight_kg} onChange={(e) => set("weight_kg")(e.target.value)} />
+            {t("quoteCosting.resin")}
+            <select value={values.material} onChange={(e) => set("material")(e.target.value)}>
+              <option value="">—</option>
+              {resins.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.code} {m.name} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
+                </option>
+              ))}
+            </select>
           </label>
-          {c && c.material?.id === material.id && (
-            <p className="muted wide">{t("quoteCosting.weightUsed", { kg: c.weight_kg, rate: formatDecimal(c.material_rate ?? "0") })}</p>
+          <label>
+            {t("quoteCosting.partWeight")}
+            <input inputMode="decimal" className="num" value={values.part_weight_g} onChange={(e) => set("part_weight_g")(e.target.value)} />
+          </label>
+          <label>
+            {t("quoteCosting.runnerWeight")}
+            <input inputMode="decimal" className="num" value={values.runner_weight_g} onChange={(e) => set("runner_weight_g")(e.target.value)} />
+          </label>
+          <label>
+            {t("quoteCosting.cavities")}
+            <input inputMode="numeric" className="num" value={values.cavities} onChange={(e) => set("cavities")(e.target.value)} />
+          </label>
+          <label>
+            {t("quoteCosting.masterbatch")}
+            <select value={values.masterbatch} onChange={(e) => set("masterbatch")(e.target.value)}>
+              <option value="">{t("quoteCosting.noMasterbatch")}</option>
+              {masterbatches.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.code} {m.name} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("quoteCosting.masterbatchPct")}
+            <input inputMode="decimal" className="num" value={values.masterbatch_pct} onChange={(e) => set("masterbatch_pct")(e.target.value)} />
+          </label>
+
+          <h3 className="wide">{t("quoteCosting.press")}</h3>
+          <label>
+            {t("quoteCosting.machine")}
+            <select value={values.machine} onChange={(e) => set("machine")(e.target.value)}>
+              <option value="">—</option>
+              {machines.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.code} {m.name} ({t("quoteCosting.perHour", { rate: formatDecimal(m.rate) })})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("quoteCosting.cycleTime")}
+            <input inputMode="decimal" className="num" value={values.cycle_time_s} onChange={(e) => set("cycle_time_s")(e.target.value)} />
+          </label>
+          <label>
+            {t("quoteCosting.rejectPct")}
+            <input inputMode="decimal" className="num" value={values.reject_pct} onChange={(e) => set("reject_pct")(e.target.value)} />
+          </label>
+
+          <h3 className="wide">{t("quoteCosting.packing")}</h3>
+          <label>
+            {t("quoteCosting.packingAmount")}
+            <input inputMode="decimal" className="num" value={values.packing_amount} onChange={(e) => set("packing_amount")(e.target.value)} />
+          </label>
+          <label>
+            {t("quoteCosting.packingPer")}
+            <select value={values.packing_per} onChange={(e) => set("packing_per")(e.target.value)}>
+              <option value="piece">{t("quoteCosting.perPieceOption")}</option>
+              <option value="carton">{t("quoteCosting.perCartonOption")}</option>
+            </select>
+          </label>
+          {values.packing_per === "carton" && (
+            <label>
+              {t("quoteCosting.pcsPerCarton")}
+              <input inputMode="numeric" className="num" value={values.pcs_per_carton} onChange={(e) => set("pcs_per_carton")(e.target.value)} />
+            </label>
+          )}
+
+          <h3 className="wide">{t("quoteCosting.toolingTitle")}</h3>
+          <label>
+            {t("quoteCosting.toolingMode")}
+            <select value={values.tooling} onChange={(e) => set("tooling")(e.target.value)}>
+              {TOOLING_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {t(`quoteCosting.toolingModes.${mode}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {values.tooling !== "none" && (
+            <label>
+              {t("quoteCosting.toolingCost")}
+              <input inputMode="decimal" className="num" value={values.tooling_cost} onChange={(e) => set("tooling_cost")(e.target.value)} />
+            </label>
+          )}
+          {values.tooling === "amortised" && (
+            <label>
+              {t("quoteCosting.toolingQty")}
+              <input inputMode="decimal" className="num" value={values.tooling_qty} onChange={(e) => set("tooling_qty")(e.target.value)} />
+            </label>
+          )}
+          {values.tooling === "separate" && !page.lines.some((l) => l.is_tooling) && (
+            <p className="notice wide">{t("quoteCosting.noToolingLine")}</p>
           )}
         </>
-      )}
+      ) : (
+        <>
+        <h3 className="wide">{t("quoteCosting.material")}</h3>
+        <label>
+          {t("quoteCosting.material")}
+          <select value={values.material} onChange={(e) => set("material")(e.target.value)}>
+            <option value="">{t("quoteCosting.noMaterial")}</option>
+            {resins.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.code} {m.name} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
+              </option>
+            ))}
+          </select>
+        </label>
+        {material && (
+          <>
+            {sizes.map((size, i) => {
+              const field = i === 0 ? "size_a_mm" : "size_b_mm";
+              return (
+                <label key={size}>
+                  {t(`quoteCosting.sizes.${size}`)}
+                  <input inputMode="decimal" className="num" value={values[field]} onChange={(e) => set(field)(e.target.value)} />
+                </label>
+              );
+            })}
+            {sizes.length > 0 && (
+              <>
+                <label>
+                  {t("quoteCosting.length")}
+                  <input inputMode="decimal" className="num" value={values.length_mm} onChange={(e) => set("length_mm")(e.target.value)} />
+                </label>
+                <label>
+                  {t("quoteCosting.allowance")}
+                  <input inputMode="decimal" className="num" value={values.cutting_allowance_mm} onChange={(e) => set("cutting_allowance_mm")(e.target.value)} />
+                </label>
+              </>
+            )}
+            <label>
+              {sizes.length > 0 ? t("quoteCosting.weightOrSize") : t("quoteCosting.weight")}
+              <input inputMode="decimal" className="num" value={values.weight_kg} onChange={(e) => set("weight_kg")(e.target.value)} />
+            </label>
+            {c && c.material?.id === material.id && (
+              <p className="muted wide">{t("quoteCosting.weightUsed", { kg: c.weight_kg, rate: formatDecimal(c.material_rate ?? "0") })}</p>
+            )}
+          </>
+        )}
 
-      <h3 className="wide">{t("quoteCosting.operations")}</h3>
-      <div className="wide" role="group" aria-label={t("quoteCosting.operationsOf", { n })}>
-        {operations.length === 0 && <p className="muted">{t("quoteCosting.noOperations")}</p>}
-        {operations.map((op, row) => {
-          const change = (patch: Partial<typeof op>) => setOperations((now) => now.map((x, r) => (r === row ? { ...x, ...patch } : x)));
-          const r = String(row + 1);
-          return (
-            <div key={row} className="inline-form">
-              <label>
-                {t("quoteCosting.machine")}
-                <select aria-label={t("quoteCosting.machineOf", { r })} value={op.machine} onChange={(e) => change({ machine: e.target.value })}>
-                  <option value="">—</option>
-                  {machines.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.code} {m.name} ({t("quoteCosting.perHour", { rate: formatDecimal(m.rate) })})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                {t("quoteCosting.operation")}
-                <input aria-label={t("quoteCosting.operationOf", { r })} value={op.description} maxLength={100} onChange={(e) => change({ description: e.target.value })} />
-              </label>
-              <label>
-                {t("quoteCosting.minutes")}
-                <input inputMode="decimal" className="num" aria-label={t("quoteCosting.minutesOf", { r })} value={op.minutes} onChange={(e) => change({ minutes: e.target.value })} />
-              </label>
-              <button type="button" className="small secondary" onClick={() => setOperations((now) => now.filter((_, i) => i !== row))}>
-                {t("vouchers.removeLine")}
-              </button>
-            </div>
-          );
-        })}
-        <button type="button" className="small secondary" onClick={() => setOperations((now) => [...now, { machine: "", minutes: "", description: "" }])}>
-          {t("quoteCosting.addOperation")}
-        </button>
-      </div>
+        <h3 className="wide">{t("quoteCosting.operations")}</h3>
+        <div className="wide" role="group" aria-label={t("quoteCosting.operationsOf", { n })}>
+          {operations.length === 0 && <p className="muted">{t("quoteCosting.noOperations")}</p>}
+          {operations.map((op, row) => {
+            const change = (patch: Partial<typeof op>) => setOperations((now) => now.map((x, r) => (r === row ? { ...x, ...patch } : x)));
+            const r = String(row + 1);
+            return (
+              <div key={row} className="inline-form">
+                <label>
+                  {t("quoteCosting.machine")}
+                  <select aria-label={t("quoteCosting.machineOf", { r })} value={op.machine} onChange={(e) => change({ machine: e.target.value })}>
+                    <option value="">—</option>
+                    {machines.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.code} {m.name} ({t("quoteCosting.perHour", { rate: formatDecimal(m.rate) })})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t("quoteCosting.operation")}
+                  <input aria-label={t("quoteCosting.operationOf", { r })} value={op.description} maxLength={100} onChange={(e) => change({ description: e.target.value })} />
+                </label>
+                <label>
+                  {t("quoteCosting.minutes")}
+                  <input inputMode="decimal" className="num" aria-label={t("quoteCosting.minutesOf", { r })} value={op.minutes} onChange={(e) => change({ minutes: e.target.value })} />
+                </label>
+                <button type="button" className="small secondary" onClick={() => setOperations((now) => now.filter((_, i) => i !== row))}>
+                  {t("vouchers.removeLine")}
+                </button>
+              </div>
+            );
+          })}
+          <button type="button" className="small secondary" onClick={() => setOperations((now) => [...now, { machine: "", minutes: "", description: "" }])}>
+            {t("quoteCosting.addOperation")}
+          </button>
+        </div>
+        </>
+      )}
       <label>
         {t("quoteCosting.setupHours")}
         <input inputMode="decimal" className="num" value={values.setup_hours} onChange={(e) => set("setup_hours")(e.target.value)} />
@@ -317,7 +481,9 @@ function CostingSummary({ line }: { line: CostingLine }) {
   return (
     <div>
       <p>
-        {c.material
+        {c.method === "moulding"
+          ? t("quoteCosting.resinUsed", { material: `${c.material?.code ?? ""} ${c.material?.name ?? ""}`, rate: formatDecimal(c.material_rate ?? "0") })
+          : c.material
           ? t("quoteCosting.materialUsed", {
               material: `${c.material.code} ${c.material.name}`,
               kg: c.weight_kg,
@@ -325,6 +491,20 @@ function CostingSummary({ line }: { line: CostingLine }) {
             })
           : t("quoteCosting.noMaterial")}
       </p>
+      {c.method === "moulding" && (
+        <p>
+          {t("quoteCosting.mouldingSummary", {
+            part: formatQuantity(c.part_weight_g),
+            runner: formatQuantity(c.runner_weight_g ?? "0"),
+            cavities: String(c.cavities ?? 1),
+            machine: c.machine?.code ?? "",
+            cycle: formatQuantity(c.cycle_time_s),
+            rejects: c.reject_pct,
+          })}
+          {c.masterbatch && ` ${t("quoteCosting.masterbatchSummary", { code: c.masterbatch.code, pct: c.masterbatch_pct })}`}
+          {c.tooling !== "none" && ` ${t(`quoteCosting.toolingModes.${c.tooling}`)}${Number(c.tooling_cost) ? `: LKR ${formatDecimal(c.tooling_cost)}` : ""}.`}
+        </p>
+      )}
       {c.operations.length > 0 && (
         <ul className="changes">
           {c.operations.map((op, i) => (
@@ -349,17 +529,24 @@ function CostingSummary({ line }: { line: CostingLine }) {
 function Results({ page, line, results }: { page: CostingPage; line: CostingLine; results: CostingResult[] }) {
   const { t } = useTranslation();
   const foreign = page.currency !== "LKR";
+  const moulding = line.costing?.method === "moulding";
+  const someNonZero = (pick: (r: CostingResult) => string) => results.some((r) => Number(pick(r)) !== 0);
   const rows: [string, (r: CostingResult) => string, boolean?][] = [
     ["material", (r) => formatDecimal(r.material)],
-    ["machining", (r) => formatDecimal(r.machining)],
-    ["setup", (r) => formatDecimal(r.setup)],
+    [moulding ? "machine" : "machining", (r) => formatDecimal(r.machining)],
+  ];
+  if (moulding) rows.push(["rejects", (r) => formatDecimal(r.rejects)]);
+  rows.push(["setup", (r) => formatDecimal(r.setup)]);
+  if (someNonZero((r) => r.packing)) rows.push(["packing", (r) => formatDecimal(r.packing)]);
+  rows.push(
     ["subcontract", (r) => formatDecimal(r.subcontract)],
     ["directCost", (r) => formatDecimal(r.direct_cost)],
     ["overheadAmount", (r) => formatDecimal(r.overhead)],
     ["cost", (r) => formatDecimal(r.cost), true],
     ["marginAmount", (r) => formatDecimal(r.margin)],
-    ["suggested", (r) => formatDecimal(r.suggested_price_lkr), true],
-  ];
+  );
+  if (someNonZero((r) => r.tooling)) rows.push(["tooling", (r) => formatDecimal(r.tooling)]);
+  rows.push(["suggested", (r) => formatDecimal(r.suggested_price_lkr), true]);
   if (foreign) rows.push(["suggestedIn", (r) => `${page.currency} ${formatDecimal(r.suggested_price)}`, true]);
   rows.push(["quoted", (r) => (foreign ? `${page.currency} ${formatDecimal(r.quoted_price)} = ${formatDecimal(r.quoted_price_lkr)}` : formatDecimal(r.quoted_price_lkr))]);
   rows.push(["quotedMargin", (r) => (r.quoted_margin_pct === null ? "—" : `${r.quoted_margin_pct}%`), true]);
@@ -390,6 +577,9 @@ function Results({ page, line, results }: { page: CostingPage; line: CostingLine
           ))}
         </tbody>
       </table>
+      {moulding && results[0].hours_per_1000 && (
+        <p className="muted">{t("quoteCosting.hoursPer1000", { hours: results[0].hours_per_1000 })}</p>
+      )}
       {results.some((r) => r.below_cost) && (
         <p className="form-error" role="status">
           ⚠ {t("quoteCosting.belowCost", { quantities: results.filter((r) => r.below_cost).map((r) => formatQuantity(r.quantity)).join(", ") })}

@@ -100,6 +100,8 @@ class QuotationLine(models.Model):
         "Minimum order quantity", max_digits=18, decimal_places=3, null=True, blank=True
     )
     unit_price = models.DecimalField(max_digits=18, decimal_places=2)
+    # The mould or other tooling, charged once rather than per piece (P15-05, spec 5.1).
+    is_tooling = models.BooleanField("Tooling (charged once)", default=False)
     tax_code = models.ForeignKey(
         "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
@@ -181,6 +183,17 @@ class QuotationCosting(models.Model):
 
     class Method(models.TextChoices):
         MACHINING = "machining", "Machining"
+        MOULDING = "moulding", "Moulding"
+
+    class PackingPer(models.TextChoices):
+        PIECE = "piece", "Per piece"
+        CARTON = "carton", "Per carton"
+
+    class Tooling(models.TextChoices):
+        NONE = "none", "No tooling"
+        SEPARATE = "separate", "Charged once, as its own line"
+        AMORTISED = "amortised", "Spread over a quantity"
+        CUSTOMER = "customer", "Owned by the customer"
 
     line = models.OneToOneField(QuotationLine, on_delete=models.CASCADE, related_name="costing")
     method = models.CharField(max_length=20, choices=Method.choices, default=Method.MACHINING)
@@ -219,8 +232,59 @@ class QuotationCosting(models.Model):
     )
     updated_at = models.DateTimeField(default=timezone.now)
 
+    # Moulding (P15-05): resin is `material` (its price in `material_rate`), plus masterbatch
+    # as a % of the resin weight; one press with its hourly rate on the quotation's date.
+    masterbatch = models.ForeignKey(
+        "masters.Material", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    masterbatch_rate = models.DecimalField(
+        "Masterbatch price per kg (LKR)", max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    masterbatch_pct = models.DecimalField(
+        "Masterbatch %", max_digits=5, decimal_places=2, default=0
+    )
+    part_weight_g = models.DecimalField(
+        "Part weight (g)", max_digits=12, decimal_places=3, null=True, blank=True
+    )
+    runner_weight_g = models.DecimalField(
+        "Runner weight per shot (g)", max_digits=12, decimal_places=3, null=True, blank=True
+    )
+    cavities = models.PositiveSmallIntegerField(null=True, blank=True)
+    machine = models.ForeignKey(
+        "masters.Machine", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    machine_rate = models.DecimalField(
+        "Machine hourly rate (LKR)", max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    cycle_time_s = models.DecimalField(
+        "Cycle time (s)", max_digits=8, decimal_places=2, null=True, blank=True
+    )
+    reject_pct = models.DecimalField("Reject %", max_digits=5, decimal_places=2, default=0)
+    packing_amount = models.DecimalField(
+        "Packing (LKR)", max_digits=18, decimal_places=2, default=0
+    )
+    packing_per = models.CharField(
+        max_length=10, choices=PackingPer.choices, default=PackingPer.PIECE
+    )
+    pcs_per_carton = models.PositiveIntegerField("Pieces per carton", null=True, blank=True)
+    tooling = models.CharField(max_length=10, choices=Tooling.choices, default=Tooling.NONE)
+    tooling_cost = models.DecimalField(
+        "Tooling cost (LKR)", max_digits=18, decimal_places=2, default=0
+    )
+    tooling_qty = models.DecimalField(
+        "Tooling spread over (pieces)", max_digits=18, decimal_places=3, null=True, blank=True
+    )
+
     class Meta:
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(masterbatch_pct__gte=0)
+                & models.Q(reject_pct__gte=0)
+                & models.Q(reject_pct__lt=100)
+                & models.Q(packing_amount__gte=0)
+                & models.Q(tooling_cost__gte=0),
+                name="sales_costing_moulding_not_negative",
+            ),
             models.CheckConstraint(
                 condition=models.Q(setup_hours__gte=0)
                 & models.Q(setup_rate__gte=0)

@@ -67,7 +67,7 @@ Status: `[ ]` to do · `[x]` done
     server).
   - Margin % is on the cost (owner, 31 Oct 2026): cost 1,000 + 20% = price 1,200.
 
-- [ ] **P15-05 Moulding costing and tooling** (spec 5.1)
+- [x] **P15-05 Moulding costing and tooling** (spec 5.1)
   Per line, internal only: material ((part weight + runner weight ÷ cavities) × resin rate +
   masterbatch %), machine (cycle time ÷ cavities → hours per 1,000 pieces × machine rate),
   reject % on material and machine, packing per piece or carton, overhead and margin. Tooling

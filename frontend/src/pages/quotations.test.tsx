@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { CurrentUser } from "../api/auth";
 import type { Customer } from "../api/customers";
-import type { CostingLine, CostingPage, QuotationDetail } from "../api/quotations";
+import type { CostingLine, CostingPage, CostingResult, QuotationDetail } from "../api/quotations";
 import { mockApi, renderAt, sampleUser } from "../test-utils";
 import QuotationCostingPage from "./QuotationCostingPage";
 import QuotationPage from "./QuotationPage";
@@ -34,7 +34,7 @@ const saved: QuotationDetail = {
   lines: [
     {
       id: 31, line_no: 1, description: "Cap, PP, white", drawing_no: "NP-77", drawing_rev: "B", quantity: "100.000", unit: "pcs",
-      min_order_qty: null, unit_price: "2.35", tax_code: null, amount: "235.00", tax_amount: "0.00", total: "235.00",
+      min_order_qty: null, unit_price: "2.35", is_tooling: false, tax_code: null, amount: "235.00", tax_amount: "0.00", total: "235.00",
       breaks: [{ quantity: "1000.000", unit_price: "2.10" }],
     },
   ],
@@ -130,9 +130,9 @@ test("the list links to each quotation; only sales staff who enter see New quota
 
 const costingPage: CostingPage = {
   quotation_id: 12, number: "QL26103101", revision: 0, division: "WS", currency: "LKR", exchange_rate: "1.000000",
-  quote_date: "2026-10-31", can_edit: true,
+  quote_date: "2026-10-31", can_edit: true, default_method: "machining",
   defaults: { overhead_pct: "15.00", margin_pct: "20.00", setup_rate: "1500.00" },
-  materials: [{ id: 3, code: "EN8", name: "EN8 steel bar", form: "round_bar", density: "7.850", rate: "450.00" }],
+  materials: [{ id: 3, code: "EN8", name: "EN8 steel bar", kind: "metal", form: "round_bar", density: "7.850", rate: "450.00" }],
   machines: [
     { id: 5, code: "C-LAT-01", name: "CNC lathe", rate: "3000.00" },
     { id: 6, code: "M-MIL-01", name: "Milling 1", rate: "2400.00" },
@@ -140,9 +140,16 @@ const costingPage: CostingPage = {
   lines: [
     {
       line_no: 1, description: "Shaft, EN8", drawing_no: "UL-2210", quantity: "10.000", unit: "pcs", unit_price: "3000.00",
-      costing: null, results: null,
+      is_tooling: false, costing: null, results: null,
     },
   ],
+};
+
+const noMoulding = {
+  method: "machining" as const, masterbatch: null, masterbatch_rate: null, masterbatch_pct: "0.00", part_weight_g: null,
+  runner_weight_g: null, cavities: null, machine: null, machine_rate: null, cycle_time_s: null, reject_pct: "0.00",
+  packing_amount: "0.00", packing_per: "piece" as const, pcs_per_carton: null, tooling: "none" as const, tooling_cost: "0.00",
+  tooling_qty: null,
 };
 
 const costedLine: CostingLine = {
@@ -154,16 +161,17 @@ const costedLine: CostingLine = {
     margin_pct: "20.00", notes: "",
     operations: [{ machine: { id: 5, code: "C-LAT-01", name: "CNC lathe" }, description: "Turn", minutes: "12.000", rate: "3000.00" }],
     extras: [{ description: "Transport", amount: "2000.00", per_order: true }],
+    ...noMoulding,
     updated_by: "Sales", updated_at: "2026-10-31T10:00:00",
   },
   results: [
     {
-      quantity: "10.000", material: "728.28", machining: "840.00", setup: "300.00", subcontract: "285.00", direct_cost: "2153.28",
+      quantity: "10.000", material: "728.28", machining: "840.00", hours_per_1000: null, rejects: "0.00", packing: "0.00", tooling: "0.00", setup: "300.00", subcontract: "285.00", direct_cost: "2153.28",
       overhead: "322.99", cost: "2476.27", margin: "495.25", suggested_price_lkr: "2971.52", suggested_price: "2971.52",
       quoted_price: "3000.00", quoted_price_lkr: "3000.00", quoted_margin_pct: "21.15", below_cost: false,
     },
     {
-      quantity: "50.000", material: "728.28", machining: "840.00", setup: "60.00", subcontract: "125.00", direct_cost: "1753.28",
+      quantity: "50.000", material: "728.28", machining: "840.00", hours_per_1000: null, rejects: "0.00", packing: "0.00", tooling: "0.00", setup: "60.00", subcontract: "125.00", direct_cost: "1753.28",
       overhead: "262.99", cost: "2016.27", margin: "403.25", suggested_price_lkr: "2419.52", suggested_price: "2419.52",
       quoted_price: "1900.00", quoted_price_lkr: "1900.00", quoted_margin_pct: "-5.77", below_cost: true,
     },
@@ -250,4 +258,102 @@ test("those who only look see the costing without changing it", async () => {
   expect(within(section).getByText(/EN8 EN8 steel bar: 1.6184 kg per piece/)).toBeInTheDocument();
   expect(within(section).getByText(/C-LAT-01/)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Save costing" })).not.toBeInTheDocument();
+});
+
+const mouldingPage: CostingPage = {
+  ...costingPage,
+  division: "IM",
+  default_method: "moulding",
+  materials: [
+    { id: 8, code: "PP-H110", name: "Polypropylene", kind: "resin", form: "granules", density: null, rate: "420.00" },
+    { id: 9, code: "MB-WHITE", name: "White masterbatch", kind: "masterbatch", form: "granules", density: null, rate: "1800.00" },
+  ],
+  machines: [{ id: 11, code: "IM-250", name: "250 t press", rate: "2880.00" }],
+  lines: [
+    { line_no: 1, description: "Cap, PP, white", drawing_no: "", quantity: "10000.000", unit: "pcs", unit_price: "18.00", is_tooling: false, costing: null, results: null },
+  ],
+};
+
+test("a moulded line is costed from resin, cavities, cycle time, packing and the mould", async () => {
+  const mouldResult: CostingResult = {
+    quantity: "10000.000", material: "5.47", machining: "4.00", hours_per_1000: "1.39", rejects: "0.28", setup: "0.36", packing: "0.24",
+    subcontract: "0.00", direct_cost: "10.35", overhead: "1.04", cost: "11.39", margin: "2.85", tooling: "3.00",
+    suggested_price_lkr: "17.24", suggested_price: "17.24", quoted_price: "18.00", quoted_price_lkr: "18.00", quoted_margin_pct: "31.69",
+    below_cost: false,
+  };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/costing/": { body: mouldingPage },
+    "PUT /api/v1/quotations/12/costing/1/": {
+      body: {
+        ...mouldingPage,
+        lines: [
+          {
+            ...mouldingPage.lines[0],
+            costing: { ...costedLine.costing!, ...noMoulding, method: "moulding", material: { id: 8, code: "PP-H110", name: "Polypropylene" }, tooling: "amortised", tooling_cost: "900000.00", tooling_qty: "300000.000" },
+            results: [mouldResult],
+          },
+        ],
+      },
+    },
+  });
+  renderAt("/quotations/12/costing", <QuotationCostingPage />, "/quotations/:id/costing");
+  const form = await screen.findByRole("form", { name: "Costing of line 1" });
+  expect(within(form).getByLabelText("Costing for")).toHaveValue("moulding"); // IM moulds
+  fireEvent.change(within(form).getByLabelText("Resin"), { target: { value: "8" } });
+  expect(within(within(form).getByLabelText("Resin")).queryByRole("option", { name: /MB-WHITE/ })).not.toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Part weight (g)"), { target: { value: "10" } });
+  fireEvent.change(within(form).getByLabelText("Runner weight per shot (g)"), { target: { value: "8" } });
+  fireEvent.change(within(form).getByLabelText("Cavities"), { target: { value: "4" } });
+  fireEvent.change(within(form).getByLabelText("Masterbatch"), { target: { value: "9" } });
+  fireEvent.change(within(form).getByLabelText("Masterbatch % (on top of the resin)"), { target: { value: "2" } });
+  fireEvent.change(within(form).getByLabelText("Machine"), { target: { value: "11" } });
+  fireEvent.change(within(form).getByLabelText("Cycle time (seconds)"), { target: { value: "20" } });
+  fireEvent.change(within(form).getByLabelText("Rejects %"), { target: { value: "3" } });
+  fireEvent.change(within(form).getByLabelText("Packing cost (LKR)"), { target: { value: "120" } });
+  fireEvent.change(within(form).getByLabelText("Packing cost is"), { target: { value: "carton" } });
+  fireEvent.change(within(form).getByLabelText("Pieces per carton"), { target: { value: "500" } });
+  fireEvent.change(within(form).getByLabelText("How the mould is charged"), { target: { value: "amortised" } });
+  fireEvent.change(within(form).getByLabelText("Mould cost (LKR)"), { target: { value: "900000" } });
+  fireEvent.change(within(form).getByLabelText("Spread over (pieces)"), { target: { value: "300000" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save costing" }));
+
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/costing/1/", expect.objectContaining({ method: "PUT" })),
+  );
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/quotations/12/costing/1/")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({
+    method: "moulding",
+    material: 8,
+    masterbatch: 9,
+    masterbatch_pct: "2",
+    part_weight_g: "10",
+    runner_weight_g: "8",
+    cavities: "4",
+    machine: 11,
+    cycle_time_s: "20",
+    reject_pct: "3",
+    packing_amount: "120",
+    packing_per: "carton",
+    pcs_per_carton: "500",
+    tooling: "amortised",
+    tooling_cost: "900000",
+    tooling_qty: "300000",
+    operations: [],
+  });
+  const table = await screen.findByRole("table", { name: "Price build-up, line 1" });
+  expect(within(table).getByRole("row", { name: /Rejects/ })).toHaveTextContent("0.28");
+  expect(within(table).getByRole("row", { name: /Mould share/ })).toHaveTextContent("3.00");
+  expect(within(table).getByRole("row", { name: /Suggested price/ })).toHaveTextContent("17.24");
+  expect(screen.getByText("Machine time: 1.39 hours per 1,000 pieces.")).toBeInTheDocument();
+});
+
+test("a quotation line can be marked as tooling, charged once", async () => {
+  const calls = mockApi(formApi({ "GET /api/v1/quotations/12/": { body: saved }, "PUT /api/v1/quotations/12/": { body: saved } }));
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const form = await screen.findByRole("form", { name: "Quotation details" });
+  fireEvent.click(within(form).getByLabelText("Tooling, line 1"));
+  fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/", expect.objectContaining({ method: "PUT" })));
+  const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/" && i?.method === "PUT")!;
+  expect(JSON.parse(String(init!.body)).lines[0].is_tooling).toBe(true);
 });

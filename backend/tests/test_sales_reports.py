@@ -96,11 +96,11 @@ def test_the_register_shows_each_person_their_own_and_the_manager_all(
 
 def test_won_and_lost_with_reasons_and_the_win_rate(executive, director, unilever):
     won = approved(executive, director, unilever)
-    workflow.record_outcome(executive, won, accepted=True, reason="price")
+    won = workflow.record_outcome(executive, won, accepted=True, reason="price")
     lost = approved(executive, director, unilever, price="7.65")
-    workflow.record_outcome(executive, lost, accepted=False, reason="price", note="Too high")
+    lost = workflow.record_outcome(executive, lost, accepted=False, reason="price", note="Too high")
     other = approved(executive, director, unilever, price="1.00")
-    workflow.record_outcome(executive, other, accepted=False, reason="lead_time")
+    other = workflow.record_outcome(executive, other, accepted=False, reason="lead_time")
 
     rows = reports.win_loss(executive, start=TODAY, end=TODAY)
     assert {(r["label"], r["outcome"], r["reason"]) for r in rows} == {
@@ -145,7 +145,7 @@ def test_quotations_awaiting_approval_and_expiring_this_week(executive, director
 
 def test_open_orders_list_every_delivery_by_date(executive, director, unilever):
     won = approved(executive, director, unilever)
-    workflow.record_outcome(executive, won, accepted=True, reason="price")
+    won = workflow.record_outcome(executive, won, accepted=True, reason="price")
     order = orders.from_quotation(executive, won)
     line = order.lines.get()
     orders.save(
@@ -181,7 +181,7 @@ def test_advances_not_set_off_are_seen_by_their_salesperson_and_the_manager(
     executive, colleague, manager, director, unilever
 ):
     won = approved(executive, director, unilever)
-    workflow.record_outcome(executive, won, accepted=True, reason="price")
+    won = workflow.record_outcome(executive, won, accepted=True, reason="price")
     accountant = person("accountant@sml.lk", "accountant", all_divisions=True)
     cashier = person("cashier@sml.lk", "cashier", all_divisions=True)
     ledger = chart.create_account(
@@ -230,7 +230,7 @@ def test_the_dashboard_agrees_with_the_reports(executive, director, unilever):
     workflow.submit(executive, q)
     approved(executive, director, unilever, valid_until=TODAY + timedelta(2))
     won = approved(executive, director, unilever, price="1.00")
-    workflow.record_outcome(executive, won, accepted=True, reason="relationship")
+    won = workflow.record_outcome(executive, won, accepted=True, reason="relationship")
 
     board = reports.dashboard(director)
     assert board["waiting_for_me"] == {

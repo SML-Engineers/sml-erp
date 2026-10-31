@@ -1860,5 +1860,34 @@
     "setOff": "Set off (LKR)",
     "balance": "Balance (LKR)",
     "noneAdvances": "No advances waiting to be set off."
+  },
+  "resets": {
+    "title": "Password reset",
+    "help": "For someone who forgot their password or lost the phone with their authenticator. The Admin asks, the Director approves, then the Admin makes a temporary password, shown once. The person must choose their own password at the next sign-in.",
+    "reason": "Reason",
+    "withAuthenticator": "Also reset the authenticator (lost phone)",
+    "request": "Request a password reset",
+    "decisionReason": "Reason (needed to refuse)",
+    "approve": "Approve the reset",
+    "refuse": "Refuse",
+    "issue": "Make the new temporary password",
+    "issueHelp": "Within 24 hours of approval. It is shown once; the person is signed out everywhere.",
+    "shown": "New temporary password for {{name}} (shown only once; give it to them privately):",
+    "history": "Password resets",
+    "andAuthenticator": "with authenticator",
+    "askedBy": "asked by {{name}}",
+    "decidedBy": "decided by {{name}}",
+    "statuses": {
+      "waiting": "Waiting for the Director",
+      "approved": "Approved",
+      "refused": "Refused",
+      "done": "Done",
+      "lapsed": "Approval lapsed"
+    }
+  },
+  "noAccess": {
+    "title": "No access",
+    "help": "Your role does not give you access to this page. If you need it, ask the Admin.",
+    "home": "Back to the dashboard"
   }
 }

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
@@ -832,3 +834,46 @@ class SentEmail(models.Model):
 
     def __str__(self):
         return f"{self.document_label} to {self.to} ({self.status})"
+
+
+class PasswordReset(models.Model):
+    """The Admin asks to reset someone's password (and, if their phone is lost, their
+    authenticator); the Director approves; then the Admin makes a temporary password, shown
+    once (owner's decision, 31 Oct 2026). The temporary password is never stored."""
+
+    APPROVAL_HOURS = 24  # an approval not used within this time lapses
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="password_resets"
+    )
+    with_authenticator = models.BooleanField(default=False)
+    reason = models.TextField()
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    requested_at = models.DateTimeField(default=timezone.now)
+    approved = models.BooleanField(null=True, blank=True)  # empty while waiting
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.TextField(blank=True, default="")
+    issued_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-requested_at", "-id"]
+
+    def __str__(self):
+        return f"Password reset for {self.user} ({self.status})"
+
+    @property
+    def status(self) -> str:
+        if self.approved is None:
+            return "waiting"
+        if self.approved is False:
+            return "refused"
+        if self.issued_at:
+            return "done"
+        if timezone.now() - self.decided_at > timedelta(hours=self.APPROVAL_HOURS):
+            return "lapsed"
+        return "approved"

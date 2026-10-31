@@ -126,6 +126,21 @@ urlpatterns = [
     path("users/<int:pk>/", access_views.UserDetailView.as_view(), name="user-detail"),
     path("users/<int:pk>/roles/", access_views.UserRolesView.as_view(), name="user-roles"),
     path("users/<int:pk>/scope/", access_views.UserScopeView.as_view(), name="user-scope"),
+    path(
+        "users/<int:pk>/password-resets/",
+        access_views.PasswordResetListView.as_view(),
+        name="user-password-resets",
+    ),
+    path(
+        "password-resets/<int:pk>/issue/",
+        access_views.PasswordResetIssueView.as_view(),
+        name="password-reset-issue",
+    ),
+    path(
+        "password-resets/<int:pk>/<str:decision>/",
+        access_views.PasswordResetDecisionView.as_view(),
+        name="password-reset-decide",
+    ),
     path("users/<int:pk>/access/", access_views.UserAccessView.as_view(), name="user-access"),
     path(
         "users/<int:pk>/overrides/", access_views.UserOverridesView.as_view(), name="user-overrides"

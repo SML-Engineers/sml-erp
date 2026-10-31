@@ -173,6 +173,7 @@ The Admin can give or remove access for an individual user, overriding their rol
 **Joiners, movers and leavers**
 
 - **New user:** created by the Admin from a role template, with divisions and sections; temporary password and two-factor setup on first login. The account is created switched off and can only be activated once it has at least one role and its divisions (owner's decision, 31 Oct 2026).
+- **Password reset:** the Admin requests it with a reason (optionally resetting the authenticator too, for a lost phone); a Director other than the requester and the person approves it; within 24 hours the Admin makes a temporary password, shown once and never stored. The person is signed out everywhere and must choose a new password at the next sign-in. Every step is audited (owner's decision, 31 Oct 2026).
 - **Change of job:** roles changed and old overrides reviewed on the same screen, so access from the old job is not carried over.
 - **Leaver:** one action deactivates the account, ends all sessions and removes overrides. The user's records and history stay.
 - Accounts unused for 90 days are deactivated automatically (configurable).

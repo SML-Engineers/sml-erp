@@ -27,6 +27,7 @@ import { getAuditLog } from "../../api/audit";
 import type { CurrentUser } from "../../api/auth";
 import { ApiError } from "../../api/client";
 import AuditTable from "../../components/AuditTable";
+import PasswordResetPanel from "../../components/PasswordResetPanel";
 import SectionScopePanel from "../../components/SectionScopePanel";
 
 const LEVELS: Level[] = ["view", "enter", "approve", "manage"];
@@ -88,6 +89,7 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
       {own && <p className="notice">{t("access.ownAccount")}</p>}
 
       {canManage && !own && <Lifecycle user={user} onDone={refresh} />}
+      {!own && <PasswordResetPanel userId={id} name={user.full_name} />}
       <RolesPanel user={user} editable={canManage && !own} onDone={refresh} />
       <ScopePanel user={user} editable={canManage && !own} onDone={refresh} />
       <SectionScopePanel userId={id} editable={canManage && !own} />

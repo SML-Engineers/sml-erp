@@ -25,6 +25,8 @@ EVENTS = {
     "document_returned": "A document I created was returned to me",
     "document_approved": "A document I created was approved",
     "document_rejected": "A document I created was rejected",
+    "admin_request_waiting": "An Admin request (such as a password reset) waits for my approval",
+    "admin_request_decided": "An Admin request I made was approved or refused",
 }
 
 log = logging.getLogger(__name__)

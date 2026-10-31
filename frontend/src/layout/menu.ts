@@ -90,3 +90,17 @@ export function visibleMenu(access: Access | undefined): MenuSection[] {
     items: section.items.filter((item) => item.area === null || can(access, item.area, item.level ?? "view")),
   })).filter((section) => section.items.length > 0);
 }
+
+/** Whether the user may open the page at `pathname`: the menu item that owns it (the longest
+ * matching path) decides. Pages outside the menu (account pages) are open to everyone signed
+ * in. The server still checks every request; this only shows a clear "No access" page. */
+export function pageAllowed(pathname: string, access: Access | undefined): boolean {
+  let owner: MenuItem | undefined;
+  for (const section of MENU)
+    for (const item of section.items) {
+      if (item.path === "/") continue;
+      const matches = pathname === item.path || pathname.startsWith(`${item.path}/`);
+      if (matches && (!owner || item.path.length > owner.path.length)) owner = item;
+    }
+  return !owner || owner.area === null || can(access, owner.area, owner.level ?? "view");
+}

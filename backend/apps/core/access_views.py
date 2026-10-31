@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import access, access_admin
+from . import access, access_admin, password_resets
 from .access_defaults import ACTIONS, AREAS, LEVELS
 from .access_serializers import (
     CopyAccessInput,
@@ -26,7 +26,7 @@ from .access_serializers import (
     UserUpdateInput,
 )
 from .audit import audit_context
-from .models import AccessOverride, Division, Role, User
+from .models import AccessOverride, Division, PasswordReset, Role, User
 from .permissions import AreaAccess
 from .serializers import LoginEventSerializer
 
@@ -395,3 +395,94 @@ class AccessReviewView(_UsersArea):
         except access.AccessError as error:
             return _error(error, status.HTTP_403_FORBIDDEN)
         return Response({"period": period, "rows": access_admin.review_rows(period)})
+
+
+# --- Password resets (owner's decision, 31 Oct 2026) ---------------------------------------
+
+
+def _reset_row(reset, user) -> dict:
+    return {
+        "id": reset.id,
+        "status": reset.status,
+        "with_authenticator": reset.with_authenticator,
+        "reason": reset.reason,
+        "requested_by": reset.requested_by.full_name,
+        "requested_at": reset.requested_at,
+        "decided_by": reset.decided_by.full_name if reset.decided_by else None,
+        "decided_at": reset.decided_at,
+        "decision_reason": reset.decision_reason,
+        "issued_at": reset.issued_at,
+        "can_decide": password_resets.can_decide(user, reset),
+        "can_issue": password_resets.can_issue(user, reset),
+    }
+
+
+class PasswordResetListView(APIView):
+    """A user's password resets; POST asks for a new one (the Admin)."""
+
+    permission_classes = [AreaAccess]
+    access_area = "users"
+    access_write_level = "manage"
+
+    def get(self, request, pk):
+        target = get_object_or_404(User, pk=pk)
+        return Response(
+            {
+                "can_request": password_resets.can_request(request.user)
+                and target.pk != request.user.pk,
+                "resets": [_reset_row(r, request.user) for r in password_resets.history(target)],
+            }
+        )
+
+    def post(self, request, pk):
+        target = get_object_or_404(User, pk=pk)
+        try:
+            reset = password_resets.request(
+                request.user,
+                target,
+                str(request.data.get("reason", "")),
+                with_authenticator=bool(request.data.get("with_authenticator")),
+            )
+        except access.AccessError as error:
+            return _error(error, status.HTTP_400_BAD_REQUEST)
+        return Response(_reset_row(reset, request.user), status=status.HTTP_201_CREATED)
+
+
+class PasswordResetDecisionView(APIView):
+    """The Director approves or refuses; the service checks who may."""
+
+    permission_classes = [AreaAccess]
+    access_area = "users"
+    access_write_level = "view"
+
+    def post(self, request, pk, decision):
+        if decision not in ("approve", "refuse"):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        reset = get_object_or_404(PasswordReset, pk=pk)
+        try:
+            reset = password_resets.decide(
+                request.user,
+                reset,
+                approve=decision == "approve",
+                reason=str(request.data.get("reason", "")),
+            )
+        except access.AccessError as error:
+            return _error(error, status.HTTP_403_FORBIDDEN)
+        return Response(_reset_row(reset, request.user))
+
+
+class PasswordResetIssueView(APIView):
+    """The Admin who asked makes the temporary password, shown once in this answer."""
+
+    permission_classes = [AreaAccess]
+    access_area = "users"
+    access_write_level = "manage"
+
+    def post(self, request, pk):
+        reset = get_object_or_404(PasswordReset, pk=pk)
+        try:
+            password = password_resets.issue(request.user, reset)
+        except access.AccessError as error:
+            return _error(error, status.HTTP_403_FORBIDDEN)
+        reset.refresh_from_db()
+        return Response({**_reset_row(reset, request.user), "temporary_password": password})

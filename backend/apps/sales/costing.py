@@ -1,6 +1,7 @@
-"""Machining costing of quotation lines (backlog P15-04, spec 5.1). Internal only.
+"""Costing of quotation lines: machining (backlog P15-04) and moulding (P15-05), spec 5.1.
+Internal only.
 
-For one piece, in LKR (spec 5.5):
+Machining, for one piece, in LKR (spec 5.5):
 
 - Material: the stock weight (from its size and the material's density, plus the cutting
   allowance on the length, or a weight entered directly) × the material's price per kg.
@@ -11,9 +12,18 @@ For one piece, in LKR (spec 5.5):
 - Overhead: the overhead % on the direct cost above. Cost = direct cost + overhead.
 - Margin: the margin % on the cost. Suggested price = cost + margin (spec 5.1).
 
-The margin of the price actually quoted is (quoted price in LKR − cost) ÷ cost. Setup and
-per-order costs depend on the quantity, so the figures are worked out for the line's
-quantity and for every quantity break.
+Moulding, for one piece: material = (part weight + runner weight ÷ cavities) × resin price,
+plus masterbatch as a % of that weight on top; machine = cycle time ÷ cavities × the press's
+hourly rate; rejects add their % to material and machine; packing per piece or per carton;
+then setup, subcontract, overhead and margin as for machining.
+
+Tooling (the mould): charged once on its own line (a line marked as tooling), spread over a
+quantity (cost ÷ quantity added to the price as it is, without overhead or margin), or owned
+by the customer.
+
+The margin of the price actually quoted is (quoted price in LKR − tooling share − cost) ÷
+cost. Setup and per-order costs depend on the quantity, so the figures are worked out for
+the line's quantity and for every quantity break.
 
 Rates come from the tables in force on the quotation's date and are copied onto the costing
 when it is saved, so a later change of rate never alters it (rule 11). Money is Decimal,
@@ -91,6 +101,24 @@ class CostingInput:
     notes: str = ""
     operations: list[OperationInput] = field(default_factory=list)
     extras: list[ExtraInput] = field(default_factory=list)
+    # Moulding (P15-05). `material` is then the resin.
+    method: str | None = None  # machining or moulding; by default from the division
+    masterbatch: Material | None = None
+    masterbatch_pct: object = None
+    part_weight_g: object = None
+    runner_weight_g: object = None
+    cavities: object = None
+    machine: Machine | None = None
+    cycle_time_s: object = None
+    reject_pct: object = None
+    packing_amount: object = None
+    packing_per: str = "piece"
+    pcs_per_carton: object = None
+    # The mould: none, separate (its own line), amortised (spread over tooling_qty pieces)
+    # or customer (owned by the customer).
+    tooling: str = "none"
+    tooling_cost: object = None
+    tooling_qty: object = None
 
 
 # --- Who may see and change it ----------------------------------------------------------
@@ -126,6 +154,8 @@ def _number(value, what: str, places: int, *, positive=False, maximum=Decimal("1
     if not number.is_finite():
         raise SalesError(f"The {what} must be a number.")
     if number != number.quantize(step):
+        if places == 0:
+            raise SalesError(f"The {what} must be a whole number.")
         raise SalesError(f"The {what} can have at most {places} decimal places.")
     if number < 0 or (positive and number == 0):
         raise SalesError(
@@ -157,42 +187,76 @@ def _cent(value: Decimal) -> Decimal:
     return value.quantize(CENT, ROUND_HALF_UP)
 
 
+def _moulding(costing: QuotationCosting) -> tuple[Decimal, ...]:
+    """Material, machine, rejects and packing for one moulded piece, and the press hours per
+    1,000 pieces. The runner is shared by the cavities; masterbatch is added on top of the
+    resin as a % of its weight; rejects add their % to material and machine."""
+    cavities = Decimal(costing.cavities or 1)
+    shot_kg = ((costing.part_weight_g or 0) + (costing.runner_weight_g or 0) / cavities) / 1000
+    material = _cent(
+        shot_kg * (costing.material_rate or 0)
+        + shot_kg * costing.masterbatch_pct / HUNDRED * (costing.masterbatch_rate or 0)
+    )
+    hours = (costing.cycle_time_s or 0) / cavities / 3600
+    machine = _cent(hours * (costing.machine_rate or 0))
+    rejects = _cent((material + machine) * costing.reject_pct / HUNDRED)
+    packing = costing.packing_amount
+    if costing.packing_per == QuotationCosting.PackingPer.CARTON:
+        packing = _cent(packing / (costing.pcs_per_carton or 1))
+    return material, machine, rejects, packing, (hours * 1000).quantize(CENT, ROUND_HALF_UP)
+
+
 def figures(costing: QuotationCosting, quantity: Decimal, unit_price, exchange_rate) -> dict:
     """The build-up of one piece for an order of `quantity`, and the margin of the price
-    quoted (in the quotation's currency) at that quantity."""
-    operations = list(costing.operations.all())
+    quoted (in the quotation's currency) at that quantity.
+
+    A mould spread over a quantity is added to the price as it is: overhead and margin are
+    not charged on it, and the margin of the price quoted leaves it out."""
     extras = list(costing.extras.all())
-    material = _cent(costing.weight_kg * (costing.material_rate or 0))
-    machining = _cent(sum((op.minutes * op.rate / 60 for op in operations), Decimal(0)))
+    rejects = packing = Decimal("0.00")
+    hours_per_1000 = None
+    if costing.method == QuotationCosting.Method.MOULDING:
+        material, machining, rejects, packing, hours_per_1000 = _moulding(costing)
+    else:
+        operations = list(costing.operations.all())
+        material = _cent(costing.weight_kg * (costing.material_rate or 0))
+        machining = _cent(sum((op.minutes * op.rate / 60 for op in operations), Decimal(0)))
     setup = _cent(costing.setup_hours * costing.setup_rate / quantity)
     subcontract = _cent(
         sum((e.amount / quantity if e.per_order else e.amount for e in extras), Decimal(0))
     )
-    direct = material + machining + setup + subcontract
+    direct = material + machining + rejects + setup + packing + subcontract
     overhead = _cent(direct * costing.overhead_pct / HUNDRED)
     cost = direct + overhead
     margin = _cent(cost * costing.margin_pct / HUNDRED)
-    suggested = cost + margin
+    tooling = Decimal("0.00")
+    if costing.tooling == QuotationCosting.Tooling.AMORTISED and costing.tooling_qty:
+        tooling = _cent(costing.tooling_cost / costing.tooling_qty)
+    suggested = cost + margin + tooling
     quoted_lkr = _cent(Decimal(unit_price) * exchange_rate)
     achieved = None
     if cost > 0:
-        achieved = ((quoted_lkr - cost) / cost * HUNDRED).quantize(CENT, ROUND_HALF_UP)
+        achieved = ((quoted_lkr - tooling - cost) / cost * HUNDRED).quantize(CENT, ROUND_HALF_UP)
     return {
         "quantity": quantity,
         "material": material,
         "machining": machining,
+        "hours_per_1000": hours_per_1000,
+        "rejects": rejects,
         "setup": setup,
+        "packing": packing,
         "subcontract": subcontract,
         "direct_cost": direct,
         "overhead": overhead,
         "cost": cost,
         "margin": margin,
+        "tooling": tooling,
         "suggested_price_lkr": suggested,
         "suggested_price": _cent(suggested / exchange_rate),
         "quoted_price": Decimal(unit_price),
         "quoted_price_lkr": quoted_lkr,
         "quoted_margin_pct": achieved,
-        "below_cost": cost > 0 and quoted_lkr < cost,
+        "below_cost": cost > 0 and quoted_lkr < cost + tooling,
     }
 
 
@@ -336,6 +400,146 @@ def _extras(data: CostingInput) -> list[dict]:
     return rows
 
 
+MACHINING_CLEARED = {
+    "size_a_mm": None,
+    "size_b_mm": None,
+    "length_mm": None,
+    "cutting_allowance_mm": Decimal("0"),
+    "entered_weight_kg": None,
+    "weight_kg": Decimal("0"),
+}
+MOULDING_CLEARED = {
+    "masterbatch": None,
+    "masterbatch_rate": None,
+    "masterbatch_pct": Decimal("0"),
+    "part_weight_g": None,
+    "runner_weight_g": None,
+    "cavities": None,
+    "machine": None,
+    "machine_rate": None,
+    "cycle_time_s": None,
+    "reject_pct": Decimal("0"),
+}
+
+
+def default_method(quotation: Quotation) -> str:
+    """Moulding for a division with moulding sections (IM), machining otherwise (WS)."""
+    if quotation.division.sections.filter(section_type="moulding").exists():
+        return QuotationCosting.Method.MOULDING
+    return QuotationCosting.Method.MACHINING
+
+
+def _priced(material: Material, on, what: str) -> Decimal:
+    if not material.is_active:
+        raise SalesError(f"{what.capitalize()} {material.code} is inactive.")
+    rate = costing_rates.material_rate_on(material, on)
+    if rate is None:
+        raise SalesError(
+            f"{what.capitalize()} {material.code} has no price per kg on {on:%d/%m/%Y}. "
+            "Ask the Accountant to enter one."
+        )
+    return rate
+
+
+def _moulding_values(quotation: Quotation, data: CostingInput) -> dict:
+    """Resin and masterbatch, the part and runner weights, cavities, the press and its cycle
+    time, and the expected rejects."""
+    on = quotation.quote_date
+    resin = data.material
+    if resin is None:
+        raise SalesError("Choose the resin.")
+    if resin.kind == Material.Kind.MASTERBATCH:
+        raise SalesError(f"{resin.code} is a masterbatch: choose the resin.")
+    values = {
+        "material": resin,
+        "material_rate": _priced(resin, on, "resin"),
+        "density": resin.density,
+        "form": resin.form,
+        **MACHINING_CLEARED,
+    }
+    part = _number(data.part_weight_g, "part weight", 3, positive=True)
+    if part is None:
+        raise SalesError("Enter the part weight in grams.")
+    runner = _number(data.runner_weight_g, "runner weight", 3)
+    cavities = _number(data.cavities, "number of cavities", 0, positive=True, maximum=Decimal(512))
+    if cavities is None:
+        raise SalesError("Enter the number of cavities of the mould.")
+    pct = _number(data.masterbatch_pct, "masterbatch %", 2, maximum=Decimal("100"))
+    masterbatch = data.masterbatch
+    if masterbatch is not None:
+        if masterbatch.kind != Material.Kind.MASTERBATCH:
+            raise SalesError(f"{masterbatch.code} is not a masterbatch.")
+        if not pct:
+            raise SalesError("Enter the masterbatch %, for example 2.")
+        mb_rate = _priced(masterbatch, on, "masterbatch")
+    elif pct:
+        raise SalesError("Choose the masterbatch for the masterbatch %.")
+    else:
+        mb_rate = None
+    machine = data.machine
+    if not isinstance(machine, Machine):
+        raise SalesError("Choose the moulding machine.")
+    if machine.section.division_id != quotation.division_id or not machine.is_active:
+        raise SalesError(
+            f"Machine {machine.code} is not a working machine of {quotation.division.code}."
+        )
+    machine_rate = masters.rate_on(machine, on)
+    if machine_rate is None:
+        raise SalesError(f"Machine {machine.code} has no hourly rate on {on:%d/%m/%Y}.")
+    cycle = _number(data.cycle_time_s, "cycle time", 2, positive=True, maximum=Decimal("99999"))
+    if cycle is None:
+        raise SalesError("Enter the cycle time in seconds.")
+    reject = _number(data.reject_pct, "reject %", 2) or Decimal("0")
+    if reject >= 100:
+        raise SalesError("The reject % must be below 100.")
+    return values | {
+        "masterbatch": masterbatch,
+        "masterbatch_rate": mb_rate,
+        "masterbatch_pct": pct or Decimal("0"),
+        "part_weight_g": part,
+        "runner_weight_g": runner,
+        "cavities": int(cavities),
+        "machine": machine,
+        "machine_rate": machine_rate,
+        "cycle_time_s": cycle,
+        "reject_pct": reject,
+    }
+
+
+def _packing_and_tooling(data: CostingInput) -> dict:
+    packing = _number(data.packing_amount, "packing cost", 2) or Decimal("0")
+    per = data.packing_per or QuotationCosting.PackingPer.PIECE
+    if per not in QuotationCosting.PackingPer.values:
+        raise SalesError("Packing is per piece or per carton.")
+    per_carton = None
+    if per == QuotationCosting.PackingPer.CARTON:
+        per_carton = _number(data.pcs_per_carton, "pieces per carton", 0, positive=True)
+        if per_carton is None:
+            raise SalesError("Enter how many pieces go in a carton.")
+        per_carton = int(per_carton)
+    tooling = data.tooling or QuotationCosting.Tooling.NONE
+    if tooling not in QuotationCosting.Tooling.values:
+        raise SalesError("Choose how the tooling is charged.")
+    cost = _number(data.tooling_cost, "tooling cost", 2) or Decimal("0")
+    spread = None
+    if tooling == QuotationCosting.Tooling.AMORTISED:
+        spread = _number(data.tooling_qty, "quantity to spread the tooling over", 3, positive=True)
+        if not cost or spread is None:
+            raise SalesError(
+                "To spread the tooling, enter its cost and the number of pieces to spread it over."
+            )
+    elif tooling == QuotationCosting.Tooling.NONE:
+        cost = Decimal("0")
+    return {
+        "packing_amount": packing,
+        "packing_per": per,
+        "pcs_per_carton": per_carton,
+        "tooling": tooling,
+        "tooling_cost": cost,
+        "tooling_qty": spread,
+    }
+
+
 def save(user: User, quotation: Quotation, line_no: int, data: CostingInput) -> QuotationCosting:
     """Record or change the costing of one line of a draft quotation."""
     with audit_context("quotation_costing_saved"), transaction.atomic():
@@ -353,14 +557,22 @@ def save(user: User, quotation: Quotation, line_no: int, data: CostingInput) -> 
                 f"There are no costing rates for {quotation.division.code} on "
                 f"{quotation.quote_date:%d/%m/%Y}. Ask the Accountant to enter them."
             )
-        values = _material(quotation, data)
-        operations = _operations(quotation, data)
+        method = data.method or default_method(quotation)
+        if method not in QuotationCosting.Method.values:
+            raise SalesError("Choose machining or moulding costing.")
+        if method == QuotationCosting.Method.MOULDING:
+            values = _moulding_values(quotation, data)
+            operations = []
+        else:
+            values = _material(quotation, data) | MOULDING_CLEARED
+            operations = _operations(quotation, data)
+        values |= _packing_and_tooling(data)
         extras = _extras(data)
         pct = Decimal("999.99")
         overhead = _number(data.overhead_pct, "overhead %", 2, maximum=pct)
         margin = _number(data.margin_pct, "margin %", 2, maximum=pct)
         values |= {
-            "method": QuotationCosting.Method.MACHINING,
+            "method": method,
             "rates_date": quotation.quote_date,
             "setup_hours": _number(data.setup_hours, "setup hours", 2, maximum=Decimal("99999"))
             or Decimal("0"),
@@ -381,9 +593,10 @@ def save(user: User, quotation: Quotation, line_no: int, data: CostingInput) -> 
             QuotationCostingExtra(costing=costing, **extra) for extra in extras
         )
         # From now on their codes are fixed (rule 9).
-        if costing.material is not None:
-            masters.mark_used(costing.material)
-        for machine in {op["machine"] for op in operations}:
+        for material in (costing.material, costing.masterbatch):
+            if material is not None:
+                masters.mark_used(material)
+        for machine in {op["machine"] for op in operations} | {costing.machine} - {None}:
             masters.mark_used(machine)
         return costing
 
@@ -403,6 +616,10 @@ def remove(user: User, quotation: Quotation, line_no: int) -> None:
 
 def _text(value) -> str | None:
     return None if value is None else str(value)
+
+
+def _ref(record) -> dict | None:
+    return None if record is None else {"id": record.id, "code": record.code, "name": record.name}
 
 
 def _costing_body(costing: QuotationCosting) -> dict:
@@ -442,6 +659,23 @@ def _costing_body(costing: QuotationCosting) -> dict:
             {"description": e.description, "amount": str(e.amount), "per_order": e.per_order}
             for e in costing.extras.all()
         ],
+        "method": costing.method,
+        "masterbatch": _ref(costing.masterbatch),
+        "masterbatch_rate": _text(costing.masterbatch_rate),
+        "masterbatch_pct": str(costing.masterbatch_pct),
+        "part_weight_g": _text(costing.part_weight_g),
+        "runner_weight_g": _text(costing.runner_weight_g),
+        "cavities": costing.cavities,
+        "machine": _ref(costing.machine),
+        "machine_rate": _text(costing.machine_rate),
+        "cycle_time_s": _text(costing.cycle_time_s),
+        "reject_pct": str(costing.reject_pct),
+        "packing_amount": str(costing.packing_amount),
+        "packing_per": costing.packing_per,
+        "pcs_per_carton": costing.pcs_per_carton,
+        "tooling": costing.tooling,
+        "tooling_cost": str(costing.tooling_cost),
+        "tooling_qty": _text(costing.tooling_qty),
         "updated_by": costing.updated_by.full_name,
         "updated_at": costing.updated_at,
     }
@@ -461,6 +695,7 @@ def page(user: User, quotation: Quotation) -> dict:
         "exchange_rate": str(quotation.exchange_rate),
         "quote_date": on,
         "can_edit": editable,
+        "default_method": default_method(quotation),
         "defaults": None,
         "materials": [],
         "machines": [],
@@ -482,6 +717,7 @@ def page(user: User, quotation: Quotation) -> dict:
                         "id": material.id,
                         "code": material.code,
                         "name": material.name,
+                        "kind": material.kind,
                         "form": material.form,
                         "density": _text(material.density),
                         "rate": str(rate),
@@ -502,7 +738,10 @@ def page(user: User, quotation: Quotation) -> dict:
                     }
                 )
     lines = quotation.lines.prefetch_related("breaks").select_related(
-        "costing__material", "costing__updated_by"
+        "costing__material",
+        "costing__masterbatch",
+        "costing__machine",
+        "costing__updated_by",
     )
     for line in lines:
         costing = getattr(line, "costing", None)
@@ -514,6 +753,7 @@ def page(user: User, quotation: Quotation) -> dict:
                 "quantity": str(line.quantity),
                 "unit": line.unit,
                 "unit_price": str(line.unit_price),
+                "is_tooling": line.is_tooling,
                 "costing": None if costing is None else _costing_body(costing),
                 "results": None
                 if costing is None

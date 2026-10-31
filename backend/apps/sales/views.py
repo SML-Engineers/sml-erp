@@ -82,6 +82,7 @@ def _detail(q: Quotation, user) -> dict:
                 "unit": line.unit,
                 "min_order_qty": None if line.min_order_qty is None else str(line.min_order_qty),
                 "unit_price": str(line.unit_price),
+                "is_tooling": line.is_tooling,
                 "tax_code": line.tax_code.code if line.tax_code else None,
                 "amount": str(line.amount),
                 "tax_amount": str(line.tax_amount),
@@ -135,6 +136,7 @@ class LineSerializer(serializers.Serializer):
         max_length=20, required=False, allow_blank=True, allow_null=True
     )
     breaks = BreakSerializer(many=True, required=False)
+    is_tooling = serializers.BooleanField(required=False, default=False)
 
 
 class QuotationInput(serializers.Serializer):
@@ -195,6 +197,7 @@ def _values(data: dict) -> tuple[dict, list[LineInput]]:
                 tax_code=tax_code,
                 breaks=[BreakInput(b["quantity"], b["unit_price"]) for b in line.get("breaks", [])],
                 id=line.get("id"),
+                is_tooling=line.get("is_tooling", False),
             )
         )
     return values, lines
@@ -320,14 +323,37 @@ class CostingInputSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, allow_blank=True)
     operations = OperationSerializer(many=True, required=False)
     extras = ExtraSerializer(many=True, required=False)
+    method = serializers.ChoiceField(
+        choices=["machining", "moulding"], required=False, allow_null=True
+    )
+    masterbatch = serializers.IntegerField(required=False, allow_null=True)
+    masterbatch_pct = _optional_text()
+    part_weight_g = _optional_text()
+    runner_weight_g = _optional_text()
+    cavities = _optional_text()
+    machine = serializers.IntegerField(required=False, allow_null=True)
+    cycle_time_s = _optional_text()
+    reject_pct = _optional_text()
+    packing_amount = _optional_text()
+    packing_per = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    pcs_per_carton = _optional_text()
+    tooling = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    tooling_cost = _optional_text()
+    tooling_qty = _optional_text()
+
+
+def _record(model, pk, what: str):
+    if pk is None:
+        return None
+    rows = model.objects.select_related("section") if model is Machine else model.objects
+    record = rows.filter(pk=pk).first()
+    if record is None:
+        raise SalesError(f"That {what} does not exist.")
+    return record
 
 
 def _costing_input(data: dict) -> costing.CostingInput:
-    material = None
-    if data.get("material") is not None:
-        material = Material.objects.filter(pk=data["material"]).first()
-        if material is None:
-            raise SalesError("That material does not exist.")
+    material = _record(Material, data.get("material"), "material")
     operations = []
     for op in data.get("operations", []):
         machine = None
@@ -346,9 +372,24 @@ def _costing_input(data: dict) -> costing.CostingInput:
             for e in data.get("extras", [])
         ],
         notes=data.get("notes", ""),
+        method=data.get("method"),
+        masterbatch=_record(Material, data.get("masterbatch"), "masterbatch"),
+        machine=_record(Machine, data.get("machine"), "machine"),
+        packing_per=data.get("packing_per") or "piece",
+        tooling=data.get("tooling") or "none",
         **{
             name: data.get(name)
             for name in (
+                "masterbatch_pct",
+                "part_weight_g",
+                "runner_weight_g",
+                "cavities",
+                "cycle_time_s",
+                "reject_pct",
+                "packing_amount",
+                "pcs_per_carton",
+                "tooling_cost",
+                "tooling_qty",
                 "size_a_mm",
                 "size_b_mm",
                 "length_mm",

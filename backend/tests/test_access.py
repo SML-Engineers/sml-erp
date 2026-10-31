@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from apps.core import access
 from apps.core.access_defaults import AREAS, STANDARD_ROLES_V1
-from apps.core.models import Division, Role, User, UserRole
+from apps.core.models import AuditEvent, Division, Role, User, UserRole
 from apps.core.permissions import AreaAccess
 
 from .conftest import PASSWORD
@@ -253,6 +253,34 @@ def test_admin_creates_a_user_with_a_temporary_password(admin):
     created = User.objects.get(email="new@sml.lk")
     assert created.must_change_password is True
     assert created.check_password(response.json()["temporary_password"])
+
+
+def test_a_new_user_stays_inactive_until_given_roles_and_divisions(admin):
+    """Owner's decision (31 Oct 2026): the Admin sets the account up first, then activates it."""
+    client = as_user(admin)
+    made = client.post(
+        "/api/v1/users/", {"email": "ajith@sml.lk", "full_name": "Ajith"}, format="json"
+    ).json()
+    assert made["is_active"] is False
+    password = made["temporary_password"]
+    signed_in = APIClient().post(
+        "/api/v1/auth/login/", {"email": "ajith@sml.lk", "password": password}, format="json"
+    )
+    assert signed_in.status_code != 200
+
+    url = f"/api/v1/users/{made['id']}/"
+    refused = client.patch(url, {"is_active": True}, format="json")
+    assert refused.status_code == 400
+    assert refused.json()["detail"] == (
+        "Give Ajith at least one role and the divisions they work in before activating the account."
+    )
+    client.put(f"{url}roles/", {"roles": ["sales_executive"]}, format="json")
+    refused = client.patch(url, {"is_active": True}, format="json")
+    assert "the divisions they work in" in refused.json()["detail"]
+    client.put(f"{url}scope/", {"all_divisions": False, "divisions": ["IM"]}, format="json")
+    activated = client.patch(url, {"is_active": True}, format="json")
+    assert activated.status_code == 200 and activated.json()["is_active"] is True
+    assert AuditEvent.objects.filter(event="user_activated").exists()
 
 
 def test_finance_roles_switch_two_factor_on(admin):

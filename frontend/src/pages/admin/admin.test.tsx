@@ -89,6 +89,8 @@ test("users list shows people and gives a one-time temporary password", async ()
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "new@sml.lk" } });
   fireEvent.click(screen.getByRole("button", { name: "Create user" }));
   expect(await screen.findByText("Tmp-9x2kLm")).toBeInTheDocument();
+  expect(screen.getByText(/stays switched off until you give it roles and divisions/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Set up Nimal Perera now" })).toHaveAttribute("href", "/admin/users/8");
 });
 
 test("users without manage access cannot add users", async () => {

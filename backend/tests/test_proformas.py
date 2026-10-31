@@ -139,12 +139,12 @@ def draft(executive, won):
     return proformas.create(executive, won)
 
 
-def lines_of(proforma, **changes):
+def lines_of(proforma, changes=None):
     """The proforma's lines as input, with changes by line number."""
     rows = []
     for line in proforma.lines.all():
         values = {"quotation_line": line.quotation_line, "quantity": line.quantity}
-        values |= changes.get(line.line_no, {})
+        values |= (changes or {}).get(line.line_no, {})
         rows.append(LineInput(**values))
     return rows
 
@@ -194,7 +194,7 @@ def test_only_an_accepted_quotation_makes_a_proforma(executive, director, rhino)
     [("60", "1200.00"), ("50", "1200.00"), ("20", "1500.00"), ("5", "1500.00")],
 )
 def test_the_price_comes_from_the_quotation_for_the_quantity(draft, executive, quantity, price):
-    changed = proformas.save(executive, draft, lines=lines_of(draft, **{1: {"quantity": quantity}}))
+    changed = proformas.save(executive, draft, lines=lines_of(draft, {1: {"quantity": quantity}}))
     assert changed.lines.get(line_no=1).unit_price == Decimal(price)
 
 
@@ -214,7 +214,7 @@ def test_terms_bank_advance_and_packing(draft, executive, bank):
     changed = proformas.save(
         executive,
         draft,
-        lines=lines_of(draft, **{1: {"quantity": "60", **packing}}),
+        lines=lines_of(draft, {1: {"quantity": "60", **packing}}),
         customer_po="RR/PO/4512",
         port_of_loading="Colombo",
         bank_account=bank,
@@ -243,7 +243,7 @@ def test_terms_bank_advance_and_packing(draft, executive, bank):
 )
 def test_wrong_lines_are_refused(draft, executive, change, why):
     with pytest.raises(SalesError, match=why):
-        proformas.save(executive, draft, lines=lines_of(draft, **change))
+        proformas.save(executive, draft, lines=lines_of(draft, change))
 
 
 def test_lines_come_only_from_the_quotation_and_once(draft, executive, director, rhino):
@@ -279,7 +279,8 @@ def test_an_issued_proforma_never_changes(draft, executive):
         ProformaInvoice.objects.filter(pk=issued.pk).update(total_amount=Decimal("1.00"))
     with pytest.raises(DatabaseError, match="cannot change"), transaction.atomic():
         ProformaLine.objects.filter(proforma=issued).update(quantity=Decimal("1"))
-    with pytest.raises(DatabaseError, match="cannot be deleted"), transaction.atomic():
+    # Deleting is refused too (its lines refuse first).
+    with pytest.raises(DatabaseError, match="cannot"), transaction.atomic():
         ProformaInvoice.objects.filter(pk=issued.pk).delete()
 
 

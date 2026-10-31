@@ -7,8 +7,15 @@ import { listDivisions } from "../api/admin";
 import { ApiError } from "../api/client";
 import { INCOTERMS, listContacts, listCustomers, listPickerCurrencies, type Customer } from "../api/customers";
 import {
+  approveQuotation,
   createQuotation,
   getQuotation,
+  markQuotationSent,
+  OUTCOME_REASONS,
+  recordOutcome,
+  returnQuotation,
+  reviseQuotation,
+  submitQuotation,
   quotationFileUrl,
   quotationsKey,
   removeQuotationFile,
@@ -76,6 +83,7 @@ export default function QuotationPage() {
           <span className="muted">{t("quoteCosting.internalOnly")}</span>
         </p>
       )}
+      {data && <Workflow key={`${data.id}-${data.status}`} quotation={data} />}
       {(isNew || data?.can_edit) && <QuotationForm key={data?.id ?? "new"} quotation={data} />}
       {data && !data.can_edit && <ReadOnly quotation={data} />}
       {data && <Files quotation={data} />}
@@ -549,6 +557,168 @@ function Files({ quotation }: { quotation: QuotationDetail }) {
         </p>
       ))}
       <ErrorLine error={upload.error ?? remove.error} />
+    </section>
+  );
+}
+
+/** Approval by the Director, sending, the outcome and revisions (spec 5.1; P15-06). */
+function Workflow({ quotation }: { quotation: QuotationDetail }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [comment, setComment] = useState("");
+  const [reason, setReason] = useState("");
+  const [outcome, setOutcome] = useState<"accepted" | "lost">("accepted");
+  const [outcomeReason, setOutcomeReason] = useState("");
+  const [note, setNote] = useState("");
+  const done = (latest: QuotationDetail) => {
+    queryClient.setQueryData([...quotationsKey, "one", String(latest.id)], latest);
+    void queryClient.invalidateQueries({ queryKey: quotationsKey });
+    if (latest.id !== quotation.id) navigate(`/quotations/${latest.id}`);
+  };
+  const act = useMutation({ mutationFn: (call: () => Promise<QuotationDetail>) => call(), onSuccess: done });
+  const id = quotation.id;
+  const review = quotation.review;
+  const history = quotation.approval?.history ?? [];
+
+  return (
+    <section className="panel" aria-label={t("quotations.approval")}>
+      <h2>{t("quotations.approval")}</h2>
+      {quotation.approval?.waiting_with && (
+        <p className="notice">{t("quotations.waitingWith", { role: quotation.approval.waiting_with })}</p>
+      )}
+      {!quotation.is_final && quotation.status !== "revised" && <p className="muted">{t("quotations.notApprovedYet")}</p>}
+      {quotation.outcome && (
+        <p>
+          <strong>{t(`quotations.statuses.${quotation.status}`)}</strong>
+          {quotation.outcome.reason_label && ` · ${quotation.outcome.reason_label}`}
+          {quotation.outcome.note && ` · ${quotation.outcome.note}`} <span className="muted">({quotation.outcome.by})</span>
+        </p>
+      )}
+
+      {review && (
+        <div aria-label={t("quotations.reviewLabel")} role="group">
+          <p>
+            {t("quotations.overallMargin")}: <strong>{review.margin_pct === null ? "—" : `${review.margin_pct}%`}</strong>
+            {review.min_margin_pct && <span className="muted"> ({t("quotations.minimum", { pct: review.min_margin_pct })})</span>} ·{" "}
+            {t("quotations.valueLkr")}: <strong>{formatDecimal(review.value_lkr)}</strong>
+          </p>
+          {review.warnings.length > 0 && (
+            <ul className="changes" aria-label={t("quotations.warnings")}>
+              {review.warnings.map((w) => (
+                <li key={w}>⚠ {w}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {quotation.can_submit && (
+        <div className="inline-form">
+          <label>
+            {t("quotations.commentForDirector")}
+            <input value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} />
+          </label>
+          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => submitQuotation(id, comment))}>
+            {t("quotations.sendForApproval")}
+          </button>
+          <span className="muted">{t("quotations.saveFirst")}</span>
+        </div>
+      )}
+
+      {quotation.can_approve && (
+        <div className="inline-form">
+          <label>
+            {t("quotations.approverNote")}
+            <input value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} />
+          </label>
+          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveQuotation(id, comment))}>
+            {t("quotations.approve")}
+          </button>
+          <label>
+            {t("quotations.returnReason")}
+            <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnQuotation(id, reason))}>
+            {t("quotations.returnToCreator")}
+          </button>
+        </div>
+      )}
+
+      {quotation.can_mark_sent && (
+        <p>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => markQuotationSent(id))}>
+            {t("quotations.markSent")}
+          </button>
+        </p>
+      )}
+
+      {quotation.can_record_outcome && (
+        <div className="inline-form" role="group" aria-label={t("quotations.outcome")}>
+          <label>
+            {t("quotations.outcome")}
+            <select value={outcome} onChange={(e) => setOutcome(e.target.value as "accepted" | "lost")}>
+              <option value="accepted">{t("quotations.won")}</option>
+              <option value="lost">{t("quotations.lost")}</option>
+            </select>
+          </label>
+          <label>
+            {t("quotations.why")}
+            <select value={outcomeReason} onChange={(e) => setOutcomeReason(e.target.value)}>
+              <option value="">—</option>
+              {OUTCOME_REASONS.map((r) => (
+                <option key={r} value={r}>
+                  {t(`quotations.reasons.${r}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("quotations.note")}
+            <input value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+          </label>
+          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => recordOutcome(id, outcome, outcomeReason, note))}>
+            {t("quotations.recordOutcome")}
+          </button>
+        </div>
+      )}
+
+      {quotation.can_revise && (
+        <p>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => reviseQuotation(id))}>
+            {t("quotations.revise")}
+          </button>{" "}
+          <span className="muted">{t("quotations.reviseHelp")}</span>
+        </p>
+      )}
+      <ErrorLine error={act.error} />
+
+      {history.length > 0 && (
+        <ul className="changes" aria-label={t("quotations.approvalHistory")}>
+          {history.map((h, i) => (
+            <li key={i}>
+              {h.action_label} · {h.by} · {h.at.slice(0, 16).replace("T", " ")}
+              {h.reason && ` · ${h.reason}`}
+            </li>
+          ))}
+        </ul>
+      )}
+      {quotation.revisions.length > 1 && (
+        <p>
+          {t("quotations.revisions")}:{" "}
+          {quotation.revisions.map((r, i) => (
+            <span key={r.id}>
+              {i > 0 && " · "}
+              {r.id === quotation.id ? (
+                <strong>Rev {r.revision}</strong>
+              ) : (
+                <Link to={`/quotations/${r.id}`}>Rev {r.revision}</Link>
+              )}{" "}
+              <span className="muted">({t(`quotations.statuses.${r.status}`)})</span>
+            </span>
+          ))}
+        </p>
+      )}
     </section>
   );
 }

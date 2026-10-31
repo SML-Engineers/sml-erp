@@ -41,6 +41,17 @@ const saved: QuotationDetail = {
   files: [],
   can_edit: true,
   can_see_costing: false,
+  approved_at: null,
+  sent_at: null,
+  outcome: null,
+  is_final: false,
+  can_submit: true,
+  can_approve: false,
+  can_mark_sent: false,
+  can_record_outcome: false,
+  can_revise: false,
+  approval: null,
+  revisions: [{ id: 12, revision: 0, status: "draft", quote_date: "2026-10-31" }],
 };
 
 const formApi = (extra: Parameters<typeof mockApi>[0] = {}) => ({
@@ -356,4 +367,120 @@ test("a quotation line can be marked as tooling, charged once", async () => {
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/", expect.objectContaining({ method: "PUT" })));
   const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/" && i?.method === "PUT")!;
   expect(JSON.parse(String(init!.body)).lines[0].is_tooling).toBe(true);
+});
+
+// --- Approval, outcome and revisions (P15-06) ---------------------------------------------
+
+test("the creator sends a saved draft to the Director", async () => {
+  const waitingOne: QuotationDetail = {
+    ...saved,
+    status: "awaiting_approval",
+    can_edit: false,
+    can_submit: false,
+    approval: { status: "in_progress", waiting_with: "Director", history: [] },
+  };
+  const calls = mockApi(
+    formApi({ "GET /api/v1/quotations/12/": { body: saved }, "POST /api/v1/quotations/12/submit/": { body: waitingOne } }),
+  );
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const panel = await screen.findByRole("region", { name: "Approval and status" });
+  expect(within(panel).getByText(/cannot be printed as final or sent/)).toBeInTheDocument();
+  fireEvent.change(within(panel).getByLabelText("Note for the Director (optional)"), { target: { value: "Urgent" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Send to the Director for approval" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/submit/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/quotations/12/submit/")!;
+  expect(JSON.parse(String(init!.body))).toEqual({ comment: "Urgent" });
+  expect(await screen.findByText("Waiting for approval by the Director.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Save draft" })).not.toBeInTheDocument();
+});
+
+test("the Director sees the warnings and approves or returns", async () => {
+  const waitingOne: QuotationDetail = {
+    ...saved,
+    status: "awaiting_approval",
+    can_edit: false,
+    can_submit: false,
+    can_approve: true,
+    can_see_costing: true,
+    approval: {
+      status: "in_progress",
+      waiting_with: "Director",
+      history: [{ action: "submit", action_label: "Submitted", level: 1, by: "Sales", at: "2026-10-31T10:00:00", reason: "Urgent" }],
+    },
+    review: {
+      margin_pct: "13.04",
+      value_lkr: "76469.00",
+      min_margin_pct: "20.00",
+      limit_lkr: "50000.00",
+      warnings: ["Margin 13.04% is below the minimum of 20.00%."],
+    },
+  };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/": { body: waitingOne },
+    "POST /api/v1/quotations/12/approve/": { body: { ...waitingOne, status: "approved", can_approve: false, is_final: true, approval: null } },
+  });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const panel = await screen.findByRole("region", { name: "Approval and status" });
+  expect(within(panel).getByText(/13.04%/, { selector: "strong" })).toBeInTheDocument();
+  expect(within(panel).getByRole("list", { name: "Warnings for the Director" })).toHaveTextContent("below the minimum of 20.00%");
+  expect(within(panel).getByRole("list", { name: "Approval history" })).toHaveTextContent("Submitted · Sales");
+  fireEvent.click(within(panel).getByRole("button", { name: "Approve" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/approve/", expect.objectContaining({ method: "POST" })));
+  await waitFor(() => expect(screen.queryByText(/cannot be printed as final/)).not.toBeInTheDocument());
+});
+
+test("an approved quotation is marked sent, then won or lost with the reason", async () => {
+  const sent: QuotationDetail = { ...saved, status: "sent", can_edit: false, can_submit: false, is_final: true, can_record_outcome: true, can_revise: true };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/": { body: sent },
+    "POST /api/v1/quotations/12/outcome/": {
+      body: { ...sent, status: "lost", can_record_outcome: false, outcome: { reason: "price", reason_label: "Price", note: "15% cheaper", at: "", by: "Sales" } },
+    },
+  });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const outcome = await screen.findByRole("group", { name: "Outcome" });
+  fireEvent.change(within(outcome).getByLabelText("Outcome"), { target: { value: "lost" } });
+  fireEvent.change(within(outcome).getByLabelText("Why"), { target: { value: "price" } });
+  fireEvent.change(within(outcome).getByLabelText("Note"), { target: { value: "15% cheaper" } });
+  fireEvent.click(within(outcome).getByRole("button", { name: "Record the outcome" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/outcome/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/quotations/12/outcome/")!;
+  expect(JSON.parse(String(init!.body))).toEqual({ outcome: "lost", reason: "price", note: "15% cheaper" });
+  expect(await screen.findByText(/15% cheaper/, { selector: "p" })).toBeInTheDocument();
+});
+
+test("a revision opens as a new draft with the same number", async () => {
+  const approvedOne: QuotationDetail = { ...saved, status: "approved", can_edit: false, can_submit: false, is_final: true, can_revise: true };
+  const rev1: QuotationDetail = {
+    ...saved,
+    id: 13,
+    revision: 1,
+    revisions: [
+      { id: 12, revision: 0, status: "revised", quote_date: "2026-10-31" },
+      { id: 13, revision: 1, status: "draft", quote_date: "2026-10-31" },
+    ],
+  };
+  mockApi(
+    formApi({
+      "GET /api/v1/quotations/12/": { body: approvedOne },
+      "POST /api/v1/quotations/12/revise/": { status: 201, body: rev1 },
+      "GET /api/v1/quotations/13/": { body: rev1 },
+    }),
+  );
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Make a revision" }));
+  expect(await screen.findByRole("heading", { name: "Quotation QL26103101 Rev 1" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Rev 0" })).toHaveAttribute("href", "/quotations/12");
+});
+
+test("approvers can list the quotations waiting for them", async () => {
+  const director: CurrentUser = { ...sampleUser, access: { areas: { sales: ["approve", "view"] }, actions: [], divisions: "all" } };
+  mockApi({
+    "GET /api/v1/quotations/": { body: [] },
+    "GET /api/v1/quotations/?waiting=me": { body: [saved] },
+  });
+  renderAt("/quotations", <QuotationsPage me={director} />);
+  fireEvent.click(await screen.findByLabelText("Waiting for my approval"));
+  const table = await screen.findByRole("table", { name: "Quotations" });
+  expect(await within(table).findByRole("link", { name: "QL26103101" })).toBeInTheDocument();
 });

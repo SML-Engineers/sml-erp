@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import advance_views, views
+from . import advance_views, proforma_views, views
 
 urlpatterns = [
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
@@ -73,4 +73,24 @@ urlpatterns = [
     ),
     path("quotations/<int:pk>/pdf/", views.QuotationPdfView.as_view(), name="quotation-pdf"),
     path("quotations/<int:pk>/email/", views.QuotationEmailView.as_view(), name="quotation-email"),
+    path("proformas/", proforma_views.ProformaListView.as_view(), name="proforma-list"),
+    path(
+        "proformas/<int:pk>/", proforma_views.ProformaDetailView.as_view(), name="proforma-detail"
+    ),
+    path(
+        "proformas/<int:pk>/issue/",
+        proforma_views.ProformaIssueView.as_view(),
+        name="proforma-issue",
+    ),
+    path(
+        "proformas/<int:pk>/cancel/",
+        proforma_views.ProformaCancelView.as_view(),
+        name="proforma-cancel",
+    ),
+    path("proformas/<int:pk>/pdf/", proforma_views.ProformaPdfView.as_view(), name="proforma-pdf"),
+    path(
+        "proformas/<int:pk>/email/",
+        proforma_views.ProformaEmailView.as_view(),
+        name="proforma-email",
+    ),
 ]

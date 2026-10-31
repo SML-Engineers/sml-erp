@@ -20,5 +20,7 @@ class SalesConfig(AppConfig):
             m.QuotationCostingOperation,
             m.QuotationCostingExtra,
             m.CustomerAdvance,
+            m.ProformaInvoice,
+            m.ProformaLine,
         ):
             register(model)

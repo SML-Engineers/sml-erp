@@ -47,7 +47,11 @@ def test_standard_roles_are_loaded_with_phase_one_and_sales_roles_active():
         Role.objects.filter(is_standard=True, is_active=True).values_list("code", flat=True)
     )
     phase_one = {"system_admin", "director", "accountant", "clerk", "cashier", "auditor"}
-    assert active == phase_one | {"sales_executive", "sales_manager"}  # Phase 1.5, P15-01
+    assert active == phase_one | {"sales_executive", "sales_manager"} | {
+        "purchasing_officer",
+        "store_supervisor",
+        "qc_inspector",
+    }  # Phase 1.5 (P15-01) and Phase 1.6 (P16-02)
     assert Role.objects.filter(is_standard=True).count() == len(STANDARD_ROLES_V1)
 
 
@@ -330,9 +334,60 @@ def test_admin_cannot_change_their_own_roles_or_scope(admin):
 def test_later_phase_roles_cannot_be_assigned_yet(admin):
     user = person("s@sml.lk")
     response = as_user(admin).put(
-        f"/api/v1/users/{user.pk}/roles/", {"roles": ["purchasing_officer"]}, format="json"
+        f"/api/v1/users/{user.pk}/roles/", {"roles": ["production_planner"]}, format="json"
     )
     assert response.status_code == 400
+
+
+# --- Phase 1.6 roles (P16-02, spec 5A.6) ----------------------------------------------------
+
+
+def test_purchasing_stores_and_qc_roles_can_be_assigned(admin):
+    stores = Role.objects.get(code="store_supervisor")
+    assert stores.name == "Stores Manager / Executive"
+    for code in ("purchasing_officer", "store_supervisor", "qc_inspector"):
+        user = person(f"{code}@sml.lk")
+        response = as_user(admin).put(
+            f"/api/v1/users/{user.pk}/roles/", {"roles": [code]}, format="json"
+        )
+        assert response.status_code == 200, response.json()
+    rights = access.effective_access(User.objects.get(email="store_supervisor@sml.lk"))
+    assert rights.has("stores", "enter") and not rights.has("quality", "approve")
+    assert not rights.has("vouchers", "view") and not rights.has("payments", "view")
+    buyer = access.effective_access(User.objects.get(email="purchasing_officer@sml.lk"))
+    assert buyer.has("purchasing", "enter") and not buyer.has("purchasing", "approve")
+
+
+def test_ordering_receiving_invoicing_and_paying_need_different_people(admin):
+    user = person("one@sml.lk")
+    url = f"/api/v1/users/{user.pk}/roles/"
+    for pair in (
+        ["purchasing_officer", "store_supervisor"],
+        ["store_supervisor", "clerk"],
+        ["store_supervisor", "cashier"],
+        ["purchasing_officer", "cashier"],
+    ):
+        refused = as_user(admin).put(url, {"roles": pair}, format="json")
+        assert refused.status_code == 400 and refused.json()["warnings"], pair
+    allowed = as_user(admin).put(
+        url,
+        {"roles": ["purchasing_officer", "store_supervisor"], "reason": "Covering a holiday"},
+        format="json",
+    )
+    assert allowed.status_code == 200
+
+
+def test_the_stores_person_can_never_also_be_the_qc_inspector(admin):
+    """QC acceptance is the check on SML's single stores person (owner, 31 Oct 2026)."""
+    user = person("one@sml.lk")
+    refused = as_user(admin).put(
+        f"/api/v1/users/{user.pk}/roles/",
+        {"roles": ["store_supervisor", "qc_inspector"], "reason": "Small team"},
+        format="json",
+    )
+    assert refused.status_code == 400
+    assert "cannot be held by one person" in refused.json()["detail"]
+    assert not user.role_assignments.exists()
 
 
 def test_removing_a_role_removes_its_access(admin):

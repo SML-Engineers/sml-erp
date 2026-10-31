@@ -17,7 +17,7 @@ from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.db import transaction
-from django.db.models import Q, QuerySet
+from django.db.models import F, Q, QuerySet
 from django.utils import timezone
 
 from apps.accounting import taxes
@@ -67,6 +67,9 @@ class LineInput:
     min_order_qty: object = None
     tax_code: TaxCode | None = None
     breaks: list[BreakInput] = field(default_factory=list)
+    # The saved line this one is (from the quotation as loaded); None for a new line. Kept
+    # lines keep their costing (P15-04) and their drawings follow them when renumbered.
+    id: int | None = None
 
 
 # --- Who may do what --------------------------------------------------------------------
@@ -155,6 +158,7 @@ def _check_line(n: int, line: LineInput) -> dict:
     ):
         raise SalesError(where + f"tax code {line.tax_code.code} cannot be used on sales.")
     return {
+        "id": line.id,
         "description": description,
         "drawing_no": (line.drawing_no or "").strip()[:50],
         "drawing_rev": (line.drawing_rev or "").strip()[:20],
@@ -234,7 +238,8 @@ def _header(user: User, quotation: Quotation | None, values: dict) -> dict:
 
 
 def save(user: User, quotation: Quotation | None, *, lines: list[LineInput], **values) -> Quotation:
-    """Create a draft quotation, or change one's header and lines (all lines are replaced)."""
+    """Create a draft quotation, or change one's header and lines. Lines sent with their id
+    are kept (with their costing); lines left out are removed; lines without an id are new."""
     if not can_enter(user):
         raise SalesError("You cannot make quotations.")
     if quotation is not None and not can_edit(user, quotation):
@@ -261,11 +266,12 @@ def save(user: User, quotation: Quotation | None, *, lines: list[LineInput], **v
             quotation = Quotation.objects.select_for_update().get(pk=quotation.pk)
             for key, value in header.items():
                 setattr(quotation, key, value)
-            quotation.lines.all().delete()
         quotation.exchange_rate = lookup.rate
         quotation.rate_date = lookup.rate_date
         quotation.updated_at = timezone.now()
         quotation.save()
+
+        kept, kept_no = _keep_lines(quotation, checked)
 
         subtotal = tax_total = Decimal("0")
         for n, line in enumerate(checked, start=1):
@@ -273,14 +279,16 @@ def save(user: User, quotation: Quotation | None, *, lines: list[LineInput], **v
             tax = Decimal("0")
             if line["tax_code"] is not None:
                 tax = taxes.calculate(line["tax_code"], amount, quotation.quote_date).tax
-            row = QuotationLine.objects.create(
-                quotation=quotation,
-                line_no=n,
-                amount=amount,
-                tax_amount=tax,
-                total=amount + tax,
-                **{k: v for k, v in line.items() if k != "breaks"},
-            )
+            fields = {k: v for k, v in line.items() if k not in ("breaks", "id")}
+            fields |= {"line_no": n, "amount": amount, "tax_amount": tax, "total": amount + tax}
+            row = kept.get(line["id"])
+            if row is None:
+                row = QuotationLine.objects.create(quotation=quotation, **fields)
+            else:
+                for key, value in fields.items():
+                    setattr(row, key, value)
+                row.save()
+                row.breaks.all().delete()
             QuotationQtyBreak.objects.bulk_create(
                 QuotationQtyBreak(line=row, quantity=q, unit_price=p) for q, p in line["breaks"]
             )
@@ -295,12 +303,39 @@ def save(user: User, quotation: Quotation | None, *, lines: list[LineInput], **v
         quotation.total_amount = subtotal + tax_total
         quotation.total_lkr = currencies.to_lkr(quotation.total_amount, lookup)
         quotation.save(update_fields=["subtotal", "tax_total", "total_amount", "total_lkr"])
-        # The files of lines that no longer exist are kept, but no longer tied to a line.
-        quotation.files.filter(line_no__gt=len(checked)).update(line_no=None)
+        # Drawings follow their line when lines are renumbered, and the files of removed
+        # lines stay, tied to the whole quotation. (Lines sent without their id are new
+        # lines: files then keep their line number while that line exists.)
+        moved = {kept_no[line["id"]]: n for n, line in enumerate(checked, start=1) if line["id"]}
+        for record in quotation.files.filter(line_no__isnull=False):
+            if kept_no:
+                new_no = moved.get(record.line_no)
+            else:
+                new_no = record.line_no if record.line_no <= len(checked) else None
+            if new_no != record.line_no:
+                record.line_no = new_no
+                record.save(update_fields=["line_no"])
 
         customers.mark_used(quotation.customer)
         currencies.mark_rate_used(lookup)
         return quotation
+
+
+def _keep_lines(quotation: Quotation, checked: list[dict]) -> tuple[dict, dict]:
+    """Remove the lines no longer on the quotation and keep the others, so their costing
+    stays (P15-04). Returns the kept lines and their old numbers, both by id."""
+    existing = {row.id: row for row in quotation.lines.all()}
+    ids = [line["id"] for line in checked if line["id"] is not None]
+    if len(set(ids)) != len(ids):
+        raise SalesError("The same line was sent twice. Reload the page and try again.")
+    for n, line in enumerate(checked, start=1):
+        if line["id"] is not None and line["id"] not in existing:
+            raise SalesError(f"Line {n} is not part of this quotation. Reload the page.")
+    old_no = {i: existing[i].line_no for i in ids}
+    quotation.lines.exclude(id__in=ids).delete()
+    # Out of the way first, so lines can swap numbers without clashing.
+    quotation.lines.filter(id__in=ids).update(line_no=F("line_no") + 1000)
+    return {row.id: row for row in quotation.lines.filter(id__in=ids)}, old_no
 
 
 # --- Files ------------------------------------------------------------------------------

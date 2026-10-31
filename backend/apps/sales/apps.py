@@ -11,5 +11,13 @@ class SalesConfig(AppConfig):
 
         from . import models as m
 
-        for model in (m.Quotation, m.QuotationLine, m.QuotationQtyBreak, m.QuotationFile):
+        for model in (
+            m.Quotation,
+            m.QuotationLine,
+            m.QuotationQtyBreak,
+            m.QuotationFile,
+            m.QuotationCosting,
+            m.QuotationCostingOperation,
+            m.QuotationCostingExtra,
+        ):
             register(model)

@@ -4,6 +4,7 @@ returns only quotations the user may see."""
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,9 +12,9 @@ from rest_framework.views import APIView
 from apps.accounting.models import TaxCode
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess
-from apps.masters.models import Customer, CustomerContact
+from apps.masters.models import Customer, CustomerContact, Machine, Material
 
-from . import services
+from . import costing, services
 from .models import Quotation, QuotationFile
 from .services import BreakInput, LineInput, SalesError
 
@@ -72,6 +73,7 @@ def _detail(q: Quotation, user) -> dict:
         "created_at": q.created_at,
         "lines": [
             {
+                "id": line.id,
                 "line_no": line.line_no,
                 "description": line.description,
                 "drawing_no": line.drawing_no,
@@ -103,6 +105,9 @@ def _detail(q: Quotation, user) -> dict:
             for f in q.files.all()
         ],
         "can_edit": services.can_edit(user, q),
+        # Whether this user may open the costing (P15-04); the costing itself is only ever
+        # sent by the costing endpoint, never with the quotation.
+        "can_see_costing": costing.can_see(user, q),
     }
     return body
 
@@ -116,6 +121,7 @@ class BreakSerializer(serializers.Serializer):
 
 
 class LineSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False, allow_null=True)
     description = serializers.CharField(allow_blank=True)
     drawing_no = serializers.CharField(max_length=50, required=False, allow_blank=True)
     drawing_rev = serializers.CharField(max_length=20, required=False, allow_blank=True)
@@ -188,6 +194,7 @@ def _values(data: dict) -> tuple[dict, list[LineInput]]:
                 min_order_qty=line.get("min_order_qty"),
                 tax_code=tax_code,
                 breaks=[BreakInput(b["quantity"], b["unit_price"]) for b in line.get("breaks", [])],
+                id=line.get("id"),
             )
         )
     return values, lines
@@ -279,3 +286,115 @@ class QuotationFileDetailView(_Sales):
         except SalesError as error:
             return _error(error)
         return Response(_detail(Quotation.objects.get(pk=quotation.pk), request.user))
+
+
+# --- Costing (P15-04): internal only, for those who may see it --------------------------
+
+
+class OperationSerializer(serializers.Serializer):
+    machine = serializers.IntegerField(allow_null=True)
+    minutes = serializers.CharField(max_length=30, allow_blank=True)
+    description = serializers.CharField(max_length=100, required=False, allow_blank=True)
+
+
+class ExtraSerializer(serializers.Serializer):
+    description = serializers.CharField(max_length=100, allow_blank=True)
+    amount = serializers.CharField(max_length=30, allow_blank=True)
+    per_order = serializers.BooleanField(required=False, default=False)
+
+
+def _optional_text():
+    return serializers.CharField(max_length=30, required=False, allow_blank=True, allow_null=True)
+
+
+class CostingInputSerializer(serializers.Serializer):
+    material = serializers.IntegerField(required=False, allow_null=True)
+    size_a_mm = _optional_text()
+    size_b_mm = _optional_text()
+    length_mm = _optional_text()
+    cutting_allowance_mm = _optional_text()
+    weight_kg = _optional_text()
+    setup_hours = _optional_text()
+    overhead_pct = _optional_text()
+    margin_pct = _optional_text()
+    notes = serializers.CharField(required=False, allow_blank=True)
+    operations = OperationSerializer(many=True, required=False)
+    extras = ExtraSerializer(many=True, required=False)
+
+
+def _costing_input(data: dict) -> costing.CostingInput:
+    material = None
+    if data.get("material") is not None:
+        material = Material.objects.filter(pk=data["material"]).first()
+        if material is None:
+            raise SalesError("That material does not exist.")
+    operations = []
+    for op in data.get("operations", []):
+        machine = None
+        if op["machine"] is not None:
+            machine = Machine.objects.select_related("section").filter(pk=op["machine"]).first()
+        operations.append(
+            costing.OperationInput(
+                machine=machine, minutes=op["minutes"], description=op.get("description", "")
+            )
+        )
+    return costing.CostingInput(
+        material=material,
+        operations=operations,
+        extras=[
+            costing.ExtraInput(e["description"], e["amount"], e.get("per_order", False))
+            for e in data.get("extras", [])
+        ],
+        notes=data.get("notes", ""),
+        **{
+            name: data.get(name)
+            for name in (
+                "size_a_mm",
+                "size_b_mm",
+                "length_mm",
+                "cutting_allowance_mm",
+                "weight_kg",
+                "setup_hours",
+                "overhead_pct",
+                "margin_pct",
+            )
+        },
+    )
+
+
+def _costing_quotation(request, pk) -> Quotation:
+    """The quotation, if the user may see it at all (404 otherwise), and only if they may
+    see its costing (403 otherwise)."""
+    quotation = _get(request.user, pk)
+    if not costing.can_see(request.user, quotation):
+        raise PermissionDenied(
+            "The costing is seen by the quotation's creator, the Sales Manager, the "
+            "Accountant and the Director."
+        )
+    return quotation
+
+
+class QuotationCostingView(_Sales):
+    def get(self, request, pk):
+        quotation = _costing_quotation(request, pk)
+        return Response(costing.page(request.user, quotation))
+
+
+class QuotationLineCostingView(_Sales):
+    def put(self, request, pk, line_no):
+        quotation = _costing_quotation(request, pk)
+        data = CostingInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            costing.save(request.user, quotation, line_no, _costing_input(data.validated_data))
+        except SalesError as error:
+            return _error(error)
+        return Response(costing.page(request.user, Quotation.objects.get(pk=quotation.pk)))
+
+    def delete(self, request, pk, line_no):
+        quotation = _costing_quotation(request, pk)
+        try:
+            costing.remove(request.user, quotation, line_no)
+        except SalesError as error:
+            return _error(error)
+        return Response(costing.page(request.user, Quotation.objects.get(pk=quotation.pk)))

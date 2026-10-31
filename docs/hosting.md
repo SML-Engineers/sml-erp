@@ -20,10 +20,15 @@ them in GitHub. The setup creates every secret on the server itself.
 | Hostinger plan | KVM 2 (2 vCPU, 8 GB) is enough | KVM 4 (4 vCPU, 16 GB, 200 GB) |
 | Operating system | Ubuntu 24.04 LTS | Ubuntu 24.04 LTS |
 | Location | the data centre closest to Sri Lanka (India) | the same |
-| Web address | e.g. `erp-test.<yourdomain>` | e.g. `erp.<yourdomain>` |
+| Web address | `test.smlerp.com.lk` | `smlerp.com.lk` |
 
-You also need the domain (for example `smlengineers.lk`) and access to its DNS settings
-(step 7).
+For now only the production server is bought, after all user testing has passed on the
+owner's PC (owner's decision, 31 Oct 2026); a test server can be added later the same way.
+
+The domain is **smlerp.com.lk**, used only for the ERP: the live system is at the domain
+itself and the test server at `test.` in front of it (owner's decision, 31 Oct 2026). You need
+access to its DNS settings (step 7). Below, `<yourdomain>` and `erp.<yourdomain>` mean
+`smlerp.com.lk`; `erp-test.<yourdomain>` means `test.smlerp.com.lk`.
 
 ## 1. Make an SSH key on your computer (once)
 
@@ -123,7 +128,7 @@ the LK Domain Registry), add one record:
 
 | Type | Name | Points to | TTL |
 | --- | --- | --- | --- |
-| A | `erp` (or `erp-test`) | the server's IP address | 3600 |
+| A | `@` (the domain itself, for the live server) or `test` (the test server) | that server's IP address | 3600 |
 
 After a few minutes (sometimes an hour) check with `ping erp.<yourdomain>`: it should show
 the server's address. Then, on the server:

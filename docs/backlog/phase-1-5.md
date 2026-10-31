@@ -163,6 +163,12 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P15-12 User acceptance testing and go-live**
   Sales staff and the Director run test scripts for each role on the test server; the owner
   signs off; customers and rates are loaded.
+  - Owner's decision (31 Oct 2026): every role tests on the owner's PC, at times he gives each
+    person, with the demo data (reloaded so it includes the sales examples). Only after all
+    tests pass is the live server bought (Hostinger KVM 4, smlerp.com.lk) with a Backblaze
+    bucket; no separate test server for now. Before real data goes in, the live server is
+    checked for what a PC cannot show (HTTPS, real emails, phones, a backup and a full
+    restore) and then wiped. The test scripts and go-live checklist are a shared document.
 
 ---
 

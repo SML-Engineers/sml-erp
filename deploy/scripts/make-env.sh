@@ -9,7 +9,7 @@
 set -euo pipefail
 
 ENVIRONMENT="${1:?Usage: make-env.sh production|test <domain> <email for certificate notices>}"
-DOMAIN="${2:?Give the domain, e.g. erp.smlengineers.lk}"
+DOMAIN="${2:?Give the domain, e.g. smlerp.com.lk or test.smlerp.com.lk}"
 CERT_EMAIL="${3:?Give an email address for certificate notices}"
 ENV_FILE="${ENV_FILE:-/srv/sml-erp/.env.production}"
 

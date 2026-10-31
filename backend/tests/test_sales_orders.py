@@ -124,7 +124,7 @@ def test_one_click_from_an_issued_proforma(executive, won):
         lines=[proformas.LineInput(won.lines.get(), "60000")],
         customer_po="UL/PO/7781",
     )
-    proformas.issue(executive, proforma)
+    proforma = proformas.issue(executive, proforma)
     order = orders.from_proforma(executive, proforma)
     assert (order.source, order.proforma, order.quotation) == ("proforma", proforma, won)
     assert order.customer_po == "UL/PO/7781"
@@ -204,7 +204,7 @@ def test_an_order_with_an_advance_is_not_cancelled(from_quote, executive, unilev
         kind="current",
         name="Bank",
         bank_name="HNB",
-        account_number="1",
+        account_number="1000123456",
         ledger_account=ledger.pk,
     )
     advance = advances.record(

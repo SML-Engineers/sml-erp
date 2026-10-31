@@ -44,3 +44,11 @@ export function formatDecimal(value: string | null | undefined): string {
   const grouped = whole.replace("-", "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return `${sign}${grouped}${fraction !== undefined ? `.${fraction}` : ""}`;
 }
+
+/** Show a quantity without trailing zeros: "1000.000" -> "1,000", "2.500" -> "2.5". */
+export function formatQuantity(value: string | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "";
+  const [whole, fraction = ""] = String(value).split(".");
+  const kept = fraction.replace(/0+$/, "");
+  return formatDecimal(kept ? `${whole}.${kept}` : whole);
+}

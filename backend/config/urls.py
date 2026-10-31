@@ -7,6 +7,7 @@ urlpatterns = [
     path("api/v1/", include("apps.accounting.urls")),
     path("api/v1/", include("apps.vouchers.urls")),
     path("api/v1/", include("apps.payments.urls")),
+    path("api/v1/", include("apps.sales.urls")),
 ]
 
 # Django's built-in admin signs in with a password only (no two-factor), so it is available

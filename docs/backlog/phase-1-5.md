@@ -43,7 +43,7 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Quotations
 
-- [ ] **P15-03 Quotation entry** (spec 5.1, 5.5)
+- [x] **P15-03 Quotation entry** (spec 5.1, 5.5)
   Header: customer, contact, enquiry reference, division (WS or IM), currency and the
   exchange rate of the day, validity (days or date), payment terms, delivery lead time,
   Incoterm, notes. Lines: description, drawing number and revision with the drawing file,
@@ -51,7 +51,9 @@ Status: `[ ]` to do · `[x]` done
   price each. Taxes from tax codes: SSCL, then VAT on the amount plus SSCL (as on vouchers).
   - Number QL{YY}{MM}{DD}{XX} given on first save, in the saving transaction (rule 10).
   - Money is Decimal throughout; foreign-currency amounts carry the rate used and the LKR value.
-  - Status Draft; only the creator (and Sales Manager) edits a draft.
+  - Status Draft; only the creator edits a draft (the Sales Manager approves, not enters).
+  - A Sales Executive sees their own quotations; the Sales Manager, Director and Accountant
+    see all quotations of their divisions. Only production divisions (WS, IM) quote.
 
 - [ ] **P15-04 Machining costing** (spec 5.1)
   Per line, internal only: material (stock size and weight × material rate + cutting

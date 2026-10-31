@@ -1,4 +1,4 @@
-import { formatDecimal, sumDecimal } from "./decimal";
+import { formatDecimal, formatQuantity, sumDecimal } from "./decimal";
 
 test("adds money exactly, without floating-point errors", () => {
   expect(0.1 + 0.2).not.toBe(0.3); // why this exists
@@ -22,4 +22,10 @@ test("formats with thousands separators", () => {
   expect(formatDecimal("230150.00")).toBe("230,150.00");
   expect(formatDecimal("-1234567.5")).toBe("-1,234,567.5");
   expect(formatDecimal("999")).toBe("999");
+});
+
+test("quantities are shown without trailing zeros", () => {
+  expect(formatQuantity("1000.000")).toBe("1,000");
+  expect(formatQuantity("2.500")).toBe("2.5");
+  expect(formatQuantity("12")).toBe("12");
 });

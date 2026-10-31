@@ -85,7 +85,7 @@ def tax_summary(quotation: Quotation):
         for part in taxes.calculate(line.tax_code, line.amount, quotation.quote_date).lines:
             key = (part.component.code, part.rate)
             group = (
-                after if bases.get(part.component_id) == TaxCodeLine.Base.NET_AND_TAX else before
+                after if bases.get(part.component.pk) == TaxCodeLine.Base.NET_AND_TAX else before
             )
             group[key] = group.get(key, Decimal("0")) + part.amount
     return before, after

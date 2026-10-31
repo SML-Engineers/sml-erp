@@ -19,10 +19,10 @@ Rates come from the tables in force on the quotation's date and are copied onto 
 when it is saved, so a later change of rate never alters it (rule 11). Money is Decimal,
 each element rounded half-up to the cent (rule 1).
 
-Who sees the costing (owner's decision, 31 Oct 2026): the quotation's creator, the Sales
-Manager and the Director (Sales: Approve), and the Accountant (Accounting: View); not other
-Sales Executives. Only the creator changes it, while the quotation is a draft. It is never
-part of anything the customer receives.
+Who sees the costing (owner's decisions, 31 Oct 2026): the quotation's creator, the Sales
+Manager and the Director (Sales: Approve), and the Accountant (Accounting: Enter or more);
+not other Sales Executives, and not the Auditor. Only the creator changes it, while the
+quotation is a draft. It is never part of anything the customer receives.
 """
 
 from dataclasses import dataclass, field
@@ -103,7 +103,9 @@ def can_see(user: User, quotation: Quotation) -> bool:
     return (
         quotation.created_by_id == user.pk
         or access.has("sales", "approve")
-        or access.has("accounting", "view")
+        # The Accountant (Accounting: Manage); not the Auditor, who only views (owner, 31
+        # Oct 2026).
+        or access.has("accounting", "enter")
     )
 
 

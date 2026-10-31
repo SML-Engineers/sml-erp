@@ -409,6 +409,11 @@ def test_who_sees_the_costing(costed, executive, other_executive, manager, direc
     assert not costing.can_see(other_executive, costed)
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     assert not costing.can_see(clerk, costed)
+    # The Auditor reads everything else, but not the costing (owner, 31 Oct 2026).
+    auditor = person("auditor@sml.lk", "auditor", all_divisions=True)
+    assert services.visible(auditor).filter(pk=costed.pk).exists()
+    assert not costing.can_see(auditor, costed)
+    assert as_user(auditor).get(f"/api/v1/quotations/{costed.pk}/costing/").status_code == 403
 
 
 def test_the_api_gives_costing_only_to_those_who_may_see_it(

@@ -1,7 +1,7 @@
 """Quotations API (P15-03). Rules live in services.py; every endpoint checks Sales access and
 returns only quotations the user may see."""
 
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
@@ -15,7 +15,7 @@ from apps.core.models import ApprovalState, Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Customer, CustomerContact, Machine, Material
 
-from . import costing, services, workflow
+from . import costing, printing, quotation_email, services, workflow
 from .models import Quotation, QuotationFile
 from .services import BreakInput, LineInput, SalesError
 
@@ -124,6 +124,8 @@ def _detail(q: Quotation, user) -> dict:
         "can_mark_sent": workflow.can_mark_sent(user, q),
         "can_record_outcome": workflow.can_record_outcome(user, q),
         "can_revise": workflow.can_revise(user, q),
+        "can_email": quotation_email.can_email(user, q),
+        "emails": quotation_email.history(q),
         "approval": _approval(q),
         "revisions": [
             {"id": r.id, "revision": r.revision, "status": r.status, "quote_date": r.quote_date}
@@ -575,3 +577,62 @@ class QuotationReviseView(_Action):
         except SalesError as error:
             return _error(error)
         return Response(_detail(new, request.user), status=status.HTTP_201_CREATED)
+
+
+# --- Printed quotation and email (P15-07) -------------------------------------------------
+
+
+class QuotationPdfView(_Sales):
+    """The customer's copy as a PDF. Anyone who sees the quotation may print it; until the
+    Director approves it, it is marked NOT APPROVED – DRAFT."""
+
+    def get(self, request, pk):
+        quotation = _get(request.user, pk)
+        name = quotation.label.replace(" ", "-")
+        response = HttpResponse(printing.render(quotation), content_type="application/pdf")
+        disposition = "attachment" if request.query_params.get("download") else "inline"
+        response["Content-Disposition"] = f'{disposition}; filename="Quotation-{name}.pdf"'
+        return response
+
+
+class EmailInput(serializers.Serializer):
+    to = serializers.ListField(child=serializers.CharField(max_length=254), max_length=20)
+    cc = serializers.ListField(
+        child=serializers.CharField(max_length=254), max_length=20, required=False
+    )
+    subject = serializers.CharField(max_length=200)
+    body = serializers.CharField(max_length=20000)
+
+
+class QuotationEmailView(_Sales):
+    # The creator (Sales: Enter) or the Sales Manager (Sales: Approve); the service decides.
+    access_write_level = "view"
+
+    def get(self, request, pk):
+        quotation = _get(request.user, pk)
+        try:
+            return Response(quotation_email.draft(request.user, quotation))
+        except SalesError as error:
+            return _error(error)
+
+    def post(self, request, pk):
+        quotation = _get(request.user, pk)
+        data = EmailInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        values = data.validated_data
+        try:
+            record = quotation_email.send(
+                request.user,
+                quotation,
+                to=values["to"],
+                cc=values.get("cc", []),
+                subject=values["subject"],
+                body=values["body"],
+            )
+        except SalesError as error:
+            return _error(error)
+        body = _detail(Quotation.objects.get(pk=quotation.pk), request.user)
+        if record.status != "sent":
+            body["email_error"] = f"The email could not be sent: {record.error}"
+            return Response(body, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(body)

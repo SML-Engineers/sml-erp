@@ -50,6 +50,8 @@ const saved: QuotationDetail = {
   can_mark_sent: false,
   can_record_outcome: false,
   can_revise: false,
+  can_email: false,
+  emails: [],
   approval: null,
   revisions: [{ id: 12, revision: 0, status: "draft", quote_date: "2026-10-31" }],
 };
@@ -483,4 +485,48 @@ test("approvers can list the quotations waiting for them", async () => {
   fireEvent.click(await screen.findByLabelText("Waiting for my approval"));
   const table = await screen.findByRole("table", { name: "Quotations" });
   expect(await within(table).findByRole("link", { name: "QL26103101" })).toBeInTheDocument();
+});
+
+// --- Printed quotation and email (P15-07) --------------------------------------------------
+
+test("every quotation can be printed; a draft prints marked NOT APPROVED", async () => {
+  mockApi(formApi({ "GET /api/v1/quotations/12/": { body: saved } }));
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const link = await screen.findByRole("link", { name: "Print (PDF)" });
+  expect(link).toHaveAttribute("href", "/api/v1/quotations/12/pdf/");
+  expect(screen.getByText(/Prints as NOT APPROVED/)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Email to the customer" })).not.toBeInTheDocument();
+});
+
+test("an approved quotation is emailed to the customer with its PDF", async () => {
+  const approvedOne: QuotationDetail = { ...saved, status: "approved", can_edit: false, can_submit: false, is_final: true, can_email: true, can_mark_sent: true };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/": { body: approvedOne },
+    "GET /api/v1/quotations/12/email/": {
+      body: { from: "SML Engineers <sales@smlengineers.lk>", ready: true, to: ["lars@nordic.se"], cc: [], subject: "Quotation QL26103101 from SML", body: "Dear Lars," },
+    },
+    "POST /api/v1/quotations/12/email/": {
+      body: {
+        ...approvedOne,
+        status: "sent",
+        can_mark_sent: false,
+        emails: [{ to: "lars@nordic.se", cc: "", subject: "Quotation QL26103101 from SML", status: "sent", error: "", sent_at: "2026-10-31T15:00:00", by: "Sales" }],
+      },
+    },
+  });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Email to the customer" }));
+  const form = await screen.findByRole("form", { name: "Email to the customer" });
+  expect(within(form).getByLabelText("To (separate addresses with commas)")).toHaveValue("lars@nordic.se");
+  fireEvent.change(within(form).getByLabelText("Copy to"), { target: { value: "anna@nordic.se; boss@nordic.se" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Send" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/email/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/email/" && i?.method === "POST")!;
+  expect(JSON.parse(String(init!.body))).toEqual({
+    to: ["lars@nordic.se"],
+    cc: ["anna@nordic.se", "boss@nordic.se"],
+    subject: "Quotation QL26103101 from SML",
+    body: "Dear Lars,",
+  });
+  expect(await screen.findByRole("list", { name: "Emails sent" })).toHaveTextContent("lars@nordic.se");
 });

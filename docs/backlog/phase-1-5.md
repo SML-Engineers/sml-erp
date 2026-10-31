@@ -85,7 +85,7 @@ Status: `[ ]` to do · `[x]` done
   - A sent quotation is never edited; a change is a new revision.
   - Win / loss reasons are kept for the sales reports.
 
-- [ ] **P15-07 Printed quotation and email** (spec 5.1, 3B)
+- [x] **P15-07 Printed quotation and email** (spec 5.1, 3B)
   PDF in the layout of the owner's current quotation, improved: letterhead, QUOTATION, Our
   Ref, date, customer name and address, lines (description, quantity, unit price, total),
   quantity breaks, SSCL and subtotal, VAT and rate, total in the quotation's currency (and
@@ -154,5 +154,5 @@ Status: `[ ]` to do · `[x]` done
 9. **Tooling** is charged once on its own quotation line, spread over a quantity, or owned
    by the customer (P15-05).
 
-Still awaited: a sample of the current quotation and proforma, to copy the layout and wording
-(P15-07, P15-08).
+Samples received 31 Oct 2026: quotation QL26061501, proforma PI191120-02 and purchase order
+PO26061701 (for the purchasing phase). The printed quotation follows QL26061501 (P15-07).

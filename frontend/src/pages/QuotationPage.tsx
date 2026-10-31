@@ -573,8 +573,12 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
   const [note, setNote] = useState("");
   const done = (latest: QuotationDetail) => {
     queryClient.setQueryData([...quotationsKey, "one", String(latest.id)], latest);
-    void queryClient.invalidateQueries({ queryKey: quotationsKey });
-    if (latest.id !== quotation.id) navigate(`/quotations/${latest.id}`);
+    // The answer is the quotation as it now is; only the lists need fetching again.
+    void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "list"] });
+    if (latest.id !== quotation.id) {
+      void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "one", String(quotation.id)] });
+      navigate(`/quotations/${latest.id}`);
+    }
   };
   const act = useMutation({ mutationFn: (call: () => Promise<QuotationDetail>) => call(), onSuccess: done });
   const id = quotation.id;

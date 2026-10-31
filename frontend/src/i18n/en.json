@@ -1517,7 +1517,22 @@
     "revise": "Make a revision",
     "reviseHelp": "A new draft with the same number and the next Rev; this one is kept as it was offered.",
     "approvalHistory": "Approval history",
-    "revisions": "Revisions"
+    "revisions": "Revisions",
+    "printPdf": "Print (PDF)",
+    "printsAsDraft": "Prints as NOT APPROVED – DRAFT until the Director approves it.",
+    "email": "Email",
+    "emailToCustomer": "Email to the customer",
+    "emailForm": "Email to the customer",
+    "emailFrom": "From {{from}}. The quotation PDF is attached.",
+    "emailNotReady": "Document email is not set up yet: ask the Admin (Settings → Document email).",
+    "emailTo": "To (separate addresses with commas)",
+    "emailCc": "Copy to",
+    "emailSubject": "Subject",
+    "emailBody": "Message",
+    "emailAttachment": "The quotation PDF is attached. Sending it marks the quotation Sent.",
+    "sendEmail": "Send",
+    "cancel": "Cancel",
+    "emailsSent": "Emails sent"
   },
   "quoteCosting": {
     "open": "Costing",

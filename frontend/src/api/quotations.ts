@@ -80,6 +80,9 @@ export interface QuotationDetail extends QuotationSummary {
   can_mark_sent: boolean;
   can_record_outcome: boolean;
   can_revise: boolean;
+  /** Approved and the user is its creator or the Sales Manager (P15-07). */
+  can_email: boolean;
+  emails: { to: string; cc: string; subject: string; status: "sent" | "failed"; error: string; sent_at: string; by: string }[];
   approval: {
     status: "in_progress" | "approved" | "returned" | "rejected" | "withdrawn";
     /** The role the quotation waits for, e.g. "Director"; empty when nothing waits. */
@@ -316,3 +319,19 @@ export const markQuotationSent = (id: number) => apiSend<QuotationDetail>("POST"
 export const recordOutcome = (id: number, outcome: "accepted" | "lost", reason: string, note: string) =>
   apiSend<QuotationDetail>("POST", `/quotations/${id}/outcome/`, { outcome, reason, note });
 export const reviseQuotation = (id: number) => apiSend<QuotationDetail>("POST", `/quotations/${id}/revise/`, {});
+
+// --- Printed quotation and email (P15-07) ------------------------------------------------
+
+export interface EmailDraft {
+  from: string;
+  ready: boolean;
+  to: string[];
+  cc: string[];
+  subject: string;
+  body: string;
+}
+
+export const quotationPdfUrl = (id: number) => `${API_BASE}/quotations/${id}/pdf/`;
+export const getQuotationEmail = (id: number) => apiGet<EmailDraft>(`/quotations/${id}/email/`);
+export const sendQuotationEmail = (id: number, message: { to: string[]; cc: string[]; subject: string; body: string }) =>
+  apiSend<QuotationDetail>("POST", `/quotations/${id}/email/`, message);

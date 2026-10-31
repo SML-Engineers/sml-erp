@@ -11,7 +11,10 @@ import {
   createQuotation,
   getQuotation,
   markQuotationSent,
+  getQuotationEmail,
   OUTCOME_REASONS,
+  quotationPdfUrl,
+  sendQuotationEmail,
   recordOutcome,
   returnQuotation,
   reviseQuotation,
@@ -75,6 +78,15 @@ export default function QuotationPage() {
           {t(`quotations.statuses.${data.status}`)} · {data.division} · {data.quote_date} · {t("vouchers.createdBy", { name: data.created_by })}
         </p>
       )}
+      {data && (
+        <p>
+          <a className="button-link secondary" href={quotationPdfUrl(data.id)} target="_blank" rel="noreferrer">
+            {t("quotations.printPdf")}
+          </a>{" "}
+          {!data.is_final && <span className="muted">{t("quotations.printsAsDraft")}</span>}
+        </p>
+      )}
+      {data && (data.can_email || data.emails.length > 0) && <EmailPanel key={`email-${data.id}`} quotation={data} />}
       {data?.can_see_costing && (
         <p>
           <Link className="button-link" to={`/quotations/${data.id}/costing`}>
@@ -722,6 +734,97 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
             </span>
           ))}
         </p>
+      )}
+    </section>
+  );
+}
+
+/** Email the approved quotation to the customer with its PDF (spec 3B; P15-07). */
+function EmailPanel({ quotation }: { quotation: QuotationDetail }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState({ to: "", cc: "", subject: "", body: "" });
+  const [from, setFrom] = useState("");
+  const load = useMutation({
+    mutationFn: () => getQuotationEmail(quotation.id),
+    onSuccess: (draft) => {
+      setMessage({ to: draft.to.join(", "), cc: draft.cc.join(", "), subject: draft.subject, body: draft.body });
+      setFrom(draft.ready ? draft.from : "");
+      setOpen(true);
+    },
+  });
+  const split = (value: string) =>
+    value
+      .split(/[,;]/)
+      .map((a) => a.trim())
+      .filter(Boolean);
+  const send = useMutation({
+    mutationFn: () =>
+      sendQuotationEmail(quotation.id, { to: split(message.to), cc: split(message.cc), subject: message.subject, body: message.body }),
+    onSuccess: (latest) => {
+      queryClient.setQueryData([...quotationsKey, "one", String(latest.id)], latest);
+      void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "list"] });
+      setOpen(false);
+    },
+  });
+  const set = (field: keyof typeof message) => (value: string) => setMessage((now) => ({ ...now, [field]: value }));
+
+  return (
+    <section className="panel" aria-label={t("quotations.email")}>
+      <h2>{t("quotations.email")}</h2>
+      {quotation.can_email && !open && (
+        <button type="button" disabled={load.isPending} onClick={() => load.mutate()}>
+          {t("quotations.emailToCustomer")}
+        </button>
+      )}
+      {open && (
+        <form
+          className="form-grid"
+          aria-label={t("quotations.emailForm")}
+          onSubmit={(e) => {
+            e.preventDefault();
+            send.mutate();
+          }}
+        >
+          {from ? <p className="muted wide">{t("quotations.emailFrom", { from })}</p> : <p className="form-error wide">{t("quotations.emailNotReady")}</p>}
+          <label className="wide">
+            {t("quotations.emailTo")}
+            <input value={message.to} required onChange={(e) => set("to")(e.target.value)} />
+          </label>
+          <label className="wide">
+            {t("quotations.emailCc")}
+            <input value={message.cc} onChange={(e) => set("cc")(e.target.value)} />
+          </label>
+          <label className="wide">
+            {t("quotations.emailSubject")}
+            <input value={message.subject} maxLength={200} required onChange={(e) => set("subject")(e.target.value)} />
+          </label>
+          <label className="wide">
+            {t("quotations.emailBody")}
+            <textarea rows={8} value={message.body} required onChange={(e) => set("body")(e.target.value)} />
+          </label>
+          <p className="muted wide">{t("quotations.emailAttachment")}</p>
+          <div className="wide">
+            <button type="submit" disabled={send.isPending || !from}>
+              {t("quotations.sendEmail")}
+            </button>{" "}
+            <button type="button" className="secondary" onClick={() => setOpen(false)}>
+              {t("quotations.cancel")}
+            </button>
+          </div>
+        </form>
+      )}
+      <ErrorLine error={load.error ?? send.error} />
+      {quotation.emails.length > 0 && (
+        <ul className="changes" aria-label={t("quotations.emailsSent")}>
+          {quotation.emails.map((m, i) => (
+            <li key={i}>
+              {m.status === "sent" ? "✓" : "✗"} {m.sent_at.slice(0, 16).replace("T", " ")} · {m.to} · {m.by}
+              {m.error && ` · ${m.error}`}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

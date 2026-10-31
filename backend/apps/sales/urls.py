@@ -71,4 +71,6 @@ urlpatterns = [
         advance_views.AdvanceReceiptView.as_view(),
         name="advance-receipt",
     ),
+    path("quotations/<int:pk>/pdf/", views.QuotationPdfView.as_view(), name="quotation-pdf"),
+    path("quotations/<int:pk>/email/", views.QuotationEmailView.as_view(), name="quotation-email"),
 ]

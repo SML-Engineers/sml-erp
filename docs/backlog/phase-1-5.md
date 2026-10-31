@@ -130,12 +130,21 @@ Status: `[ ]` to do · `[x]` done
     orders are added with P15-08 and P15-10. The Cashier needs the new "Record customer
     receipts" action (given to the Cashier role, core migration 0017).
 
-- [ ] **P15-10 Sales orders** (spec 5.3)
+- [x] **P15-10 Sales orders** (spec 5.3)
   Created from an accepted quotation or a proforma, or entered directly for a repeat order:
   customer PO number and date, agreed prices, delivery schedule (several dates and quantities
   per line for moulding call-offs). Status: Open, Partly delivered (from Phase 2), Completed,
   Cancelled (reason). One click from a proforma.
   - Every document links back to the one it came from, and forward to those made from it.
+  - Done: numbered SO{YY}{MM}{DD}{XX} (SO26103101), daily. Prices come from the quotation
+    (its quantity breaks apply); only a repeat order typed in has typed prices, and the
+    Director approves it before it is open. Confirming needs the customer's PO number; after
+    that the order never changes (database guard). The deliveries of a line must add up to its
+    quantity. Cancelling needs a reason and is refused once an approved advance stands against
+    the order. Advances can be recorded against an open order. An order posts nothing to the
+    accounts. Partly delivered is set by deliveries in Phase 2.
+  - Waiting for the owner to confirm (built this way meanwhile): the number format, and the
+    Director's approval of repeat orders typed in.
 
 ## D. Reports and go-live
 

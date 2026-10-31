@@ -1,5 +1,6 @@
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { EmailDraft, QuotationDetail } from "./quotations";
+import type { SalesOrderStatus } from "./salesOrders";
 
 export type ProformaStatus = "draft" | "issued" | "cancelled";
 
@@ -80,6 +81,8 @@ export interface ProformaDetail extends ProformaSummary {
   can_email: boolean;
   emails: { to: string; subject: string; status: "sent" | "failed"; error: string; sent_at: string; by: string }[];
   advances: { id: number; number: string; status: string; amount: string }[];
+  can_make_sales_order: boolean;
+  sales_orders: { id: number; number: string; status: SalesOrderStatus }[];
 }
 
 export type ProformaLineInput = { quotation_line: number; quantity: string } & Partial<Record<PackingField, string>>;

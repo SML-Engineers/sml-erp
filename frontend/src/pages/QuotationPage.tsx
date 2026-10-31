@@ -28,7 +28,9 @@ import {
   type QuotationDetail,
 } from "../api/quotations";
 import { createProforma } from "../api/proformas";
+import { orderFromQuotation } from "../api/salesOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
+import OrderLinks from "../components/OrderLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 
@@ -89,6 +91,9 @@ export default function QuotationPage() {
       )}
       {data && (data.can_email || data.emails.length > 0) && <EmailPanel key={`email-${data.id}`} quotation={data} />}
       {data && (data.can_make_proforma || data.proformas.length > 0) && <ProformaLinks quotation={data} />}
+      {data && (data.can_make_sales_order || data.sales_orders.length > 0) && (
+        <OrderLinks orders={data.sales_orders} canMake={data.can_make_sales_order} make={() => orderFromQuotation(data.id)} />
+      )}
       {data?.can_see_costing && (
         <p>
           <Link className="button-link" to={`/quotations/${data.id}/costing`}>

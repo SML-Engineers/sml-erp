@@ -131,6 +131,9 @@ def _detail(q: Quotation, user) -> dict:
         "can_make_proforma": q.status == Quotation.Status.ACCEPTED
         and q.created_by_id == user.pk
         and services.can_enter(user),
+        "can_make_sales_order": q.status == Quotation.Status.ACCEPTED
+        and q.created_by_id == user.pk
+        and services.can_enter(user),
         "proformas": [
             {"id": p.id, "number": p.number, "status": p.status}
             for p in proformas.visible(user).filter(quotation=q)

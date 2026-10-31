@@ -52,6 +52,8 @@ const saved: QuotationDetail = {
   can_revise: false,
   can_email: false,
   can_make_proforma: false,
+  can_make_sales_order: false,
+  sales_orders: [],
   proformas: [],
   emails: [],
   approval: null,

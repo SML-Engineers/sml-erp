@@ -18,6 +18,8 @@ import {
   type PackingField,
   type ProformaDetail,
 } from "../api/proformas";
+import { orderFromProforma } from "../api/salesOrders";
+import OrderLinks from "../components/OrderLinks";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -61,6 +63,9 @@ export default function ProformaPage() {
           <p className="muted">{t("proformas.noSale")}</p>
           {data.can_edit ? <ProformaForm key={`${data.id}-${data.total_amount}`} proforma={data} /> : <ReadOnly proforma={data} />}
           <Actions proforma={data} />
+          {(data.can_make_sales_order || data.sales_orders.length > 0) && (
+            <OrderLinks orders={data.sales_orders} canMake={data.can_make_sales_order} make={() => orderFromProforma(data.id)} />
+          )}
         </>
       )}
       <ErrorLine error={proforma.error} />

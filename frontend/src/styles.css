@@ -1396,3 +1396,13 @@ dl.details dd {
     margin-bottom: 0.4rem;
   }
 }
+
+/* Small figures in a row, e.g. counts by status above a report (P15-11). */
+ul.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}

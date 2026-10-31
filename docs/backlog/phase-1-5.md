@@ -148,11 +148,17 @@ Status: `[ ]` to do · `[x]` done
 
 ## D. Reports and go-live
 
-- [ ] **P15-11 Sales reports and dashboard**
+- [x] **P15-11 Sales reports and dashboard**
   Quotation register (by status, customer, division, salesperson), win / loss with reasons,
   quotations awaiting approval and expiring this week, open sales orders and their delivery
   dates, advances received and not yet set off. Excel and PDF (P1-08 pattern); sales tiles on
   the dashboard. A user sees only their divisions (and a Sales Executive their own quotations).
+  - Done: Sales → Sales reports, five tabs, each with Excel and PDF. Win rate by number and
+    by value, per reason and per salesperson. "Expiring this week" means approved or sent
+    quotations whose validity ends within 7 days. Open orders are listed per delivery, overdue
+    ones in red. A Sales Executive sees advances against their own documents; the Sales
+    Manager and the payments roles see all of their divisions. Sales tiles on the home page
+    for anyone with Sales: View.
 
 - [ ] **P15-12 User acceptance testing and go-live**
   Sales staff and the Director run test scripts for each role on the test server; the owner

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { getHealth } from "../api/health";
+import SalesDashboard from "../components/SalesDashboard";
 import VouchersDashboard from "../components/VouchersDashboard";
 
 /** The dashboard. Each module adds its summary tiles here as it is built. */
@@ -27,6 +28,7 @@ export default function HomePage({ user }: { user: CurrentUser }) {
         )}
       </section>
       {can(user.access, "vouchers", "view") && <VouchersDashboard me={user} />}
+      {can(user.access, "sales", "view") && <SalesDashboard />}
     </main>
   );
 }

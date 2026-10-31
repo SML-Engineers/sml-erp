@@ -143,8 +143,8 @@ Status: `[ ]` to do · `[x]` done
     quantity. Cancelling needs a reason and is refused once an approved advance stands against
     the order. Advances can be recorded against an open order. An order posts nothing to the
     accounts. Partly delivered is set by deliveries in Phase 2.
-  - Waiting for the owner to confirm (built this way meanwhile): the number format, and the
-    Director's approval of repeat orders typed in.
+  - The number format and the Director's approval of repeat orders were confirmed by the owner
+    (decisions 12 and 13).
 
 ## D. Reports and go-live
 
@@ -178,6 +178,11 @@ Status: `[ ]` to do · `[x]` done
 10. **Proforma numbers** keep the old style, the date and the number of the day:
     PI{YY}{MM}{DD}-{XX}, e.g. PI261031-01 (P15-08).
 11. **Discount**: an optional discount % on both quotations and proformas (P15-07b, P15-08).
+12. **Sales order numbers** follow the quotations: SO{YY}{MM}{DD}{XX}, e.g. SO26103101
+    (P15-10).
+13. **Repeat orders typed in** without a quotation are allowed for the Sales Executive; the
+    Director approves the order before it is open, so typed prices never reach the customer
+    unchecked (P15-10).
 
 Samples received 31 Oct 2026: quotation QL26061501, proforma PI191120-02 and purchase order
 PO26061701 (for the purchasing phase). The printed quotation follows QL26061501 (P15-07).

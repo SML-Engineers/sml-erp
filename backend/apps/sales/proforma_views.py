@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from apps.core.permissions import AreaAccess
 from apps.masters.models import CompanyAccount
 
-from . import proforma_email, proforma_printing, proformas
+from . import orders, proforma_email, proforma_printing, proformas, services
 from .models import ProformaInvoice, QuotationLine
 from .services import SalesError
 from .services import visible as visible_quotations
@@ -143,6 +143,13 @@ def _detail(p: ProformaInvoice, user) -> dict:
             {"id": a.id, "number": a.number, "status": a.status, "amount": str(a.amount)}
             for a in p.advances.all()
         ],
+        "sales_orders": [
+            {"id": o.id, "number": o.number, "status": o.status}
+            for o in orders.visible(user).filter(proforma=p)
+        ],
+        "can_make_sales_order": p.status == ProformaInvoice.Status.ISSUED
+        and services.can_enter(user)
+        and p.created_by_id == user.pk,
     }
     return body
 

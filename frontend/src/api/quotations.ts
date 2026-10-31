@@ -1,5 +1,7 @@
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
+import type { SalesOrderStatus } from "./salesOrders";
+
 export type QuotationStatus = "draft" | "awaiting_approval" | "approved" | "sent" | "accepted" | "lost" | "expired" | "revised";
 
 export interface QuotationSummary {
@@ -87,6 +89,8 @@ export interface QuotationDetail extends QuotationSummary {
   /** Approved and the user is its creator or the Sales Manager (P15-07). */
   can_email: boolean;
   can_make_proforma: boolean;
+  can_make_sales_order: boolean;
+  sales_orders: { id: number; number: string; status: SalesOrderStatus }[];
   proformas: { id: number; number: string; status: "draft" | "issued" | "cancelled" }[];
   emails: { to: string; cc: string; subject: string; status: "sent" | "failed"; error: string; sent_at: string; by: string }[];
   approval: {

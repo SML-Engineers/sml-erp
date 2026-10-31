@@ -105,6 +105,7 @@ function NewAdvance() {
   const [values, setValues] = useState({
     customer: "",
     proforma: "",
+    sales_order: "",
     quotation: "",
     division: "",
     account: "",
@@ -128,7 +129,8 @@ function NewAdvance() {
         customer: Number(values.customer),
         quotation: values.quotation ? Number(values.quotation) : null,
         proforma: values.proforma ? Number(values.proforma) : null,
-        division: values.quotation || values.proforma ? "" : values.division,
+        sales_order: values.sales_order ? Number(values.sales_order) : null,
+        division: values.quotation || values.proforma || values.sales_order ? "" : values.division,
         account: Number(values.account),
         method: values.method,
         amount: values.amount,
@@ -155,10 +157,24 @@ function NewAdvance() {
           label={t("quotations.customer")}
           options={(options.data?.customers ?? []).map((c) => ({ value: String(c.id), label: `${c.code} ${c.name}` }))}
           value={values.customer}
-          onChange={(value) => setValues((now) => ({ ...now, customer: value, quotation: "", proforma: "" }))}
+          onChange={(value) => setValues((now) => ({ ...now, customer: value, quotation: "", proforma: "", sales_order: "" }))}
         />
       </div>
-      {customer && customer.proformas.length > 0 && (
+      {customer && (customer.sales_orders ?? []).length > 0 && (
+        <label>
+          {t("advances.againstSalesOrder")}
+          <select value={values.sales_order} onChange={(e) => setValues((now) => ({ ...now, sales_order: e.target.value, proforma: "", quotation: "" }))}>
+            <option value="">{t("advances.noSalesOrder")}</option>
+            {customer.sales_orders.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.number}
+                {o.customer_po ? ` / ${o.customer_po}` : ""} ({o.currency} {formatDecimal(o.total_amount)})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {customer && customer.proformas.length > 0 && !values.sales_order && (
         <label>
           {t("advances.againstProforma")}
           <select value={values.proforma} onChange={(e) => setValues((now) => ({ ...now, proforma: e.target.value, quotation: "" }))}>
@@ -171,7 +187,7 @@ function NewAdvance() {
           </select>
         </label>
       )}
-      {!values.proforma && (
+      {!values.proforma && !values.sales_order && (
       <label>
         {t("advances.againstQuotation")}
         <select value={values.quotation} onChange={(e) => set("quotation")(e.target.value)}>
@@ -184,7 +200,7 @@ function NewAdvance() {
         </select>
       </label>
       )}
-      {!values.quotation && !values.proforma && (
+      {!values.quotation && !values.proforma && !values.sales_order && (
         <label>
           {t("vouchers.division")}
           <select value={values.division} onChange={(e) => set("division")(e.target.value)}>

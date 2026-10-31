@@ -21,6 +21,8 @@ import AdvancesPage from "./pages/AdvancesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import ProformaPage from "./pages/ProformaPage";
 import ProformasPage from "./pages/ProformasPage";
+import SalesOrderPage from "./pages/SalesOrderPage";
+import SalesOrdersPage from "./pages/SalesOrdersPage";
 import PayPage from "./pages/PayPage";
 import JournalPage from "./pages/JournalPage";
 import PeriodsPage from "./pages/PeriodsPage";
@@ -96,6 +98,8 @@ export default function App() {
         <Route path="quotations/:id/costing" element={<QuotationCostingPage />} />
         <Route path="proformas" element={<ProformasPage />} />
         <Route path="proformas/:id" element={<ProformaPage />} />
+        <Route path="sales-orders" element={<WithMe page={(me) => <SalesOrdersPage me={me} />} />} />
+        <Route path="sales-orders/:id" element={<SalesOrderPage />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
         <Route
           path="chart-of-accounts"

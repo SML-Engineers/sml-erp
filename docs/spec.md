@@ -770,6 +770,10 @@ Minimum order quantity is stated on each line.
 
 - Created from an accepted quotation or proforma, or entered directly for repeat orders.
 - Holds the customer's PO number, delivery schedule (several dates for moulding call-offs) and the agreed price.
+- Numbered SO{YY}{MM}{DD}{XX}, e.g. SO26103101. Prices come from the quotation or proforma; a repeat order entered directly has typed prices and is approved by the Director before it is open.
+- Confirming needs the customer's PO number; a confirmed order is never changed, and the delivery dates of each line add up to its quantity.
+- Status: Draft, Waiting for the Director (repeat orders), Open, Partly delivered (from Phase 2 deliveries), Completed, Cancelled (with a reason; not once an approved advance stands against it).
+- An order records no sale and posts nothing; customer advances may be recorded against it.
 - In Phase 3, a sales order line generates a machining job order or a moulding production requirement.
 
 ### 5.4 Added tables

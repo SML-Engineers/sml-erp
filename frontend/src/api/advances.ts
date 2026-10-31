@@ -11,6 +11,7 @@ export interface AdvanceRow {
   customer: { id: number; code: string; name: string };
   quotation: { id: number; label: string } | null;
   proforma: { id: number; number: string } | null;
+  sales_order: { id: number; number: string } | null;
   division: string;
   currency: string;
   /** Decimals as text, e.g. "75000.00". */
@@ -44,6 +45,7 @@ export interface AdvanceOptions {
     name: string;
     quotations: { id: number; label: string; division: number; currency: string; total_amount: string }[];
     proformas: { id: number; number: string; currency: string; total_amount: string; advance_amount: string }[];
+    sales_orders: { id: number; number: string; customer_po: string; currency: string; total_amount: string }[];
   }[];
   divisions: { code: string; name: string }[];
   accounts: { id: number; code: string; name: string; kind: string; currency: string }[];
@@ -53,6 +55,7 @@ export interface AdvanceInput {
   customer: number;
   quotation: number | null;
   proforma: number | null;
+  sales_order?: number | null;
   division: string;
   account: number;
   method: ReceiptMethod;

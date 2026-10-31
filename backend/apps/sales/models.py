@@ -432,6 +432,13 @@ class CustomerAdvance(models.Model):
         on_delete=models.PROTECT,
         related_name="advances",
     )
+    sales_order = models.ForeignKey(
+        "SalesOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="advances",
+    )
     division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
     receipt_date = models.DateField()
     account = models.ForeignKey(
@@ -609,3 +616,152 @@ class ProformaLine(models.Model):
     @property
     def net(self):
         return self.amount - self.discount
+
+
+# --- Sales orders (P15-10, spec 5.3) -----------------------------------------------------
+
+
+class SalesOrder(models.Model):
+    """The customer's confirmed order: made from an accepted quotation or an issued proforma
+    (prices carried over), or entered directly for a repeat order (then approved by the
+    Director before it is confirmed). Holds the customer's PO number and a delivery schedule
+    per line (several dates and quantities for moulding call-offs). In Phase 3 a line makes
+    a job order or a moulding production requirement; in Phase 2 deliveries and invoices."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Awaiting approval"
+        OPEN = "open", "Open"
+        PARTLY_DELIVERED = "partly_delivered", "Partly delivered"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Source(models.TextChoices):
+        QUOTATION = "quotation", "Quotation"
+        PROFORMA = "proforma", "Proforma invoice"
+        DIRECT = "direct", "Repeat order, entered directly"
+
+    number = models.CharField(max_length=30, unique=True)
+    source = models.CharField(max_length=10, choices=Source.choices)
+    quotation = models.ForeignKey(
+        Quotation, null=True, blank=True, on_delete=models.PROTECT, related_name="sales_orders"
+    )
+    proforma = models.ForeignKey(
+        ProformaInvoice,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="sales_orders",
+    )
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="sales_orders"
+    )
+    contact = models.ForeignKey(
+        "masters.CustomerContact", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    order_date = models.DateField()
+    customer_po = models.CharField("Customer's PO no.", max_length=50, blank=True)
+    po_date = models.DateField("Customer's PO date", null=True, blank=True)
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
+    rate_date = models.DateField(null=True, blank=True)
+    payment_terms = models.CharField(max_length=200, blank=True)
+    incoterm = models.CharField("Delivery term", max_length=3, blank=True)
+    delivery_address = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    discount_pct = models.DecimalField("Discount %", max_digits=5, decimal_places=2, default=0)
+    discount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    tax_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_lkr = models.DecimalField("Total (LKR)", max_digits=18, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    cancel_reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-order_date", "-number"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(exchange_rate__gt=0)
+                & models.Q(discount_pct__gte=0)
+                & models.Q(discount_pct__lt=100),
+                name="sales_order_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class SalesOrderLine(models.Model):
+    is_structure = True
+
+    order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    quotation_line = models.ForeignKey(
+        QuotationLine,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="sales_order_lines",
+    )
+    description = models.TextField()
+    drawing_no = models.CharField(max_length=50, blank=True)
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    unit = models.CharField(max_length=20, default="pcs")
+    unit_price = models.DecimalField(max_digits=18, decimal_places=2)
+    is_tooling = models.BooleanField(default=False)
+    tax_code = models.ForeignKey(
+        "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    discount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["order", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["order", "line_no"], name="sales_order_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0) & models.Q(unit_price__gte=0),
+                name="sales_order_line_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.order.number} line {self.line_no}"
+
+    @property
+    def net(self):
+        return self.amount - self.discount
+
+
+class DeliverySchedule(models.Model):
+    """When a line is to be delivered: one date for the whole quantity, or several (moulding
+    call-offs). The quantities add up to the line's quantity."""
+
+    is_structure = True
+
+    line = models.ForeignKey(SalesOrderLine, on_delete=models.CASCADE, related_name="schedule")
+    seq = models.PositiveSmallIntegerField()
+    due_date = models.DateField()
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+
+    class Meta:
+        ordering = ["line", "due_date", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["line", "seq"], name="sales_schedule_seq"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="sales_schedule_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.quantity} by {self.due_date}"

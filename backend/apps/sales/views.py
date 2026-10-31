@@ -15,7 +15,7 @@ from apps.core.models import ApprovalState, Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Customer, CustomerContact, Machine, Material
 
-from . import costing, printing, proformas, quotation_email, services, workflow
+from . import costing, orders, printing, proformas, quotation_email, services, workflow
 from .models import Quotation, QuotationFile
 from .services import BreakInput, LineInput, SalesError
 
@@ -131,9 +131,16 @@ def _detail(q: Quotation, user) -> dict:
         "can_make_proforma": q.status == Quotation.Status.ACCEPTED
         and q.created_by_id == user.pk
         and services.can_enter(user),
+        "can_make_sales_order": q.status == Quotation.Status.ACCEPTED
+        and q.created_by_id == user.pk
+        and services.can_enter(user),
         "proformas": [
             {"id": p.id, "number": p.number, "status": p.status}
             for p in proformas.visible(user).filter(quotation=q)
+        ],
+        "sales_orders": [
+            {"id": o.id, "number": o.number, "status": o.status}
+            for o in orders.visible(user).filter(quotation=q)
         ],
         "emails": quotation_email.history(q),
         "approval": _approval(q),

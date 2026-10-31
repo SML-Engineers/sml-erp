@@ -27,6 +27,8 @@ const draft: ProformaDetail = {
   can_email: false,
   emails: [],
   advances: [],
+  can_make_sales_order: false,
+  sales_orders: [],
 };
 
 test("the creator fills in the packing list, bank and advance, then issues", async () => {
@@ -73,4 +75,17 @@ test("an issued proforma is cancelled with a reason", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Cancel the proforma" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/proformas/40/cancel/", expect.objectContaining({ method: "POST" })));
   expect(await screen.findByText("Cancelled: Order changed")).toBeInTheDocument();
+});
+
+test("an issued proforma makes a sales order in one click", async () => {
+  const issued: ProformaDetail = { ...draft, status: "issued", can_edit: false, can_make_sales_order: true };
+  const calls = mockApi({
+    "GET /api/v1/proformas/40/": { body: issued },
+    "POST /api/v1/sales-orders/": { status: 201, body: { id: 51 } },
+  });
+  renderAt("/proformas/40", <ProformaPage />, "/proformas/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Make a sales order" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/sales-orders/", expect.objectContaining({ method: "POST", body: JSON.stringify({ proforma: 40 }) })),
+  );
 });

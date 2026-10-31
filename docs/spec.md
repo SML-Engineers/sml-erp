@@ -540,7 +540,7 @@ A return at either level sends the voucher back to the clerk, and approval resta
 3. Upload scanned invoices (PDF, JPG, PNG; multiple files; drag and drop, or camera on a phone).
 4. Save as draft or submit.
 
-The system warns if the same supplier and invoice number already exist in any voucher, and if an uploaded file is identical (same hash) to one already in the system.
+The system **refuses** the same supplier and invoice number (ignoring case and spaces) if it is already on another voucher, checked by the service and by the database; the same number from a different supplier is accepted, and a deleted, rejected, amended or cancelled voucher frees its invoices (owner's decision, 31 Oct 2026). It warns if an uploaded file is identical (same hash) to one already in the system.
 
 **Accountant: review**
 

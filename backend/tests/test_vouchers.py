@@ -15,7 +15,7 @@ from apps.core import approvals
 from apps.core.models import ApprovalState, Division, Notification
 from apps.masters.models import CompanyAccount, Currency, Supplier
 from apps.vouchers import services
-from apps.vouchers.models import Voucher, VoucherAttachment, VoucherType
+from apps.vouchers.models import Voucher, VoucherAttachment, VoucherLine, VoucherType
 from apps.vouchers.services import LineInput, VoucherError
 
 from .test_access import as_user, person
@@ -178,17 +178,35 @@ def test_only_its_creator_changes_a_draft_and_the_division_stays(clerk, accounta
         draft(director, supplier)
 
 
-def test_the_same_supplier_invoice_on_another_voucher_is_flagged(clerk, supplier):
+def test_the_same_supplier_invoice_cannot_be_entered_twice(clerk, supplier):
+    """Owner's decision (31 Oct 2026): supplier + invoice number is unique, ignoring case and
+    spaces; another supplier may use the same number; a deleted voucher frees it."""
     first = draft(clerk, supplier, LineInput(amount="10.00", invoice_no="INV-77"))
-    second = draft(clerk, supplier, LineInput(amount="10.00", invoice_no="inv-77"))
-    assert services.duplicate_invoices(second) == [
-        f"Invoice inv-77 of this payee is already on voucher {first.number}."
-    ]
+    with pytest.raises(VoucherError, match=f"already on voucher {first.number}"):
+        draft(clerk, supplier, LineInput(amount="10.00", invoice_no="inv - 77"))
     other = payee("Other Ltd", code="S0009")
-    assert (
-        services.duplicate_invoices(draft(clerk, other, LineInput(amount="1", invoice_no="INV-77")))
-        == []
+    draft(clerk, other, LineInput(amount="1", invoice_no="INV-77"))
+    # The same invoice twice on one voucher (two lines of one bill) is fine.
+    services.save(
+        clerk,
+        first,
+        voucher_type=first.voucher_type,
+        payee=supplier,
+        lines=[
+            LineInput(amount="10.00", invoice_no="INV-77"),
+            LineInput(amount="5.00", invoice_no="INV-77"),
+        ],
     )
+    services.delete(clerk, first, "Entered by mistake")
+    draft(clerk, supplier, LineInput(amount="10.00", invoice_no="INV-77"))  # freed
+
+
+def test_the_database_refuses_a_duplicate_supplier_invoice(clerk, supplier):
+    first = draft(clerk, supplier, LineInput(amount="10.00", invoice_no="INV-88"))
+    second = draft(clerk, supplier, LineInput(amount="10.00", invoice_no="INV-89"))
+    with pytest.raises(DatabaseError, match="already on voucher"), transaction.atomic():
+        VoucherLine.objects.filter(voucher=second).update(invoice_no="inv88")
+    assert first.lines.count() == 1
 
 
 # --- Attachments ------------------------------------------------------------------------

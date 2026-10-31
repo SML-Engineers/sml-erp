@@ -359,7 +359,15 @@ def save(
         voucher.payee = payee
         voucher.transfer_to = transfer_to
         voucher.description = (description or "").strip()[:500]
+        if payee is not None:
+            # One at a time per supplier, so two clerks cannot enter the same invoice at once.
+            Supplier.objects.select_for_update().filter(pk=payee.pk).first()
         new_lines = _lines(voucher, list(lines))
+        clashes = duplicate_invoices(voucher, new_lines)
+        if clashes:
+            raise VoucherError(
+                " ".join(clashes) + " The same supplier invoice cannot be entered twice."
+            )
         voucher.total_amount = sum((line.total for line in new_lines), Decimal("0"))
         voucher.save()
         coding = {
@@ -375,27 +383,38 @@ def save(
         return voucher
 
 
-def duplicate_invoices(voucher: Voucher) -> list[str]:
-    """Warnings: the same payee and invoice number on another voucher (spec 4.4)."""
+# A supplier invoice on these vouchers no longer counts: it may be entered again.
+INVOICE_FREED = (
+    Voucher.Status.DELETED,
+    Voucher.Status.REJECTED,
+    Voucher.Status.AMENDED,
+    Voucher.Status.CANCELLED,
+)
+
+
+def invoice_key(invoice_no: str) -> str:
+    """The same invoice however it is typed: case and spaces are ignored ("inv 77" = "INV77")."""
+    return re.sub(r"\s+", "", invoice_no or "").upper()
+
+
+def duplicate_invoices(voucher: Voucher, lines=None) -> list[str]:
+    """The same supplier and invoice number on another voucher (spec 4.4). Refused on saving
+    (owner's decision, 31 Oct 2026); also checked by the database."""
     if voucher.payee_id is None:
         return []
+    others = VoucherLine.objects.filter(voucher__payee_id=voucher.payee_id).exclude(invoice_no="")
+    if voucher.pk:
+        others = others.exclude(voucher_id=voucher.pk)
+    others = list(others.exclude(voucher__status__in=INVOICE_FREED).select_related("voucher"))
     warnings = []
-    for line in voucher.lines.exclude(invoice_no=""):
-        others = (
-            VoucherLine.objects.filter(
-                voucher__payee_id=voucher.payee_id, invoice_no__iexact=line.invoice_no
-            )
-            .exclude(voucher=voucher)
-            .exclude(
-                voucher__status__in=[
-                    Voucher.Status.DELETED,
-                    Voucher.Status.REJECTED,
-                    Voucher.Status.AMENDED,
-                ]
-            )
-            .select_related("voucher")
-        )
-        numbers = sorted({o.voucher.number for o in others})
+    mine = lines if lines is not None else list(voucher.lines.all())
+    seen = set()
+    for line in mine:
+        key = invoice_key(line.invoice_no)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        numbers = sorted({o.voucher.number for o in others if invoice_key(o.invoice_no) == key})
         if numbers:
             warnings.append(
                 f"Invoice {line.invoice_no} of this payee is already on voucher "
@@ -1109,6 +1128,9 @@ def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
         base = REVISION_SUFFIX.sub("", voucher.number)
         family = Voucher.objects.filter(Q(number=base) | Q(number__startswith=f"{base}-R"))
         revision = (family.aggregate(top=Max("revision"))["top"] or 0) + 1
+        # The original stops counting first, so its invoices can move to the amendment.
+        voucher.status = Voucher.Status.AMENDED
+        voucher.save(update_fields=["status", "updated_at"])
         amendment = Voucher.objects.create(
             number=f"{base}-R{revision}",
             voucher_type=voucher.voucher_type,
@@ -1136,8 +1158,6 @@ def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
             attachment.pk = None  # the same stored file, now also on the amendment
             attachment.voucher = amendment
             attachment.save()
-        voucher.status = Voucher.Status.AMENDED
-        voucher.save(update_fields=["status", "updated_at"])
         return amendment
 
 

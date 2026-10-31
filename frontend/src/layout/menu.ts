@@ -47,6 +47,10 @@ export const MENU: MenuSection[] = [
     ],
   },
   {
+    label: "menu.purchasing",
+    items: [{ label: "items.title", path: "/items", area: "stores" }],
+  },
+  {
     label: "menu.accounts",
     items: [
       { label: "payees.title", path: "/payees", area: "payees" },
@@ -71,6 +75,7 @@ export const MENU: MenuSection[] = [
     items: [
       { label: "company.title", path: "/settings/company", area: "settings" },
       { label: "divisions.title", path: "/settings/divisions", area: "settings" },
+      { label: "stores.title", path: "/settings/stores", area: "settings" },
       { label: "factory.title", path: "/settings/factory", area: "settings" },
       { label: "shifts.title", path: "/settings/shifts", area: "settings" },
       { label: "currencies.title", path: "/settings/currencies", area: "settings" },

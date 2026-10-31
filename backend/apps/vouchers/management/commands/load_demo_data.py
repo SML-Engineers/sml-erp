@@ -2,10 +2,13 @@
 
     python manage.py load_demo_data
 
-Creates a Clerk, Accountant, Director and Cashier (one shared authenticator entry), suppliers,
-a bank account with a cheque book and a cash account, tax rates, and vouchers at every stage:
-draft, returned, waiting for the Accountant, waiting for the Director, approved, part-paid and
-paid. Everything goes through the normal services, so every business rule applies.
+Creates a Clerk, Accountant, Director and Cashier, a Sales Executive and a Sales Manager (one
+shared authenticator entry), suppliers, a bank account with a cheque book, tax rates, and
+vouchers at every stage: draft, returned, waiting for the Accountant, waiting for the Director,
+approved, part-paid and paid. For sales (P15-12): customers, materials, machines and costing
+rates, and quotations at every stage (draft, waiting for the Director, sent and expiring this
+week, won with an open sales order and an advance, lost). Everything goes through the normal
+services, so every business rule applies.
 
 It refuses to run on a production server, and runs only once per database.
 """
@@ -30,8 +33,16 @@ from apps.accounting import taxes
 from apps.accounting.models import Account, DetailType, TaxCode, TaxComponent
 from apps.core import crypto
 from apps.core.models import Division, Role, User, UserRole
-from apps.masters import banking, suppliers
+from apps.masters import banking, costing_rates, customers, suppliers
+from apps.masters import services as masters
+from apps.masters.models import Section
 from apps.payments import services as payments
+from apps.sales import advances, orders, workflow
+from apps.sales import services as quotations
+from apps.sales.orders import Delivery
+from apps.sales.orders import LineInput as OrderLine
+from apps.sales.services import BreakInput
+from apps.sales.services import LineInput as QuoteLine
 from apps.vouchers import services
 from apps.vouchers.models import VoucherType
 from apps.vouchers.services import CodingInput, LineInput, SplitInput
@@ -44,6 +55,8 @@ PEOPLE = [
     ("accountant", "Kumari Silva", "accountant"),
     ("director", "Ruwan Jayasinghe", "director"),
     ("cashier", "Sunil Fernando", "cashier"),
+    ("sales", "Dilini Wijesekara", "sales_executive"),
+    ("salesmanager", "Chaminda Ratnayake", "sales_manager"),
 ]
 
 
@@ -76,6 +89,7 @@ class Command(BaseCommand):
             people = self.people(secret)
             self.setup(people)
             self.vouchers(people)
+            self.sales(people)
         self.report(secret)
 
     # --- People ---------------------------------------------------------------------------
@@ -289,6 +303,166 @@ class Command(BaseCommand):
             reference="CEFT 778812",
         )
 
+    # --- Sales (Phase 1.5) ---------------------------------------------------------------------
+
+    def sales(self, p: dict) -> None:
+        accountant, director, cashier = p["accountant"], p["director"], p["cashier"]
+        executive = p["sales"]
+        today = timezone.localdate()
+
+        # Rates the Accountant keeps (Sales -> Costing rates), in force from today.
+        en8 = costing_rates.create_material(
+            accountant,
+            {
+                "code": "EN8",
+                "name": "EN8 steel bar",
+                "kind": "metal",
+                "form": "round_bar",
+                "density": "7.850",
+            },
+        )
+        costing_rates.add_material_rate(accountant, en8, effective_from=today, rate="450")
+        pp = costing_rates.create_material(
+            accountant, {"code": "PP-H", "name": "Polypropylene homopolymer", "kind": "resin"}
+        )
+        costing_rates.add_material_rate(accountant, pp, effective_from=today, rate="520")
+        for code, overhead, margin, setup in (
+            ("WS", "15", "20", "1500"),
+            ("IM", "12", "18", "2500"),
+        ):
+            costing_rates.add_costing_rate(
+                accountant,
+                Division.objects.get(code=code),
+                effective_from=today,
+                overhead_pct=overhead,
+                margin_pct=margin,
+                setup_rate=setup,
+            )
+        for code, section, name, rate in (
+            ("C-LAT-01", "C-LAT", "CNC lathe 1", "3000"),
+            ("IMM-01", "IM-MLD", "Haitian 250", "4200"),
+        ):
+            machine = masters.create_machine(
+                code=code, section=Section.objects.get(code=section), name=name
+            )
+            masters.add_rate(machine, effective_from=today, rate=rate)
+
+        # Customers (Sales -> Customers).
+        def customer(name, address, contact, days=30):
+            c = customers.create_customer(
+                executive,
+                {"name": name, "delivery_address": address, "payment_terms_days": days},
+            )
+            customers.add_contact(executive, c, {"name": contact})
+            return c
+
+        unilever = customer("Unilever Sri Lanka Ltd", "Grandpass, Colombo 14", "Nimali Perera")
+        rhino = customer("Rhino Roofing Products Ltd", "Wattala", "Sunil Gamage", days=45)
+        tea = customer("Lanka Tea Machinery (Pvt) Ltd", "Kandy Road, Kadawatha", "Ajith Kumara")
+
+        def quote(customer, division, lines, **values):
+            return quotations.save(
+                executive,
+                None,
+                customer=customer,
+                division=Division.objects.get(code=division),
+                lines=lines,
+                **values,
+            )
+
+        def approved(*args, **values):
+            q = quote(*args, **values)
+            workflow.submit(executive, q)
+            return workflow.approve(director, q, "Prices checked")
+
+        # 1. A draft quotation, not yet sent for approval.
+        quote(
+            tea,
+            "WS",
+            [
+                QuoteLine(
+                    description="Drive shaft, EN8, 40 dia x 600", quantity="50", unit_price="4800"
+                )
+            ],
+        )
+
+        # 2. Waiting for the Director.
+        q = quote(
+            rhino,
+            "IM",
+            [
+                QuoteLine(
+                    description="Roof sheet clip, PP, grey", quantity="100000", unit_price="3.10"
+                )
+            ],
+        )
+        workflow.submit(executive, q, "Repeat customer, same price as last year")
+
+        # 3. Approved and sent; it expires within the week.
+        q = approved(
+            unilever,
+            "IM",
+            [
+                QuoteLine(
+                    description="Bottle cap 28 mm, PP, white", quantity="20000", unit_price="2.60"
+                )
+            ],
+            valid_until=today + timedelta(days=5),
+        )
+        workflow.mark_sent(executive, q)
+
+        # 4. Won: a sales order with three monthly call-offs and an advance received.
+        q = approved(
+            unilever,
+            "IM",
+            [
+                QuoteLine(
+                    description="Cap 38 mm, PP, white",
+                    quantity="60000",
+                    unit_price="2.35",
+                    breaks=[BreakInput("50000", "2.10")],
+                )
+            ],
+        )
+        q = workflow.mark_sent(executive, q)
+        q = workflow.record_outcome(executive, q, accepted=True, reason="price")
+        order = orders.from_quotation(executive, q)
+        line = order.lines.get()
+        orders.save(
+            executive,
+            order,
+            customer_po="UL/PO/7781",
+            po_date=today,
+            lines=[
+                OrderLine(
+                    quantity="60000",
+                    quotation_line=line.quotation_line,
+                    schedule=[Delivery(today + timedelta(days=d), "20000") for d in (14, 44, 74)],
+                )
+            ],
+        )
+        order = orders.confirm(executive, order)
+        advance = advances.record(
+            cashier,
+            customer=unilever,
+            account=self.bank,
+            method="transfer",
+            amount="50000.00",
+            receipt_date=today,
+            reference="CEFT 901122",
+            sales_order=order,
+        )
+        advances.approve(accountant, advance)
+
+        # 5. Lost on price.
+        q = approved(
+            tea, "WS", [QuoteLine(description="Gear blank, EN8", quantity="20", unit_price="12500")]
+        )
+        q = workflow.mark_sent(executive, q)
+        workflow.record_outcome(
+            executive, q, accepted=False, reason="price", note="A competitor quoted 9,800 each"
+        )
+
     # --- The instructions ----------------------------------------------------------------------
 
     def report(self, secret: str) -> None:
@@ -305,7 +479,7 @@ class Command(BaseCommand):
         for key, name, role in PEOPLE:
             out.write(f"  {key}@{DEMO_DOMAIN:<20} {name:<20} {role.title()}")
         out.write("")
-        out.write("All four use ONE authenticator entry. In Google or Microsoft Authenticator:")
+        out.write("All of them use ONE authenticator entry. In Google or Microsoft Authenticator:")
         out.write("  + > Enter a setup key > Account: SML ERP demo > Key: " + secret)
         out.write("  (time based), or scan this QR code:")
         out.write("")

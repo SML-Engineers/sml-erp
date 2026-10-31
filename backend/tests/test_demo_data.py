@@ -9,7 +9,9 @@ from django.core.management import CommandError, call_command
 
 from apps.core import crypto
 from apps.core.models import User
+from apps.masters.models import Customer
 from apps.payments.models import SupplierPayment
+from apps.sales.models import CustomerAdvance, Quotation, SalesOrder
 from apps.vouchers.models import Voucher
 
 pytestmark = pytest.mark.django_db
@@ -36,6 +38,8 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
         "cashier@demo.sml.lk",
         "clerk@demo.sml.lk",
         "director@demo.sml.lk",
+        "sales@demo.sml.lk",
+        "salesmanager@demo.sml.lk",
     ]
     secret = re.search(r"Key: ([A-Z2-7]{32})", text).group(1)
     assert {crypto.decrypt(u.totp_secret_encrypted) for u in people} == {secret}
@@ -56,6 +60,19 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
     )
     assert SupplierPayment.objects.count() == 2
     assert all(v.attachments.exists() for v in Voucher.objects.exclude(status="draft"))
+    # Sales (P15-12): quotations at every stage, an open order and an advance.
+    assert sorted(Quotation.objects.values_list("status", flat=True)) == [
+        "accepted",
+        "awaiting_approval",
+        "draft",
+        "lost",
+        "sent",
+    ]
+    order = SalesOrder.objects.get()
+    assert (order.status, order.customer_po) == ("open", "UL/PO/7781")
+    assert order.lines.get().schedule.count() == 3
+    assert CustomerAdvance.objects.get().status == "approved"
+    assert Customer.objects.count() == 3
     with pytest.raises(CommandError, match="already loaded"):
         call_command("load_demo_data", stdout=io.StringIO())
 

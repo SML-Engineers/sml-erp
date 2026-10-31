@@ -103,9 +103,10 @@ def render(quotation: Quotation, *, compress: bool = True) -> bytes:
     width = page[0] - 2 * margin
 
     def style(name, size, bold=False, **extra):
+        font = extra.pop("fontName", "Helvetica-Bold" if bold else "Helvetica")
         return ParagraphStyle(
             name,
-            fontName="Helvetica-Bold" if bold else "Helvetica",
+            fontName=font,
             fontSize=size,
             leading=size * 1.25,
             **extra,

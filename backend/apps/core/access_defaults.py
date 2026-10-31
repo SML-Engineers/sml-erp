@@ -52,6 +52,7 @@ ACTIONS = {
     "export_personal_data": "Export personal data",
     "confirm_sensitive_grants": "Confirm sensitive access grants",
     "confirm_limits": "Confirm quotation approval limits",
+    "record_receipt": "Record customer receipts and advances",
 }
 
 # Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
@@ -59,6 +60,7 @@ SENSITIVE_AREA_LEVELS = {("vouchers", "approve"), ("users", "manage")}
 SENSITIVE_AREAS = {"hr_payroll"}
 SENSITIVE_ACTIONS = {
     "record_payment",
+    "record_receipt",
     "delete_submitted_voucher",
     "change_bank_details",
     "close_period",
@@ -309,3 +311,10 @@ STANDARD_DIVISIONS_V1 = [
     ("IM", "Plastic Injection Moulding", "production"),
     ("HO", "Head Office", "shared"),
 ]
+
+
+# --- Later changes to the standard roles (loaded by their own migrations) ----------------
+
+# Phase 1.5 (P15-09, core migration 0017): the Cashier records customer advances, which the
+# Accountant approves (owner, 31 Oct 2026).
+ROLE_ACTIONS_V2 = {"cashier": ["record_receipt"]}

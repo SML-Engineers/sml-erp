@@ -19,5 +19,6 @@ class SalesConfig(AppConfig):
             m.QuotationCosting,
             m.QuotationCostingOperation,
             m.QuotationCostingExtra,
+            m.CustomerAdvance,
         ):
             register(model)

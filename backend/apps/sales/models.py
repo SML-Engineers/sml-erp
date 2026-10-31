@@ -376,3 +376,85 @@ class QuotationCostingExtra(models.Model):
 
     def __str__(self):
         return f"{self.description} {self.amount}"
+
+
+# --- Customer advances (P15-09, spec 5.2) -----------------------------------------------
+
+
+class CustomerAdvance(models.Model):
+    """Money received from a customer before the goods are invoiced: recorded by the Cashier,
+    approved by the Accountant (owner, 31 Oct 2026), then posted Dr Bank, Cr Customer
+    advances (a liability). It waits for set-off against the tax invoice (Phase 2).
+
+    Received in the account's currency; the LKR value uses the rate of the receipt date and
+    is what the ledger carries (rule 11)."""
+
+    class Status(models.TextChoices):
+        AWAITING_APPROVAL = "awaiting_approval", "Awaiting approval"
+        APPROVED = "approved", "Approved and posted"
+        REJECTED = "rejected", "Rejected"
+
+    class Method(models.TextChoices):
+        TRANSFER = "transfer", "Bank transfer"
+        CHEQUE = "cheque", "Cheque"
+        CASH = "cash", "Cash"
+        CARD = "card", "Card"
+        QR = "qr", "QR (LankaQR)"
+
+    number = models.CharField(max_length=30, unique=True)
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="advances"
+    )
+    quotation = models.ForeignKey(
+        Quotation, null=True, blank=True, on_delete=models.PROTECT, related_name="advances"
+    )
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    receipt_date = models.DateField()
+    account = models.ForeignKey(
+        "masters.CompanyAccount", on_delete=models.PROTECT, related_name="customer_advances"
+    )
+    method = models.CharField(max_length=10, choices=Method.choices)
+    reference = models.CharField(max_length=50, blank=True)
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
+    rate_date = models.DateField(null=True, blank=True)
+    amount_lkr = models.DecimalField("Amount (LKR)", max_digits=18, decimal_places=2)
+    # Taken off a tax invoice in Phase 2; what is left is still owed to the customer.
+    set_off_lkr = models.DecimalField("Set off (LKR)", max_digits=18, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.AWAITING_APPROVAL
+    )
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="customer_advance",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-receipt_date", "-number"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0)
+                & models.Q(amount_lkr__gt=0)
+                & models.Q(exchange_rate__gt=0)
+                & models.Q(set_off_lkr__gte=0)
+                & models.Q(set_off_lkr__lte=models.F("amount_lkr")),
+                name="sales_advance_amounts",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(status="approved") | models.Q(journal_entry__isnull=False),
+                name="sales_advance_posted_when_approved",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number

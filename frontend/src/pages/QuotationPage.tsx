@@ -186,7 +186,8 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
     },
     onSuccess: (saved) => {
       queryClient.setQueryData([...quotationsKey, "one", String(saved.id)], saved);
-      void queryClient.invalidateQueries({ queryKey: quotationsKey });
+      // The answer is the quotation as saved; only the lists need fetching again.
+      void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "list"] });
       if (!quotation) navigate(`/quotations/${saved.id}`);
     },
   });

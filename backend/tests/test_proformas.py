@@ -344,7 +344,7 @@ def test_the_printed_proforma_and_its_packing_list(draft, executive, bank):
         executive,
         draft,
         lines=lines_of(
-            draft, **{1: {"cartons": "1", "net_weight_kg": "2", "gross_weight_kg": "2.4"}}
+            draft, {1: {"cartons": "1", "net_weight_kg": "2", "gross_weight_kg": "2.4"}}
         ),
         bank_account=bank,
         advance_pct="50",

@@ -55,7 +55,7 @@ Status: `[ ]` to do · `[x]` done
   - A Sales Executive sees their own quotations; the Sales Manager, Director and Accountant
     see all quotations of their divisions. Only production divisions (WS, IM) quote.
 
-- [ ] **P15-04 Machining costing** (spec 5.1)
+- [x] **P15-04 Machining costing** (spec 5.1)
   Per line, internal only: material (stock size and weight × material rate + cutting
   allowance), operations (machine × minutes × that machine's rate), setup hours × rate ÷
   quantity, subcontract (heat treatment, plating, transport), overhead %, margin %. Shows

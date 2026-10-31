@@ -726,7 +726,7 @@ Delivery notes and tax invoices are completed in Phase 2; job and work orders in
 | Setup | Setup hours × rate, divided by order quantity |
 | Subcontract | Heat treatment, plating, etc., plus transport |
 | Overhead | Configurable % on direct cost |
-| Margin | Configurable %; price = cost + overhead + margin |
+| Margin | Configurable %, **on the cost** (owner's decision, 31 Oct 2026): a cost of LKR 1,000 (overhead included) with 20% margin gives a price of LKR 1,200. The margin of a quoted price is (price − cost) ÷ cost |
 
 Quantity breaks show unit prices for several quantities (e.g. 10, 50, 100) on one quotation. Each line carries the customer's drawing, with its revision number.
 
@@ -749,7 +749,7 @@ Minimum order quantity is stated on each line.
 
 - Number QL{YY}{MM}{DD}{XX}, e.g. QL26102105 (section 3, Number series). Revisions keep the number and add Rev 0, Rev 1, … with full history of what was offered.
 - Approval through the shared approval engine: **every quotation needs the Director's approval before it is printed or sent**, by email or otherwise (owner's decision, 31 Oct 2026). Quotations below the division's minimum margin, or above its set value, are flagged to the Director as warnings.
-- Costing is seen by the Sales Manager, the Accountant, the Director and the quotation's creator; not by other Sales Executives (owner's decision, 31 Oct 2026).
+- Costing is seen by the Sales Manager, the Accountant, the Director and the quotation's creator; not by other Sales Executives, and not by the Auditor (owner's decisions, 31 Oct 2026).
 - Status: Draft, Awaiting Approval, Sent, Accepted, Lost (reason required), Expired.
 - Customer copy shows only description, quantity, unit price, terms. Costing never appears on it.
 - Output as PDF with company letterhead, and sent by email from the system.

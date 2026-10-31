@@ -165,3 +165,122 @@ class QuotationFile(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+# --- Costing (P15-04, spec 5.1): internal only, never on the customer's copy -------------
+
+
+class QuotationCosting(models.Model):
+    """How a line's price is built up, in LKR (spec 5.5: costing stays in LKR).
+
+    The rates used are copied here from the tables in force on the quotation's date, so a
+    later change of rate never alters the costing (rule 11). The results (cost per piece,
+    suggested price, margin of the price quoted) are worked out from these figures and the
+    line's quantity (services.costing_results), for the line and for each quantity break.
+    """
+
+    class Method(models.TextChoices):
+        MACHINING = "machining", "Machining"
+
+    line = models.OneToOneField(QuotationLine, on_delete=models.CASCADE, related_name="costing")
+    method = models.CharField(max_length=20, choices=Method.choices, default=Method.MACHINING)
+    rates_date = models.DateField()
+
+    # Material: chosen from the rate table, its weight worked out from the stock size (bars,
+    # plates, tubes) or entered directly.
+    material = models.ForeignKey(
+        "masters.Material", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    material_rate = models.DecimalField(
+        "Material price per kg (LKR)", max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    density = models.DecimalField(
+        "Density (g/cm³)", max_digits=6, decimal_places=3, null=True, blank=True
+    )
+    form = models.CharField(max_length=20, blank=True)
+    size_a_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    size_b_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    length_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    cutting_allowance_mm = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    entered_weight_kg = models.DecimalField(
+        "Weight per piece entered (kg)", max_digits=12, decimal_places=4, null=True, blank=True
+    )
+    weight_kg = models.DecimalField(
+        "Weight per piece used (kg)", max_digits=12, decimal_places=4, default=0
+    )
+
+    setup_hours = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    setup_rate = models.DecimalField("Setup rate per hour (LKR)", max_digits=18, decimal_places=2)
+    overhead_pct = models.DecimalField("Overhead %", max_digits=5, decimal_places=2)
+    margin_pct = models.DecimalField("Margin %", max_digits=5, decimal_places=2)
+    notes = models.TextField(blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(setup_hours__gte=0)
+                & models.Q(setup_rate__gte=0)
+                & models.Q(overhead_pct__gte=0)
+                & models.Q(margin_pct__gte=0)
+                & models.Q(weight_kg__gte=0)
+                & models.Q(cutting_allowance_mm__gte=0),
+                name="sales_costing_not_negative",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Costing of {self.line}"
+
+
+class QuotationCostingOperation(models.Model):
+    """One machining operation: a machine, its minutes per piece and its hourly rate on the
+    quotation's date."""
+
+    costing = models.ForeignKey(
+        QuotationCosting, on_delete=models.CASCADE, related_name="operations"
+    )
+    seq = models.PositiveSmallIntegerField()
+    machine = models.ForeignKey("masters.Machine", on_delete=models.PROTECT, related_name="+")
+    description = models.CharField(max_length=100, blank=True)
+    minutes = models.DecimalField("Minutes per piece", max_digits=10, decimal_places=3)
+    rate = models.DecimalField("Hourly rate (LKR)", max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["costing", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["costing", "seq"], name="sales_costing_op_seq"),
+            models.CheckConstraint(
+                condition=models.Q(minutes__gt=0) & models.Q(rate__gte=0),
+                name="sales_costing_op_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.seq}. {self.machine_id} {self.minutes} min"
+
+
+class QuotationCostingExtra(models.Model):
+    """Subcontract work and other bought-in costs: heat treatment, plating, transport. An
+    amount per piece, or for the whole order (then shared over the quantity)."""
+
+    costing = models.ForeignKey(QuotationCosting, on_delete=models.CASCADE, related_name="extras")
+    seq = models.PositiveSmallIntegerField()
+    description = models.CharField(max_length=100)
+    amount = models.DecimalField("Amount (LKR)", max_digits=18, decimal_places=2)
+    per_order = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["costing", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["costing", "seq"], name="sales_costing_extra_seq"),
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0), name="sales_costing_extra_amount"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.description} {self.amount}"

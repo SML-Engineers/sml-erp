@@ -67,6 +67,14 @@ export default function QuotationPage() {
           {t(`quotations.statuses.${data.status}`)} · {data.division} · {data.quote_date} · {t("vouchers.createdBy", { name: data.created_by })}
         </p>
       )}
+      {data?.can_see_costing && (
+        <p>
+          <Link className="button-link" to={`/quotations/${data.id}/costing`}>
+            {t("quoteCosting.open")}
+          </Link>{" "}
+          <span className="muted">{t("quoteCosting.internalOnly")}</span>
+        </p>
+      )}
       {(isNew || data?.can_edit) && <QuotationForm key={data?.id ?? "new"} quotation={data} />}
       {data && !data.can_edit && <ReadOnly quotation={data} />}
       {data && <Files quotation={data} />}
@@ -102,6 +110,7 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
   });
   const [lines, setLines] = useState<LineInput[]>(
     quotation?.lines.map((l) => ({
+      id: l.id,
       description: l.description,
       drawing_no: l.drawing_no,
       drawing_rev: l.drawing_rev,

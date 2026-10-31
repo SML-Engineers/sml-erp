@@ -26,6 +26,7 @@ import VoucherPage from "./pages/VoucherPage";
 import VouchersPage from "./pages/VouchersPage";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import PayeesPage from "./pages/PayeesPage";
+import QuotationCostingPage from "./pages/QuotationCostingPage";
 import QuotationPage from "./pages/QuotationPage";
 import QuotationsPage from "./pages/QuotationsPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="quotations" element={<WithMe page={(me) => <QuotationsPage me={me} />} />} />
         <Route path="quotations/new" element={<QuotationPage />} />
         <Route path="quotations/:id" element={<QuotationPage />} />
+        <Route path="quotations/:id/costing" element={<QuotationCostingPage />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
         <Route
           path="chart-of-accounts"

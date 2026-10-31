@@ -2,8 +2,9 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { CurrentUser } from "../api/auth";
 import type { Customer } from "../api/customers";
-import type { QuotationDetail } from "../api/quotations";
+import type { CostingLine, CostingPage, QuotationDetail } from "../api/quotations";
 import { mockApi, renderAt, sampleUser } from "../test-utils";
+import QuotationCostingPage from "./QuotationCostingPage";
 import QuotationPage from "./QuotationPage";
 import QuotationsPage from "./QuotationsPage";
 
@@ -32,13 +33,14 @@ const saved: QuotationDetail = {
   notes: "", subtotal: "235.00", tax_total: "0.00", created_by_id: 1, created_at: "",
   lines: [
     {
-      line_no: 1, description: "Cap, PP, white", drawing_no: "NP-77", drawing_rev: "B", quantity: "100.000", unit: "pcs",
+      id: 31, line_no: 1, description: "Cap, PP, white", drawing_no: "NP-77", drawing_rev: "B", quantity: "100.000", unit: "pcs",
       min_order_qty: null, unit_price: "2.35", tax_code: null, amount: "235.00", tax_amount: "0.00", total: "235.00",
       breaks: [{ quantity: "1000.000", unit_price: "2.10" }],
     },
   ],
   files: [],
   can_edit: true,
+  can_see_costing: false,
 };
 
 const formApi = (extra: Parameters<typeof mockApi>[0] = {}) => ({
@@ -122,4 +124,130 @@ test("the list links to each quotation; only sales staff who enter see New quota
   renderAt("/quotations", <QuotationsPage me={viewer} />);
   await screen.findByRole("table", { name: "Quotations" });
   expect(screen.queryByRole("link", { name: "New quotation" })).not.toBeInTheDocument();
+});
+
+// --- Costing (P15-04) --------------------------------------------------------------------
+
+const costingPage: CostingPage = {
+  quotation_id: 12, number: "QL26103101", revision: 0, division: "WS", currency: "LKR", exchange_rate: "1.000000",
+  quote_date: "2026-10-31", can_edit: true,
+  defaults: { overhead_pct: "15.00", margin_pct: "20.00", setup_rate: "1500.00" },
+  materials: [{ id: 3, code: "EN8", name: "EN8 steel bar", form: "round_bar", density: "7.850", rate: "450.00" }],
+  machines: [
+    { id: 5, code: "C-LAT-01", name: "CNC lathe", rate: "3000.00" },
+    { id: 6, code: "M-MIL-01", name: "Milling 1", rate: "2400.00" },
+  ],
+  lines: [
+    {
+      line_no: 1, description: "Shaft, EN8", drawing_no: "UL-2210", quantity: "10.000", unit: "pcs", unit_price: "3000.00",
+      costing: null, results: null,
+    },
+  ],
+};
+
+const costedLine: CostingLine = {
+  ...costingPage.lines[0],
+  costing: {
+    rates_date: "2026-10-31", material: { id: 3, code: "EN8", name: "EN8 steel bar" }, material_rate: "450.00", density: "7.850",
+    form: "round_bar", size_a_mm: "50.00", size_b_mm: null, length_mm: "100.00", cutting_allowance_mm: "5.00",
+    entered_weight_kg: null, weight_kg: "1.6184", setup_hours: "2.00", setup_rate: "1500.00", overhead_pct: "15.00",
+    margin_pct: "20.00", notes: "",
+    operations: [{ machine: { id: 5, code: "C-LAT-01", name: "CNC lathe" }, description: "Turn", minutes: "12.000", rate: "3000.00" }],
+    extras: [{ description: "Transport", amount: "2000.00", per_order: true }],
+    updated_by: "Sales", updated_at: "2026-10-31T10:00:00",
+  },
+  results: [
+    {
+      quantity: "10.000", material: "728.28", machining: "840.00", setup: "300.00", subcontract: "285.00", direct_cost: "2153.28",
+      overhead: "322.99", cost: "2476.27", margin: "495.25", suggested_price_lkr: "2971.52", suggested_price: "2971.52",
+      quoted_price: "3000.00", quoted_price_lkr: "3000.00", quoted_margin_pct: "21.15", below_cost: false,
+    },
+    {
+      quantity: "50.000", material: "728.28", machining: "840.00", setup: "60.00", subcontract: "125.00", direct_cost: "1753.28",
+      overhead: "262.99", cost: "2016.27", margin: "403.25", suggested_price_lkr: "2419.52", suggested_price: "2419.52",
+      quoted_price: "1900.00", quoted_price_lkr: "1900.00", quoted_margin_pct: "-5.77", below_cost: true,
+    },
+  ],
+};
+
+test("the quotation links to its costing only for those who may see it", async () => {
+  mockApi(formApi({ "GET /api/v1/quotations/12/": { body: { ...saved, can_see_costing: true } } }));
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const link = await screen.findByRole("link", { name: "Costing" });
+  expect(link).toHaveAttribute("href", "/quotations/12/costing");
+});
+
+test("an executive who cannot see the costing gets no link", async () => {
+  mockApi(formApi({ "GET /api/v1/quotations/12/": { body: saved } }));
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  await screen.findByRole("form", { name: "Quotation details" });
+  expect(screen.queryByRole("link", { name: "Costing" })).not.toBeInTheDocument();
+});
+
+test("saving the draft sends each line's id so its costing is kept", async () => {
+  const calls = mockApi(formApi({ "GET /api/v1/quotations/12/": { body: saved }, "PUT /api/v1/quotations/12/": { body: saved } }));
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const form = await screen.findByRole("form", { name: "Quotation details" });
+  fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/", expect.objectContaining({ method: "PUT" })));
+  const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/" && i?.method === "PUT")!;
+  expect(JSON.parse(String(init!.body)).lines[0].id).toBe(31);
+});
+
+test("the creator costs a line: material by size, operations and subcontract", async () => {
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/costing/": { body: costingPage },
+    "PUT /api/v1/quotations/12/costing/1/": { body: { ...costingPage, lines: [costedLine] } },
+  });
+  renderAt("/quotations/12/costing", <QuotationCostingPage />, "/quotations/:id/costing");
+  const form = await screen.findByRole("form", { name: "Costing of line 1" });
+  expect(screen.getByText(/never shown to the customer/)).toBeInTheDocument();
+
+  fireEvent.change(within(form).getByLabelText("Material"), { target: { value: "3" } });
+  fireEvent.change(within(form).getByLabelText("Diameter (mm)"), { target: { value: "50" } });
+  fireEvent.change(within(form).getByLabelText("Length per piece (mm)"), { target: { value: "100" } });
+  fireEvent.change(within(form).getByLabelText("Cutting allowance (mm)"), { target: { value: "5" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Add an operation" }));
+  fireEvent.change(within(form).getByLabelText("Machine, operation 1"), { target: { value: "5" } });
+  fireEvent.change(within(form).getByLabelText("Minutes per piece, operation 1"), { target: { value: "12" } });
+  fireEvent.change(within(form).getByLabelText("Setup hours (whole order)"), { target: { value: "2" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Add a subcontract cost" }));
+  fireEvent.change(within(form).getByLabelText("Subcontract cost 1"), { target: { value: "Transport" } });
+  fireEvent.change(within(form).getByLabelText("Amount, subcontract cost 1"), { target: { value: "2000" } });
+  fireEvent.click(within(form).getByLabelText("Whole order"));
+  expect(within(form).getByLabelText("Margin %")).toHaveAttribute("placeholder", "20.00");
+  fireEvent.click(within(form).getByRole("button", { name: "Save costing" }));
+
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/costing/1/", expect.objectContaining({ method: "PUT" })),
+  );
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/quotations/12/costing/1/")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({
+    material: 3,
+    size_a_mm: "50",
+    length_mm: "100",
+    cutting_allowance_mm: "5",
+    weight_kg: null,
+    setup_hours: "2",
+    margin_pct: null, // the division's default
+    operations: [{ machine: 5, minutes: "12" }],
+    extras: [{ description: "Transport", amount: "2000", per_order: true }],
+  });
+
+  const table = await screen.findByRole("table", { name: "Price build-up, line 1" });
+  expect(within(table).getByRole("columnheader", { name: "10 pcs" })).toBeInTheDocument();
+  const suggested = within(table).getByRole("row", { name: /Suggested price/ });
+  expect(suggested).toHaveTextContent("2,971.52");
+  expect(suggested).toHaveTextContent("2,419.52");
+  expect(within(table).getByRole("row", { name: /Margin of the price quoted/ })).toHaveTextContent("21.15%");
+  expect(screen.getByText(/below cost for 50/)).toBeInTheDocument();
+});
+
+test("those who only look see the costing without changing it", async () => {
+  mockApi({ "GET /api/v1/quotations/12/costing/": { body: { ...costingPage, can_edit: false, lines: [costedLine] } } });
+  renderAt("/quotations/12/costing", <QuotationCostingPage />, "/quotations/:id/costing");
+  const section = await screen.findByRole("region", { name: "Costing, line 1" });
+  expect(within(section).getByText(/EN8 EN8 steel bar: 1.6184 kg per piece/)).toBeInTheDocument();
+  expect(within(section).getByText(/C-LAT-01/)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Save costing" })).not.toBeInTheDocument();
 });

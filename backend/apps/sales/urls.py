@@ -13,4 +13,14 @@ urlpatterns = [
         views.QuotationFileDetailView.as_view(),
         name="quotation-file-detail",
     ),
+    path(
+        "quotations/<int:pk>/costing/",
+        views.QuotationCostingView.as_view(),
+        name="quotation-costing",
+    ),
+    path(
+        "quotations/<int:pk>/costing/<int:line_no>/",
+        views.QuotationLineCostingView.as_view(),
+        name="quotation-line-costing",
+    ),
 ]

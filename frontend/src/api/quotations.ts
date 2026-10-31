@@ -25,6 +25,7 @@ export interface QtyBreak {
 }
 
 export interface QuotationLine {
+  id: number;
   line_no: number;
   description: string;
   drawing_no: string;
@@ -64,10 +65,14 @@ export interface QuotationDetail extends QuotationSummary {
   lines: QuotationLine[];
   files: QuotationFile[];
   can_edit: boolean;
+  /** Whether this user may open the costing (creator, Sales Manager, Accountant, Director). */
+  can_see_costing: boolean;
   upload_warnings?: string[];
 }
 
 export interface LineInput {
+  /** The saved line this is; left out for a new line. Kept lines keep their costing. */
+  id?: number;
   description: string;
   drawing_no: string;
   drawing_rev: string;
@@ -114,3 +119,111 @@ export function uploadQuotationFile(id: number, file: File, lineNo: number | nul
 export const removeQuotationFile = (id: number, fileId: number) =>
   apiSend<QuotationDetail>("DELETE", `/quotations/${id}/files/${fileId}/`);
 export const quotationFileUrl = (id: number, fileId: number) => `${API_BASE}/quotations/${id}/files/${fileId}/`;
+
+// --- Costing (P15-04): internal only, never on the customer's copy ---------------------
+
+export interface CostingOperation {
+  machine: { id: number; code: string; name: string };
+  description: string;
+  minutes: string;
+  /** LKR per hour on the quotation's date. */
+  rate: string;
+}
+
+export interface CostingExtra {
+  description: string;
+  amount: string;
+  /** For the whole order (shared over the quantity) instead of per piece. */
+  per_order: boolean;
+}
+
+export interface LineCosting {
+  rates_date: string;
+  material: { id: number; code: string; name: string } | null;
+  material_rate: string | null;
+  density: string | null;
+  form: string;
+  size_a_mm: string | null;
+  size_b_mm: string | null;
+  length_mm: string | null;
+  cutting_allowance_mm: string;
+  entered_weight_kg: string | null;
+  weight_kg: string;
+  setup_hours: string;
+  setup_rate: string;
+  overhead_pct: string;
+  margin_pct: string;
+  notes: string;
+  operations: CostingOperation[];
+  extras: CostingExtra[];
+  updated_by: string;
+  updated_at: string;
+}
+
+/** One piece, at the line's quantity or at a quantity break. LKR unless said. */
+export interface CostingResult {
+  quantity: string;
+  material: string;
+  machining: string;
+  setup: string;
+  subcontract: string;
+  direct_cost: string;
+  overhead: string;
+  cost: string;
+  margin: string;
+  suggested_price_lkr: string;
+  /** In the quotation's currency. */
+  suggested_price: string;
+  /** In the quotation's currency. */
+  quoted_price: string;
+  quoted_price_lkr: string;
+  quoted_margin_pct: string | null;
+  below_cost: boolean;
+}
+
+export interface CostingLine {
+  line_no: number;
+  description: string;
+  drawing_no: string;
+  quantity: string;
+  unit: string;
+  unit_price: string;
+  costing: LineCosting | null;
+  results: CostingResult[] | null;
+}
+
+export interface CostingPage {
+  quotation_id: number;
+  number: string;
+  revision: number;
+  division: string;
+  currency: string;
+  exchange_rate: string;
+  quote_date: string;
+  can_edit: boolean;
+  defaults: { overhead_pct: string; margin_pct: string; setup_rate: string } | null;
+  materials: { id: number; code: string; name: string; form: string; density: string | null; rate: string }[];
+  machines: { id: number; code: string; name: string; rate: string }[];
+  lines: CostingLine[];
+}
+
+export interface CostingInput {
+  material: number | null;
+  size_a_mm: string | null;
+  size_b_mm: string | null;
+  length_mm: string | null;
+  cutting_allowance_mm: string | null;
+  weight_kg: string | null;
+  setup_hours: string | null;
+  overhead_pct: string | null;
+  margin_pct: string | null;
+  notes: string;
+  operations: { machine: number | null; minutes: string; description: string }[];
+  extras: CostingExtra[];
+}
+
+export const getCosting = (id: number) => apiGet<CostingPage>(`/quotations/${id}/costing/`);
+export const saveLineCosting = (id: number, lineNo: number, input: CostingInput) =>
+  apiSend<CostingPage>("PUT", `/quotations/${id}/costing/${lineNo}/`, input);
+export const removeLineCosting = (id: number, lineNo: number) =>
+  apiSend<CostingPage>("DELETE", `/quotations/${id}/costing/${lineNo}/`);

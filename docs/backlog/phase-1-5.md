@@ -55,7 +55,7 @@ Status: `[ ]` to do · `[x]` done
   - A Sales Executive sees their own quotations; the Sales Manager, Director and Accountant
     see all quotations of their divisions. Only production divisions (WS, IM) quote.
 
-- [ ] **P15-04 Machining costing** (spec 5.1)
+- [x] **P15-04 Machining costing** (spec 5.1)
   Per line, internal only: material (stock size and weight × material rate + cutting
   allowance), operations (machine × minutes × that machine's rate), setup hours × rate ÷
   quantity, subcontract (heat treatment, plating, transport), overhead %, margin %. Shows
@@ -63,7 +63,9 @@ Status: `[ ]` to do · `[x]` done
   - Rates come from the tables in force on the quotation date (P15-02).
   - Costing is never sent to the customer: not in the PDF, the email or any customer page.
   - Who sees costing (owner, 31 Oct 2026): the Sales Manager, the Accountant, the Director and
-    the quotation's creator; not other Sales Executives (tested on the server).
+    the quotation's creator; not other Sales Executives, and not the Auditor (tested on the
+    server).
+  - Margin % is on the cost (owner, 31 Oct 2026): cost 1,000 + 20% = price 1,200.
 
 - [ ] **P15-05 Moulding costing and tooling** (spec 5.1)
   Per line, internal only: material ((part weight + runner weight ÷ cavities) × resin rate +
@@ -140,6 +142,9 @@ Status: `[ ]` to do · `[x]` done
    creator; not other Sales Executives (P15-04).
 3. **Customer advances:** the Accountant's approval is enough (P15-09).
 4. **Packing list:** needed with the proforma (P15-08).
+5. **Margin %** is on the cost: a cost of LKR 1,000 (overhead included) with a 20% margin
+   gives a price of LKR 1,200. The Director's margin warnings (P15-06) use the same meaning.
+6. **The Auditor does not see quotation costing** (P15-04).
 
 Still awaited: a sample of the current quotation and proforma, to copy the layout and wording
 (P15-07, P15-08).

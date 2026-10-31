@@ -35,12 +35,17 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Masters and roles
 
-- [ ] **P16-02 Roles and access** (spec 5A.6, 6A.5)
+- [x] **P16-02 Roles and access** (spec 5A.6, 6A.5)
   Switch on the Purchasing Officer, Stores Executive (today's "Store Supervisor"), Stores
   Manager and QC Inspector roles. Conflicting pairs warn the Admin: Purchasing Officer with
   Stores; Stores with Accounts Clerk or Cashier. A stores role together with QC Inspector is
   refused (QC is the check on the single stores person). The Director approves POs; stores
   staff never approve payments.
+  - Done: the three roles are switched on (core migration 0019); the stores role is named
+    "Stores Manager / Executive" (one stores person). Ordering + receiving, receiving +
+    invoicing, receiving + paying, and ordering + paying warn and need a reason; stores + QC
+    Inspector is refused even with a reason. QC acceptance itself (P16-08) will also refuse the
+    person who confirmed the GRN, so an access override cannot get around it.
 
 - [ ] **P16-03 Item master and stores** (spec 5A.3, 6A)
   Items: code (immutable once used), description, unit, category, stock or non-stock, package

@@ -72,12 +72,28 @@ TWO_FACTOR_ROLES = {"system_admin", "director", "accountant", "cashier"}
 FINANCE_ROLES = {"director", "accountant", "clerk", "cashier"}
 
 # Pairs that should be held by different people (spec 1.1, "Conflicting combinations").
-CONFLICTING_PAIRS = [
-    ("clerk", "cashier", "records and pays the same vouchers"),
-    ("accountant", "cashier", "approves and pays the same vouchers"),
-] + [
-    ("system_admin", role, "manages access and also handles money")
-    for role in sorted(FINANCE_ROLES)
+CONFLICTING_PAIRS = (
+    [
+        ("clerk", "cashier", "records and pays the same vouchers"),
+        ("accountant", "cashier", "approves and pays the same vouchers"),
+    ]
+    + [
+        ("system_admin", role, "manages access and also handles money")
+        for role in sorted(FINANCE_ROLES)
+    ]
+    + [
+        # Phase 1.6 (P16-02, spec 5A.6): who orders, who receives, who invoices and who pays.
+        ("purchasing_officer", "store_supervisor", "orders and receives the same goods"),
+        ("purchasing_officer", "cashier", "orders goods and pays for them"),
+        ("store_supervisor", "clerk", "receives goods and enters the supplier's invoice for them"),
+        ("store_supervisor", "cashier", "receives goods and pays for them"),
+    ]
+)
+
+# Pairs that are never allowed, even with a reason: QC acceptance is the check on the single
+# stores person (owner's decision, 31 Oct 2026; spec 5A decision 2).
+FORBIDDEN_PAIRS = [
+    ("store_supervisor", "qc_inspector", "receives goods and also accepts them in QC"),
 ]
 
 
@@ -318,3 +334,14 @@ STANDARD_DIVISIONS_V1 = [
 # Phase 1.5 (P15-09, core migration 0017): the Cashier records customer advances, which the
 # Accountant approves (owner, 31 Oct 2026).
 ROLE_ACTIONS_V2 = {"cashier": ["record_receipt"]}
+
+# Phase 1.6 (P16-02, core migration 0019): purchasing, stores and QC roles switched on. SML has
+# one stores person, called Stores Manager or Stores Executive (owner, 31 Oct 2026).
+PHASE_1_6_ROLES = ("purchasing_officer", "store_supervisor", "qc_inspector")
+ROLE_NAMES_V2 = {
+    "store_supervisor": (
+        "Stores Manager / Executive",
+        "Receives goods against purchase orders and confirms GRNs; material issues and "
+        "returns. Never approves payments or accepts goods in QC.",
+    ),
+}

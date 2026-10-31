@@ -25,7 +25,7 @@ SML ERP is a custom-built, web-based ERP for a business with two divisions: a me
 | Sales Executive | — | Prepare quotations and proforma invoices |
 | Production Supervisor | — | Enter shift production data for assigned sections |
 | Production Manager | — | Approve shift reports, plan production |
-| Store Supervisor | — | Goods receipts with weights and counts per package, material issues and returns |
+| Stores Manager / Executive | — | Goods receipts with weights and counts per package, material issues and returns (SML has one stores person) |
 | Auditor | — | Read-only access, including all logs |
 | System Admin | — | Users, roles, master configuration |
 
@@ -45,9 +45,9 @@ The roles follow the usual ERP practice of separating three duties: whoever *rec
 | Auditor | 1 | Read everything, including audit and approval logs; export | Change anything |
 | Sales Executive | 1.5 | Customers, quotations, proformas, sales orders | Approve quotations above limits |
 | Sales Manager | 1.5 | Approve quotations within the limits; sales reports | Change rate tables |
-| Purchasing Officer | 2 | Purchase requests and orders | Approve own purchase orders |
-| Store Supervisor | 2 | Goods receipts with weights and counts, material issues and returns | Inspection results |
-| QC Inspector | 2 | Inspection results; accept or reject lots | Change received quantities |
+| Purchasing Officer | 1.6 | Purchase requests and orders | Approve own purchase orders |
+| Stores Manager / Executive | 1.6 | Goods receipts with weights and counts, material issues and returns | Inspection results; holding the QC Inspector role (refused) |
+| QC Inspector | 1.6 | Inspection results; accept or reject lots | Change received quantities; holding a stores role (refused) |
 | HR and Payroll Officer | 2b | Employees, attendance, payroll preparation | Approve payroll (Director) |
 | Production Planner | 3 | Job orders, production plans | Approve shift reports |
 | Production Supervisor | 3 | Shift entries for assigned sections only | Other sections' data |
@@ -982,12 +982,12 @@ Every raw material delivery is received, weighed or counted package by package, 
 ### 6A.1 Flow
 
 1. **Arrival:** delivery recorded at the store against the purchase order: supplier, vehicle, delivery note number, supplier's invoice number.
-2. **Goods receipt (Store Supervisor):** quantities entered per package (see 6A.2). Every package gets a printed QR label with its lot number. Status: *Quarantine*.
+2. **Goods receipt (Stores Manager / Executive):** quantities entered per package (see 6A.2). Every package gets a printed QR label with its lot number. Status: *Quarantine*.
 3. **Incoming inspection (QC Inspector):** checks from the item's inspection plan, results entered, certificates attached.
 4. **Decision:** Accept, Reject, or Accept under deviation (needs Production Manager approval, Director for critical materials).
 5. **Stock update:** accepted lots move to available stock; rejected lots move to a rejected location for return to the supplier, with a debit note.
 
-### 6A.2 Store Supervisor entry page
+### 6A.2 Stores receiving entry page
 
 The page adapts to how the material arrives. Package types are configured per item.
 
@@ -1028,7 +1028,7 @@ An inspection plan per item, or per material category, defines what is checked, 
 
 ### 6A.5 Roles
 
-- **Store Supervisor:** goods receipt and package-level weights and counts; cannot record inspection results.
+- **Stores Manager / Executive:** goods receipt and package-level weights and counts; cannot record inspection results, and cannot also hold the QC Inspector role.
 - **QC Inspector (new role):** inspection results and accept or reject decisions; cannot change received quantities.
 - **Production Manager / Director:** approve deviations.
 

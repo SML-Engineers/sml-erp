@@ -14,6 +14,7 @@ from .access_defaults import (
     ACTIONS,
     AREAS,
     CONFLICTING_PAIRS,
+    FORBIDDEN_PAIRS,
     IMPLIES,
     LEVELS,
     TWO_FACTOR_ROLES,
@@ -183,6 +184,12 @@ def set_user_roles(actor: User, target: User, roles: list[Role], reason: str = "
         raise AccessError(f"Not available yet: {', '.join(inactive)}.")
 
     codes = {role.code for role in roles}
+    names = {role.code: role.name for role in roles}
+    for a, b, why in FORBIDDEN_PAIRS:
+        if a in codes and b in codes:
+            raise AccessError(
+                f"{names[a]} + {names[b]} cannot be held by one person: they would {why}."
+            )
     warnings = conflict_warnings(codes)
     reason = (reason or "").strip()
     if warnings and not reason:

@@ -70,6 +70,8 @@ def bank(accountant):
         code="com-cur",
         kind="current",
         name="Commercial Bank current",
+        bank_name="Commercial Bank",
+        account_number="1000234567",
         ledger_account=ledger(accountant, "1030", "Commercial Bank current").pk,
     )
 
@@ -195,6 +197,8 @@ def test_a_foreign_currency_advance_carries_its_rate(cashier, accountant, unilev
         code="com-eur",
         kind="current",
         name="Commercial Bank EUR",
+        bank_name="Commercial Bank",
+        account_number="1000999999",
         currency="EUR",
         ledger_account=ledger(accountant, "1040", "Commercial Bank EUR").pk,
     )

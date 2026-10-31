@@ -56,6 +56,9 @@ DOCUMENT_TYPES = {
     "voucher_cancellation": DocumentType(
         "Voucher cancellation", min_approvals=1, final_role="director", subtype_label="Voucher type"
     ),
+    # Every quotation is approved by the Director before it is printed or sent (owner, 31 Oct
+    # 2026; P15-06).
+    "quotation": DocumentType("Quotation", min_approvals=1, final_role="director"),
 }
 
 

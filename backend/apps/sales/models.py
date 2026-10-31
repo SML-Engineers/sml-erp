@@ -11,6 +11,19 @@ from django.db import models
 from django.utils import timezone
 
 
+class OutcomeReason(models.TextChoices):
+    """Why a quotation was won or lost, for the sales reports (P15-06, P15-11)."""
+
+    PRICE = "price", "Price"
+    LEAD_TIME = "lead_time", "Delivery time"
+    QUALITY = "quality", "Quality or specification"
+    RELATIONSHIP = "relationship", "Customer relationship"
+    COMPETITOR = "competitor", "Went to a competitor"
+    CANCELLED = "cancelled", "Customer cancelled the need"
+    NO_RESPONSE = "no_response", "No response from the customer"
+    OTHER = "other", "Other"
+
+
 class Quotation(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
@@ -60,6 +73,21 @@ class Quotation(models.Model):
     )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
+
+    # Approval, sending and the outcome (P15-06). Who approved is in the approval log.
+    approved_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    outcome_reason = models.CharField(
+        "Why won or lost", max_length=30, choices=OutcomeReason.choices, blank=True
+    )
+    outcome_note = models.TextField(blank=True)
+    outcome_at = models.DateTimeField(null=True, blank=True)
+    outcome_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
 
     class Meta:
         ordering = ["-quote_date", "-number", "-revision"]

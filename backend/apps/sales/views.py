@@ -10,11 +10,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounting.models import TaxCode
-from apps.core.models import Division
+from apps.core import approvals
+from apps.core.models import ApprovalState, Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Customer, CustomerContact, Machine, Material
 
-from . import costing, services
+from . import costing, services, workflow
 from .models import Quotation, QuotationFile
 from .services import BreakInput, LineInput, SalesError
 
@@ -106,11 +107,66 @@ def _detail(q: Quotation, user) -> dict:
             for f in q.files.all()
         ],
         "can_edit": services.can_edit(user, q),
+        "approved_at": q.approved_at,
+        "sent_at": q.sent_at,
+        "outcome": None
+        if not q.outcome_at
+        else {
+            "reason": q.outcome_reason,
+            "reason_label": q.get_outcome_reason_display() if q.outcome_reason else "",
+            "note": q.outcome_note,
+            "at": q.outcome_at,
+            "by": q.outcome_by.full_name if q.outcome_by else "",
+        },
+        "is_final": workflow.is_final(q),
+        "can_submit": workflow.can_submit(user, q),
+        "can_approve": workflow.can_approve(user, q),
+        "can_mark_sent": workflow.can_mark_sent(user, q),
+        "can_record_outcome": workflow.can_record_outcome(user, q),
+        "can_revise": workflow.can_revise(user, q),
+        "approval": _approval(q),
+        "revisions": [
+            {"id": r.id, "revision": r.revision, "status": r.status, "quote_date": r.quote_date}
+            for r in workflow.revisions(q)
+            if services.visible(user).filter(pk=r.pk).exists()
+        ],
         # Whether this user may open the costing (P15-04); the costing itself is only ever
         # sent by the costing endpoint, never with the quotation.
         "can_see_costing": costing.can_see(user, q),
     }
+    if body["can_see_costing"]:
+        # The Director's warnings come from the costing: shown only to those who see it.
+        found = workflow.review(q)
+        body["review"] = {
+            key: (str(value) if value is not None and key != "warnings" else value)
+            for key, value in found.items()
+        }
     return body
+
+
+def _approval(q: Quotation) -> dict | None:
+    state = approvals.state_of(workflow.DOC, q.pk)
+    if state is None:
+        return None
+    waiting_with = ""
+    if state.status == ApprovalState.Status.IN_PROGRESS:
+        step = next(s for s in state.route if s["level"] == state.current_level)
+        waiting_with = step["role_name"]
+    return {
+        "status": state.status,
+        "waiting_with": waiting_with,
+        "history": [
+            {
+                "action": row.action,
+                "action_label": row.get_action_display(),
+                "level": row.level,
+                "by": row.user.full_name,
+                "at": row.acted_at,
+                "reason": row.reason,
+            }
+            for row in approvals.history(workflow.DOC, q.pk)
+        ],
+    }
 
 
 # --- Input ------------------------------------------------------------------------------
@@ -219,6 +275,9 @@ class QuotationListView(_Sales):
             rows = rows.filter(division__code=params["division"].upper())
         if params.get("customer"):
             rows = rows.filter(customer_id=params["customer"])
+        if params.get("waiting") == "me":
+            waiting = approvals.waiting_for(request.user, workflow.DOC)
+            rows = rows.filter(pk__in=[state.document_id for state in waiting])
         return Response([_summary(q) for q in rows[:2000]])
 
     def post(self, request):
@@ -439,3 +498,80 @@ class QuotationLineCostingView(_Sales):
         except SalesError as error:
             return _error(error)
         return Response(costing.page(request.user, Quotation.objects.get(pk=quotation.pk)))
+
+
+# --- Approval, sending, outcome and revisions (P15-06) -----------------------------------
+
+
+class _Action(_Sales):
+    def _run(self, request, pk, action):
+        quotation = _get(request.user, pk)
+        try:
+            result = action(quotation)
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(Quotation.objects.get(pk=result.pk), request.user))
+
+
+class QuotationSubmitView(_Action):
+    access_write_level = "enter"
+
+    def post(self, request, pk):
+        comment = str(request.data.get("comment", ""))
+        return self._run(request, pk, lambda q: workflow.submit(request.user, q, comment))
+
+
+class QuotationApproveView(_Action):
+    access_write_level = "approve"
+
+    def post(self, request, pk):
+        comment = str(request.data.get("comment", ""))
+        return self._run(request, pk, lambda q: workflow.approve(request.user, q, comment))
+
+
+class QuotationReturnView(_Action):
+    access_write_level = "approve"
+
+    def post(self, request, pk):
+        reason = str(request.data.get("reason", ""))
+        return self._run(request, pk, lambda q: workflow.send_back(request.user, q, reason))
+
+
+class QuotationSentView(_Action):
+    # The creator (Sales: Enter) or the Sales Manager (Sales: Approve); the service decides.
+    access_write_level = "view"
+
+    def post(self, request, pk):
+        return self._run(request, pk, lambda q: workflow.mark_sent(request.user, q))
+
+
+class QuotationOutcomeView(_Action):
+    access_write_level = "view"
+
+    def post(self, request, pk):
+        outcome = str(request.data.get("outcome", ""))
+        if outcome not in ("accepted", "lost"):
+            return _error("Choose won (accepted) or lost.")
+        return self._run(
+            request,
+            pk,
+            lambda q: workflow.record_outcome(
+                request.user,
+                q,
+                accepted=outcome == "accepted",
+                reason=str(request.data.get("reason", "")),
+                note=str(request.data.get("note", "")),
+            ),
+        )
+
+
+class QuotationReviseView(_Action):
+    access_write_level = "enter"
+
+    def post(self, request, pk):
+        quotation = _get(request.user, pk)
+        try:
+            new = workflow.revise(request.user, quotation)
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(new, request.user), status=status.HTTP_201_CREATED)

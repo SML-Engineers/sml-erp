@@ -24,6 +24,8 @@ import ProformasPage from "./pages/ProformasPage";
 import SalesOrderPage from "./pages/SalesOrderPage";
 import SalesReportsPage from "./pages/SalesReportsPage";
 import ItemsPage from "./pages/ItemsPage";
+import PurchaseOrderPage from "./pages/PurchaseOrderPage";
+import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
 import StoresPage from "./pages/settings/StoresPage";
 import SalesOrdersPage from "./pages/SalesOrdersPage";
 import PayPage from "./pages/PayPage";
@@ -105,6 +107,8 @@ export default function App() {
         <Route path="sales-orders/:id" element={<SalesOrderPage />} />
         <Route path="sales/reports" element={<SalesReportsPage />} />
         <Route path="items" element={<ItemsPage />} />
+        <Route path="purchase-orders" element={<WithMe page={(me) => <PurchaseOrdersPage me={me} />} />} />
+        <Route path="purchase-orders/:id" element={<PurchaseOrderPage />} />
         <Route path="settings/stores" element={<WithMe page={(me) => <StoresPage me={me} />} />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
         <Route

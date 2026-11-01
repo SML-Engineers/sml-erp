@@ -25,6 +25,15 @@ pytestmark = pytest.mark.django_db
 TODAY = timezone.localdate()
 
 
+@pytest.fixture(autouse=True)
+def memory_storage(settings):
+    """Sent emails keep a copy of the attachment; in tests it stays in memory."""
+    settings.STORAGES = {
+        **settings.STORAGES,
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+    }
+
+
 @pytest.fixture
 def buyer():
     return person("buyer@sml.lk", "purchasing_officer", all_divisions=True)

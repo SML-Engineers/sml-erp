@@ -42,3 +42,7 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Python stays on 3.12 (CLAUDE.md, tech stack); a move to 3.13 or later is a planned
+      # upgrade, not a robot's pull request. Fixes within 3.12 still come through.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-minor"]

@@ -62,13 +62,19 @@ Status: `[ ]` to do · `[x]` done
 
 ## C. Purchase orders
 
-- [ ] **P16-04 Purchase orders** (spec 5A.1)
+- [x] **P16-04 Purchase orders** (spec 5A.1)
   Raised by the Purchasing Officer from the supplier and item master; numbered
   PO{YY}{MM}{DD}{XX}; quantities, agreed prices, tax, delivery dates, terms.
   - Director approval for every PO through the approval engine (never the creator); reminders.
   - An approved PO never changes (database guard); a revision goes through approval again.
   - Status: draft, awaiting approval, approved, partly received, received, closed (reason),
     cancelled (reason; refused once goods are received).
+  - Done: new app `purchasing`. A PO is in the supplier's currency at the day's rate, with
+    "Net <days>" terms from the supplier and the company address as "Deliver to"; items must
+    be active and of the PO's division (or all divisions). Sending needs a delivery date. On
+    approval the supplier's and items' codes become fixed. A revision is allowed only while
+    nothing has been received; the old PO is marked "Replaced by a revision" at once.
+    Reminder to the Director after 2 days. Menu: Purchasing and stores → Purchase orders.
 
 - [ ] **P16-05 Printing and emailing the PO**
   PDF in the layout of the owner's sample PO26061701, the company letterhead, emailed to the

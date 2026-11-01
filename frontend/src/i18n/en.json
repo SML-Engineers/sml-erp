@@ -1942,5 +1942,54 @@
       "quarantine": "Quarantine (waiting for QC)",
       "rejected": "Rejected (to return)"
     }
+  },
+  "po": {
+    "title": "Purchase orders",
+    "help": "Raised by the Purchasing Officer from the item master and approved by the Director before they are sent. An approved PO never changes: revise it (it is approved again), cancel it while nothing has been received, or close it short.",
+    "new": "New purchase order",
+    "none": "No purchase orders yet.",
+    "number": "PO number",
+    "supplier": "Supplier",
+    "deliveryDate": "Delivery date",
+    "raisedBy": "Raised by",
+    "backToList": "← All purchase orders",
+    "order": "Purchase order",
+    "revisionOf": "revision of",
+    "replacedBy": "Replaced by",
+    "because": "Reason: {{reason}}",
+    "form": "Purchase order details",
+    "payMode": "Pay mode",
+    "payModes": {
+      "online": "Online",
+      "cheque": "Cheque",
+      "cash": "Cash"
+    },
+    "paymentTerms": "Payment terms",
+    "deliverTo": "Deliver to",
+    "lines": "Items ordered",
+    "itemOf": "Item, line {{n}}",
+    "rate": "Rate",
+    "rateOf": "Rate, line {{n}}",
+    "makeDraft": "Make the draft PO",
+    "details": "Purchase order",
+    "item": "Item",
+    "received": "Received",
+    "actions": "What to do with the purchase order",
+    "send": "Send to the Director",
+    "sendHelp": "Needs the delivery date. After this the PO cannot be changed.",
+    "approve": "Approve the PO",
+    "revise": "Revise (needs a reason)",
+    "close": "Close short (needs a reason)",
+    "cancel": "Cancel the PO (needs a reason)",
+    "statuses": {
+      "draft": "Draft",
+      "awaiting_approval": "Waiting for the Director",
+      "approved": "Approved",
+      "partly_received": "Partly received",
+      "received": "Received",
+      "closed": "Closed short",
+      "cancelled": "Cancelled",
+      "revised": "Replaced by a revision"
+    }
   }
 }

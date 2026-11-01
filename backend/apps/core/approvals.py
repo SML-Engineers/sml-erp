@@ -63,6 +63,9 @@ DOCUMENT_TYPES = {
     "customer_advance": DocumentType("Customer advance", min_approvals=1, final_role="accountant"),
     # A repeat order entered without a quotation: the Director approves its prices (P15-10).
     "sales_order": DocumentType("Sales order", min_approvals=1, final_role="director"),
+    # Every purchase order is approved by the Director before it is sent (owner, 31 Oct 2026;
+    # P16-04).
+    "purchase_order": DocumentType("Purchase order", min_approvals=1, final_role="director"),
 }
 
 

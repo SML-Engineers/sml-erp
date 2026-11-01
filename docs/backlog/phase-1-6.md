@@ -47,10 +47,18 @@ Status: `[ ]` to do · `[x]` done
     Inspector is refused even with a reason. QC acceptance itself (P16-08) will also refuse the
     person who confirmed the GRN, so an access override cannot get around it.
 
-- [ ] **P16-03 Item master and stores** (spec 5A.3, 6A)
+- [x] **P16-03 Item master and stores** (spec 5A.3, 6A)
   Items: code (immutable once used), description, unit, category, stock or non-stock, package
   type, inspection needed, inventory account, division; Excel import and export. Stores per
   division: Main, Quarantine, Rejected. Deactivated, never deleted, once used.
+  - Done: new app `inventory`. Item codes are typed (e.g. PP-H-WHITE), up to 20 letters,
+    digits or dashes. The Purchasing Officer, the stores person and the Accountant add items;
+    only the Accountant chooses accounts, otherwise raw materials and bought-out parts go to
+    1210 Raw materials and consumables, spares and packing to 1240. A non-stock item has no
+    store, package or QC. Stores WS-MAIN, WS-QUAR, WS-REJ, IM-MAIN, IM-QUAR, IM-REJ are set up;
+    the Admin adds more main stores (Settings → Stores); one quarantine and one rejected store
+    per division (database constraint). Used items and stores keep their codes (database
+    guard). Menu: Purchasing and stores → Items.
 
 ## C. Purchase orders
 

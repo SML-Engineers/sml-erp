@@ -289,7 +289,8 @@
     "vouchers": "Vouchers",
     "waiting": "Waiting for my approval",
     "approveVouchers": "Approve vouchers",
-    "sales": "Sales"
+    "sales": "Sales",
+    "purchasing": "Purchasing and stores"
   },
   "layout": {
     "menu": "Menu",
@@ -1889,5 +1890,57 @@
     "title": "No access",
     "help": "Your role does not give you access to this page. If you need it, ask the Admin.",
     "home": "Back to the dashboard"
+  },
+  "items": {
+    "title": "Items",
+    "help": "Everything SML buys and keeps or uses: resin, steel, inserts, consumables, spares and packing. A code used on a purchase order or GRN never changes; the item can then only be deactivated.",
+    "searchHint": "Code, name or description",
+    "category": "Category",
+    "allCategories": "All categories",
+    "showInactive": "Show deactivated items",
+    "add": "Add item",
+    "none": "No items yet.",
+    "code": "Code",
+    "name": "Name",
+    "unit": "Unit",
+    "kind": "Kind",
+    "stock": "Stock",
+    "nonStock": "Non-stock",
+    "qc": "QC",
+    "yes": "Yes",
+    "account": "Account",
+    "form": "Item details",
+    "isStock": "Stock item (kept in a store and valued)",
+    "arrivesAs": "Arrives as",
+    "inspectionRequired": "QC inspects it on arrival",
+    "allDivisions": "All divisions",
+    "material": "Costing material",
+    "inventoryAccount": "Inventory account",
+    "expenseAccount": "Expense account",
+    "byCategory": "By category (default)",
+    "description": "Description",
+    "accountsHelp": "The Accountant chooses an item's accounts; until then a stock item uses the inventory account for its category.",
+    "usedHelp": "This item has been used on a document: its code is fixed and it can only be deactivated.",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "remove": "Remove (never used)",
+    "import": "Import items from Excel",
+    "importHelp": "One sheet named Items, in the layout of the export. Put the item code in every row: an existing code updates that item, a new one adds it. Check the file first: nothing is saved until every row is accepted.",
+    "checked": "The file is fine. Importing it would add {{created}} and update {{updated}} items.",
+    "imported": "Imported: {{created}} items added, {{updated}} updated."
+  },
+  "stores": {
+    "title": "Stores",
+    "help": "Where stock is kept, per production division. Each division has its main store, a quarantine where received goods wait for QC, and a rejected store for goods going back to the supplier. You can add more main stores.",
+    "code": "Code",
+    "name": "Name",
+    "kind": "Kind",
+    "add": "Add a store",
+    "reasonToDeactivate": "Reason (to deactivate a store)",
+    "kinds": {
+      "main": "Main store",
+      "quarantine": "Quarantine (waiting for QC)",
+      "rejected": "Rejected (to return)"
+    }
   }
 }

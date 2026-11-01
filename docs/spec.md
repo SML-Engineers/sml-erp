@@ -871,6 +871,11 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
 - Item master: code, description, unit, category (raw material, consumable, spare,
   bought-out part, packing), stock or non-stock, package type and inspection need (6A),
   inventory account, division.
+  Item codes are typed (up to 20 letters, digits or dashes) and fixed once used. Only the
+  Accountant chooses an item's accounts; by default raw materials and bought-out parts use
+  1210 Raw materials, and consumables, spares and packing use 1240.
+- Stores per production division: main stores (any number), one Quarantine and one
+  Rejected store; set by the Admin.
 - Stock is held by item, store and lot, with every movement recorded (receipt, acceptance,
   rejection, return, issue, adjustment); balances are never typed.
 - Valuation at weighted average cost (spec 6). Inventory is recognised when goods are

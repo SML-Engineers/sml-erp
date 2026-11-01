@@ -231,3 +231,15 @@ class SendBackView(_Action):
         return self._run(
             request, pk, lambda r: returns.send_back(request.user, r, _text(request, "reason"))
         )
+
+
+class PdfView(_Returns):
+    def get(self, request, pk):
+        from django.http import HttpResponse
+
+        from . import return_printing
+
+        ret = _get(request.user, pk)
+        response = HttpResponse(return_printing.render(ret), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="return-{ret.number}.pdf"'
+        return response

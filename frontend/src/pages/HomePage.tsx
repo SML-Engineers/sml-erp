@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { getHealth } from "../api/health";
+import PurchasingDashboard from "../components/PurchasingDashboard";
 import SalesDashboard from "../components/SalesDashboard";
 import VouchersDashboard from "../components/VouchersDashboard";
 
@@ -29,6 +30,7 @@ export default function HomePage({ user }: { user: CurrentUser }) {
       </section>
       {can(user.access, "vouchers", "view") && <VouchersDashboard me={user} />}
       {can(user.access, "sales", "view") && <SalesDashboard />}
+      {can(user.access, "purchasing", "view") && <PurchasingDashboard />}
     </main>
   );
 }

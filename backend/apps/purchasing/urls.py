@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import invoice_views as iv
+from . import report_views as pr
 from . import return_views as rv
 from . import views as v
 
@@ -47,4 +48,12 @@ urlpatterns = [
     path("supplier-returns/<int:pk>/confirm/", rv.ConfirmView.as_view(), name="rtn-confirm"),
     path("supplier-returns/<int:pk>/approve/", rv.ApproveView.as_view(), name="rtn-approve"),
     path("supplier-returns/<int:pk>/return/", rv.SendBackView.as_view(), name="rtn-return"),
+    path("supplier-returns/<int:pk>/pdf/", rv.PdfView.as_view(), name="rtn-pdf"),
+    path("purchasing-reports/open-orders/", pr.OpenOrdersView.as_view(), name="pr-open"),
+    path("purchasing-reports/grni/", pr.GrniView.as_view(), name="pr-grni"),
+    path("purchasing-reports/held-invoices/", pr.HeldInvoicesView.as_view(), name="pr-held"),
+    path("purchasing-reports/exceptions/", pr.ExceptionsView.as_view(), name="pr-exceptions"),
+    path("purchasing-reports/suppliers/", pr.SuppliersView.as_view(), name="pr-suppliers"),
+    path("purchasing-reports/trail/", pr.TrailView.as_view(), name="pr-trail"),
+    path("purchasing-reports/dashboard/", pr.DashboardView.as_view(), name="pr-dashboard"),
 ]

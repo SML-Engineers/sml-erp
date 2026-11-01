@@ -27,6 +27,7 @@ import {
   type InvoiceInput,
 } from "../api/supplierInvoices";
 import SearchSelect from "../components/SearchSelect";
+import Trail from "../components/Trail";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -115,6 +116,7 @@ export default function SupplierInvoicePage() {
           {data.can_edit ? <InvoiceForm key={`${data.id}-${data.total_amount}`} invoice={data} /> : <ReadOnly invoice={data} />}
           <Scans invoice={data} />
           <Actions invoice={data} />
+          {data.status !== "draft" && <Trail by="invoice" id={data.id} />}
         </>
       )}
       <ErrorLine error={invoice.error} />

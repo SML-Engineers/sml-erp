@@ -329,6 +329,10 @@ def _apply(grn: GoodsReceipt, user: User) -> None:
         po_line.received_quantity += line.good_quantity
         po_line.save(update_fields=["received_quantity"])
     _po_status(order)
+    from .inspections import accept_automatically  # inspections imports this module
+
+    for line in grn.lines.select_related("item"):
+        accept_automatically(line)
     grn.status = St.CONFIRMED
     grn.confirmed_by = grn.confirmed_by or user
     grn.confirmed_at = timezone.now()
@@ -456,6 +460,13 @@ def request_reversal(user: User, grn: GoodsReceipt, reason: str) -> GoodsReceipt
         grn = GoodsReceipt.objects.select_for_update().get(pk=grn.pk)
         if not can_request_reversal(user, grn):
             raise ReceiptError("Only a confirmed GRN is reversed, at the stores person's request.")
+        from .inspections import blocks_reversal
+
+        if blocks_reversal(grn):
+            raise ReceiptError(
+                "QC has started inspecting this GRN, so it can no longer be reversed; rejected "
+                "goods are returned to the supplier instead."
+            )
         try:
             approvals.submit(
                 user,

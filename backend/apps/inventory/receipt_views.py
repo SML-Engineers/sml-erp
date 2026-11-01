@@ -15,7 +15,13 @@ from apps.core import approvals
 from apps.core.permissions import AreaAccess
 
 from . import labels, packages, receipts
-from .models import GoodsReceipt, GoodsReceiptLine, GoodsReceiptPhoto, ReceiptPackage
+from .models import (
+    GoodsReceipt,
+    GoodsReceiptLine,
+    GoodsReceiptPhoto,
+    IncomingInspection,
+    ReceiptPackage,
+)
 from .packages import PackageInput
 from .receipts import ReceiptError
 
@@ -94,6 +100,20 @@ def _package(p: ReceiptPackage, line: GoodsReceiptLine) -> dict:
     }
 
 
+def _inspection(line: GoodsReceiptLine) -> dict | None:
+    found = IncomingInspection.objects.filter(line=line).first()
+    if found is None:
+        return None
+    return {
+        "id": found.id,
+        "status": found.status,
+        "decision": found.decision,
+        "automatic": found.automatic,
+        "accepted_quantity": str(found.accepted_quantity),
+        "rejected_quantity": str(found.rejected_quantity),
+    }
+
+
 def _line(g: GoodsReceipt, line: GoodsReceiptLine) -> dict:
     item = line.item
     rows = list(line.packages.all())
@@ -125,6 +145,7 @@ def _line(g: GoodsReceipt, line: GoodsReceiptLine) -> dict:
         "weight_tolerance_pct": str(
             item.weight_tolerance_pct if draft and not rows else line.weight_tolerance_pct
         ),
+        "inspection": _inspection(line),
         "packages": [_package(p, line) for p in rows],
         "package_totals": {
             "count": len(rows),

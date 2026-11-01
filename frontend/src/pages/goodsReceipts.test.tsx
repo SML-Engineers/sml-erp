@@ -15,7 +15,7 @@ const draft: GRNDetail = {
     {
       line_no: 1, po_line: 21, item: { id: 5, code: "48-BL-08", name: "Black MB", unit: "kg", package_type: "none", package_tare: "0.000" }, description: "Black MB 45% carbon", unit: "kg",
       ordered_quantity: "300.000", outstanding_quantity: "300.000", received_quantity: "300.000", damaged_quantity: "0.000",
-      good_quantity: "300.000", excess_quantity: "0.000", notes: "", weight_tolerance_pct: "0.50", packages: [],
+      good_quantity: "300.000", excess_quantity: "0.000", notes: "", weight_tolerance_pct: "0.50", inspection: null, packages: [],
       package_totals: { count: 0, net_weight: "0", declared_weight: "0", net_of_declared: "0", outside: 0 },
     },
   ],

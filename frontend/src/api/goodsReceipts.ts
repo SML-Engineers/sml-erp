@@ -55,6 +55,14 @@ export interface GRNLine {
   excess_quantity: string;
   notes: string;
   weight_tolerance_pct: string;
+  inspection: {
+    id: number;
+    status: "draft" | "deviation_requested" | "decided";
+    decision: "" | "accepted" | "rejected" | "deviation";
+    automatic: boolean;
+    accepted_quantity: string;
+    rejected_quantity: string;
+  } | null;
   packages: ReceiptPackage[];
   package_totals: { count: number; net_weight: string; declared_weight: string; net_of_declared: string; outside: number };
 }

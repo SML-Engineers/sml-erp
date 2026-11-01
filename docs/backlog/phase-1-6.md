@@ -127,11 +127,25 @@ Status: `[ ]` to do · `[x]` done
     (database guard). The variance against the invoiced weight comes with supplier invoices
     (P16-10); reading a connected scale directly can be added later.
 
-- [ ] **P16-08 QC inspection and acceptance** (spec 6A.3, 6A.4)
+- [x] **P16-08 QC inspection and acceptance** (spec 6A.3, 6A.4)
   Inspection plans per item or category; the QC Inspector records results and accepts,
   rejects, or accepts under deviation (Production Manager, Director for critical materials).
   Accepted quantities move to available stock; rejected ones to the Rejected store for return.
   The QC Inspector cannot change received quantities.
+  - Owner's decisions (1 Nov 2026): the Director approves every deviation until the
+    Production Manager role is switched on; QC decides per package (rejects single bags or
+    bundles and accepts the rest).
+  - Done: plans per item, or per category for items without their own; checks measured
+    (min/max) or pass/fail, some critical; sampling every package, a fixed number or a
+    percentage. Confirmed GRN lines wait in Purchasing and stores → QC inspection. The QC
+    Inspector (never the person who received or confirmed the GRN) starts an inspection,
+    which copies the plan's checks (rule 11), enters results, attaches certificates, and
+    accepts (all, all but some packages, or part of an item not received by package),
+    rejects all with a reason, or asks the Director to accept under deviation with a reason.
+    A failed critical check cannot simply be accepted; a deviation needs a failed check.
+    Items that need no inspection are accepted automatically on confirming. A decided
+    inspection never changes (database guard). A GRN QC has started on can no longer be
+    reversed. The stock movements into Available and Rejected come with P16-09.
 
 ## E. Stock and accounting
 

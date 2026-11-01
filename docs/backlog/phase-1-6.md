@@ -202,9 +202,19 @@ Status: `[ ]` to do · `[x]` done
     pay. Payment then posts Dr Accounts payable, Cr Bank.
   - Advance payments on a PO are split out as P16-11a below.
 
-- [ ] **P16-11a Advance payments on a purchase order**
+- [x] **P16-11a Advance payments on a purchase order**
   A voucher line paying in advance on an approved PO (Director-approved exception), posted to
   1320 Advances to suppliers, then set off against the supplier's invoice when it is matched.
+  - Done: on a voucher, "Pay an advance on a purchase order" lists the payee's approved POs
+    still waiting for goods in the voucher's division; the line needs a reason, is coded to
+    Advances to suppliers (1320, now a system account), has no tax, and the advances on a PO
+    never add up to more than the PO (service and database). The voucher shows it as an
+    exception to the Accountant and the Director, who approve it as any voucher. Once the
+    voucher is fully paid, the advance is set off against the supplier's invoice for that PO
+    when it is posted (Dr Accounts payable, Cr Advances to suppliers), or later by the
+    Accountant ("Set off advances") if it was paid after the invoice; never more than the
+    invoice still owes (database). What is set off reduces what can still go on vouchers.
+    Set-offs are never changed (database guard).
 
 - [ ] **P16-12 Supplier returns and debit notes**
   Rejected or short goods returned to the supplier with a return note; a debit note reduces

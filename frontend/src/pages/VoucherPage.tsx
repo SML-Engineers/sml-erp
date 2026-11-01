@@ -7,7 +7,7 @@ import { listDivisions } from "../api/admin";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import { listPayees } from "../api/payees";
-import { getPayableInvoices } from "../api/supplierInvoices";
+import { getAdvanceOrders, getPayableInvoices } from "../api/supplierInvoices";
 import { getTaxes, taxesKey } from "../api/taxes";
 import {
   createVoucher,
@@ -178,6 +178,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
       tax_code: l.tax_code,
       tax_amount: l.tax_amount,
       supplier_invoice: l.supplier_invoice?.id ?? null,
+      advance_order: l.advance_order?.id ?? null,
     })) ?? [emptyLine()],
   );
   const type = types.data?.find((x) => x.code === typeCode);
@@ -199,6 +200,25 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
     enabled: payee !== null && Boolean(voucherDivision) && !revise,
   });
   const onVoucher = new Set(lines.map((l) => l.supplier_invoice).filter(Boolean));
+  const [showAdvance, setShowAdvance] = useState(false);
+  const advanceOrders = useQuery({
+    queryKey: ["supplier-invoices", "advance-orders", payee?.id, voucherDivision],
+    queryFn: () => getAdvanceOrders(payee!.id, voucherDivision),
+    enabled: showAdvance && payee !== null && Boolean(voucherDivision) && !revise,
+  });
+  function payAdvance(order: { id: number; label: string; left: string }) {
+    const line: VoucherLineInput = {
+      invoice_no: "",
+      invoice_date: null,
+      description: "",
+      amount: order.left,
+      tax_code: null,
+      tax_amount: "0.00",
+      advance_order: order.id,
+    };
+    setLines((now) => [...now.filter((l) => l.supplier_invoice || l.advance_order || l.amount || l.invoice_no || l.description), line]);
+    setShowAdvance(false);
+  }
   function payInvoice(invoice: { id: number; number: string; invoice_no: string; invoice_date: string; unpaid: string }) {
     const line: VoucherLineInput = {
       invoice_no: invoice.invoice_no,
@@ -355,6 +375,20 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                       {line.description} <span className="muted">· {t("vouchers.paysMatchedInvoice")}</span>
                     </td>
                   </>
+                ) : line.advance_order ? (
+                  <>
+                    <td colSpan={2}>
+                      <strong>{t("vouchers.advanceLine")}</strong>
+                    </td>
+                    <td>
+                      <input
+                        aria-label={t("vouchers.advanceReasonOf", { n: String(index + 1) })}
+                        placeholder={t("vouchers.advanceReasonHint")}
+                        value={line.description}
+                        onChange={(e) => setLine(index, { description: e.target.value })}
+                      />
+                    </td>
+                  </>
                 ) : (
                   <>
                     <td>
@@ -393,7 +427,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                   />
                 </td>
                 <td>
-                  {line.supplier_invoice ? (
+                  {line.supplier_invoice || line.advance_order ? (
                     <span className="muted">—</span>
                   ) : (
                   <select
@@ -411,8 +445,8 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                   )}
                 </td>
                 <td>
-                  {line.supplier_invoice ? (
-                    <span className="muted">{t("vouchers.taxOnInvoice")}</span>
+                  {line.supplier_invoice || line.advance_order ? (
+                    <span className="muted">{line.advance_order ? "—" : t("vouchers.taxOnInvoice")}</span>
                   ) : line.tax_code ? (
                     <span className="muted">{t("vouchers.taxOnSave")}</span>
                   ) : (
@@ -456,6 +490,31 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                 </li>
               ))}
           </ul>
+        </div>
+      )}
+      {payee && !revise && (
+        <div className="wide">
+          <button type="button" className="secondary small" onClick={() => setShowAdvance((v) => !v)}>
+            {t("vouchers.advanceOnPo")}
+          </button>
+          {showAdvance && advanceOrders.data && (
+            <div className="notice" role="region" aria-label={t("vouchers.advanceOnPo")}>
+              <p>{t("vouchers.advanceHelp")}</p>
+              {advanceOrders.data.length === 0 && <p className="muted">{t("vouchers.noAdvanceOrders")}</p>}
+              <ul className="changes">
+                {advanceOrders.data
+                  .filter((o) => Number(o.left) > 0)
+                  .map((o) => (
+                    <li key={o.id}>
+                      {t("vouchers.advanceOrder", { po: o.label, total: formatDecimal(o.total_lkr), advanced: formatDecimal(o.advanced) })}{" "}
+                      <button type="button" className="small" onClick={() => payAdvance(o)}>
+                        {t("vouchers.advanceOn", { po: o.label })}
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
       <div className="wide row-actions">
@@ -526,6 +585,14 @@ function ReadOnly({ voucher }: { voucher: VoucherDetail }) {
           </tfoot>
         </table>
       </div>
+      {voucher.lines
+        .filter((l) => l.advance_order)
+        .map((l) => (
+          <p key={`a${l.line_no}`} className="notice">
+            {t("vouchers.advanceException", { po: l.advance_order!.label, amount: formatDecimal(l.total), total: formatDecimal(l.advance_order!.total_lkr) })}{" "}
+            <Link to={`/purchase-orders/${l.advance_order!.id}`}>{l.advance_order!.label}</Link>
+          </p>
+        ))}
       {voucher.lines
         .filter((l) => l.supplier_invoice)
         .map((l) => (

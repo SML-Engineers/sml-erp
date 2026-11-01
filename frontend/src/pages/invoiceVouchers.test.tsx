@@ -85,3 +85,31 @@ test("the approvers see PO, GRN and invoice side by side", async () => {
   expect(within(match).getByText(/1,000 received, 1,000 accepted by QC/)).toBeInTheDocument();
   expect(within(match).getByText("1,000 × 12.50 = 12,500.00")).toBeInTheDocument();
 });
+
+test("the clerk pays an advance on a purchase order with a reason", async () => {
+  const calls = mockApi({
+    "GET /api/v1/vouchers/9/": { body: draft },
+    "GET /api/v1/voucher-types/": { body: [cheque] },
+    "GET /api/v1/taxes/": { body: { components: [], codes: [] } },
+    "GET /api/v1/vouchers/transfer-accounts/": { body: [] },
+    "GET /api/v1/vouchers/payee-balance/3/": { body: { waiting_approval: "0.00", approved_unpaid: "0.00", outstanding: "0.00" } },
+    "GET /api/v1/supplier-invoices/payable/?supplier=3&division=IM": { body: [] },
+    "GET /api/v1/supplier-invoices/advance-orders/?supplier=3&division=IM": {
+      body: [{ id: 9, label: "PO26110101", po_date: "2026-11-01", total_lkr: "10000.00", advanced: "0.00", left: "10000.00" }],
+    },
+    "PATCH /api/v1/vouchers/9/": { body: draft },
+  });
+  renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+  const form = await screen.findByRole("form", { name: "Voucher details" });
+  fireEvent.click(within(form).getByRole("button", { name: "Pay an advance on a purchase order" }));
+  const offer = await within(form).findByRole("region", { name: "Pay an advance on a purchase order" });
+  fireEvent.click(await within(offer).findByRole("button", { name: "Advance on PO26110101" }));
+  fireEvent.change(within(form).getByLabelText("Why the advance is needed, line 1"), { target: { value: "30% to start the mould" } });
+  fireEvent.change(within(form).getByLabelText("Amount, line 1"), { target: { value: "3000.00" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/", expect.objectContaining({ method: "PATCH" })));
+  const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/vouchers/9/" && i?.method === "PATCH")!;
+  expect(JSON.parse(String(init!.body)).lines).toMatchObject([
+    { advance_order: 9, amount: "3000.00", description: "30% to start the mould" },
+  ]);
+});

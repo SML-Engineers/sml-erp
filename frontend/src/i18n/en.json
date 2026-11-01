@@ -1060,7 +1060,16 @@
     "matchGrn": "Goods receipt",
     "matchInvoice": "Invoice",
     "matchReceived": "{{received}} received, {{accepted}} accepted by QC",
-    "matchException": "difference approved by the Director"
+    "matchException": "difference approved by the Director",
+    "advanceLine": "Advance payment on a purchase order",
+    "advanceReasonOf": "Why the advance is needed, line {{n}}",
+    "advanceReasonHint": "Why it is needed (the Director approves)",
+    "advanceOnPo": "Pay an advance on a purchase order",
+    "advanceHelp": "An advance is paid only on an approved PO still waiting for goods, as an exception the Director approves. It goes to Advances to suppliers and is set off against the supplier's invoice once paid.",
+    "noAdvanceOrders": "This payee has no approved purchase order waiting for goods in this division.",
+    "advanceOrder": "{{po}}: LKR {{total}}, already advanced LKR {{advanced}}",
+    "advanceOn": "Advance on {{po}}",
+    "advanceException": "Exception: advance of LKR {{amount}} on purchase order {{po}} (LKR {{total}}) before the goods arrive. It is set off against the supplier's invoice once paid."
   },
   "voucherReview": {
     "title": "Waiting for my approval",
@@ -2303,6 +2312,10 @@
     "askException": "Ask the Director to approve the exception",
     "cancel": "Cancel (supplier sends a credit note or new invoice)",
     "approve": "Approve the exception",
-    "onVouchers": "On payment vouchers: LKR {{amount}} · still to pay: LKR {{unpaid}}"
+    "onVouchers": "On payment vouchers: LKR {{amount}} · still to pay: LKR {{unpaid}}",
+    "setOffs": "Advances set off",
+    "setOff": "Advance of LKR {{amount}} set off ({{journal}}) from voucher",
+    "advancesWaiting": "LKR {{amount}} paid in advance on these purchase orders is not yet set off.",
+    "setOffNow": "Set off advances"
   }
 }

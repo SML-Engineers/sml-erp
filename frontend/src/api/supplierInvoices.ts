@@ -59,6 +59,9 @@ export interface InvoiceDetail extends InvoiceSummary {
   on_vouchers?: string;
   unpaid?: string;
   vouchers?: { id: number; number: string; status: string; amount: string }[];
+  set_offs?: { voucher: { id: number; number: string }; amount: string; journal: string; at: string }[];
+  advances_waiting?: string;
+  can_set_off?: boolean;
   lines: InvoiceLine[];
   attachments: { id: number; file_name: string; uploaded_by: string; uploaded_at: string }[];
   can_edit: boolean;
@@ -109,3 +112,8 @@ export const removeInvoiceScan = (id: number, attachment: number) =>
 export const invoiceScanUrl = (id: number, attachment: number) => `${API_BASE}/supplier-invoices/${id}/attachments/${attachment}/`;
 export const getPayableInvoices = (supplier: number, division: string) =>
   apiGet<(InvoiceSummary & { unpaid: string })[]>(`/supplier-invoices/payable/?supplier=${supplier}&division=${division}`);
+export const getAdvanceOrders = (supplier: number, division: string) =>
+  apiGet<{ id: number; label: string; po_date: string; total_lkr: string; advanced: string; left: string }[]>(
+    `/supplier-invoices/advance-orders/?supplier=${supplier}&division=${division}`,
+  );
+export const setOffAdvances = (id: number) => apiSend<InvoiceDetail>("POST", `/supplier-invoices/${id}/set-off/`, {});

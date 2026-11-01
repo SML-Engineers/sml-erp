@@ -20,6 +20,7 @@ import {
   reopenSupplierInvoice,
   requestInvoiceException,
   returnInvoiceException,
+  setOffAdvances,
   siKey,
   updateSupplierInvoice,
   type InvoiceDetail,
@@ -88,6 +89,17 @@ export default function SupplierInvoicePage() {
               ))}
             </p>
           )}
+          {(data.set_offs ?? []).length > 0 && (
+            <ul className="changes" aria-label={t("si.setOffs")}>
+              {(data.set_offs ?? []).map((s, i) => (
+                <li key={i}>
+                  {t("si.setOff", { amount: formatDecimal(s.amount), journal: s.journal })}{" "}
+                  <Link to={`/vouchers/${s.voucher.id}`}>{s.voucher.number}</Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {data.can_set_off && <SetOff invoice={data} />}
           {data.exception_reason && <p className="muted">{t("si.exceptionReason", { reason: data.exception_reason })}</p>}
           {data.cancel_reason && <p className="notice">{t("si.cancelReason", { reason: data.cancel_reason })}</p>}
           {data.can_edit ? <InvoiceForm key={`${data.id}-${data.total_amount}`} invoice={data} /> : <ReadOnly invoice={data} />}
@@ -468,5 +480,20 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
         </ul>
       )}
     </section>
+  );
+}
+
+function SetOff({ invoice }: { invoice: InvoiceDetail }) {
+  const { t } = useTranslation();
+  const done = useDone();
+  const run = useMutation({ mutationFn: () => setOffAdvances(invoice.id), onSuccess: done });
+  return (
+    <div className="notice">
+      {t("si.advancesWaiting", { amount: formatDecimal(invoice.advances_waiting ?? "0") })}{" "}
+      <button type="button" className="small" disabled={run.isPending} onClick={() => run.mutate()}>
+        {t("si.setOffNow")}
+      </button>
+      <ErrorLine error={run.error} />
+    </div>
   );
 }

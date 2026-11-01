@@ -55,6 +55,8 @@ SYSTEM_ROLES = {
     "grni": "Goods received not invoiced",
     # Supplier invoice prices or taxes different from the PO, approved by the Director (P16-10).
     "price_variance": "Purchase price variance",
+    # Paid to a supplier before the goods arrive, set off against its invoice (P16-11a).
+    "supplier_advances": "Advances to suppliers",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

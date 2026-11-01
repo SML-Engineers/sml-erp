@@ -261,7 +261,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
             {voucher.lines.map((line, index) => {
               const c = codings[index];
               const n = String(line.line_no);
-              if (line.supplier_invoice) {
+              if (line.supplier_invoice || line.advance_order) {
                 // Pays a matched supplier invoice: always Accounts payable, no tax (P16-11).
                 return (
                   <tr key={line.line_no}>
@@ -272,7 +272,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                     <td className="num">{formatDecimal(line.amount)}</td>
                     <td colSpan={4}>
                       {line.account?.number} {line.account?.name} · {line.division} ·{" "}
-                      <span className="muted">{t("vouchers.paysMatchedInvoice")}</span>
+                      <span className="muted">{line.advance_order ? t("vouchers.advanceLine") : t("vouchers.paysMatchedInvoice")}</span>
                     </td>
                     <td>
                       <input aria-label={t("voucherReview.jobOf", { n })} value={c.job_ref} maxLength={50} onChange={(e) => set(index, { job_ref: e.target.value })} />

@@ -244,6 +244,7 @@ class LineInput:
     tax_code: TaxCode | None = None
     tax_amount: object = "0"
     supplier_invoice: object = None  # apps.purchasing.models.SupplierInvoice (P16-11)
+    advance_order: object = None  # apps.purchasing.models.PurchaseOrder (P16-11a)
 
 
 def _money(value, where: str, *, positive: bool) -> Decimal:
@@ -273,6 +274,9 @@ def _lines(voucher: Voucher, lines: list[LineInput]) -> list[VoucherLine]:
         amount = _money(line.amount, where, positive=True)
         if line.supplier_invoice is not None:
             built.append(_invoice_line(voucher, line.supplier_invoice, amount, number, where))
+            continue
+        if line.advance_order is not None:
+            built.append(_advance_line(voucher, line, amount, number, where))
             continue
         if line.tax_code is not None:
             code = line.tax_code
@@ -337,6 +341,60 @@ def _invoice_line(voucher: Voucher, invoice, amount: Decimal, number: int, where
         account=payable,
         division=invoice.division,
         supplier_invoice=invoice,
+    )
+
+
+ADVANCE_ORDER_STATUSES = ("approved", "partly_received")
+
+
+def _advance_line(voucher: Voucher, given: LineInput, amount: Decimal, number: int, where: str):
+    """An advance on an approved purchase order before the goods arrive (P16-11a, spec 5A.5):
+    an exception the Director approves with the voucher. Coded to Advances to suppliers and
+    set off against the supplier's invoice once paid; the advances on a PO never exceed it."""
+    order = given.advance_order
+    if order.status not in ADVANCE_ORDER_STATUSES:
+        raise VoucherError(
+            f"{where}: purchase order {order.label} is {order.get_status_display().lower()}; an "
+            "advance is paid only on an approved PO still waiting for goods."
+        )
+    if voucher.payee_id != order.supplier_id:
+        raise VoucherError(f"{where}: purchase order {order.label} is of another supplier.")
+    if voucher.division_id != order.division_id:
+        raise VoucherError(
+            f"{where}: purchase order {order.label} is of division {order.division.code}."
+        )
+    prefix = f"Advance on PO {order.label}: "
+    reason = (given.description or "").strip()
+    reason = reason[len(prefix) :] if reason.startswith(prefix) else reason
+    if not reason:
+        raise VoucherError(f"{where}: say why this advance is needed (the Director approves it).")
+    others = VoucherLine.objects.filter(advance_order=order).exclude(
+        voucher__status__in=INVOICE_FREED
+    )
+    if voucher.pk:
+        others = others.exclude(voucher=voucher)
+    already = sum((line.amount + line.tax_amount for line in others), Decimal("0"))
+    left = order.total_lkr - already
+    if amount > left:
+        raise VoucherError(
+            f"{where}: {amount:,.2f} is more than the {max(left, Decimal('0')):,.2f} of purchase "
+            f"order {order.label} not yet paid in advance."
+        )
+    account = Account.objects.filter(system_role="supplier_advances", is_active=True).first()
+    if account is None:
+        raise VoucherError("There is no active Advances to suppliers account (Chart of accounts).")
+    return VoucherLine(
+        voucher=voucher,
+        line_no=number,
+        invoice_no="",
+        invoice_date=None,
+        description=(prefix + reason)[:500],
+        amount=amount,
+        tax_code=None,
+        tax_amount=Decimal("0"),
+        account=account,
+        division=order.division,
+        advance_order=order,
     )
 
 
@@ -418,7 +476,7 @@ def save(
         }
         voucher.lines.all().delete()
         for line in new_lines:
-            if line.line_no in coding and line.supplier_invoice_id is None:
+            if line.line_no in coding and not (line.supplier_invoice_id or line.advance_order_id):
                 line.account_id, line.division_id, line.job_ref = coding[line.line_no]
                 line.division_id = line.division_id or voucher.division_id
             line.save()
@@ -763,8 +821,9 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
             line = lines.get(coding.line_no)
             if line is None:
                 raise VoucherError(f"{where} is not on this voucher.")
-            if line.supplier_invoice_id:
-                # Pays a matched supplier invoice: always Accounts payable, no tax (P16-11).
+            if line.supplier_invoice_id or line.advance_order_id:
+                # Pays a matched supplier invoice (Accounts payable) or an advance on a PO
+                # (Advances to suppliers): the account is fixed, no tax (P16-11, P16-11a).
                 line.job_ref = (coding.job_ref or "").strip()[:50]
                 line.save(update_fields=["job_ref"])
                 continue
@@ -1031,6 +1090,7 @@ def _line_text(line: VoucherLine) -> dict:
         "tax": line.tax_amount,
         "tax_code": line.tax_code_id,
         "supplier_invoice": line.supplier_invoice_id,
+        "advance_order": line.advance_order_id,
     }
 
 
@@ -1113,7 +1173,7 @@ def revise(
         kept_splits = {}
         for line in new_lines:
             before = old.get(line.line_no)
-            if before is None or line.supplier_invoice_id:
+            if before is None or line.supplier_invoice_id or line.advance_order_id:
                 continue
             line.account_id, line.job_ref = before.account_id, before.job_ref
             splits = list(before.splits.all())

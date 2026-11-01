@@ -91,6 +91,8 @@ export interface VoucherLineData {
   splits: { division: string; amount: string; percent: string | null }[];
   /** The matched supplier invoice this line pays (P16-11), with PO, GRN and invoice. */
   supplier_invoice?: PaidInvoice | null;
+  /** An advance on this purchase order before the goods arrive (P16-11a). */
+  advance_order?: { id: number; label: string; total_lkr: string; status: string } | null;
 }
 
 export interface PaidInvoice {
@@ -160,6 +162,8 @@ export interface VoucherLineInput {
   tax_amount: string;
   /** Pays this matched supplier invoice (P16-11). */
   supplier_invoice?: number | null;
+  /** An advance on this purchase order (P16-11a). */
+  advance_order?: number | null;
 }
 
 export interface VoucherInput {

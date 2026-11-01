@@ -76,8 +76,7 @@ def can_request_exception(user: User) -> bool:
 
 
 def visible(user: User) -> QuerySet[SupplierInvoice]:
-    access = effective_access(user)
-    if not (access.has("vouchers", "view") or access.has("accounting", "view")):
+    if not effective_access(user).has("vouchers", "view"):
         return SupplierInvoice.objects.none()
     return SupplierInvoice.objects.filter(division__in=division_scope(user)).select_related(
         "supplier", "division", "currency", "created_by"

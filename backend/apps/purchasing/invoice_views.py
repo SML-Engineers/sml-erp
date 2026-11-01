@@ -5,15 +5,13 @@ from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounting.models import TaxCode
 from apps.core import approvals
-from apps.core.access import effective_access
 from apps.core.models import Division
-from apps.core.permissions import IsFullyAuthenticated
+from apps.core.permissions import AreaAccess
 from apps.masters.models import Supplier
 
 from . import invoices
@@ -21,16 +19,12 @@ from .invoices import InvoiceError, LineInput
 from .models import SupplierInvoice, SupplierInvoiceAttachment
 
 
-class VouchersOrAccounting(BasePermission):
-    message = "You do not have access to this part of the system."
-
-    def has_permission(self, request, view):
-        access = effective_access(request.user)
-        return access.has("vouchers", "view") or access.has("accounting", "view")
-
-
 class _Invoices(APIView):
-    permission_classes = [IsFullyAuthenticated, VouchersOrAccounting]
+    """Reading needs Vouchers: View (Clerk, Accountant, Director); the service checks the rest."""
+
+    permission_classes = [AreaAccess]
+    access_area = "vouchers"
+    access_write_level = "view"
 
 
 def _error(error):

@@ -302,14 +302,14 @@ def test_the_director_sends_an_exception_back(clerk, accountant, director, suppl
 def test_the_same_invoice_number_is_refused(clerk, supplier, grn_line):
     enter(clerk, supplier, grn_line, qty="1", no="INV-77")
     with pytest.raises(InvoiceError, match="cannot be entered twice"):
-        enter(clerk, supplier, grn_line, qty="1", no="inv 77")
+        enter(clerk, supplier, grn_line, qty="1", no="inv-77 ")
     with pytest.raises(DatabaseError, match="already on supplier invoice"), transaction.atomic():
         first = SupplierInvoice.objects.get()
         SupplierInvoice.objects.create(
             number="X",
             supplier=supplier,
             division=first.division,
-            invoice_no="INV77",
+            invoice_no="inv -77",
             invoice_date=TODAY,
             due_date=TODAY,
             currency=first.currency,
@@ -327,7 +327,7 @@ def test_a_voucher_cannot_repeat_an_entered_supplier_invoice(clerk, supplier, gr
             division=Division.objects.get(code="IM"),
             payee=supplier,
             description="Inserts",
-            lines=[vouchers.LineInput(amount="10.00", invoice_no="inv77")],
+            lines=[vouchers.LineInput(amount="10.00", invoice_no="inv-77")],
         )
 
 

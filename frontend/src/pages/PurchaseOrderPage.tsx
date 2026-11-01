@@ -13,9 +13,12 @@ import {
   closePurchaseOrder,
   createPurchaseOrder,
   getPurchaseOrder,
+  getPurchaseOrderEmail,
   poKey,
+  purchaseOrderPdfUrl,
   returnPurchaseOrder,
   revisePurchaseOrder,
+  sendPurchaseOrderEmail,
   submitPurchaseOrder,
   updatePurchaseOrder,
   type PayMode,
@@ -75,8 +78,15 @@ export default function PurchaseOrderPage() {
           {data.end_reason && ["closed", "cancelled", "revised"].includes(data.status) && (
             <p className="notice">{t("po.because", { reason: data.end_reason })}</p>
           )}
+          <p>
+            <a className="button-link secondary" href={purchaseOrderPdfUrl(data.id)} target="_blank" rel="noreferrer">
+              {t("po.print")}
+            </a>{" "}
+            {!["approved", "partly_received", "received", "closed"].includes(data.status) && <span className="muted">{t("po.printsAsDraft")}</span>}
+          </p>
           {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}`} order={data} /> : <ReadOnly order={data} />}
           <Actions order={data} />
+          {(data.can_email || data.emails.length > 0) && <EmailPanel order={data} />}
         </>
       )}
       <ErrorLine error={order.error} />
@@ -394,6 +404,84 @@ function Actions({ order }: { order: PODetail }) {
             <li key={i}>
               {h.at.slice(0, 16).replace("T", " ")} · {h.action_label} · {h.by}
               {h.reason ? ` · ${h.reason}` : ""}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function EmailPanel({ order }: { order: PODetail }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [message, setMessage] = useState<{ to: string; subject: string; body: string } | null>(null);
+  const load = useMutation({
+    mutationFn: () => getPurchaseOrderEmail(order.id),
+    onSuccess: (draft) => setMessage({ to: draft.to.join(", "), subject: draft.subject, body: draft.body }),
+  });
+  const send = useMutation({
+    mutationFn: () =>
+      sendPurchaseOrderEmail(order.id, {
+        to: message!.to
+          .split(/[,;]/)
+          .map((a) => a.trim())
+          .filter(Boolean),
+        cc: [],
+        subject: message!.subject,
+        body: message!.body,
+      }),
+    onSuccess: (latest) => {
+      queryClient.setQueryData([...poKey, "one", String(latest.id)], latest);
+      setMessage(null);
+    },
+  });
+  return (
+    <section className="panel" aria-label={t("po.emailTitle")}>
+      <h2>{t("po.emailTitle")}</h2>
+      {order.can_email && !message && (
+        <button type="button" disabled={load.isPending} onClick={() => load.mutate()}>
+          {t("po.emailToSupplier")}
+        </button>
+      )}
+      {message && (
+        <form
+          className="form-grid"
+          aria-label={t("po.emailTitle")}
+          onSubmit={(e) => {
+            e.preventDefault();
+            send.mutate();
+          }}
+        >
+          <label className="wide">
+            {t("quotations.emailTo")}
+            <input value={message.to} required onChange={(e) => setMessage({ ...message, to: e.target.value })} />
+          </label>
+          <label className="wide">
+            {t("quotations.emailSubject")}
+            <input value={message.subject} required onChange={(e) => setMessage({ ...message, subject: e.target.value })} />
+          </label>
+          <label className="wide">
+            {t("quotations.emailBody")}
+            <textarea rows={6} value={message.body} required onChange={(e) => setMessage({ ...message, body: e.target.value })} />
+          </label>
+          <div className="wide">
+            <button type="submit" disabled={send.isPending}>
+              {t("quotations.sendEmail")}
+            </button>{" "}
+            <button type="button" className="secondary" onClick={() => setMessage(null)}>
+              {t("quotations.cancel")}
+            </button>
+          </div>
+        </form>
+      )}
+      <ErrorLine error={load.error ?? send.error} />
+      {order.emails.length > 0 && (
+        <ul className="changes" aria-label={t("quotations.emailsSent")}>
+          {order.emails.map((m, i) => (
+            <li key={i}>
+              {m.status === "sent" ? "✓" : "✗"} {m.sent_at.slice(0, 16).replace("T", " ")} · {m.to} · {m.by}
+              {m.error ? ` · ${m.error}` : ""}
             </li>
           ))}
         </ul>

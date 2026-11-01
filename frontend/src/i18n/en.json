@@ -1990,6 +1990,10 @@
       "closed": "Closed short",
       "cancelled": "Cancelled",
       "revised": "Replaced by a revision"
-    }
+    },
+    "print": "Print (PDF)",
+    "printsAsDraft": "Prints marked DRAFT until the Director approves it.",
+    "emailTitle": "Email to the supplier",
+    "emailToSupplier": "Email the PO to the supplier"
   }
 }

@@ -19,6 +19,7 @@ const draft: PODetail = {
     },
   ],
   can_edit: true, can_approve: false, can_revise: false, can_cancel: true, can_close: false, approval: null,
+  can_email: false, emails: [],
 };
 
 const formApi = {
@@ -95,4 +96,26 @@ test("the list links to each PO; only buyers see New purchase order", async () =
   expect(within(table).getByRole("link", { name: "PO26110101" })).toHaveAttribute("href", "/purchase-orders/9");
   expect(within(table).getByText("LKR 177,000.00")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "New purchase order" })).toHaveAttribute("href", "/purchase-orders/new");
+});
+
+test("the buyer emails an approved PO to the supplier and can print it", async () => {
+  const approved: PODetail = { ...draft, status: "approved", can_edit: false, can_cancel: true, can_revise: true, can_email: true };
+  const calls = mockApi({
+    "GET /api/v1/purchase-orders/9/": { body: approved },
+    "GET /api/v1/purchase-orders/9/email/": {
+      body: { from: "purchasing@sml.lk", ready: true, to: ["sales@sddpolymer.lk"], cc: [], subject: "Purchase order PO26110101 from SML", body: "Dear SDD" },
+    },
+    "POST /api/v1/purchase-orders/9/email/": {
+      body: { ...approved, emails: [{ to: "sales@sddpolymer.lk", subject: "PO", status: "sent", error: "", sent_at: "2026-11-01T10:00:00", by: "Buyer" }] },
+    },
+  });
+  renderAt("/purchase-orders/9", <PurchaseOrderPage />, "/purchase-orders/:id");
+  expect(await screen.findByRole("link", { name: "Print (PDF)" })).toHaveAttribute("href", "/api/v1/purchase-orders/9/pdf/");
+  expect(screen.queryByText(/Prints marked DRAFT/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Email the PO to the supplier" }));
+  const form = await screen.findByRole("form", { name: "Email to the supplier" });
+  expect(within(form).getByDisplayValue("sales@sddpolymer.lk")).toBeInTheDocument();
+  fireEvent.submit(form);
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/purchase-orders/9/email/", expect.objectContaining({ method: "POST" })));
+  expect(await screen.findByText(/sales@sddpolymer.lk · Buyer/)).toBeInTheDocument();
 });

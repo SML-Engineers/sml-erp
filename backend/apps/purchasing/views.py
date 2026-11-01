@@ -1,6 +1,7 @@
 """Purchase orders API (P16-04). Rules live in orders.py; every endpoint needs Purchasing
 access and shows only the user's divisions."""
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ from apps.core.permissions import AreaAccess
 from apps.inventory.models import Item
 from apps.masters.models import Supplier
 
-from . import orders
+from . import emails, orders, printing
 from .models import PurchaseOrder
 from .orders import PurchasingError
 
@@ -87,6 +88,8 @@ def _detail(o: PurchaseOrder, user) -> dict:
         "can_revise": orders.can_revise(user, o),
         "can_cancel": orders.can_cancel(user, o),
         "can_close": orders.can_close(user, o),
+        "can_email": emails.can_email(user, o),
+        "emails": emails.history(o),
         "approval": None
         if state is None
         else {
@@ -258,3 +261,53 @@ class CloseView(_Action):
         return self._run(
             request, pk, lambda o: orders.close(request.user, o, _text(request, "reason"))
         )
+
+
+class PdfView(_Purchasing):
+    def get(self, request, pk):
+        order = _get(request.user, pk)
+        response = HttpResponse(printing.render(order), content_type="application/pdf")
+        disposition = "attachment" if request.query_params.get("download") else "inline"
+        name = f"PO-{order.label.replace(' ', '-')}.pdf"
+        response["Content-Disposition"] = f'{disposition}; filename="{name}"'
+        return response
+
+
+class EmailIn(serializers.Serializer):
+    to = serializers.ListField(child=serializers.CharField(max_length=254), max_length=20)
+    cc = serializers.ListField(
+        child=serializers.CharField(max_length=254), max_length=20, required=False
+    )
+    subject = serializers.CharField(max_length=200)
+    body = serializers.CharField(max_length=20000)
+
+
+class EmailView(_Purchasing):
+    def get(self, request, pk):
+        order = _get(request.user, pk)
+        try:
+            return Response(emails.draft(request.user, order))
+        except PurchasingError as error:
+            return _error(error)
+
+    def post(self, request, pk):
+        order = _get(request.user, pk)
+        data = EmailIn(data=request.data)
+        data.is_valid(raise_exception=True)
+        values = data.validated_data
+        try:
+            record = emails.send(
+                request.user,
+                order,
+                to=values["to"],
+                cc=values.get("cc", []),
+                subject=values["subject"],
+                body=values["body"],
+            )
+        except PurchasingError as error:
+            return _error(error)
+        body = _detail(order, request.user)
+        if record.status != "sent":
+            body["email_error"] = f"The email could not be sent: {record.error}"
+            return Response(body, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(body)

@@ -11,6 +11,7 @@
 """
 
 import io
+import re
 import zipfile
 
 from django.db import transaction
@@ -25,7 +26,7 @@ from apps.core.audit import audit_context
 from apps.core.models import Division, User
 from apps.masters import excel
 from apps.masters.models import Material
-from apps.masters.services import MastersError, normalise_code
+from apps.masters.services import MastersError
 
 from .models import Item, Store
 
@@ -45,6 +46,31 @@ TEXT_FIELDS = ("name", "description", "notes")
 
 class ItemError(MastersError):
     pass
+
+
+# Item codes as SML writes them, e.g. 48/BL/08 or EN8-40 (owner's sample PO26061701).
+ITEM_CODE = re.compile(r"^[A-Z0-9][A-Z0-9/.\-]{0,19}$")
+
+
+def normalise_code(code: str, what: str) -> str:
+    code = (code or "").strip().upper()
+    pattern = ITEM_CODE if what == "item" else STORE_CODE
+    if not pattern.match(code):
+        allowed = (
+            "letters, digits, dashes, slashes or dots"
+            if what == "item"
+            else ("letters, digits or dashes")
+        )
+        raise ItemError(
+            f"The {what} code must be 1 to 20 {allowed}, starting with a letter or digit, "
+            "for example 48/BL/08."
+            if what == "item"
+            else f"The {what} code must be 1 to 20 {allowed}, for example IM-RESIN."
+        )
+    return code
+
+
+STORE_CODE = re.compile(r"^[A-Z0-9][A-Z0-9\-]{0,19}$")
 
 
 def can_enter(user: User) -> bool:

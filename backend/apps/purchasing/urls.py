@@ -11,4 +11,6 @@ urlpatterns = [
     path("purchase-orders/<int:pk>/revise/", v.ReviseView.as_view(), name="po-revise"),
     path("purchase-orders/<int:pk>/cancel/", v.CancelView.as_view(), name="po-cancel"),
     path("purchase-orders/<int:pk>/close/", v.CloseView.as_view(), name="po-close"),
+    path("purchase-orders/<int:pk>/pdf/", v.PdfView.as_view(), name="po-pdf"),
+    path("purchase-orders/<int:pk>/email/", v.EmailView.as_view(), name="po-email"),
 ]

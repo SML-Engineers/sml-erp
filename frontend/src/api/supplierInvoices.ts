@@ -61,6 +61,7 @@ export interface InvoiceDetail extends InvoiceSummary {
   vouchers?: { id: number; number: string; status: string; amount: string }[];
   set_offs?: { voucher: { id: number; number: string }; amount: string; journal: string; at: string }[];
   advances_waiting?: string;
+  debit_notes?: { number: string; return: { id: number; number: string }; quantity: string; total_lkr: string }[];
   can_set_off?: boolean;
   lines: InvoiceLine[];
   attachments: { id: number; file_name: string; uploaded_by: string; uploaded_at: string }[];

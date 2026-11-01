@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import invoice_views as iv
+from . import return_views as rv
 from . import views as v
 
 urlpatterns = [
@@ -40,4 +41,10 @@ urlpatterns = [
         iv.AttachmentDetailView.as_view(),
         name="si-attachment",
     ),
+    path("supplier-returns/", rv.ReturnListView.as_view(), name="rtn-list"),
+    path("supplier-returns/lots/", rv.LotsView.as_view(), name="rtn-lots"),
+    path("supplier-returns/<int:pk>/", rv.ReturnDetailView.as_view(), name="rtn-detail"),
+    path("supplier-returns/<int:pk>/confirm/", rv.ConfirmView.as_view(), name="rtn-confirm"),
+    path("supplier-returns/<int:pk>/approve/", rv.ApproveView.as_view(), name="rtn-approve"),
+    path("supplier-returns/<int:pk>/return/", rv.SendBackView.as_view(), name="rtn-return"),
 ]

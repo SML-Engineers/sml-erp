@@ -461,6 +461,7 @@ class StockMovement(models.Model):
         ACCEPTED = "accepted", "Accepted by QC"
         REJECTED = "rejected", "Rejected by QC"
         REVERSED = "reversed", "GRN reversed"
+        RETURNED = "returned", "Returned to the supplier"
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="movements")
     store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="movements")

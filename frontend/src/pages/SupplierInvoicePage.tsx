@@ -99,6 +99,16 @@ export default function SupplierInvoicePage() {
               ))}
             </ul>
           )}
+          {(data.debit_notes ?? []).length > 0 && (
+            <ul className="changes" aria-label={t("rtn.debitNotes")}>
+              {(data.debit_notes ?? []).map((d) => (
+                <li key={d.number}>
+                  {t("rtn.debitNote", { number: d.number, amount: formatDecimal(d.total_lkr), qty: formatQuantity(d.quantity) })}{" "}
+                  <Link to={`/supplier-returns/${d.return.id}`}>{d.return.number}</Link>
+                </li>
+              ))}
+            </ul>
+          )}
           {data.can_set_off && <SetOff invoice={data} />}
           {data.exception_reason && <p className="muted">{t("si.exceptionReason", { reason: data.exception_reason })}</p>}
           {data.cancel_reason && <p className="notice">{t("si.cancelReason", { reason: data.cancel_reason })}</p>}

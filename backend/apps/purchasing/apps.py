@@ -17,3 +17,6 @@ class PurchasingConfig(AppConfig):
         register(m.SupplierInvoiceLine)
         register(m.SupplierInvoiceAttachment)
         register(m.AdvanceSetOff)
+        register(m.SupplierReturn)
+        register(m.SupplierReturnLine)
+        register(m.DebitNote)

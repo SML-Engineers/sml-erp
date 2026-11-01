@@ -216,9 +216,21 @@ Status: `[ ]` to do · `[x]` done
     invoice still owes (database). What is set off reduces what can still go on vouchers.
     Set-offs are never changed (database guard).
 
-- [ ] **P16-12 Supplier returns and debit notes**
+- [x] **P16-12 Supplier returns and debit notes**
   Rejected or short goods returned to the supplier with a return note; a debit note reduces
   what is owed; linked to the GRN and invoice.
+  - Done: Purchasing and stores → Supplier returns. The stores person returns lots of one GRN
+    still in store, with a reason. Rejected or damaged goods (rejected store, no value) go
+    back when the stores person confirms; nothing is posted. Goods QC had accepted (main
+    store) need the Director: their stock value leaves the inventory account against GRNI
+    for the part not yet invoiced, and against the supplier with a debit note (DN…) for the
+    part already invoiced (Dr Accounts payable at the invoice price and tax, Cr recoverable
+    tax, any difference to Purchase price variance). Returned goods can no longer be
+    invoiced; debit notes reduce what is still to pay on the invoice (also in the database
+    limits for vouchers and advance set-offs). Either way the PO expects the goods again for
+    a replacement. Confirmed returns and debit notes never change (database guards). Short
+    deliveries need no return: only what arrived is received and invoiced. A printed return
+    note can follow with the reports (P16-13).
 
 ## G. Reports and go-live
 

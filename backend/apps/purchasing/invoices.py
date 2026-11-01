@@ -99,10 +99,17 @@ def can_approve(user: User, invoice: SupplierInvoice) -> bool:
 
 def accepted(line: GoodsReceiptLine) -> Decimal:
     """What QC accepted on the GRN line; nothing until QC has decided."""
+    from .returns import returned_accepted  # returns reads this module
+
     inspection = IncomingInspection.objects.filter(
         line=line, status=IncomingInspection.Status.DECIDED
     ).first()
-    return inspection.accepted_quantity if inspection else Decimal("0")
+    if inspection is None:
+        return Decimal("0")
+    # Accepted goods sent back (P16-12) can no longer be invoiced; the part already invoiced
+    # is cleared by a debit note instead.
+    returned, debited = returned_accepted(line)
+    return inspection.accepted_quantity - returned + debited
 
 
 def invoiced(line: GoodsReceiptLine, *, excluding: SupplierInvoice | None = None) -> Decimal:
@@ -651,7 +658,14 @@ def unpaid(invoice: SupplierInvoice, *, excluding=None) -> Decimal:
 
     if invoice.status != St.POSTED:
         return Decimal("0")
-    left = invoice.total_lkr - set_off_total(invoice) - on_vouchers(invoice, excluding=excluding)
+    from .returns import debited
+
+    left = (
+        invoice.total_lkr
+        - set_off_total(invoice)
+        - debited(invoice)
+        - on_vouchers(invoice, excluding=excluding)
+    )
     return max(left, Decimal("0"))
 
 

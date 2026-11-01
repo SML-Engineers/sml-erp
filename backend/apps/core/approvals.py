@@ -78,6 +78,10 @@ DOCUMENT_TYPES = {
     # Director approves the exception (owner, 31 Oct 2026; P16-10).
     "invoice_exception": DocumentType(
         "Supplier invoice exception", min_approvals=1, final_role="director"
+    ),  # Sending back goods QC had accepted: their value leaves stock and the supplier owes it
+    # back (P16-12); the Director approves.
+    "supplier_return": DocumentType(
+        "Return of accepted goods", min_approvals=1, final_role="director"
     ),
 }
 

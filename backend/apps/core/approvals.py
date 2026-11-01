@@ -70,6 +70,11 @@ DOCUMENT_TYPES = {
     # 2026; P16-06); so is reversing a confirmed goods receiving note.
     "goods_receipt": DocumentType("GRN with excess", min_approvals=1, final_role="director"),
     "goods_receipt_reversal": DocumentType("GRN reversal", min_approvals=1, final_role="director"),
+    # Accepting material that fails a check: the Director approves every deviation until the
+    # Production Manager role is switched on (owner, 1 Nov 2026; P16-08).
+    "quality_deviation": DocumentType(
+        "Accept under deviation", min_approvals=1, final_role="director"
+    ),
 }
 
 

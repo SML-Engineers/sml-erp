@@ -989,7 +989,7 @@ Every raw material delivery is received, weighed or counted package by package, 
 1. **Arrival:** delivery recorded at the store against the purchase order: supplier, vehicle, delivery note number, supplier's invoice number.
 2. **Goods receipt (Stores Manager / Executive):** quantities entered per package (see 6A.2). Every package gets a printed QR label with its lot number. Status: *Quarantine*.
 3. **Incoming inspection (QC Inspector):** checks from the item's inspection plan, results entered, certificates attached.
-4. **Decision:** Accept, Reject, or Accept under deviation (needs Production Manager approval, Director for critical materials).
+4. **Decision:** Accept, Reject, or Accept under deviation (needs Production Manager approval, Director for critical materials). *Owner, 1 Nov 2026: the Director approves every deviation until the Production Manager role is switched on (Phase 3); QC decides per package, rejecting single bags or bundles and accepting the rest.*
 5. **Stock update:** accepted lots move to available stock; rejected lots move to a rejected location for return to the supplier, with a debit note.
 
 ### 6A.2 Stores receiving entry page

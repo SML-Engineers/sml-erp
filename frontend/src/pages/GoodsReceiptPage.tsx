@@ -229,6 +229,7 @@ function ReadOnly({ grn }: { grn: GRNDetail }) {
               <th className="num">{t("grn.damaged")}</th>
               <th className="num">{t("grn.good")}</th>
               <th className="num">{t("grn.excess")}</th>
+              <th>{t("grn.qc")}</th>
             </tr>
           </thead>
           <tbody>
@@ -245,6 +246,18 @@ function ReadOnly({ grn }: { grn: GRNDetail }) {
                 <td className="num">{formatQuantity(l.damaged_quantity)}</td>
                 <td className="num">{formatQuantity(l.good_quantity)}</td>
                 <td className={Number(l.excess_quantity) > 0 ? "num form-error" : "num"}>{formatQuantity(l.excess_quantity)}</td>
+                <td>
+                  {l.inspection ? (
+                    <Link to={`/inspections/${l.inspection.id}`}>
+                      {l.inspection.decision ? t(`qc.decisions.${l.inspection.decision}`) : t(`qc.statuses.${l.inspection.status}`)}
+                      {l.inspection.decision && Number(l.inspection.rejected_quantity) > 0 && ` · ${t("qc.rejectedQty", { qty: formatQuantity(l.inspection.rejected_quantity) })}`}
+                    </Link>
+                  ) : grn.status === "confirmed" ? (
+                    t("grn.waitingForQc")
+                  ) : (
+                    ""
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

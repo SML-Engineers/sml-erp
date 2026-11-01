@@ -25,6 +25,9 @@ import SalesOrderPage from "./pages/SalesOrderPage";
 import SalesReportsPage from "./pages/SalesReportsPage";
 import GoodsReceiptPage from "./pages/GoodsReceiptPage";
 import GoodsReceiptsPage from "./pages/GoodsReceiptsPage";
+import InspectionPage from "./pages/InspectionPage";
+import InspectionPlansPage from "./pages/InspectionPlansPage";
+import InspectionsPage from "./pages/InspectionsPage";
 import ItemsPage from "./pages/ItemsPage";
 import PurchaseOrderPage from "./pages/PurchaseOrderPage";
 import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
@@ -113,6 +116,9 @@ export default function App() {
         <Route path="purchase-orders/:id" element={<PurchaseOrderPage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />
         <Route path="goods-receipts/:id" element={<GoodsReceiptPage />} />
+        <Route path="inspections" element={<InspectionsPage />} />
+        <Route path="inspections/:id" element={<InspectionPage />} />
+        <Route path="inspection-plans" element={<InspectionPlansPage />} />
         <Route path="settings/stores" element={<WithMe page={(me) => <StoresPage me={me} />} />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
         <Route

@@ -268,3 +268,176 @@ class ReceiptPackage(models.Model):
 
     def __str__(self):
         return self.lot_no
+
+
+# --- Incoming inspection (backlog P16-08, spec 6A.3, 6A.4) -----------------------------------
+
+
+class InspectionPlan(models.Model):
+    """What QC checks on an item, or on every item of a category without its own plan."""
+
+    class Sampling(models.TextChoices):
+        ALL = "all", "Every package"
+        FIXED = "fixed", "A fixed number of packages"
+        PERCENT = "percent", "A percentage of the packages"
+
+    name = models.CharField(max_length=100)
+    item = models.ForeignKey(
+        Item, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    category = models.CharField(max_length=20, choices=Item.Category.choices, blank=True)
+    sampling = models.CharField(max_length=10, choices=Sampling.choices, default=Sampling.ALL)
+    sample_value = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(models.Q(item__isnull=False) & models.Q(category=""))
+                | (models.Q(item__isnull=True) & ~models.Q(category="")),
+                name="inventory_plan_item_or_category",
+            ),
+            models.UniqueConstraint(
+                fields=["item"],
+                condition=models.Q(is_active=True, item__isnull=False),
+                name="inventory_one_plan_per_item",
+            ),
+            models.UniqueConstraint(
+                fields=["category"],
+                condition=models.Q(is_active=True, item__isnull=True),
+                name="inventory_one_plan_per_category",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class InspectionParameter(models.Model):
+    class Kind(models.TextChoices):
+        NUMBER = "number", "Measured (min and max)"
+        PASS_FAIL = "pass_fail", "Pass or fail"
+
+    plan = models.ForeignKey(InspectionPlan, on_delete=models.CASCADE, related_name="parameters")
+    position = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    minimum = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    maximum = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    unit = models.CharField(max_length=20, blank=True)
+    critical = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["plan", "position"]
+
+    def __str__(self):
+        return self.name
+
+
+class IncomingInspection(models.Model):
+    """QC's inspection of one GRN line. The checks are copied from the plan when it starts,
+    so a later change to the plan does not change it (rule 11). Once decided it never
+    changes (database guard)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Being inspected"
+        DEVIATION_REQUESTED = "deviation_requested", "Deviation waiting for the Director"
+        DECIDED = "decided", "Decided"
+
+    class Decision(models.TextChoices):
+        ACCEPTED = "accepted", "Accepted"
+        REJECTED = "rejected", "Rejected"
+        DEVIATION = "deviation", "Accepted under deviation"
+
+    line = models.OneToOneField(
+        GoodsReceiptLine, on_delete=models.PROTECT, related_name="inspection"
+    )
+    plan = models.ForeignKey(
+        InspectionPlan, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    sample_size = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    decision = models.CharField(max_length=10, choices=Decision.choices, blank=True)
+    # Of the good quantity (received less damaged): accepted + rejected = good.
+    accepted_quantity = _qty(default=0)
+    rejected_quantity = _qty(default=0)
+    notes = models.TextField(blank=True)
+    reason = models.TextField(blank=True)  # for rejecting or for the deviation
+    # No inspection needed for the item: accepted when the GRN was confirmed.
+    automatic = models.BooleanField(default=False)
+    inspector = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    started_at = models.DateTimeField(default=timezone.now)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"Inspection of {self.line}"
+
+
+class InspectionResult(models.Model):
+    inspection = models.ForeignKey(
+        IncomingInspection, on_delete=models.CASCADE, related_name="results"
+    )
+    position = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=10, choices=InspectionParameter.Kind.choices)
+    minimum = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    maximum = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    unit = models.CharField(max_length=20, blank=True)
+    critical = models.BooleanField(default=False)
+    value = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    passed = models.BooleanField(null=True, blank=True)  # pass/fail checks
+    within_limits = models.BooleanField(null=True, blank=True)  # worked out; None: not entered
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["inspection", "position"]
+
+    def __str__(self):
+        return self.name
+
+
+class RejectedPackage(models.Model):
+    """A bag, bundle or box QC rejected while accepting the rest of the line (owner, 1 Nov
+    2026: decisions per package)."""
+
+    inspection = models.ForeignKey(
+        IncomingInspection, on_delete=models.CASCADE, related_name="rejected_packages"
+    )
+    package = models.OneToOneField(
+        ReceiptPackage, on_delete=models.PROTECT, related_name="rejection"
+    )
+
+    def __str__(self):
+        return f"{self.package} rejected"
+
+
+class InspectionAttachment(models.Model):
+    """A certificate of analysis, mill test certificate or photo (PDF, JPG or PNG)."""
+
+    inspection = models.ForeignKey(
+        IncomingInspection, on_delete=models.PROTECT, related_name="attachments"
+    )
+    file = models.FileField(upload_to="inspections/%Y/%m/")
+    file_name = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    uploaded_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.file_name

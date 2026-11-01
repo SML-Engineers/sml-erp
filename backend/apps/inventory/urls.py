@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import inspection_views as q
 from . import receipt_views as r
 from . import views
 
@@ -40,5 +41,23 @@ urlpatterns = [
         "goods-receipts/<int:pk>/photos/<int:photo_pk>/",
         r.PhotoDetailView.as_view(),
         name="grn-photo",
+    ),
+    path("inspection-plans/", q.PlanListView.as_view(), name="plan-list"),
+    path("inspection-plans/<int:pk>/", q.PlanDetailView.as_view(), name="plan-detail"),
+    path("inspections/", q.InspectionListView.as_view(), name="inspection-list"),
+    path("inspections/queue/", q.QueueView.as_view(), name="inspection-queue"),
+    path("inspections/<int:pk>/", q.InspectionDetailView.as_view(), name="inspection-detail"),
+    path("inspections/<int:pk>/decide/", q.DecideView.as_view(), name="inspection-decide"),
+    path("inspections/<int:pk>/approve/", q.ApproveView.as_view(), name="inspection-approve"),
+    path("inspections/<int:pk>/return/", q.ReturnView.as_view(), name="inspection-return"),
+    path(
+        "inspections/<int:pk>/attachments/",
+        q.AttachmentListView.as_view(),
+        name="inspection-attachments",
+    ),
+    path(
+        "inspections/<int:pk>/attachments/<int:attachment_pk>/",
+        q.AttachmentDetailView.as_view(),
+        name="inspection-attachment",
     ),
 ]

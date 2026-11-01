@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
 
@@ -113,6 +114,10 @@ jobs:
     name: Full stack (make up, make test)
     runs-on: ubuntu-24.04
     needs: [backend, frontend]
+    # The two slow checks (about 11 of the 19 minutes) run only on a pull request that is
+    # ready for review, not on draft pushes or the run after merging (they already passed on
+    # the pull request). Saves GitHub Actions minutes on the free plan (2,000 a month).
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     steps:
       - uses: actions/checkout@v7
       - name: make up
@@ -166,6 +171,8 @@ jobs:
     name: Production stack (HTTPS, as on the servers)
     runs-on: ubuntu-24.04
     needs: [backend, frontend]
+    # See the stack job: only on a pull request that is ready for review.
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     env:
       ENV_FILE: ${{ github.workspace }}/.env.production
       APP_VERSION: ci

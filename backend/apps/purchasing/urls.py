@@ -16,6 +16,7 @@ urlpatterns = [
     path("purchase-orders/<int:pk>/email/", v.EmailView.as_view(), name="po-email"),
     path("supplier-invoices/", iv.InvoiceListView.as_view(), name="si-list"),
     path("supplier-invoices/open-lines/", iv.OpenLinesView.as_view(), name="si-open-lines"),
+    path("supplier-invoices/payable/", iv.PayableView.as_view(), name="si-payable"),
     path("supplier-invoices/<int:pk>/", iv.InvoiceDetailView.as_view(), name="si-detail"),
     path("supplier-invoices/<int:pk>/match/", iv.MatchView.as_view(), name="si-match"),
     path("supplier-invoices/<int:pk>/reopen/", iv.ReopenView.as_view(), name="si-reopen"),

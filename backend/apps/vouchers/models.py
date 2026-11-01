@@ -158,6 +158,15 @@ class VoucherLine(models.Model):
     )
     # Job or production order the cost belongs to (unused until Phase 3).
     job_ref = models.CharField(max_length=50, blank=True)
+    # A matched supplier invoice this line pays (P16-11): its account is Accounts payable and
+    # what the vouchers that still count pay on it never exceeds the invoice (database guard).
+    supplier_invoice = models.ForeignKey(
+        "purchasing.SupplierInvoice",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="voucher_lines",
+    )
 
     class Meta:
         ordering = ["voucher", "line_no"]

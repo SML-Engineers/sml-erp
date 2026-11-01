@@ -243,6 +243,7 @@ class LineInput:
     description: str = ""
     tax_code: TaxCode | None = None
     tax_amount: object = "0"
+    supplier_invoice: object = None  # apps.purchasing.models.SupplierInvoice (P16-11)
 
 
 def _money(value, where: str, *, positive: bool) -> Decimal:
@@ -270,6 +271,9 @@ def _lines(voucher: Voucher, lines: list[LineInput]) -> list[VoucherLine]:
     for number, line in enumerate(lines, start=1):
         where = f"Line {number}"
         amount = _money(line.amount, where, positive=True)
+        if line.supplier_invoice is not None:
+            built.append(_invoice_line(voucher, line.supplier_invoice, amount, number, where))
+            continue
         if line.tax_code is not None:
             code = line.tax_code
             if not code.is_active or code.use == TaxCode.Use.SALES:
@@ -296,6 +300,44 @@ def _lines(voucher: Voucher, lines: list[LineInput]) -> list[VoucherLine]:
             )
         )
     return built
+
+
+def _invoice_line(voucher: Voucher, invoice, amount: Decimal, number: int, where: str):
+    """A line paying a matched supplier invoice (P16-11, spec 5A.5): it pays the supplier's
+    account in Accounts payable, never more than what is still unpaid on the invoice."""
+    from apps.purchasing import invoices  # purchasing reads this module
+
+    if invoice.status != invoice.Status.POSTED:
+        raise VoucherError(f"{where}: supplier invoice {invoice.invoice_no} is not matched yet.")
+    if voucher.payee_id != invoice.supplier_id:
+        raise VoucherError(f"{where}: supplier invoice {invoice.invoice_no} is of another payee.")
+    if voucher.division_id != invoice.division_id:
+        raise VoucherError(
+            f"{where}: supplier invoice {invoice.invoice_no} is of division "
+            f"{invoice.division.code}; pay it on a voucher of that division."
+        )
+    unpaid = invoices.unpaid(invoice, excluding=voucher)
+    if amount > unpaid:
+        raise VoucherError(
+            f"{where}: {amount:,.2f} is more than the {unpaid:,.2f} still unpaid on supplier "
+            f"invoice {invoice.invoice_no}. An invoice is never paid twice."
+        )
+    payable = Account.objects.filter(system_role="accounts_payable", is_active=True).first()
+    if payable is None:
+        raise VoucherError("There is no active Accounts payable account (Chart of accounts).")
+    return VoucherLine(
+        voucher=voucher,
+        line_no=number,
+        invoice_no=invoice.invoice_no,
+        invoice_date=invoice.invoice_date,
+        description=f"Supplier invoice {invoice.number}"[:500],
+        amount=amount,
+        tax_code=None,
+        tax_amount=Decimal("0"),
+        account=payable,
+        division=invoice.division,
+        supplier_invoice=invoice,
+    )
 
 
 def _check_payee(vt: VoucherType, payee: Supplier | None, transfer_to) -> None:
@@ -376,7 +418,7 @@ def save(
         }
         voucher.lines.all().delete()
         for line in new_lines:
-            if line.line_no in coding:
+            if line.line_no in coding and line.supplier_invoice_id is None:
                 line.account_id, line.division_id, line.job_ref = coding[line.line_no]
                 line.division_id = line.division_id or voucher.division_id
             line.save()
@@ -416,7 +458,10 @@ def duplicate_invoices(voucher: Voucher, lines=None) -> list[str]:
     warnings = []
     mine = lines if lines is not None else list(voucher.lines.all())
     seen = set()
+    others = [o for o in others if o.supplier_invoice_id is None]
     for line in mine:
+        if getattr(line, "supplier_invoice_id", None):
+            continue  # checked by what is unpaid on the invoice
         key = invoice_key(line.invoice_no)
         if not key or key in seen:
             continue
@@ -548,7 +593,8 @@ def submit(user: User, voucher: Voucher, comment: str = "") -> Voucher:
         _check_payee(vt, voucher.payee, voucher.transfer_to)
         if not vt.needs_payee and voucher.transfer_to is None:
             raise VoucherError("Choose the company account the money goes to.")
-        if vt.needs_payee and not voucher.attachments.exists():
+        scanned_on_invoices = all(line.supplier_invoice_id for line in lines)
+        if vt.needs_payee and not voucher.attachments.exists() and not scanned_on_invoices:
             raise VoucherError("Attach the scanned invoice or receipt before submitting.")
         try:
             approvals.submit(
@@ -717,6 +763,11 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
             line = lines.get(coding.line_no)
             if line is None:
                 raise VoucherError(f"{where} is not on this voucher.")
+            if line.supplier_invoice_id:
+                # Pays a matched supplier invoice: always Accounts payable, no tax (P16-11).
+                line.job_ref = (coding.job_ref or "").strip()[:50]
+                line.save(update_fields=["job_ref"])
+                continue
             if coding.account is not None:
                 _check_account(voucher, coding.account, where)
             line.account = coding.account
@@ -979,6 +1030,7 @@ def _line_text(line: VoucherLine) -> dict:
         "amount": line.amount,
         "tax": line.tax_amount,
         "tax_code": line.tax_code_id,
+        "supplier_invoice": line.supplier_invoice_id,
     }
 
 
@@ -1061,7 +1113,7 @@ def revise(
         kept_splits = {}
         for line in new_lines:
             before = old.get(line.line_no)
-            if before is None:
+            if before is None or line.supplier_invoice_id:
                 continue
             line.account_id, line.job_ref = before.account_id, before.job_ref
             splits = list(before.splits.all())

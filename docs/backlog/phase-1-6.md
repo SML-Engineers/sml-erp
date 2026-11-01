@@ -186,11 +186,25 @@ Status: `[ ]` to do · `[x]` done
     invoice number is unique across supplier invoices and vouchers (service and database,
     both ways). A posted or cancelled invoice never changes (database guard).
 
-- [ ] **P16-11 Payment vouchers from matched invoices** (spec 5A.5)
+- [x] **P16-11 Payment vouchers from matched invoices** (spec 5A.5)
   A voucher for PO goods is made from matched or exception-approved invoices, carries the PO,
   GRN and invoice links, and can never exceed what is unpaid on them; the approvers see PO,
   GRN and invoice side by side. Clerk → Accountant → Director → Cashier as today. Advance
   payment on a PO only as a Director-approved exception. Non-stock purchases stay as today.
+  - Done: on a voucher for a supplier, the Clerk sees that supplier's matched invoices of the
+    voucher's division with something unpaid and adds them with "Pay"; the line copies the
+    invoice number and date, has no tax (it is on the invoice) and is coded to Accounts
+    payable, which the Accountant cannot change. A line can pay part of an invoice; all the
+    vouchers that still count never pay more than the invoice (service and database), and a
+    deleted, rejected, amended or cancelled voucher frees its amount. The invoice's scan is
+    enough to submit. The voucher and the review page show PO, GRN (received and accepted)
+    and invoice side by side; the supplier invoice shows what is on vouchers and still to
+    pay. Payment then posts Dr Accounts payable, Cr Bank.
+  - Advance payments on a PO are split out as P16-11a below.
+
+- [ ] **P16-11a Advance payments on a purchase order**
+  A voucher line paying in advance on an approved PO (Director-approved exception), posted to
+  1320 Advances to suppliers, then set off against the supplier's invoice when it is matched.
 
 - [ ] **P16-12 Supplier returns and debit notes**
   Rejected or short goods returned to the supplier with a return note; a debit note reduces

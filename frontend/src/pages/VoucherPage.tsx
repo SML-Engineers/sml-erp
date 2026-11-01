@@ -7,6 +7,7 @@ import { listDivisions } from "../api/admin";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import { listPayees } from "../api/payees";
+import { getPayableInvoices } from "../api/supplierInvoices";
 import { getTaxes, taxesKey } from "../api/taxes";
 import {
   createVoucher,
@@ -27,6 +28,7 @@ import {
   type VoucherDetail,
   type VoucherLineInput,
 } from "../api/vouchers";
+import MatchedInvoice from "../components/MatchedInvoice";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 
@@ -175,6 +177,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
       amount: l.amount,
       tax_code: l.tax_code,
       tax_amount: l.tax_amount,
+      supplier_invoice: l.supplier_invoice?.id ?? null,
     })) ?? [emptyLine()],
   );
   const type = types.data?.find((x) => x.code === typeCode);
@@ -189,6 +192,28 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
     enabled: payee !== null,
   });
   const purchaseCodes = (taxes.data?.codes ?? []).filter((c) => c.is_active && c.use !== "sales");
+  const voucherDivision = voucher?.division ?? division;
+  const payable = useQuery({
+    queryKey: ["supplier-invoices", "payable", payee?.id, voucherDivision],
+    queryFn: () => getPayableInvoices(payee!.id, voucherDivision),
+    enabled: payee !== null && Boolean(voucherDivision) && !revise,
+  });
+  const onVoucher = new Set(lines.map((l) => l.supplier_invoice).filter(Boolean));
+  function payInvoice(invoice: { id: number; number: string; invoice_no: string; invoice_date: string; unpaid: string }) {
+    const line: VoucherLineInput = {
+      invoice_no: invoice.invoice_no,
+      invoice_date: invoice.invoice_date,
+      description: `Supplier invoice ${invoice.number}`,
+      amount: invoice.unpaid,
+      tax_code: null,
+      tax_amount: "0.00",
+      supplier_invoice: invoice.id,
+    };
+    setLines((now) => {
+      const kept = now.filter((l) => l.supplier_invoice || l.amount || l.invoice_no || l.description);
+      return [...kept, line];
+    });
+  }
   const candidates = (payees.data ?? []).filter((p) => !type?.payee_category || p.category === type.payee_category);
 
   const save = useMutation({
@@ -322,29 +347,41 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
           <tbody>
             {lines.map((line, index) => (
               <tr key={index}>
-                <td>
-                  <input
-                    aria-label={t("vouchers.invoiceNoOf", { n: String(index + 1) })}
-                    value={line.invoice_no}
-                    maxLength={50}
-                    onChange={(e) => setLine(index, { invoice_no: e.target.value })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="date"
-                    aria-label={t("vouchers.invoiceDateOf", { n: String(index + 1) })}
-                    value={line.invoice_date ?? ""}
-                    onChange={(e) => setLine(index, { invoice_date: e.target.value || null })}
-                  />
-                </td>
-                <td>
-                  <input
-                    aria-label={t("vouchers.descriptionOf", { n: String(index + 1) })}
-                    value={line.description}
-                    onChange={(e) => setLine(index, { description: e.target.value })}
-                  />
-                </td>
+                {line.supplier_invoice ? (
+                  <>
+                    <td>{line.invoice_no}</td>
+                    <td>{line.invoice_date ?? ""}</td>
+                    <td>
+                      {line.description} <span className="muted">· {t("vouchers.paysMatchedInvoice")}</span>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>
+                      <input
+                        aria-label={t("vouchers.invoiceNoOf", { n: String(index + 1) })}
+                        value={line.invoice_no}
+                        maxLength={50}
+                        onChange={(e) => setLine(index, { invoice_no: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="date"
+                        aria-label={t("vouchers.invoiceDateOf", { n: String(index + 1) })}
+                        value={line.invoice_date ?? ""}
+                        onChange={(e) => setLine(index, { invoice_date: e.target.value || null })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        aria-label={t("vouchers.descriptionOf", { n: String(index + 1) })}
+                        value={line.description}
+                        onChange={(e) => setLine(index, { description: e.target.value })}
+                      />
+                    </td>
+                  </>
+                )}
                 <td>
                   <input
                     inputMode="decimal"
@@ -356,6 +393,9 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                   />
                 </td>
                 <td>
+                  {line.supplier_invoice ? (
+                    <span className="muted">—</span>
+                  ) : (
                   <select
                     aria-label={t("vouchers.taxCodeOf", { n: String(index + 1) })}
                     value={line.tax_code ?? ""}
@@ -368,9 +408,12 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                       </option>
                     ))}
                   </select>
+                  )}
                 </td>
                 <td>
-                  {line.tax_code ? (
+                  {line.supplier_invoice ? (
+                    <span className="muted">{t("vouchers.taxOnInvoice")}</span>
+                  ) : line.tax_code ? (
                     <span className="muted">{t("vouchers.taxOnSave")}</span>
                   ) : (
                     <input
@@ -398,6 +441,23 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
           </tbody>
         </table>
       </div>
+      {payable.data && payable.data.some((i) => !onVoucher.has(i.id)) && (
+        <div className="wide notice" role="region" aria-label={t("vouchers.matchedInvoices")}>
+          <strong>{t("vouchers.matchedInvoices")}</strong>
+          <ul className="changes">
+            {payable.data
+              .filter((i) => !onVoucher.has(i.id))
+              .map((i) => (
+                <li key={i.id}>
+                  {t("vouchers.matchedInvoice", { no: i.invoice_no, due: i.due_date, unpaid: formatDecimal(i.unpaid) })}{" "}
+                  <button type="button" className="small" onClick={() => payInvoice(i)}>
+                    {t("vouchers.payInvoice", { no: i.invoice_no })}
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
       <div className="wide row-actions">
         <button type="button" className="secondary" onClick={() => setLines((now) => [...now, emptyLine()])}>
           {t("vouchers.addLine")}
@@ -466,9 +526,15 @@ function ReadOnly({ voucher }: { voucher: VoucherDetail }) {
           </tfoot>
         </table>
       </div>
+      {voucher.lines
+        .filter((l) => l.supplier_invoice)
+        .map((l) => (
+          <MatchedInvoice key={l.line_no} invoice={l.supplier_invoice!} />
+        ))}
     </section>
   );
 }
+
 
 function Attachments({ voucher }: { voucher: VoucherDetail }) {
   const { t } = useTranslation();

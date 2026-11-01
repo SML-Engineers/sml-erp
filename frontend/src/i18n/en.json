@@ -1048,7 +1048,19 @@
       "reject": "Rejected",
       "send_down": "Changed and sent back to the Accountant",
       "withdraw": "Withdrawn (voucher deleted)"
-    }
+    },
+    "paysMatchedInvoice": "pays a matched supplier invoice",
+    "taxOnInvoice": "on the invoice",
+    "matchedInvoices": "Matched supplier invoices of this payee still to pay",
+    "matchedInvoice": "{{no}}, due {{due}}: LKR {{unpaid}} unpaid",
+    "payInvoice": "Pay {{no}}",
+    "matchOf": "Three-way match of invoice {{no}}",
+    "matchTotals": "invoice LKR {{total}}, on vouchers LKR {{onVouchers}}, due {{due}}",
+    "matchPo": "Purchase order",
+    "matchGrn": "Goods receipt",
+    "matchInvoice": "Invoice",
+    "matchReceived": "{{received}} received, {{accepted}} accepted by QC",
+    "matchException": "difference approved by the Director"
   },
   "voucherReview": {
     "title": "Waiting for my approval",
@@ -2290,6 +2302,7 @@
     "reopen": "Back to draft to correct a typing mistake",
     "askException": "Ask the Director to approve the exception",
     "cancel": "Cancel (supplier sends a credit note or new invoice)",
-    "approve": "Approve the exception"
+    "approve": "Approve the exception",
+    "onVouchers": "On payment vouchers: LKR {{amount}} · still to pay: LKR {{unpaid}}"
   }
 }

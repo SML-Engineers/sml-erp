@@ -2317,5 +2317,44 @@
     "setOff": "Advance of LKR {{amount}} set off ({{journal}}) from voucher",
     "advancesWaiting": "LKR {{amount}} paid in advance on these purchase orders is not yet set off.",
     "setOffNow": "Set off advances"
+  },
+  "rtn": {
+    "title": "Supplier returns",
+    "help": "Goods sent back to the supplier from a GRN, lot by lot. Rejected or damaged goods go back from the rejected store as soon as the stores person confirms. Goods QC had accepted need the Director: their value leaves stock against Goods received not invoiced, or with a debit note if already invoiced. Either way the purchase order expects the goods again.",
+    "new": "Return goods to a supplier",
+    "none": "No returns yet.",
+    "number": "Return no.",
+    "kind": "What is returned",
+    "kinds": {
+      "rejected": "Rejected or damaged goods",
+      "accepted": "Goods QC had accepted"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "awaiting_approval": "Waiting for the Director",
+      "confirmed": "Returned"
+    },
+    "form": "Return goods",
+    "acceptedHelp": "Goods QC had accepted are returned only with the Director's approval. Already invoiced? A debit note reduces what is owed to the supplier.",
+    "noLots": "Nothing of this kind from this GRN is in the store.",
+    "lots": "Lots in the store",
+    "inStore": "In the store",
+    "toReturn": "To return",
+    "toReturnOf": "To return, lot {{lot}}",
+    "reason": "Why the goods are returned",
+    "make": "Make the return",
+    "backToList": "← All supplier returns",
+    "one": "Return",
+    "reasonGiven": "Reason: {{reason}}",
+    "lines": "Goods returned",
+    "notInvoiced": "Not yet invoiced",
+    "invoiced": "Already invoiced",
+    "debitNotes": "Debit notes",
+    "debitNote": "{{number}}: LKR {{amount}} for {{qty}} returned, against invoice",
+    "actions": "What to do with the return",
+    "confirm": "Confirm: the goods have left",
+    "sendToDirector": "Send to the Director",
+    "delete": "Delete the draft",
+    "approve": "Approve the return"
   }
 }

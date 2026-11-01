@@ -123,6 +123,7 @@ def test_the_admin_sets_the_reminders(admin, accountant):
         ("goods_receipt_reversal", True, 1),
         ("quality_deviation", True, 1),
         ("invoice_exception", True, 1),
+        ("supplier_return", True, 1),
     }
     changed = client.put(
         "/api/v1/settings/approval-reminders/",

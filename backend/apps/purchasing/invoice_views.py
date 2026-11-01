@@ -91,6 +91,15 @@ def _detail(i: SupplierInvoice, user) -> dict:
             }
             for so in i.set_offs.select_related("voucher_line__voucher", "journal_entry")
         ],
+        "debit_notes": [
+            {
+                "number": d.number,
+                "return": {"id": d.supplier_return_id, "number": d.supplier_return.number},
+                "quantity": str(d.quantity),
+                "total_lkr": str(d.total_lkr),
+            }
+            for d in i.debit_notes.select_related("supplier_return")
+        ],
         "advances_waiting": str(advances.waiting(i)),
         "can_set_off": i.status == SupplierInvoice.Status.POSTED
         and advances.can_set_off(user)

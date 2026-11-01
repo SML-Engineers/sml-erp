@@ -241,3 +241,110 @@ class AdvanceSetOff(models.Model):
 
     def __str__(self):
         return f"{self.amount} of {self.voucher_line_id} against {self.invoice}"
+
+
+class SupplierReturn(models.Model):
+    """Goods sent back to the supplier (backlog P16-12), from one GRN, lot by lot:
+    - rejected or damaged goods from the rejected store (no value; nothing to post), or
+    - goods QC had accepted, from the main store, approved by the Director: their value
+      leaves stock against Goods received not invoiced, or, for goods already invoiced,
+      against the supplier with a debit note.
+    Either way the PO expects the goods again. A confirmed return never changes."""
+
+    class Kind(models.TextChoices):
+        REJECTED = "rejected", "Rejected or damaged goods"
+        ACCEPTED = "accepted", "Goods QC had accepted"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Waiting for the Director"
+        CONFIRMED = "confirmed", "Returned"
+
+    number = models.CharField(max_length=30, unique=True)
+    receipt = models.ForeignKey(
+        "inventory.GoodsReceipt", on_delete=models.PROTECT, related_name="returns"
+    )
+    supplier = models.ForeignKey("masters.Supplier", on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    return_date = models.DateField()
+    reason = models.TextField()
+    vehicle_no = models.CharField(max_length=30, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-return_date", "-number"]
+
+    def __str__(self):
+        return self.number
+
+
+class SupplierReturnLine(models.Model):
+    supplier_return = models.ForeignKey(
+        SupplierReturn, on_delete=models.CASCADE, related_name="lines"
+    )
+    line_no = models.PositiveSmallIntegerField()
+    grn_line = models.ForeignKey(
+        "inventory.GoodsReceiptLine", on_delete=models.PROTECT, related_name="return_lines"
+    )
+    lot_no = models.CharField(max_length=40)
+    quantity = qty_field()
+    # For goods QC had accepted: the part not yet invoiced (against GRNI) and the part
+    # already invoiced (on the debit note), worked out when the return is confirmed.
+    uninvoiced_quantity = qty_field(default=0)
+    invoiced_quantity = qty_field(default=0)
+    value = money(default=0)  # the stock value that left, LKR
+
+    class Meta:
+        ordering = ["supplier_return", "line_no"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["supplier_return", "line_no"], name="purchasing_return_line_no"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="purchasing_return_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.supplier_return} line {self.line_no}"
+
+
+class DebitNote(models.Model):
+    """What the supplier owes back for invoiced goods returned (backlog P16-12): Dr Accounts
+    payable, Cr Inventory at the PO price, Cr the recoverable tax, Dr/Cr any price
+    difference. It reduces what is still to pay on the invoice. Never changed (database
+    guard)."""
+
+    number = models.CharField(max_length=30, unique=True)
+    supplier_return = models.ForeignKey(
+        SupplierReturn, on_delete=models.PROTECT, related_name="debit_notes"
+    )
+    invoice = models.ForeignKey(
+        SupplierInvoice, on_delete=models.PROTECT, related_name="debit_notes"
+    )
+    return_line = models.ForeignKey(
+        SupplierReturnLine, on_delete=models.PROTECT, related_name="debit_notes"
+    )
+    quantity = qty_field()
+    amount = money()  # net, at the invoice price
+    tax_amount = money(default=0)
+    total_lkr = money()
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return self.number

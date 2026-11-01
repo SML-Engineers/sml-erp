@@ -64,13 +64,9 @@ def im():
 
 
 def raise_po(buyer, sdd, masterbatch, qty="300", price="590.00", **values):
+    values.setdefault("delivery_date", TODAY + timedelta(days=7))
     return orders.create(
-        buyer,
-        supplier=sdd,
-        division=im(),
-        lines=[LineInput(masterbatch, qty, price)],
-        delivery_date=TODAY + timedelta(days=7),
-        **values,
+        buyer, supplier=sdd, division=im(), lines=[LineInput(masterbatch, qty, price)], **values
     )
 
 

@@ -16,7 +16,7 @@ def money(**extra):
     return models.DecimalField(max_digits=18, decimal_places=2, **extra)
 
 
-def quantity(**extra):
+def qty_field(**extra):
     return models.DecimalField(max_digits=18, decimal_places=3, **extra)
 
 
@@ -86,7 +86,7 @@ class PurchaseOrderLine(models.Model):
     item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
     description = models.CharField(max_length=300)
     unit = models.CharField(max_length=10)
-    quantity = quantity()
+    quantity = qty_field()
     unit_price = money()
     amount = money()
     tax_code = models.ForeignKey(
@@ -95,7 +95,7 @@ class PurchaseOrderLine(models.Model):
     tax_amount = money(default=0)
     total = money()
     # Filled by goods receipts (P16-06); never typed.
-    received_quantity = quantity(default=0)
+    received_quantity = qty_field(default=0)
 
     class Meta:
         ordering = ["order", "line_no"]

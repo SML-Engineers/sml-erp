@@ -13,3 +13,6 @@ class InventoryConfig(AppConfig):
 
         register(m.Item, exclude=("updated_at",))
         register(m.Store)
+        register(m.GoodsReceipt)
+        register(m.GoodsReceiptLine)
+        register(m.GoodsReceiptPhoto)

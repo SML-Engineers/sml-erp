@@ -119,3 +119,104 @@ class Store(models.Model):
 
     def __str__(self):
         return f"{self.code} {self.name}"
+
+
+def _qty(**extra):
+    return models.DecimalField(max_digits=18, decimal_places=3, **extra)
+
+
+class GoodsReceipt(models.Model):
+    """A goods receiving note (backlog P16-06, spec 5A.2): what a supplier delivered against
+    an approved purchase order. Confirmed goods wait in the division's quarantine store for QC
+    (P16-08). Once it leaves draft the database refuses changes; a mistake is corrected by a
+    reversal the Director approves."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Excess waiting for the Director"
+        CONFIRMED = "confirmed", "Confirmed"
+        REVERSAL_REQUESTED = "reversal_requested", "Reversal waiting for the Director"
+        REVERSED = "reversed", "Reversed"
+
+    number = models.CharField(max_length=30, unique=True)
+    purchase_order = models.ForeignKey(
+        "purchasing.PurchaseOrder", on_delete=models.PROTECT, related_name="receipts"
+    )
+    supplier = models.ForeignKey("masters.Supplier", on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="receipts")
+    receipt_date = models.DateField()
+    delivery_note_no = models.CharField(max_length=50, blank=True)
+    vehicle_no = models.CharField(max_length=30, blank=True)
+    supplier_invoice_no = models.CharField(max_length=50, blank=True)
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    reversal_reason = models.TextField(blank=True)
+    reversed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-receipt_date", "-number"]
+
+    def __str__(self):
+        return self.number
+
+
+class GoodsReceiptLine(models.Model):
+    receipt = models.ForeignKey(GoodsReceipt, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    po_line = models.ForeignKey(
+        "purchasing.PurchaseOrderLine", on_delete=models.PROTECT, related_name="receipt_lines"
+    )
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="+")
+    # What the PO still expected when this GRN was confirmed.
+    outstanding_quantity = _qty(default=0)
+    received_quantity = _qty(default=0)  # everything that arrived, damaged included
+    damaged_quantity = _qty(default=0)
+    # Good quantity above what the PO still expected: needs the Director (owner, 31 Oct 2026).
+    excess_quantity = _qty(default=0)
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["receipt", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["receipt", "line_no"], name="inventory_grn_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(received_quantity__gte=0)
+                & models.Q(damaged_quantity__gte=0)
+                & models.Q(damaged_quantity__lte=models.F("received_quantity")),
+                name="inventory_grn_quantities",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.receipt} line {self.line_no}"
+
+    @property
+    def good_quantity(self):
+        return self.received_quantity - self.damaged_quantity
+
+
+class GoodsReceiptPhoto(models.Model):
+    """A photo of the delivery, a damaged bag, or the delivery note (PDF, JPG or PNG)."""
+
+    receipt = models.ForeignKey(GoodsReceipt, on_delete=models.PROTECT, related_name="photos")
+    file = models.FileField(upload_to="receipts/%Y/%m/")
+    file_name = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    uploaded_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.file_name

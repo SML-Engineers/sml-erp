@@ -89,7 +89,7 @@ Status: `[ ]` to do · `[x]` done
 
 ## D. Receiving and inspection
 
-- [ ] **P16-06 Goods receiving note** (spec 5A.2)
+- [x] **P16-06 Goods receiving note** (spec 5A.2)
   Against an approved PO only, filled from it; the stores person enters received and damaged
   quantities, delivery note, vehicle, photos, and confirms it (one stores person, owner's
   decision; QC acceptance by someone else is the check). Numbered GRN{YY}{MM}{DD}{XX}.
@@ -99,6 +99,15 @@ Status: `[ ]` to do · `[x]` done
   - A confirmed GRN never changes (database guard); a reversal with a reason needs the
     Director and is linked.
   - Confirmed goods go to the Quarantine store.
+  - Done: the stores person picks an approved or partly received PO (Purchasing and stores →
+    Goods receipts → Receive goods); the lines start with what the PO still expects. They
+    enter received (damaged included) and damaged quantities, the delivery note, vehicle and
+    supplier's invoice number, and photos or scans (JPG, PNG, PDF, at most 20 MB, checked from
+    the file). Confirming adds the good quantity to the PO, which becomes Partly received or
+    Received. Good quantity above what the PO still expects holds the GRN for the Director, who
+    accepts the excess or sends the GRN back. A confirmed GRN, its lines and photos never
+    change (database guard); photos can still be added. A reversal needs a reason and the
+    Director, takes the quantities off the PO again, and is final. Reminders after 1 day.
 
 - [ ] **P16-07 Package-level receiving** (spec 6A.2)
   Bags, bars, plates, coils, boxes: one row per package with lot or heat number, gross, tare,

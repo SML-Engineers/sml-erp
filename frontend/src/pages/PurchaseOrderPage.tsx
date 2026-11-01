@@ -84,6 +84,11 @@ export default function PurchaseOrderPage() {
             </a>{" "}
             {!["approved", "partly_received", "received", "closed"].includes(data.status) && <span className="muted">{t("po.printsAsDraft")}</span>}
           </p>
+          {["approved", "partly_received", "received", "closed"].includes(data.status) && (
+            <p>
+              <Link to={`/goods-receipts?purchase_order=${data.id}`}>{t("po.goodsReceipts")}</Link>
+            </p>
+          )}
           {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}`} order={data} /> : <ReadOnly order={data} />}
           <Actions order={data} />
           {(data.can_email || data.emails.length > 0) && <EmailPanel order={data} />}

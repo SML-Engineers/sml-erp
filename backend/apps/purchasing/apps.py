@@ -13,3 +13,6 @@ class PurchasingConfig(AppConfig):
 
         register(m.PurchaseOrder)
         register(m.PurchaseOrderLine)
+        register(m.SupplierInvoice)
+        register(m.SupplierInvoiceLine)
+        register(m.SupplierInvoiceAttachment)

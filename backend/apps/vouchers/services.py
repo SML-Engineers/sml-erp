@@ -406,6 +406,13 @@ def duplicate_invoices(voucher: Voucher, lines=None) -> list[str]:
     if voucher.pk:
         others = others.exclude(voucher_id=voucher.pk)
     others = list(others.exclude(voucher__status__in=INVOICE_FREED).select_related("voucher"))
+    from apps.purchasing.models import SupplierInvoice  # P16-10; purchasing reads vouchers
+
+    invoices = list(
+        SupplierInvoice.objects.filter(supplier_id=voucher.payee_id).exclude(
+            status=SupplierInvoice.Status.CANCELLED
+        )
+    )
     warnings = []
     mine = lines if lines is not None else list(voucher.lines.all())
     seen = set()
@@ -419,6 +426,12 @@ def duplicate_invoices(voucher: Voucher, lines=None) -> list[str]:
             warnings.append(
                 f"Invoice {line.invoice_no} of this payee is already on voucher "
                 f"{', '.join(numbers)}."
+            )
+        entered = sorted(i.number for i in invoices if invoice_key(i.invoice_no) == key)
+        if entered:
+            warnings.append(
+                f"Invoice {line.invoice_no} of this payee is already entered as supplier "
+                f"invoice {', '.join(entered)}."
             )
     return warnings
 

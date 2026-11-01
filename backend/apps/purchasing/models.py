@@ -109,3 +109,105 @@ class PurchaseOrderLine(models.Model):
 
     def __str__(self):
         return f"{self.order} line {self.line_no}"
+
+
+class SupplierInvoice(models.Model):
+    """A supplier's invoice for goods received on purchase orders (backlog P16-10, spec 5A.4),
+    entered by Accounts with its scan and matched three ways: each line against the GRN line
+    it bills (accepted and not yet invoiced) and the PO (price and tax). No tolerance (owner,
+    31 Oct 2026): any difference holds the invoice until the Director approves the exception.
+    Posting clears Goods received not invoiced into Accounts payable. A posted or cancelled
+    invoice never changes (database guard)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        HELD = "held", "Held: discrepancy"
+        EXCEPTION_REQUESTED = "exception_requested", "Exception waiting for the Director"
+        POSTED = "posted", "Matched and posted"
+        CANCELLED = "cancelled", "Cancelled"
+
+    number = models.CharField(max_length=30, unique=True)
+    supplier = models.ForeignKey("masters.Supplier", on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    invoice_no = models.CharField(max_length=50)  # the supplier's own number
+    invoice_date = models.DateField()
+    due_date = models.DateField()
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    stated_total = money(null=True, blank=True)  # as printed on the invoice
+    subtotal = money(default=0)
+    tax_total = money(default=0)
+    total_amount = money(default=0)
+    total_lkr = money(default=0)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    discrepancies = models.JSONField(default=list, blank=True)
+    notes = models.TextField(blank=True)
+    exception_reason = models.TextField(blank=True)
+    cancel_reason = models.TextField(blank=True)
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-invoice_date", "-number"]
+
+    def __str__(self):
+        return f"{self.number} ({self.invoice_no})"
+
+
+class SupplierInvoiceLine(models.Model):
+    invoice = models.ForeignKey(SupplierInvoice, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    grn_line = models.ForeignKey(
+        "inventory.GoodsReceiptLine", on_delete=models.PROTECT, related_name="invoice_lines"
+    )
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
+    quantity = qty_field()
+    unit_price = money()  # as on the invoice
+    tax_code = models.ForeignKey(
+        "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    amount = money(default=0)
+    tax_amount = money(default=0)
+    total = money(default=0)
+    # The PO's price and tax code the line was matched against.
+    po_unit_price = money(default=0)
+    po_tax_code = models.ForeignKey(
+        "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["invoice", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["invoice", "line_no"], name="purchasing_si_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="purchasing_si_line_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.invoice} line {self.line_no}"
+
+
+class SupplierInvoiceAttachment(models.Model):
+    """The scanned invoice (PDF, JPG or PNG)."""
+
+    invoice = models.ForeignKey(
+        SupplierInvoice, on_delete=models.PROTECT, related_name="attachments"
+    )
+    file = models.FileField(upload_to="supplier-invoices/%Y/%m/")
+    file_name = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    uploaded_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.file_name

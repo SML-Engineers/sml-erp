@@ -74,6 +74,10 @@ DOCUMENT_TYPES = {
     # Production Manager role is switched on (owner, 1 Nov 2026; P16-08).
     "quality_deviation": DocumentType(
         "Accept under deviation", min_approvals=1, final_role="director"
+    ),  # A supplier invoice that does not match its PO and GRN exactly: no tolerance, the
+    # Director approves the exception (owner, 31 Oct 2026; P16-10).
+    "invoice_exception": DocumentType(
+        "Supplier invoice exception", min_approvals=1, final_role="director"
     ),
 }
 

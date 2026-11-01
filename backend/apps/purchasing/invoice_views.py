@@ -77,6 +77,17 @@ def _detail(i: SupplierInvoice, user) -> dict:
         "exception_reason": i.exception_reason,
         "cancel_reason": i.cancel_reason,
         "journal": None if i.journal_entry_id is None else i.journal_entry.number,
+        "on_vouchers": str(invoices.on_vouchers(i)),
+        "unpaid": str(invoices.unpaid(i)),
+        "vouchers": [
+            {
+                "id": line.voucher_id,
+                "number": line.voucher.number,
+                "status": line.voucher.status,
+                "amount": str(line.amount),
+            }
+            for line in i.voucher_lines.select_related("voucher").order_by("voucher__number")
+        ],
         "posted_at": i.posted_at,
         "lines": [
             {
@@ -182,6 +193,24 @@ class OpenLinesView(_Invoices):
             return Response([])
         return Response(
             [_open_row(r) for r in invoices.open_lines(request.user, supplier, division)]
+        )
+
+
+class PayableView(_Invoices):
+    """Matched invoices of a supplier with something left to pay, for a voucher."""
+
+    def get(self, request):
+        supplier = Supplier.objects.filter(pk=request.query_params.get("supplier")).first()
+        division = Division.objects.filter(
+            code=str(request.query_params.get("division", "")).upper()
+        ).first()
+        if supplier is None or division is None:
+            return Response([])
+        return Response(
+            [
+                _summary(i) | {"unpaid": str(invoices.unpaid(i))}
+                for i in invoices.payable(supplier, division)
+            ]
         )
 
 

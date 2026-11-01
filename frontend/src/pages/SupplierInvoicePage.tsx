@@ -77,6 +77,17 @@ export default function SupplierInvoicePage() {
               </ul>
             </section>
           )}
+          {data.status === "posted" && data.unpaid !== undefined && (
+            <p>
+              {t("si.onVouchers", { amount: formatDecimal(data.on_vouchers ?? "0"), unpaid: formatDecimal(data.unpaid) })}
+              {(data.vouchers ?? []).map((v) => (
+                <span key={v.id}>
+                  {" · "}
+                  <Link to={`/vouchers/${v.id}`}>{v.number}</Link>
+                </span>
+              ))}
+            </p>
+          )}
           {data.exception_reason && <p className="muted">{t("si.exceptionReason", { reason: data.exception_reason })}</p>}
           {data.cancel_reason && <p className="notice">{t("si.cancelReason", { reason: data.cancel_reason })}</p>}
           {data.can_edit ? <InvoiceForm key={`${data.id}-${data.total_amount}`} invoice={data} /> : <ReadOnly invoice={data} />}

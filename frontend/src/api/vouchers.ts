@@ -89,6 +89,25 @@ export interface VoucherLineData {
   division: string | null;
   job_ref: string;
   splits: { division: string; amount: string; percent: string | null }[];
+  /** The matched supplier invoice this line pays (P16-11), with PO, GRN and invoice. */
+  supplier_invoice?: PaidInvoice | null;
+}
+
+export interface PaidInvoice {
+  id: number;
+  number: string;
+  invoice_no: string;
+  invoice_date: string;
+  due_date: string;
+  total_lkr: string;
+  on_vouchers: string;
+  lines: {
+    item: { code: string; name: string; unit: string };
+    po: { id: number; label: string; quantity: string; unit_price: string };
+    grn: { id: number; number: string; received: string; accepted: string };
+    invoice: { quantity: string; unit_price: string; total: string };
+    matches: boolean;
+  }[];
 }
 
 export interface VoucherAttachmentData {
@@ -139,6 +158,8 @@ export interface VoucherLineInput {
   amount: string;
   tax_code: string | null;
   tax_amount: string;
+  /** Pays this matched supplier invoice (P16-11). */
+  supplier_invoice?: number | null;
 }
 
 export interface VoucherInput {

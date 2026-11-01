@@ -160,7 +160,7 @@ def _duplicate(supplier: Supplier, invoice_no: str, pk=None) -> str | None:
         if invoice_key(other.invoice_no) == key:
             return f"supplier invoice {other.number}"
     lines = (
-        VoucherLine.objects.filter(voucher__payee=supplier)
+        VoucherLine.objects.filter(voucher__payee=supplier, supplier_invoice__isnull=True)
         .exclude(voucher__status__in=INVOICE_FREED)
         .exclude(invoice_no="")
         .select_related("voucher")
@@ -619,3 +619,70 @@ def remove_attachment(user: User, attachment: SupplierInvoiceAttachment) -> None
             raise InvoiceError("A scan is removed only from a draft.")
         attachment.file.delete(save=False)
         attachment.delete()
+
+
+# --- Payment (P16-11) ----------------------------------------------------------------------
+
+
+def on_vouchers(invoice: SupplierInvoice, *, excluding=None) -> Decimal:
+    """What the vouchers that still count pay on the invoice (approved or not, paid or not)."""
+    from apps.vouchers.models import VoucherLine
+    from apps.vouchers.services import INVOICE_FREED
+
+    rows = VoucherLine.objects.filter(supplier_invoice=invoice).exclude(
+        voucher__status__in=INVOICE_FREED
+    )
+    if excluding is not None and excluding.pk:
+        rows = rows.exclude(voucher=excluding)
+    total = sum((line.amount + line.tax_amount for line in rows), Decimal("0"))
+    return total
+
+
+def unpaid(invoice: SupplierInvoice, *, excluding=None) -> Decimal:
+    """What is left to put on a voucher: the invoice total in LKR less the vouchers on it."""
+    if invoice.status != St.POSTED:
+        return Decimal("0")
+    return max(invoice.total_lkr - on_vouchers(invoice, excluding=excluding), Decimal("0"))
+
+
+def payable(supplier: Supplier, division) -> list[SupplierInvoice]:
+    """Posted invoices of the supplier and division with something left to pay, oldest due
+    first."""
+    rows = SupplierInvoice.objects.filter(
+        supplier=supplier, division=division, status=St.POSTED
+    ).order_by("due_date", "number")
+    return [i for i in rows if unpaid(i) > 0]
+
+
+def match_summary(invoice: SupplierInvoice) -> list[dict]:
+    """PO, GRN and invoice side by side, line by line, for the approvers of a voucher."""
+    rows = []
+    for line in invoice.lines.select_related(
+        "grn_line__receipt__purchase_order", "grn_line__po_line", "item"
+    ):
+        grn_line = line.grn_line
+        rows.append(
+            {
+                "item": {"code": line.item.code, "name": line.item.name, "unit": line.item.unit},
+                "po": {
+                    "id": grn_line.receipt.purchase_order_id,
+                    "label": grn_line.receipt.purchase_order.label,
+                    "quantity": str(grn_line.po_line.quantity),
+                    "unit_price": str(line.po_unit_price),
+                },
+                "grn": {
+                    "id": grn_line.receipt_id,
+                    "number": grn_line.receipt.number,
+                    "received": str(grn_line.received_quantity),
+                    "accepted": str(accepted(grn_line)),
+                },
+                "invoice": {
+                    "quantity": str(line.quantity),
+                    "unit_price": str(line.unit_price),
+                    "total": str(line.total),
+                },
+                "matches": line.unit_price == line.po_unit_price
+                and line.tax_code_id == line.po_tax_code_id,
+            }
+        )
+    return rows

@@ -56,6 +56,9 @@ export interface InvoiceDetail extends InvoiceSummary {
   cancel_reason: string;
   journal: string | null;
   posted_at: string | null;
+  on_vouchers?: string;
+  unpaid?: string;
+  vouchers?: { id: number; number: string; status: string; amount: string }[];
   lines: InvoiceLine[];
   attachments: { id: number; file_name: string; uploaded_by: string; uploaded_at: string }[];
   can_edit: boolean;
@@ -104,3 +107,5 @@ export function addInvoiceScan(id: number, file: File) {
 export const removeInvoiceScan = (id: number, attachment: number) =>
   apiSend<InvoiceDetail>("DELETE", `/supplier-invoices/${id}/attachments/${attachment}/`);
 export const invoiceScanUrl = (id: number, attachment: number) => `${API_BASE}/supplier-invoices/${id}/attachments/${attachment}/`;
+export const getPayableInvoices = (supplier: number, division: string) =>
+  apiGet<(InvoiceSummary & { unpaid: string })[]>(`/supplier-invoices/payable/?supplier=${supplier}&division=${division}`);

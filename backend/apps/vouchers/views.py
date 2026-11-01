@@ -190,6 +190,7 @@ def _detail(v: Voucher, user) -> dict:
                     },
                     "division": line.division.code if line.division else None,
                     "job_ref": line.job_ref,
+                    "supplier_invoice": _invoice(line.supplier_invoice),
                     "splits": [
                         {
                             "division": part.division.code,
@@ -201,7 +202,9 @@ def _detail(v: Voucher, user) -> dict:
                         for part in line.splits.select_related("division")
                     ],
                 }
-                for line in v.lines.select_related("tax_code", "account", "division")
+                for line in v.lines.select_related(
+                    "tax_code", "account", "division", "supplier_invoice"
+                )
             ],
             "attachments": [
                 {
@@ -249,6 +252,25 @@ def _approval(v: Voucher, user) -> dict:
     }
 
 
+def _invoice(invoice) -> dict | None:
+    """The matched supplier invoice a line pays, with PO, GRN and invoice side by side for the
+    approvers (spec 5A.5)."""
+    if invoice is None:
+        return None
+    from apps.purchasing import invoices
+
+    return {
+        "id": invoice.id,
+        "number": invoice.number,
+        "invoice_no": invoice.invoice_no,
+        "invoice_date": invoice.invoice_date,
+        "due_date": invoice.due_date,
+        "total_lkr": str(invoice.total_lkr),
+        "on_vouchers": str(invoices.on_vouchers(invoice)),
+        "lines": invoices.match_summary(invoice),
+    }
+
+
 class LineInputSerializer(serializers.Serializer):
     invoice_no = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
     invoice_date = serializers.DateField(required=False, allow_null=True, default=None)
@@ -260,6 +282,7 @@ class LineInputSerializer(serializers.Serializer):
         max_length=20, required=False, allow_blank=True, allow_null=True
     )
     tax_amount = serializers.CharField(max_length=30, required=False, allow_blank=True, default="0")
+    supplier_invoice = serializers.IntegerField(required=False, allow_null=True, default=None)
 
 
 class VoucherInput(serializers.Serializer):
@@ -299,8 +322,16 @@ def _resolve(data: dict) -> dict:
             code = TaxCode.objects.filter(code=line["tax_code"].upper()).first()
             if code is None:
                 raise VoucherError(f"Line {number}: unknown tax code {line['tax_code']}.")
+        invoice = None
+        if line.get("supplier_invoice"):
+            from apps.purchasing.models import SupplierInvoice
+
+            invoice = SupplierInvoice.objects.filter(pk=line["supplier_invoice"]).first()
+            if invoice is None:
+                raise VoucherError(f"Line {number}: unknown supplier invoice.")
         lines.append(
             services.LineInput(
+                supplier_invoice=invoice,
                 amount=line["amount"],
                 invoice_no=line["invoice_no"],
                 invoice_date=line["invoice_date"],

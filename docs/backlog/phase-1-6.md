@@ -166,12 +166,25 @@ Status: `[ ]` to do · `[x]` done
 
 ## F. Supplier invoices and payment
 
-- [ ] **P16-10 Supplier invoices with three-way match** (spec 5A.4)
+- [x] **P16-10 Supplier invoices with three-way match** (spec 5A.4)
   Entered by the Accounts Clerk with the scan, linked to GRN lines; supplier + invoice number
   unique (service and database). Line by line: invoiced quantity ≤ accepted and not yet
   invoiced; price = PO price; tax as on the PO. Any difference: **Held: discrepancy**, listed;
   the Accountant investigates; the Director approves an exception with a reason. Posting: Dr
   GRNI, Dr VAT input, Cr Accounts payable.
+  - Done: Vouchers → Supplier invoices. The Clerk chooses the supplier and division, ticks the
+    GRN lines with goods QC accepted and not yet invoiced, types quantity, price, tax code and
+    the printed total as on the invoice, attaches the scan and clicks Match. More than
+    accepted and not yet invoiced is refused outright (never an exception). A price or tax
+    different from the PO, or a printed total different from the worked-out one, holds the
+    invoice with the differences listed; the Clerk can send it back to draft for a typing
+    mistake or cancel it (supplier's credit note or new invoice); the Accountant asks the
+    Director to approve the exception with a reason. Posting, in LKR at the PO rate: Dr GRNI
+    at the PO price (non-stock items: their expense account), Dr recoverable taxes (VAT
+    input), Dr/Cr the difference to the new system account 5060 Purchase price variance, Cr
+    Accounts payable for the supplier; due date from the supplier's terms. Supplier +
+    invoice number is unique across supplier invoices and vouchers (service and database,
+    both ways). A posted or cancelled invoice never changes (database guard).
 
 - [ ] **P16-11 Payment vouchers from matched invoices** (spec 5A.5)
   A voucher for PO goods is made from matched or exception-approved invoices, carries the PO,

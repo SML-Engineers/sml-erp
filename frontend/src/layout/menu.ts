@@ -28,6 +28,7 @@ export const MENU: MenuSection[] = [
     label: "menu.vouchers",
     items: [
       { label: "vouchers.title", path: "/vouchers", area: "vouchers" },
+      { label: "si.title", path: "/supplier-invoices", area: "vouchers" },
       { label: "menu.waiting", path: "/vouchers/review", area: "vouchers", level: "approve" },
       { label: "menu.approveVouchers", path: "/vouchers/approve", area: "vouchers", level: "approve" },
       { label: "payments.title", path: "/payments", area: "payments" },

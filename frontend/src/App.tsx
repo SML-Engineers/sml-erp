@@ -30,6 +30,8 @@ import InspectionPlansPage from "./pages/InspectionPlansPage";
 import InspectionsPage from "./pages/InspectionsPage";
 import ItemsPage from "./pages/ItemsPage";
 import StockPage from "./pages/StockPage";
+import SupplierInvoicePage from "./pages/SupplierInvoicePage";
+import SupplierInvoicesPage from "./pages/SupplierInvoicesPage";
 import PurchaseOrderPage from "./pages/PurchaseOrderPage";
 import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
 import StoresPage from "./pages/settings/StoresPage";
@@ -121,6 +123,8 @@ export default function App() {
         <Route path="inspections/:id" element={<InspectionPage />} />
         <Route path="inspection-plans" element={<InspectionPlansPage />} />
         <Route path="stock" element={<StockPage />} />
+        <Route path="supplier-invoices" element={<WithMe page={(me) => <SupplierInvoicesPage me={me} />} />} />
+        <Route path="supplier-invoices/:id" element={<SupplierInvoicePage />} />
         <Route path="settings/stores" element={<WithMe page={(me) => <StoresPage me={me} />} />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
         <Route

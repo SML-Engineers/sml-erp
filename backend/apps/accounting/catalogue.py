@@ -53,6 +53,8 @@ SYSTEM_ROLES = {
     "vat_receivable": "VAT receivable",
     # Goods accepted into stock before the supplier's invoice is matched (P16-09).
     "grni": "Goods received not invoiced",
+    # Supplier invoice prices or taxes different from the PO, approved by the Director (P16-10).
+    "price_variance": "Purchase price variance",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

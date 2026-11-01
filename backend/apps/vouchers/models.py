@@ -167,6 +167,15 @@ class VoucherLine(models.Model):
         on_delete=models.PROTECT,
         related_name="voucher_lines",
     )
+    # An advance on an approved purchase order before the goods arrive (P16-11a): coded to
+    # Advances to suppliers and set off against the supplier's invoice once paid.
+    advance_order = models.ForeignKey(
+        "purchasing.PurchaseOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="advance_lines",
+    )
 
     class Meta:
         ordering = ["voucher", "line_no"]

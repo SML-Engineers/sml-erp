@@ -577,6 +577,12 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
     invoice.status = St.POSTED
     invoice.posted_at = timezone.now()
     invoice.save(update_fields=["journal_entry", "total_lkr", "status", "posted_at"])
+    from . import advances  # advances reads this module
+
+    try:
+        advances.apply(user, invoice)
+    except advances.AdvanceError as error:
+        raise InvoiceError(str(error)) from None
 
 
 # --- Scans -----------------------------------------------------------------------------------
@@ -639,10 +645,14 @@ def on_vouchers(invoice: SupplierInvoice, *, excluding=None) -> Decimal:
 
 
 def unpaid(invoice: SupplierInvoice, *, excluding=None) -> Decimal:
-    """What is left to put on a voucher: the invoice total in LKR less the vouchers on it."""
+    """What is left to put on a voucher: the invoice total in LKR less the advances set off
+    against it (P16-11a) and the vouchers on it."""
+    from .advances import set_off_total
+
     if invoice.status != St.POSTED:
         return Decimal("0")
-    return max(invoice.total_lkr - on_vouchers(invoice, excluding=excluding), Decimal("0"))
+    left = invoice.total_lkr - set_off_total(invoice) - on_vouchers(invoice, excluding=excluding)
+    return max(left, Decimal("0"))
 
 
 def payable(supplier: Supplier, division) -> list[SupplierInvoice]:

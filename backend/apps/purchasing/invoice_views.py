@@ -1,6 +1,8 @@
 """Supplier invoices API (P16-10). Rules live in invoices.py; reading needs Vouchers or
 Accounting: View, for the user's divisions. Changes are checked by the service."""
 
+from decimal import Decimal
+
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
@@ -14,7 +16,7 @@ from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Supplier
 
-from . import invoices
+from . import advances, invoices
 from .invoices import InvoiceError, LineInput
 from .models import SupplierInvoice, SupplierInvoiceAttachment
 
@@ -77,6 +79,23 @@ def _detail(i: SupplierInvoice, user) -> dict:
         "exception_reason": i.exception_reason,
         "cancel_reason": i.cancel_reason,
         "journal": None if i.journal_entry_id is None else i.journal_entry.number,
+        "set_offs": [
+            {
+                "voucher": {
+                    "id": so.voucher_line.voucher_id,
+                    "number": so.voucher_line.voucher.number,
+                },
+                "amount": str(so.amount),
+                "journal": so.journal_entry.number,
+                "at": so.created_at,
+            }
+            for so in i.set_offs.select_related("voucher_line__voucher", "journal_entry")
+        ],
+        "advances_waiting": str(advances.waiting(i)),
+        "can_set_off": i.status == SupplierInvoice.Status.POSTED
+        and advances.can_set_off(user)
+        and advances.waiting(i) > 0
+        and invoices.unpaid(i) > 0,
         "on_vouchers": str(invoices.on_vouchers(i)),
         "unpaid": str(invoices.unpaid(i)),
         "vouchers": [
@@ -212,6 +231,52 @@ class PayableView(_Invoices):
                 for i in invoices.payable(supplier, division)
             ]
         )
+
+
+class AdvanceOrdersView(_Invoices):
+    """Approved POs of a supplier still waiting for goods, for an advance on a voucher."""
+
+    def get(self, request):
+        from apps.vouchers.models import VoucherLine
+        from apps.vouchers.services import ADVANCE_ORDER_STATUSES, INVOICE_FREED
+
+        from .models import PurchaseOrder
+
+        supplier = Supplier.objects.filter(pk=request.query_params.get("supplier")).first()
+        division = Division.objects.filter(
+            code=str(request.query_params.get("division", "")).upper()
+        ).first()
+        if supplier is None or division is None:
+            return Response([])
+        rows = []
+        for order in PurchaseOrder.objects.filter(
+            supplier=supplier, division=division, status__in=ADVANCE_ORDER_STATUSES
+        ).order_by("number", "revision"):
+            lines = VoucherLine.objects.filter(advance_order=order).exclude(
+                voucher__status__in=INVOICE_FREED
+            )
+            advanced = sum((line.amount + line.tax_amount for line in lines), Decimal("0"))
+            rows.append(
+                {
+                    "id": order.id,
+                    "label": order.label,
+                    "po_date": order.po_date,
+                    "total_lkr": str(order.total_lkr),
+                    "advanced": str(advanced),
+                    "left": str(max(order.total_lkr - advanced, Decimal("0"))),
+                }
+            )
+        return Response(rows)
+
+
+class SetOffView(_Invoices):
+    def post(self, request, pk):
+        invoice = _get(request.user, pk)
+        try:
+            advances.set_off_later(request.user, invoice)
+        except advances.AdvanceError as error:
+            return _error(error)
+        return Response(_fresh(invoice, request.user))
 
 
 class InvoiceListView(_Invoices):

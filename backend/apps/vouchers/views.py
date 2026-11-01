@@ -191,6 +191,14 @@ def _detail(v: Voucher, user) -> dict:
                     "division": line.division.code if line.division else None,
                     "job_ref": line.job_ref,
                     "supplier_invoice": _invoice(line.supplier_invoice),
+                    "advance_order": None
+                    if line.advance_order is None
+                    else {
+                        "id": line.advance_order_id,
+                        "label": line.advance_order.label,
+                        "total_lkr": str(line.advance_order.total_lkr),
+                        "status": line.advance_order.status,
+                    },
                     "splits": [
                         {
                             "division": part.division.code,
@@ -203,7 +211,7 @@ def _detail(v: Voucher, user) -> dict:
                     ],
                 }
                 for line in v.lines.select_related(
-                    "tax_code", "account", "division", "supplier_invoice"
+                    "tax_code", "account", "division", "supplier_invoice", "advance_order"
                 )
             ],
             "attachments": [
@@ -283,6 +291,7 @@ class LineInputSerializer(serializers.Serializer):
     )
     tax_amount = serializers.CharField(max_length=30, required=False, allow_blank=True, default="0")
     supplier_invoice = serializers.IntegerField(required=False, allow_null=True, default=None)
+    advance_order = serializers.IntegerField(required=False, allow_null=True, default=None)
 
 
 class VoucherInput(serializers.Serializer):
@@ -329,8 +338,16 @@ def _resolve(data: dict) -> dict:
             invoice = SupplierInvoice.objects.filter(pk=line["supplier_invoice"]).first()
             if invoice is None:
                 raise VoucherError(f"Line {number}: unknown supplier invoice.")
+        order = None
+        if line.get("advance_order"):
+            from apps.purchasing.models import PurchaseOrder
+
+            order = PurchaseOrder.objects.filter(pk=line["advance_order"]).first()
+            if order is None:
+                raise VoucherError(f"Line {number}: unknown purchase order.")
         lines.append(
             services.LineInput(
+                advance_order=order,
                 supplier_invoice=invoice,
                 amount=line["amount"],
                 invoice_no=line["invoice_no"],

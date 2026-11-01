@@ -211,3 +211,33 @@ class SupplierInvoiceAttachment(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class AdvanceSetOff(models.Model):
+    """A paid advance on a PO set off against the supplier's invoice (backlog P16-11a):
+    Dr Accounts payable, Cr Advances to suppliers. Never changed or deleted (database
+    guard)."""
+
+    invoice = models.ForeignKey(SupplierInvoice, on_delete=models.PROTECT, related_name="set_offs")
+    voucher_line = models.ForeignKey(
+        "vouchers.VoucherLine", on_delete=models.PROTECT, related_name="set_offs"
+    )
+    amount = money()
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", on_delete=models.PROTECT, related_name="+"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="purchasing_setoff_amount"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.amount} of {self.voucher_line_id} against {self.invoice}"

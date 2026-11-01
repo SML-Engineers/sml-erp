@@ -16,3 +16,4 @@ class InventoryConfig(AppConfig):
         register(m.GoodsReceipt)
         register(m.GoodsReceiptLine)
         register(m.GoodsReceiptPhoto)
+        register(m.ReceiptPackage)

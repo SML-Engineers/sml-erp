@@ -31,7 +31,16 @@ from apps.core.numbering import NumberSeriesError, allocate
 from apps.masters.services import mark_used
 from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine
 
-from .models import GoodsReceipt, GoodsReceiptLine, GoodsReceiptPhoto, Store
+from . import packages
+from .models import (
+    GoodsReceipt,
+    GoodsReceiptLine,
+    GoodsReceiptPhoto,
+    Item,
+    ReceiptPackage,
+    Store,
+)
+from .packages import PackageInput
 
 DOC = "goods_receipt"
 REVERSAL = "goods_receipt_reversal"
@@ -152,7 +161,11 @@ def _header(grn: GoodsReceipt, values: dict) -> None:
 
 
 def _fill(grn: GoodsReceipt, lines: list[LineInput]) -> None:
+    """Set the lines. A line received by package (P16-07) keeps the totals of its packages;
+    lines keep their numbers, so the packages' lot numbers never change."""
     po_lines = {line.pk: line for line in grn.purchase_order.lines.select_related("item")}
+    existing = {line.po_line_id: line for line in grn.lines.all()}
+    packed = {line.po_line_id for line in grn.lines.all() if line.packages.exists()}
     seen = set()
     rows = []
     for n, line in enumerate(lines, start=1):
@@ -163,27 +176,100 @@ def _fill(grn: GoodsReceipt, lines: list[LineInput]) -> None:
         if po_line.pk in seen:
             raise ReceiptError(where + "each line of the purchase order can appear once.")
         seen.add(po_line.pk)
-        try:
-            received = _quantity(line.received, "received quantity")
-            damaged = _quantity(line.damaged, "damaged quantity")
-        except ReceiptError as error:
-            raise ReceiptError(where + str(error)) from None
-        if damaged > received:
-            raise ReceiptError(where + "the damaged quantity cannot be more than received.")
+        if po_line.pk in packed:
+            current = existing[po_line.pk]
+            received, damaged = current.received_quantity, current.damaged_quantity
+        else:
+            try:
+                received = _quantity(line.received, "received quantity")
+                damaged = _quantity(line.damaged, "damaged quantity")
+            except ReceiptError as error:
+                raise ReceiptError(where + str(error)) from None
+            if damaged > received:
+                raise ReceiptError(where + "the damaged quantity cannot be more than received.")
         rows.append((po_line, received, damaged, (line.notes or "").strip()[:300]))
     if not rows or all(received == 0 for _, received, _, _ in rows):
         raise ReceiptError("Enter the quantity received on at least one line.")
-    grn.lines.all().delete()
-    for n, (po_line, received, damaged, notes) in enumerate(rows, start=1):
-        GoodsReceiptLine.objects.create(
-            receipt=grn,
-            line_no=n,
-            po_line=po_line,
-            item=po_line.item,
-            received_quantity=received,
-            damaged_quantity=damaged,
-            notes=notes,
+    for po_line_id, line in existing.items():
+        if po_line_id not in seen:
+            line.delete()
+    next_no = max((line.line_no for line in existing.values()), default=0) + 1
+    for po_line, received, damaged, notes in rows:
+        line = existing.get(po_line.pk)
+        if line is None:
+            line = GoodsReceiptLine(
+                receipt=grn, line_no=next_no, po_line=po_line, item=po_line.item
+            )
+            next_no += 1
+        line.received_quantity = received
+        line.damaged_quantity = damaged
+        line.notes = notes
+        line.save()
+
+
+# --- Packages (P16-07) ------------------------------------------------------------------
+
+
+def set_packages(
+    user: User, grn: GoodsReceipt, line_no: int, given: list[PackageInput]
+) -> GoodsReceiptLine:
+    """Replace the packages of one line. The line's received quantity becomes the total of
+    its packages, and its damaged quantity the total of the damaged ones."""
+    with audit_context("goods_receipt_packages_changed"), transaction.atomic():
+        grn = GoodsReceipt.objects.select_for_update().get(pk=grn.pk)
+        if not can_edit(user, grn):
+            raise ReceiptError("Only the person who made a draft GRN enters its packages.")
+        line = grn.lines.select_related("item").filter(line_no=line_no).first()
+        if line is None:
+            raise ReceiptError("Choose a line of the GRN.")
+        item = line.item
+        if item.package_type == Item.PackageType.NONE:
+            raise ReceiptError(
+                f'Item {item.code} is not received by package (Items: "Arrives as").'
+            )
+        if len(given) > packages.MAX_PACKAGES:
+            raise ReceiptError(f"A line can have at most {packages.MAX_PACKAGES} packages.")
+        line.weight_tolerance_pct = item.weight_tolerance_pct
+        line.standard_kg_per_m = item.standard_kg_per_m
+        line.density = item.density
+        rows = []
+        for n, values in enumerate(given, start=1):
+            package = ReceiptPackage(
+                line=line, package_no=n, lot_no=f"{grn.number}-{line.line_no}-{n:03d}"
+            )
+            try:
+                packages.fill(package, values, item)
+            except packages.PackageError as error:
+                raise ReceiptError(f"Package {n}: {error}") from None
+            rows.append(package)
+        line.packages.all().delete()
+        for package in rows:  # one by one, so each is in the audit log
+            package.save()
+        line.received_quantity = sum((p.quantity or 0 for p in rows), Decimal("0"))
+        line.damaged_quantity = sum((p.quantity or 0 for p in rows if p.damaged), Decimal("0"))
+        line.save()
+        return line
+
+
+def _packages_complete(line: GoodsReceiptLine) -> None:
+    item = line.item
+    if item.package_type == Item.PackageType.NONE:
+        return
+    rows = list(line.packages.all())
+    if not rows:
+        if line.received_quantity == 0:
+            return
+        raise ReceiptError(
+            f"Line {line.line_no} ({item.code}): enter the "
+            f"{item.get_package_type_display().split(' (')[0].split(',')[0].lower()} "
+            "received, one by one."
         )
+    for package in rows:
+        lacking = packages.missing(package, item)
+        if lacking:
+            raise ReceiptError(
+                f"Line {line.line_no} ({item.code}), package {package.package_no}: enter {lacking}."
+            )
 
 
 # --- Making and changing ----------------------------------------------------------------
@@ -275,8 +361,12 @@ def confirm(user: User, grn: GoodsReceipt, comment: str = "") -> GoodsReceipt:
                 f"Purchase order {order.label} is {order.get_status_display().lower()}; goods "
                 "cannot be received against it."
             )
+        lines = list(grn.lines.select_related("po_line", "item"))
+        if all(line.received_quantity == 0 for line in lines):
+            raise ReceiptError("Enter the quantity received on at least one line.")
         excess = []
-        for line in grn.lines.select_related("po_line", "item"):
+        for line in lines:
+            _packages_complete(line)
             outstanding = _outstanding(line.po_line)
             line.outstanding_quantity = outstanding
             line.excess_quantity = max(line.good_quantity - outstanding, Decimal("0"))

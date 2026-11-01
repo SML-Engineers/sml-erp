@@ -155,6 +155,10 @@ function ItemForm(props: { options: ItemOptions; item?: Item; onDone: (id: numbe
     is_stock: item?.is_stock ?? true,
     package_type: item?.package_type ?? "none",
     inspection_required: item?.inspection_required ?? true,
+    package_tare: item?.package_tare ?? "0",
+    weight_tolerance_pct: item?.weight_tolerance_pct ?? "0.5",
+    standard_kg_per_m: item?.standard_kg_per_m ?? "",
+    density: item?.density ?? "",
     inventory_account: item?.inventory_account?.number ?? "",
     expense_account: item?.expense_account?.number ?? "",
     material: item?.material ?? "",
@@ -175,6 +179,10 @@ function ItemForm(props: { options: ItemOptions; item?: Item; onDone: (id: numbe
         is_stock: values.is_stock,
         package_type: values.package_type,
         inspection_required: values.inspection_required,
+        package_tare: values.package_tare,
+        weight_tolerance_pct: values.weight_tolerance_pct,
+        standard_kg_per_m: values.standard_kg_per_m,
+        density: values.density,
         material: values.material || null,
         division: values.division || null,
         notes: values.notes,
@@ -260,6 +268,32 @@ function ItemForm(props: { options: ItemOptions; item?: Item; onDone: (id: numbe
               ))}
             </select>
           </label>
+          {values.package_type !== "none" && (
+            <>
+              {["bag", "coil", "counted"].includes(values.package_type) && (
+                <label>
+                  {t("items.packageTare")}
+                  <input inputMode="decimal" value={values.package_tare} disabled={!editable} onChange={(e) => set("package_tare", e.target.value)} />
+                </label>
+              )}
+              <label>
+                {t("items.tolerance")}
+                <input inputMode="decimal" value={values.weight_tolerance_pct} disabled={!editable} onChange={(e) => set("weight_tolerance_pct", e.target.value)} />
+              </label>
+              {values.package_type === "bar" && (
+                <label>
+                  {t("items.kgPerMetre")}
+                  <input inputMode="decimal" value={values.standard_kg_per_m} disabled={!editable} onChange={(e) => set("standard_kg_per_m", e.target.value)} />
+                </label>
+              )}
+              {values.package_type === "plate" && (
+                <label>
+                  {t("items.density")}
+                  <input inputMode="decimal" value={values.density} disabled={!editable} onChange={(e) => set("density", e.target.value)} />
+                </label>
+              )}
+            </>
+          )}
           <label className="check">
             <input
               type="checkbox"

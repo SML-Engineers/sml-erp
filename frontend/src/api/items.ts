@@ -10,6 +10,11 @@ export interface Item {
   is_stock: boolean;
   package_type: string;
   inspection_required: boolean;
+  /** Receiving checks (spec 6A.2), decimals as text. */
+  package_tare: string;
+  weight_tolerance_pct: string;
+  standard_kg_per_m: string | null;
+  density: string | null;
   inventory_account: { number: string; name: string } | null;
   expense_account: { number: string; name: string } | null;
   material: string | null;
@@ -40,6 +45,10 @@ export interface ItemChange {
   is_stock?: boolean;
   package_type?: string;
   inspection_required?: boolean;
+  package_tare?: string;
+  weight_tolerance_pct?: string;
+  standard_kg_per_m?: string;
+  density?: string;
   inventory_account?: string | null;
   expense_account?: string | null;
   material?: string | null;

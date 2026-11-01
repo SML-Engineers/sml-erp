@@ -1927,7 +1927,11 @@
     "import": "Import items from Excel",
     "importHelp": "One sheet named Items, in the layout of the export. Put the item code in every row: an existing code updates that item, a new one adds it. Check the file first: nothing is saved until every row is accepted.",
     "checked": "The file is fine. Importing it would add {{created}} and update {{updated}} items.",
-    "imported": "Imported: {{created}} items added, {{updated}} updated."
+    "imported": "Imported: {{created}} items added, {{updated}} updated.",
+    "packageTare": "Usual tare per package (kg)",
+    "tolerance": "Weight tolerance (%)",
+    "kgPerMetre": "Standard kg per metre",
+    "density": "Density (g/cm³, steel 7.85)"
   },
   "stores": {
     "title": "Stores",
@@ -2053,6 +2057,53 @@
       "confirmed": "Confirmed",
       "reversal_requested": "Reversal waiting for the Director",
       "reversed": "Reversed"
-    }
+    },
+    "packagesOf": "Packages: {{item}}",
+    "packageHelp": {
+      "bag": "One row per bag: the weight printed on the bag, then the gross weight from the scale. The bag's own weight (tare) is filled from the item if left empty.",
+      "coil": "One row per coil: heat number, gross and tare weight from the scale.",
+      "bar": "One row per bundle: heat number, number of bars, length of one bar in metres, and the bundle's weight. Checked against the item's kg per metre.",
+      "plate": "One row per plate: heat number, length, width and thickness in mm, and the weight. Checked against the theoretical weight.",
+      "counted": "One row per box: the quantity in it."
+    },
+    "tolerance": "Weights more than {{pct}}% off are highlighted.",
+    "packageTotals": "{{count}} packages, {{received}} {{unit}} received",
+    "netVsDeclared": "net {{net}} kg against {{declared}} kg declared",
+    "outside": "{{count}} outside the tolerance",
+    "printLabels": "Print labels (PDF)",
+    "printAllLabels": "Print all package labels (PDF)",
+    "fastCount": "How many",
+    "fastEach": {
+      "declared_weight": "Declared kg each",
+      "pieces": "Pieces each",
+      "supplier_lot": "Lot or heat number"
+    },
+    "addPackages": "Add packages",
+    "addOne": "Add one package",
+    "packageTable": "Packages of {{item}}",
+    "field": {
+      "supplier_lot": "Lot / heat no.",
+      "declared_weight": "Declared kg",
+      "gross_weight": "Gross kg",
+      "tare_weight": "Tare kg",
+      "pieces": "Pieces",
+      "piece_length": "Length of one (m)",
+      "length_mm": "Length mm",
+      "width_mm": "Width mm",
+      "thickness_mm": "Thickness mm",
+      "notes": "Notes"
+    },
+    "fieldOf": "{{field}}, package {{n}}",
+    "quantityIn": "Counts as ({{unit}})",
+    "check": "Check",
+    "checkBasis": {
+      "": "",
+      "declared": "{{pct}}% vs declared",
+      "kg_per_m": "{{actual}} kg/m, {{pct}}% vs {{expected}}",
+      "theoretical": "{{pct}}% vs {{expected}} kg theoretical"
+    },
+    "removePackage": "Remove",
+    "savePackages": "Save the packages",
+    "savePackagesHelp": "The line's received and damaged quantities become the totals of its packages. Damaged packages count as damaged."
   }
 }

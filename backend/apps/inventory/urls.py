@@ -29,6 +29,12 @@ urlpatterns = [
         r.RefuseReversalView.as_view(),
         name="grn-reversal-refuse",
     ),
+    path(
+        "goods-receipts/<int:pk>/lines/<int:line_no>/packages/",
+        r.PackagesView.as_view(),
+        name="grn-packages",
+    ),
+    path("goods-receipts/<int:pk>/labels/", r.LabelsView.as_view(), name="grn-labels"),
     path("goods-receipts/<int:pk>/photos/", r.PhotoListView.as_view(), name="grn-photos"),
     path(
         "goods-receipts/<int:pk>/photos/<int:photo_pk>/",

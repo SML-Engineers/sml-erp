@@ -1,4 +1,5 @@
-import { apiGet, apiSend } from "./client";
+import { API_BASE, apiGet, apiSend } from "./client";
+import type { EmailDraft } from "./quotations";
 
 export type POStatus = "draft" | "awaiting_approval" | "approved" | "partly_received" | "received" | "closed" | "cancelled" | "revised";
 export const PO_STATUSES: POStatus[] = ["draft", "awaiting_approval", "approved", "partly_received", "received", "closed", "cancelled", "revised"];
@@ -53,6 +54,8 @@ export interface PODetail extends POSummary {
   can_revise: boolean;
   can_cancel: boolean;
   can_close: boolean;
+  can_email: boolean;
+  emails: { to: string; subject: string; status: "sent" | "failed"; error: string; sent_at: string; by: string }[];
   approval: { status: string; history: { action: string; action_label: string; by: string; at: string; reason: string }[] } | null;
 }
 
@@ -92,3 +95,7 @@ export const returnPurchaseOrder = (id: number, reason: string) => act(id, "retu
 export const revisePurchaseOrder = (id: number, reason: string) => act(id, "revise", { reason });
 export const cancelPurchaseOrder = (id: number, reason: string) => act(id, "cancel", { reason });
 export const closePurchaseOrder = (id: number, reason: string) => act(id, "close", { reason });
+export const purchaseOrderPdfUrl = (id: number) => `${API_BASE}/purchase-orders/${id}/pdf/`;
+export const getPurchaseOrderEmail = (id: number) => apiGet<EmailDraft>(`/purchase-orders/${id}/email/`);
+export const sendPurchaseOrderEmail = (id: number, message: { to: string[]; cc: string[]; subject: string; body: string }) =>
+  apiSend<PODetail>("POST", `/purchase-orders/${id}/email/`, message);

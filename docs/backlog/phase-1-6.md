@@ -76,9 +76,16 @@ Status: `[ ]` to do · `[x]` done
     nothing has been received; the old PO is marked "Replaced by a revision" at once.
     Reminder to the Director after 2 days. Menu: Purchasing and stores → Purchase orders.
 
-- [ ] **P16-05 Printing and emailing the PO**
+- [x] **P16-05 Printing and emailing the PO**
   PDF in the layout of the owner's sample PO26061701, the company letterhead, emailed to the
   supplier's contact; a draft prints marked DRAFT and cannot be emailed.
+  - Done: laid out like PO26061701 (To:, P.O. No., Date, Pay Mode, Pay Terms; Delivery Date,
+    Deliver to; Item, Description, UOM, Qty, Rate, Amount; Grand Total; the two instructions;
+    Subtotal and VAT Total box; Yours Faithfully; Managing Director and Checked By). Marked
+    DRAFT – NOT APPROVED until approved, CANCELLED or REPLACED BY A REVISION. Emailed by the
+    Purchasing Officer to the supplier's email, only when approved or partly received, with
+    the "purchase_order" message the Admin edits (Settings → Document email). Item codes may
+    now contain slashes and dots, like 48/BL/08.
 
 ## D. Receiving and inspection
 

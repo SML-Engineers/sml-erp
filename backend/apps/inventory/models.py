@@ -7,6 +7,8 @@ Codes used on documents never change; used records are deactivated, never delete
 database guard masters_code_guard).
 """
 
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -55,6 +57,15 @@ class Item(models.Model):
         max_length=10, choices=PackageType.choices, default=PackageType.NONE
     )
     inspection_required = models.BooleanField(default=True)
+    # Package-by-package receiving (spec 6A.2, backlog P16-07): the usual empty bag or coil
+    # weight, how far a weight may differ before it is highlighted, and the standards that
+    # bars (kg per metre) and plates (density) are checked against.
+    package_tare = models.DecimalField(max_digits=10, decimal_places=3, default=0)
+    weight_tolerance_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal("0.5")
+    )
+    standard_kg_per_m = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    density = models.DecimalField(max_digits=7, decimal_places=3, null=True, blank=True)
     inventory_account = models.ForeignKey(
         "accounting.Account",
         null=True,
@@ -183,6 +194,10 @@ class GoodsReceiptLine(models.Model):
     # Good quantity above what the PO still expected: needs the Director (owner, 31 Oct 2026).
     excess_quantity = _qty(default=0)
     notes = models.CharField(max_length=300, blank=True)
+    # The item's checks as they were when the packages were entered (rule 11).
+    weight_tolerance_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    standard_kg_per_m = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    density = models.DecimalField(max_digits=7, decimal_places=3, null=True, blank=True)
 
     class Meta:
         ordering = ["receipt", "line_no"]
@@ -220,3 +235,36 @@ class GoodsReceiptPhoto(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class ReceiptPackage(models.Model):
+    """One bag, bundle, plate, coil or box of a GRN line (spec 6A.2, backlog P16-07), with
+    its own lot number printed on a QR label. The line's received and damaged quantities are
+    the totals of its packages. Frozen with the GRN once it leaves draft (database guard)."""
+
+    line = models.ForeignKey(GoodsReceiptLine, on_delete=models.CASCADE, related_name="packages")
+    package_no = models.PositiveIntegerField()
+    lot_no = models.CharField(max_length=40, unique=True)
+    supplier_lot = models.CharField(max_length=50, blank=True)  # lot or heat number
+    gross_weight = _qty(null=True, blank=True)
+    tare_weight = _qty(default=0)
+    net_weight = _qty(null=True, blank=True)
+    declared_weight = _qty(null=True, blank=True)
+    pieces = _qty(null=True, blank=True)  # pieces in a bundle, or quantity in a box
+    piece_length = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    length_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    width_mm = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    thickness_mm = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    # In the item's unit: net kg, metres or pieces; empty until the package is weighed.
+    quantity = _qty(null=True, blank=True)
+    damaged = models.BooleanField(default=False)
+    notes = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["line", "package_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["line", "package_no"], name="inventory_package_no")
+        ]
+
+    def __str__(self):
+        return self.lot_no

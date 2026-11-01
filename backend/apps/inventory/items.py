@@ -13,6 +13,7 @@
 import io
 import re
 import zipfile
+from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import Q
@@ -29,6 +30,7 @@ from apps.masters.models import Material
 from apps.masters.services import MastersError
 
 from .models import Item, Store
+from .packages import PackageError, number
 
 # The starter chart's inventory accounts (accounting catalogue STARTER_CHART_V1); the
 # Accountant can choose another per item.
@@ -151,6 +153,23 @@ def _check(values: dict, user: User, item: Item | None) -> dict:
             if material is None:
                 raise ItemError(f"There is no active costing material {code}.")
             cleaned["material"] = material
+    for field, what, places, blank_is in (
+        ("package_tare", "usual tare", 3, Decimal("0")),
+        ("weight_tolerance_pct", "weight tolerance", 2, Decimal("0")),
+        ("standard_kg_per_m", "standard kg per metre", 4, None),
+        ("density", "density", 3, None),
+    ):
+        if field not in values:
+            continue
+        try:
+            value = number(values[field], what, places)
+        except PackageError as error:
+            raise ItemError(str(error)) from None
+        if field == "weight_tolerance_pct" and value is not None and value > 100:
+            raise ItemError("The weight tolerance is a percentage up to 100.")
+        if blank_is is None and value == 0:
+            value = None
+        cleaned[field] = blank_is if value is None else value
     for field, types, what in (
         ("inventory_account", INVENTORY_TYPES, "inventory account"),
         ("expense_account", EXPENSE_TYPES, "expense account"),

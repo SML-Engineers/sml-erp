@@ -2,7 +2,9 @@
 access and shows only the user's divisions. Changes are checked by the service (the stores
 person enters; the Director approves through the approval engine)."""
 
-from django.http import FileResponse
+from decimal import Decimal
+
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
@@ -12,8 +14,9 @@ from rest_framework.views import APIView
 from apps.core import approvals
 from apps.core.permissions import AreaAccess
 
-from . import receipts
-from .models import GoodsReceipt, GoodsReceiptPhoto
+from . import labels, packages, receipts
+from .models import GoodsReceipt, GoodsReceiptLine, GoodsReceiptPhoto, ReceiptPackage
+from .packages import PackageInput
 from .receipts import ReceiptError
 
 
@@ -59,6 +62,80 @@ def _history(kind: str, pk: int) -> list[dict]:
     ]
 
 
+def _str(value) -> str | None:
+    return None if value is None else str(value)
+
+
+def _package(p: ReceiptPackage, line: GoodsReceiptLine) -> dict:
+    found = packages.check(p, line)
+    return {
+        "package_no": p.package_no,
+        "lot_no": p.lot_no,
+        "supplier_lot": p.supplier_lot,
+        "gross_weight": _str(p.gross_weight),
+        "tare_weight": _str(p.tare_weight),
+        "net_weight": _str(p.net_weight),
+        "declared_weight": _str(p.declared_weight),
+        "pieces": _str(p.pieces),
+        "piece_length": _str(p.piece_length),
+        "length_mm": _str(p.length_mm),
+        "width_mm": _str(p.width_mm),
+        "thickness_mm": _str(p.thickness_mm),
+        "quantity": _str(p.quantity),
+        "damaged": p.damaged,
+        "notes": p.notes,
+        "check": {
+            "basis": found["basis"],
+            "expected": _str(found["expected"]),
+            "actual": _str(found["actual"]),
+            "variance_pct": _str(found["variance_pct"]),
+            "outside": found["outside"],
+        },
+    }
+
+
+def _line(g: GoodsReceipt, line: GoodsReceiptLine) -> dict:
+    item = line.item
+    rows = list(line.packages.all())
+    draft = g.status == GoodsReceipt.Status.DRAFT
+    weighed = [p for p in rows if p.net_weight is not None]
+    declared = [p for p in weighed if p.declared_weight is not None]
+    return {
+        "line_no": line.line_no,
+        "po_line": line.po_line_id,
+        "item": {
+            "id": line.item_id,
+            "code": item.code,
+            "name": item.name,
+            "unit": item.unit,
+            "package_type": item.package_type,
+            "package_tare": str(item.package_tare),
+        },
+        "description": line.po_line.description,
+        "unit": line.po_line.unit,
+        "ordered_quantity": str(line.po_line.quantity),
+        "outstanding_quantity": str(
+            receipts._outstanding(line.po_line) if draft else line.outstanding_quantity
+        ),
+        "received_quantity": str(line.received_quantity),
+        "damaged_quantity": str(line.damaged_quantity),
+        "good_quantity": str(line.good_quantity),
+        "excess_quantity": str(line.excess_quantity),
+        "notes": line.notes,
+        "weight_tolerance_pct": str(
+            item.weight_tolerance_pct if draft and not rows else line.weight_tolerance_pct
+        ),
+        "packages": [_package(p, line) for p in rows],
+        "package_totals": {
+            "count": len(rows),
+            "net_weight": str(sum((p.net_weight for p in weighed), Decimal("0"))),
+            "declared_weight": str(sum((p.declared_weight for p in declared), Decimal("0"))),
+            "net_of_declared": str(sum((p.net_weight for p in declared), Decimal("0"))),
+            "outside": sum(1 for p in rows if packages.check(p, line)["outside"]),
+        },
+    }
+
+
 def _detail(g: GoodsReceipt, user) -> dict:
     return _summary(g) | {
         "vehicle_no": g.vehicle_no,
@@ -68,27 +145,7 @@ def _detail(g: GoodsReceipt, user) -> dict:
         "confirmed_at": g.confirmed_at,
         "reversal_reason": g.reversal_reason,
         "reversed_at": g.reversed_at,
-        "lines": [
-            {
-                "line_no": line.line_no,
-                "po_line": line.po_line_id,
-                "item": {"id": line.item_id, "code": line.item.code, "name": line.item.name},
-                "description": line.po_line.description,
-                "unit": line.po_line.unit,
-                "ordered_quantity": str(line.po_line.quantity),
-                "outstanding_quantity": str(
-                    line.outstanding_quantity
-                    if g.status != GoodsReceipt.Status.DRAFT
-                    else receipts._outstanding(line.po_line)
-                ),
-                "received_quantity": str(line.received_quantity),
-                "damaged_quantity": str(line.damaged_quantity),
-                "good_quantity": str(line.good_quantity),
-                "excess_quantity": str(line.excess_quantity),
-                "notes": line.notes,
-            }
-            for line in g.lines.select_related("item", "po_line")
-        ],
+        "lines": [_line(g, line) for line in g.lines.select_related("item", "po_line")],
         "photos": [
             {
                 "id": photo.id,
@@ -331,3 +388,60 @@ class PhotoDetailView(_Receipts):
         except ReceiptError as error:
             return _error(error)
         return Response(_fresh(grn, request.user))
+
+
+class PackageIn(serializers.Serializer):
+    supplier_lot = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    gross_weight = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    tare_weight = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    declared_weight = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    pieces = serializers.CharField(max_length=30, required=False, allow_blank=True, allow_null=True)
+    piece_length = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    length_mm = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    width_mm = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    thickness_mm = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, allow_null=True
+    )
+    damaged = serializers.BooleanField(required=False, default=False)
+    notes = serializers.CharField(max_length=200, required=False, allow_blank=True)
+
+
+class PackagesIn(serializers.Serializer):
+    packages = PackageIn(many=True, max_length=packages.MAX_PACKAGES + 1)
+
+
+class PackagesView(_Receipts):
+    """PUT the whole list of packages of one line."""
+
+    def put(self, request, pk, line_no):
+        grn = _get(request.user, pk)
+        body = PackagesIn(data=request.data)
+        body.is_valid(raise_exception=True)
+        given = [PackageInput(**row) for row in body.validated_data["packages"]]
+        try:
+            receipts.set_packages(request.user, grn, line_no, given)
+        except ReceiptError as error:
+            return _error(error)
+        return Response(_fresh(grn, request.user))
+
+
+class LabelsView(_Receipts):
+    def get(self, request, pk):
+        grn = _get(request.user, pk)
+        line = request.query_params.get("line")
+        content = labels.render(grn, int(line) if line and line.isdigit() else None)
+        response = HttpResponse(content, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="labels-{grn.number}.pdf"'
+        return response

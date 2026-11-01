@@ -11,6 +11,7 @@ import {
   confirmGoodsReceipt,
   deleteGoodsReceipt,
   getGoodsReceipt,
+  goodsReceiptLabelsUrl,
   goodsReceiptPhotoUrl,
   grnKey,
   refuseReversal,
@@ -22,6 +23,7 @@ import {
   type GRNDetail,
 } from "../api/goodsReceipts";
 import { poKey } from "../api/purchaseOrders";
+import PackagesPanel from "../components/PackagesPanel";
 import { formatQuantity } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -69,6 +71,18 @@ export default function GoodsReceiptPage() {
           )}
           {data.reversal_reason && <p className="notice">{t("grn.reversalReason", { reason: data.reversal_reason })}</p>}
           {data.can_edit ? <ReceiptForm key={`${data.id}-${data.lines.map((l) => l.received_quantity).join()}`} grn={data} /> : <ReadOnly grn={data} />}
+          {data.lines
+            .filter((l) => l.item.package_type !== "none")
+            .map((l) => (
+              <PackagesPanel key={`${l.line_no}-${l.packages.map((p) => p.lot_no + (p.gross_weight ?? "")).join()}`} grn={data} line={l} />
+            ))}
+          {data.lines.some((l) => l.packages.length > 0) && (
+            <p>
+              <a className="button-link secondary" href={goodsReceiptLabelsUrl(data.id)} target="_blank" rel="noreferrer">
+                {t("grn.printAllLabels")}
+              </a>
+            </p>
+          )}
           <Actions grn={data} />
           <Photos grn={data} />
         </>
@@ -146,6 +160,7 @@ function ReceiptForm({ grn }: { grn: GRNDetail }) {
                     aria-label={t("grn.receivedOf", { item: l.item.code })}
                     inputMode="decimal"
                     value={lines[i].received_quantity}
+                    disabled={l.item.package_type !== "none"}
                     onChange={(e) => setLine(i, { received_quantity: e.target.value })}
                   />
                 </td>
@@ -154,6 +169,7 @@ function ReceiptForm({ grn }: { grn: GRNDetail }) {
                     aria-label={t("grn.damagedOf", { item: l.item.code })}
                     inputMode="decimal"
                     value={lines[i].damaged_quantity}
+                    disabled={l.item.package_type !== "none"}
                     onChange={(e) => setLine(i, { damaged_quantity: e.target.value })}
                   />
                 </td>

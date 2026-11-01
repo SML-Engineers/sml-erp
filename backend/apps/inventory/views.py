@@ -42,6 +42,10 @@ def _item(i: Item) -> dict:
         "is_stock": i.is_stock,
         "package_type": i.package_type,
         "inspection_required": i.inspection_required,
+        "package_tare": str(i.package_tare),
+        "weight_tolerance_pct": str(i.weight_tolerance_pct),
+        "standard_kg_per_m": None if i.standard_kg_per_m is None else str(i.standard_kg_per_m),
+        "density": None if i.density is None else str(i.density),
         "inventory_account": None
         if i.inventory_account is None
         else {"number": i.inventory_account.number, "name": i.inventory_account.name},
@@ -88,6 +92,10 @@ FIELDS = (
     "material",
     "division",
     "notes",
+    "package_tare",
+    "weight_tolerance_pct",
+    "standard_kg_per_m",
+    "density",
 )
 
 

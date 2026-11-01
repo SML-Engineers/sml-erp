@@ -16,10 +16,34 @@ export interface GRNSummary {
   created_by: string;
 }
 
+export type PackageType = "none" | "bag" | "bar" | "plate" | "coil" | "counted";
+
+export interface PackageFields {
+  supplier_lot: string;
+  gross_weight: string | null;
+  tare_weight: string | null;
+  declared_weight: string | null;
+  pieces: string | null;
+  piece_length: string | null;
+  length_mm: string | null;
+  width_mm: string | null;
+  thickness_mm: string | null;
+  damaged: boolean;
+  notes: string;
+}
+
+export interface ReceiptPackage extends PackageFields {
+  package_no: number;
+  lot_no: string;
+  net_weight: string | null;
+  quantity: string | null;
+  check: { basis: "" | "declared" | "kg_per_m" | "theoretical"; expected: string | null; actual: string | null; variance_pct: string | null; outside: boolean };
+}
+
 export interface GRNLine {
   line_no: number;
   po_line: number;
-  item: { id: number; code: string; name: string };
+  item: { id: number; code: string; name: string; unit: string; package_type: PackageType; package_tare: string };
   description: string;
   unit: string;
   /** Quantities as text with 3 decimals, e.g. "300.000". */
@@ -30,6 +54,9 @@ export interface GRNLine {
   good_quantity: string;
   excess_quantity: string;
   notes: string;
+  weight_tolerance_pct: string;
+  packages: ReceiptPackage[];
+  package_totals: { count: number; net_weight: string; declared_weight: string; net_of_declared: string; outside: number };
 }
 
 export interface ApprovalStep {
@@ -107,3 +134,6 @@ export function addGoodsReceiptPhoto(id: number, file: File) {
 }
 export const removeGoodsReceiptPhoto = (id: number, photo: number) => apiSend<GRNDetail>("DELETE", `/goods-receipts/${id}/photos/${photo}/`);
 export const goodsReceiptPhotoUrl = (id: number, photo: number) => `${API_BASE}/goods-receipts/${id}/photos/${photo}/`;
+export const saveGoodsReceiptPackages = (id: number, lineNo: number, packages: PackageFields[]) =>
+  apiSend<GRNDetail>("PUT", `/goods-receipts/${id}/lines/${lineNo}/packages/`, { packages });
+export const goodsReceiptLabelsUrl = (id: number, lineNo?: number) => `${API_BASE}/goods-receipts/${id}/labels/${lineNo ? `?line=${lineNo}` : ""}`;

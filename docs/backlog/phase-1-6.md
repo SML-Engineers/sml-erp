@@ -109,10 +109,23 @@ Status: `[ ]` to do · `[x]` done
     change (database guard); photos can still be added. A reversal needs a reason and the
     Director, takes the quantities off the PO again, and is final. Reminders after 1 day.
 
-- [ ] **P16-07 Package-level receiving** (spec 6A.2)
+- [x] **P16-07 Package-level receiving** (spec 6A.2)
   Bags, bars, plates, coils, boxes: one row per package with lot or heat number, gross, tare,
   net, count; "40 bags × 25 kg" fast entry; variance against declared and invoiced weight;
   QR labels per package.
+  - Done: an item that arrives by package (Items: "Arrives as") is received one row per bag,
+    bundle, plate, coil or box, each with its own lot number (GRN number - line - package,
+    e.g. GRN26110101-1-007). Weights are typed from the scale (owner, 1 Nov 2026); the tare is
+    filled from the item. The line's received quantity is the total of its packages (net kg,
+    metres or pieces, by the item's unit) and damaged packages count as damaged. Checks,
+    highlighted outside the item's tolerance (0.5% to start): bags against the declared
+    weight, bars against the item's kg per metre, plates against length × width × thickness
+    × density. The GRN keeps the tolerance in force when entered (rule 11). Fast entry
+    ("40 × 25 kg declared") adds the rows; the GRN cannot be confirmed until every package is
+    weighed or counted. QR labels 100 × 50 mm, one per package, for a sticker printer (owner,
+    1 Nov 2026), marked QUARANTINE. Packages never change once the GRN is confirmed
+    (database guard). The variance against the invoiced weight comes with supplier invoices
+    (P16-10); reading a connected scale directly can be added later.
 
 - [ ] **P16-08 QC inspection and acceptance** (spec 6A.3, 6A.4)
   Inspection plans per item or category; the QC Inspector records results and accepts,

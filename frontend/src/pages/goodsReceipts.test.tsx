@@ -13,9 +13,10 @@ const draft: GRNDetail = {
   confirmed_by: null, confirmed_at: null, reversal_reason: "", reversed_at: null,
   lines: [
     {
-      line_no: 1, po_line: 21, item: { id: 5, code: "48-BL-08", name: "Black MB" }, description: "Black MB 45% carbon", unit: "kg",
+      line_no: 1, po_line: 21, item: { id: 5, code: "48-BL-08", name: "Black MB", unit: "kg", package_type: "none", package_tare: "0.000" }, description: "Black MB 45% carbon", unit: "kg",
       ordered_quantity: "300.000", outstanding_quantity: "300.000", received_quantity: "300.000", damaged_quantity: "0.000",
-      good_quantity: "300.000", excess_quantity: "0.000", notes: "",
+      good_quantity: "300.000", excess_quantity: "0.000", notes: "", weight_tolerance_pct: "0.50", packages: [],
+      package_totals: { count: 0, net_weight: "0", declared_weight: "0", net_of_declared: "0", outside: 0 },
     },
   ],
   photos: [], can_edit: true, can_add_photo: true, can_approve_excess: false, can_request_reversal: false,
@@ -84,4 +85,51 @@ test("the Director sees the excess and accepts it", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Accept the excess" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/goods-receipts/4/approve/", expect.objectContaining({ method: "POST" })));
   expect(await screen.findByText(/^Confirmed ·/)).toBeInTheDocument();
+});
+
+test("the stores person adds 2 bags of 25 kg at once, weighs them and sees the variance", async () => {
+  const bagLine = {
+    ...draft.lines[0],
+    item: { ...draft.lines[0].item, package_type: "bag" as const, package_tare: "0.100" },
+    received_quantity: "0.000",
+  };
+  const withBags: GRNDetail = { ...draft, lines: [bagLine] };
+  const pkg = (n: number, gross: string, net: string, pct: string, outside: boolean) => ({
+    package_no: n, lot_no: `GRN26110101-1-00${n}`, supplier_lot: "", gross_weight: gross, tare_weight: "0.100", net_weight: net,
+    declared_weight: "25.000", pieces: null, piece_length: null, length_mm: null, width_mm: null, thickness_mm: null,
+    quantity: net, damaged: false, notes: "", check: { basis: "declared" as const, expected: "25.000", actual: net, variance_pct: pct, outside },
+  });
+  const saved: GRNDetail = {
+    ...draft,
+    lines: [
+      {
+        ...bagLine, received_quantity: "49.750",
+        packages: [pkg(1, "25.150", "25.050", "0.20", false), pkg(2, "24.800", "24.700", "-1.20", true)],
+        package_totals: { count: 2, net_weight: "49.750", declared_weight: "50.000", net_of_declared: "49.750", outside: 1 },
+      },
+    ],
+  };
+  const calls = mockApi({
+    "GET /api/v1/goods-receipts/4/": { body: withBags },
+    "PUT /api/v1/goods-receipts/4/lines/1/packages/": { body: saved },
+  });
+  renderAt("/goods-receipts/4", <GoodsReceiptPage />, "/goods-receipts/:id");
+  const panel = await screen.findByRole("region", { name: "Packages: 48-BL-08" });
+  expect(screen.getByLabelText("Received, 48-BL-08")).toBeDisabled();
+  fireEvent.change(within(panel).getByLabelText("How many"), { target: { value: "2" } });
+  fireEvent.change(within(panel).getByLabelText("Declared kg each"), { target: { value: "25" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Add packages" }));
+  fireEvent.change(within(panel).getByLabelText("Gross kg, package 1"), { target: { value: "25.15" } });
+  fireEvent.change(within(panel).getByLabelText("Gross kg, package 2"), { target: { value: "24.80" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Save the packages" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/goods-receipts/4/lines/1/packages/", expect.objectContaining({ method: "PUT" })));
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/goods-receipts/4/lines/1/packages/")!;
+  expect(JSON.parse(String(init!.body)).packages).toMatchObject([
+    { declared_weight: "25", gross_weight: "25.15", damaged: false },
+    { declared_weight: "25", gross_weight: "24.80", damaged: false },
+  ]);
+  const updated = await screen.findByRole("region", { name: "Packages: 48-BL-08" });
+  expect(await within(updated).findByText("-1.20% vs declared")).toHaveClass("form-error");
+  expect(within(updated).getByText(/1 outside the tolerance/)).toBeInTheDocument();
+  expect(within(updated).getByRole("link", { name: "Print labels (PDF)" })).toHaveAttribute("href", "/api/v1/goods-receipts/4/labels/?line=1");
 });

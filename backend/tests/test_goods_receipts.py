@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.utils import DatabaseError
 from django.utils import timezone
 
@@ -235,10 +235,13 @@ def test_a_confirmed_grn_never_changes(po, stores):
         GoodsReceipt.objects.filter(pk=grn.pk).update(delivery_note_no="X")
     with pytest.raises(DatabaseError, match="cannot change"), transaction.atomic():
         GoodsReceiptLine.objects.filter(receipt=grn).update(received_quantity=Decimal("1"))
+    # Deleting directly in the database is refused too (the stock movements also hold on).
     with pytest.raises(DatabaseError, match="cannot change"), transaction.atomic():
-        GoodsReceiptLine.objects.filter(receipt=grn).delete()
-    with pytest.raises(DatabaseError, match="cannot"), transaction.atomic():
-        GoodsReceipt.objects.filter(pk=grn.pk).delete()
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM inventory_goodsreceiptline WHERE receipt_id = %s", [grn.pk])
+    with pytest.raises(DatabaseError, match="cannot be deleted"), transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM inventory_goodsreceipt WHERE id = %s", [grn.pk])
 
 
 def test_a_reversal_needs_a_reason_and_the_director(po, stores, director):

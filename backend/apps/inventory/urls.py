@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import inspection_views as q
 from . import receipt_views as r
+from . import stock_views as sv
 from . import views
 
 urlpatterns = [
@@ -60,4 +61,6 @@ urlpatterns = [
         q.AttachmentDetailView.as_view(),
         name="inspection-attachment",
     ),
+    path("stock/", sv.StockOnHandView.as_view(), name="stock-on-hand"),
+    path("stock/movements/", sv.MovementListView.as_view(), name="stock-movements"),
 ]

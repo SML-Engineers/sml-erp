@@ -31,7 +31,7 @@ from apps.core.numbering import NumberSeriesError, allocate
 from apps.masters.services import mark_used
 from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine
 
-from . import packages
+from . import packages, stock
 from .models import (
     GoodsReceipt,
     GoodsReceiptLine,
@@ -329,10 +329,14 @@ def _apply(grn: GoodsReceipt, user: User) -> None:
         po_line.received_quantity += line.good_quantity
         po_line.save(update_fields=["received_quantity"])
     _po_status(order)
-    from .inspections import accept_automatically  # inspections imports this module
+    from .inspections import InspectionError, accept_automatically  # they import this module
 
-    for line in grn.lines.select_related("item"):
-        accept_automatically(line)
+    try:
+        stock.receive(user, grn)
+        for line in grn.lines.select_related("item"):
+            accept_automatically(user, line)
+    except (stock.StockError, InspectionError) as error:
+        raise ReceiptError(str(error)) from None
     grn.status = St.CONFIRMED
     grn.confirmed_by = grn.confirmed_by or user
     grn.confirmed_at = timezone.now()
@@ -507,6 +511,10 @@ def approve_reversal(user: User, grn: GoodsReceipt, comment: str = "") -> GoodsR
                 )
                 po_line.save(update_fields=["received_quantity"])
             _po_status(order)
+            try:
+                stock.reverse(user, grn, grn.reversal_reason)
+            except stock.StockError as error:
+                raise ReceiptError(str(error)) from None
             grn.status = St.REVERSED
             grn.reversed_at = timezone.now()
             grn.save(update_fields=["status", "reversed_at"])

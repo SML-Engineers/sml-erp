@@ -2209,5 +2209,32 @@
     "addCheck": "Add a check",
     "active": "Active",
     "save": "Save the plan"
+  },
+  "stock": {
+    "title": "Stock on hand",
+    "help": "Worked out from every stock movement, never typed. Received goods wait in quarantine at no value; when QC accepts them they move to the main store at the PO price (in LKR), and the inventory account is debited against Goods received not invoiced. Rejected and damaged goods wait in the rejected store, at no value, to go back to the supplier. Click an item to see its movements.",
+    "byLot": "Show each lot",
+    "totalValue": "Total value: LKR {{value}}",
+    "none": "No stock yet.",
+    "store": "Store",
+    "lot": "Lot",
+    "averageCost": "Average cost (LKR)",
+    "value": "Value (LKR)",
+    "kinds": {
+      "main": "available",
+      "quarantine": "quarantine",
+      "rejected": "rejected"
+    },
+    "movements": "Movements",
+    "close": "Close",
+    "what": "Movement",
+    "source": "From",
+    "movementKinds": {
+      "received": "Received into quarantine",
+      "damaged": "Received damaged",
+      "accepted": "Accepted by QC",
+      "rejected": "Rejected by QC",
+      "reversed": "GRN reversed"
+    }
   }
 }

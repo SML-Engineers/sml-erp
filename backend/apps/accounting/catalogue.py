@@ -51,6 +51,8 @@ SYSTEM_ROLES = {
     "customer_advances": "Customer advances",
     "vat_payable": "VAT payable",
     "vat_receivable": "VAT receivable",
+    # Goods accepted into stock before the supplier's invoice is matched (P16-09).
+    "grni": "Goods received not invoiced",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

@@ -149,10 +149,20 @@ Status: `[ ]` to do · `[x]` done
 
 ## E. Stock and accounting
 
-- [ ] **P16-09 Stock movements and valuation** (spec 5A.3, IAS 2)
+- [x] **P16-09 Stock movements and valuation** (spec 5A.3, IAS 2)
   Every movement recorded by item, store and lot; balances computed, never typed; weighted
   average cost. On acceptance: Dr Inventory, Cr Goods received not invoiced (GRNI), at the PO
   price, balanced and never edited. Stock on hand report with value.
+  - Done: confirming a GRN puts the good quantity in the division's quarantine store and
+    damaged goods in its rejected store, lot by lot (package lot numbers, or GRN-line), at
+    no value. QC's final decision (or confirming an item that needs no inspection) moves
+    accepted goods to the main store at the PO price in LKR (PO exchange rate) and rejected
+    goods to the rejected store at no value, and posts Dr the item's inventory account, Cr
+    Goods received not invoiced (new system account 2190), with the division and supplier.
+    Approving a GRN reversal takes everything back out and reverses the journal entry.
+    Movements are insert-only (database guard); balances and the weighted average cost
+    (value ÷ quantity in the main stores) are worked out from them. Non-stock items have no
+    movements. Purchasing and stores → Stock on hand, with lots and movements.
 
 ## F. Supplier invoices and payment
 

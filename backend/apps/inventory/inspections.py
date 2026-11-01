@@ -34,6 +34,7 @@ from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, User
 
+from . import stock
 from .models import (
     GoodsReceipt,
     GoodsReceiptLine,
@@ -474,6 +475,7 @@ def decide(user: User, inspection: IncomingInspection, decision: str, reason: st
         inspection.decision = decision
         inspection.decided_at = timezone.now()
         inspection.save(update_fields=["status", "decision", "decided_at"])
+        _to_stock(user, inspection)
         return inspection
 
 
@@ -492,6 +494,7 @@ def approve_deviation(user: User, inspection: IncomingInspection, comment: str =
                 inspection.decision = D.DEVIATION
                 inspection.decided_at = timezone.now()
                 inspection.save(update_fields=["status", "decision", "decided_at"])
+                _to_stock(user, inspection)
         return inspection
 
 
@@ -511,12 +514,19 @@ def send_back(user: User, inspection: IncomingInspection, reason: str):
         return inspection
 
 
-def accept_automatically(line: GoodsReceiptLine) -> None:
+def _to_stock(user: User, inspection: IncomingInspection) -> None:
+    try:
+        stock.decide(user, inspection)
+    except stock.StockError as error:
+        raise InspectionError(str(error)) from None
+
+
+def accept_automatically(user: User, line: GoodsReceiptLine) -> None:
     """Called when a GRN is confirmed: an item that needs no inspection is accepted as it is."""
     good = good_quantity(line)
     if line.item.inspection_required or good <= 0:
         return
-    IncomingInspection.objects.create(
+    inspection = IncomingInspection.objects.create(
         line=line,
         sample_size=0,
         status=St.DECIDED,
@@ -526,6 +536,7 @@ def accept_automatically(line: GoodsReceiptLine) -> None:
         notes="No inspection needed for this item.",
         decided_at=timezone.now(),
     )
+    _to_stock(user, inspection)
 
 
 def blocks_reversal(grn: GoodsReceipt) -> bool:

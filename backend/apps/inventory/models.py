@@ -441,3 +441,58 @@ class InspectionAttachment(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+# --- Stock (backlog P16-09, spec 5A.3, IAS 2) ----------------------------------------------
+
+
+class StockMovement(models.Model):
+    """One movement of one lot of an item into (+) or out of (−) a store, with its value in
+    LKR. Balances are always the sum of the movements, never typed. Rows are never changed or
+    deleted (database guard); a mistake is corrected by another movement.
+
+    Goods wait in quarantine at no value; when QC accepts them they move to the main store at
+    the PO price (Dr Inventory, Cr Goods received not invoiced). Rejected and damaged goods
+    wait in the rejected store, at no value, to go back to the supplier."""
+
+    class Kind(models.TextChoices):
+        RECEIVED = "received", "Received into quarantine"
+        DAMAGED = "damaged", "Received damaged"
+        ACCEPTED = "accepted", "Accepted by QC"
+        REJECTED = "rejected", "Rejected by QC"
+        REVERSED = "reversed", "GRN reversed"
+
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="movements")
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="movements")
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    lot_no = models.CharField(max_length=40)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    movement_date = models.DateField()
+    quantity = _qty()  # + into the store, − out of it
+    value = models.DecimalField(max_digits=18, decimal_places=2, default=0)  # LKR, signed
+    receipt_line = models.ForeignKey(
+        GoodsReceiptLine, null=True, blank=True, on_delete=models.PROTECT, related_name="movements"
+    )
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["movement_date", "id"]
+        indexes = [models.Index(fields=["item", "store", "lot_no"], name="inventory_mv_balance")]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(quantity=0), name="inventory_movement_not_zero"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.quantity} {self.item.code} @ {self.store.code}"

@@ -23,3 +23,4 @@ class InventoryConfig(AppConfig):
         register(m.InspectionResult)
         register(m.RejectedPackage)
         register(m.InspectionAttachment)
+        register(m.StockMovement)

@@ -66,6 +66,10 @@ DOCUMENT_TYPES = {
     # Every purchase order is approved by the Director before it is sent (owner, 31 Oct 2026;
     # P16-04).
     "purchase_order": DocumentType("Purchase order", min_approvals=1, final_role="director"),
+    # Goods above what the PO still expects are accepted only with the Director (owner, 31 Oct
+    # 2026; P16-06); so is reversing a confirmed goods receiving note.
+    "goods_receipt": DocumentType("GRN with excess", min_approvals=1, final_role="director"),
+    "goods_receipt_reversal": DocumentType("GRN reversal", min_approvals=1, final_role="director"),
 }
 
 

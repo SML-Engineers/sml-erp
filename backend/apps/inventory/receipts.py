@@ -28,7 +28,8 @@ from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, User
 from apps.core.numbering import NumberSeriesError, allocate
-from apps.masters.services import mark_used
+from apps.masters import currencies
+from apps.masters.services import MastersError, mark_used
 from apps.purchasing.models import PurchaseOrder, PurchaseOrderLine
 
 from . import packages, stock
@@ -372,6 +373,15 @@ def confirm(user: User, grn: GoodsReceipt, comment: str = "") -> GoodsReceipt:
         lines = list(grn.lines.select_related("po_line", "item"))
         if all(line.received_quantity == 0 for line in lines):
             raise ReceiptError("Enter the quantity received on at least one line.")
+        # The goods are valued at the exchange rate of the day they arrived (IAS 21).
+        try:
+            lookup = currencies.rate_on(order.currency, grn.receipt_date)
+        except MastersError as error:
+            raise ReceiptError(str(error)) from None
+        grn.exchange_rate = lookup.rate
+        grn.rate_date = lookup.rate_date
+        grn.save(update_fields=["exchange_rate", "rate_date"])
+        currencies.mark_rate_used(lookup)
         excess = []
         for line in lines:
             _packages_complete(line)

@@ -459,7 +459,10 @@ def _debit(line: SupplierReturnLine, post, pending: list[DebitNote]) -> list[Deb
         if quantity <= 0:
             continue
         left -= quantity
-        rate = inv_line.grn_line.receipt.purchase_order.exchange_rate
+        # The debit note reverses the invoice at the rate it was posted at (IAS 21).
+        rate = (
+            inv_line.invoice.exchange_rate or inv_line.grn_line.receipt.purchase_order.exchange_rate
+        )
         net = (quantity * inv_line.unit_price).quantize(CENT, ROUND_HALF_UP)
         tax = Decimal("0")
         recoverable = Decimal("0")

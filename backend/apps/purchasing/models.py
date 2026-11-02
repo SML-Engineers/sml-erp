@@ -151,6 +151,10 @@ class SupplierInvoice(models.Model):
     )
     created_at = models.DateTimeField(default=timezone.now)
     posted_at = models.DateTimeField(null=True, blank=True)
+    # The exchange rate on the invoice date, at which the liability is posted (IAS 21,
+    # P16-19). Empty on invoices posted before then, which used the PO's rate.
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    rate_date = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ["-invoice_date", "-number"]

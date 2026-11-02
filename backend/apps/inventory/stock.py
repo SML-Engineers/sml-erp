@@ -4,9 +4,10 @@
   damaged quantity into its rejected store, lot by lot, at no value: nothing is on the books
   until QC accepts it.
 - QC's decision moves the goods out of quarantine: the accepted quantity into the division's
-  main store at the PO price in LKR (the PO's exchange rate), the rejected quantity into the
-  rejected store at no value. The accepted value is posted Dr the item's inventory account,
-  Cr Goods received not invoiced (system account), in the same transaction (rule 2).
+  main store at the PO price in LKR (at the exchange rate of the receipt date, IAS 21), the
+  rejected quantity into the rejected store at no value. The accepted value is posted Dr the
+  item's inventory account, Cr Goods received not invoiced (system account), in the same
+  transaction (rule 2).
 - Reversing a GRN takes everything it put in back out, and reverses its journal entries.
 - Movements are never changed or deleted (database guard). Balances and the weighted average
   cost are worked out from them: value on hand ÷ quantity on hand in the main stores.
@@ -46,10 +47,15 @@ def _store(division, kind: str) -> Store:
     return store
 
 
+def receipt_rate(grn: GoodsReceipt) -> Decimal:
+    """The exchange rate the goods of a GRN are valued at: the receipt date's (IAS 21), or the
+    PO's for GRNs confirmed before rates were kept per GRN."""
+    return grn.exchange_rate or grn.purchase_order.exchange_rate
+
+
 def unit_cost(line: GoodsReceiptLine) -> Decimal:
-    """The PO price of one unit in LKR."""
-    order = line.receipt.purchase_order
-    return line.po_line.unit_price * order.exchange_rate
+    """The PO price of one unit in LKR, at the receipt date's rate."""
+    return line.po_line.unit_price * receipt_rate(line.receipt)
 
 
 def _lots(line: GoodsReceiptLine, *, rejected_ids=frozenset(), whole_rejected=False):

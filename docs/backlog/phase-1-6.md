@@ -315,9 +315,16 @@ The owner's answers to the open go-live questions (also in spec 8.4):
     (SSCL 2.125%). The share of a used code is fixed (database guard). The SSCL rate entered
     on the Taxes page must be 2.5%. To be confirmed by the tax advisor.
 
-- [ ] **P16-18 Price differences into the cost of stock (IAS 2)**
+- [x] **P16-18 Price differences into the cost of stock (IAS 2)**
   An invoice price different from the PO price adjusts the value of the goods still in
   stock; only the part already used goes to cost.
+  - Done: when a supplier invoice is posted, the difference from the PO price (with any tax
+    that cannot be recovered, such as SSCL) is shared between the goods of that GRN line
+    still in a main store, which take it as a value-only "Invoice price difference" movement
+    (Dr/Cr the item's inventory account, lot by lot), and the goods no longer in stock, whose
+    part goes to Purchase price variance. The weighted average cost then reflects the
+    invoice price. For a non-stock item the difference goes to its expense account. The
+    database allows a movement without quantity only for this kind, and only with a value.
 
 - [ ] **P16-19 Foreign-currency purchases at the transaction date's rate (IAS 21)**
   Goods valued at the GRN date's rate, the invoice and payment at their own dates' rates,

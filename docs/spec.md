@@ -884,6 +884,8 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
   Payment: Dr Accounts payable, Cr Bank. All postings balance and are never edited (rules 2,
   3).
 
+- **Invoice price differences (owner, 2 Nov 2026; P16-18).** Stock is carried at what it actually cost (IAS 2). When the supplier's invoice price differs from the PO price, the difference (with any tax that cannot be recovered) adjusts the value of the goods still in stock; only the part for goods already used or gone goes to Purchase price variance.
+
 ### 5A.4 Supplier invoices and three-way match
 
 - Entered by the Accounts Clerk with the scanned invoice: supplier, invoice number and date,

@@ -6,13 +6,14 @@ from decimal import Decimal
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
-from django.db.utils import DatabaseError
+from django.db.utils import DatabaseError, IntegrityError
 from django.utils import timezone
 
 from apps.accounting import taxes
 from apps.accounting.models import TaxCode, TaxComponent
 from apps.core.models import Division, Notification
-from apps.inventory import items, receipts
+from apps.inventory import items, receipts, stock
+from apps.inventory.models import StockMovement
 from apps.masters.models import Currency, Supplier
 from apps.purchasing import invoices, orders
 from apps.purchasing.invoices import InvoiceError, LineInput
@@ -251,18 +252,74 @@ def test_a_price_difference_is_held_and_the_director_approves_it(
         invoices.approve_exception(accountant, invoice)  # never the one who asked
     invoice = invoices.approve_exception(director, invoice, "OK this once")
     assert invoice.status == St.POSTED
+    # IAS 2 (P16-18): the goods are all still in stock, so the difference is part of their
+    # cost: the inventory account, not the variance.
     assert lines_of(invoice.journal_entry) == {
-        ("grni", Decimal("12500.00"), Decimal("0")),  # stock stays at the PO price
-        ("price_variance", Decimal("500.00"), Decimal("0")),
+        ("grni", Decimal("12500.00"), Decimal("0")),
+        ("1210", Decimal("500.00"), Decimal("0")),
         ("accounts_payable", Decimal("0"), Decimal("13000.00")),
     }
+    moves = StockMovement.objects.filter(kind="price_diff")
+    assert [(str(m.quantity), str(m.value), m.store.code) for m in moves] == [
+        ("0.000", "500.00", "IM-MAIN")
+    ]
+    assert stock.average_costs(StockMovement.objects.all())[grn_line.item_id] == Decimal("13.0000")
 
 
-def test_a_lower_price_is_a_credit_to_the_variance(clerk, accountant, director, supplier, grn_line):
+def test_a_lower_price_lowers_the_value_of_the_stock(
+    clerk, accountant, director, supplier, grn_line
+):
     invoice = invoices.match(clerk, enter(clerk, supplier, grn_line, price="12.00"))
     invoices.request_exception(accountant, invoice, "Discount given")
     invoice = invoices.approve_exception(director, invoice)
-    assert ("price_variance", Decimal("0"), Decimal("500.00")) in lines_of(invoice.journal_entry)
+    assert ("1210", Decimal("0"), Decimal("500.00")) in lines_of(invoice.journal_entry)
+    assert stock.average_costs(StockMovement.objects.all())[grn_line.item_id] == Decimal("12.0000")
+
+
+def test_the_difference_on_goods_no_longer_in_stock_goes_to_the_variance(
+    clerk, accountant, director, stores, supplier, grn_line
+):
+    # 400 of the 1,000 have left the store (as a later material issue will do).
+    lot = StockMovement.objects.get(receipt_line=grn_line, store__kind="main")
+    StockMovement.objects.create(
+        item=grn_line.item,
+        store=lot.store,
+        division=lot.division,
+        lot_no=lot.lot_no,
+        kind="returned",
+        movement_date=TODAY,
+        quantity=Decimal("-400"),
+        value=Decimal("-5000.00"),
+        receipt_line=grn_line,
+        created_by=stores,
+    )
+    invoice = invoices.match(clerk, enter(clerk, supplier, grn_line, price="13.00"))
+    invoices.request_exception(accountant, invoice, "Brass price rose")
+    invoice = invoices.approve_exception(director, invoice)
+    assert lines_of(invoice.journal_entry) == {
+        ("grni", Decimal("12500.00"), Decimal("0")),
+        ("1210", Decimal("300.00"), Decimal("0")),  # the 600 still in stock
+        ("price_variance", Decimal("200.00"), Decimal("0")),  # the 400 gone
+        ("accounts_payable", Decimal("0"), Decimal("13000.00")),
+    }
+    assert stock.average_costs(StockMovement.objects.all())[grn_line.item_id] == Decimal("13.0000")
+
+
+def test_the_database_refuses_a_movement_with_no_quantity_and_no_value(stores, grn_line):
+    lot = StockMovement.objects.get(receipt_line=grn_line, store__kind="main")
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            StockMovement.objects.create(
+                item=grn_line.item,
+                store=lot.store,
+                division=lot.division,
+                lot_no=lot.lot_no,
+                kind="returned",
+                movement_date=TODAY,
+                quantity=Decimal("0"),
+                value=Decimal("5.00"),
+                created_by=stores,
+            )
 
 
 def test_a_different_printed_total_or_tax_is_held(clerk, supplier, grn_line, vat):

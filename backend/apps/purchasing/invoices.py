@@ -37,7 +37,13 @@ from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, User
 from apps.core.numbering import NumberSeriesError, allocate
-from apps.inventory.models import GoodsReceipt, GoodsReceiptLine, IncomingInspection
+from apps.inventory.models import (
+    GoodsReceipt,
+    GoodsReceiptLine,
+    IncomingInspection,
+    StockMovement,
+    Store,
+)
 from apps.masters.models import Supplier
 from apps.vouchers.services import FILE_TYPES, INVOICE_FREED, MAX_FILE_BYTES, invoice_key
 
@@ -505,9 +511,44 @@ def _lkr(amount: Decimal, rate: Decimal) -> Decimal:
     return (amount * rate).quantize(CENT, ROUND_HALF_UP)
 
 
+def _in_stock(grn_line: GoodsReceiptLine) -> list[tuple[str, int, Decimal]]:
+    """The lots of a GRN line still in a main store: (lot, store, quantity)."""
+    rows = (
+        StockMovement.objects.filter(receipt_line=grn_line, store__kind=Store.Kind.MAIN)
+        .values("lot_no", "store")
+        .annotate(quantity=Sum("quantity"))
+        .order_by("lot_no", "store")
+    )
+    return [(r["lot_no"], r["store"], r["quantity"]) for r in rows if r["quantity"] > 0]
+
+
+def _split(amount: Decimal, lots: list[tuple[str, int, Decimal]]) -> list[tuple[str, int, Decimal]]:
+    """Share an amount over lots by quantity, to the cent; the last lot takes the rounding."""
+    total = sum((q for _, _, q in lots), Decimal("0"))
+    shares, given = [], Decimal("0")
+    for index, (lot, store, quantity) in enumerate(lots):
+        share = (
+            amount - given
+            if index == len(lots) - 1
+            else (amount * quantity / total).quantize(CENT, ROUND_HALF_UP)
+        )
+        given += share
+        if share:
+            shares.append((lot, store, share))
+    return shares
+
+
 def _post(user: User, invoice: SupplierInvoice) -> None:
+    """Post the invoice: Dr Goods received not invoiced at the PO price (expense, for a
+    non-stock item), recoverable tax, and the price difference; Cr Accounts payable.
+
+    The price difference (with any tax that cannot be recovered) is part of what the goods
+    cost (IAS 2): for goods of the GRN line still in a main store it adjusts their value, lot
+    by lot; only the part of the goods no longer in stock goes to Purchase price variance. For a
+    non-stock item it goes to the item's expense account."""
     division = invoice.division
     debits: dict[tuple, Decimal] = {}
+    adjustments = []  # (grn line, [(lot, store, value)]) for goods still in stock
 
     def add(account, amount, line_division=None, description=""):
         key = (account.pk, line_division.pk if line_division else None, description)
@@ -542,9 +583,25 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
                     add(component.purchase_account, _lkr(part.amount, rate), None, "Tax")
                     recoverable += part.amount
         difference += _lkr(line.tax_amount - recoverable, rate)
-        if difference:
+        if not difference:
+            continue
+        if not line.item.is_stock:
+            add(line.item.expense_account, difference, division, line.item.code)
+            continue
+        lots = _in_stock(line.grn_line)
+        on_hand = sum((q for _, _, q in lots), Decimal("0"))
+        share = min(line.quantity, on_hand)
+        to_stock = (difference * share / line.quantity).quantize(CENT, ROUND_HALF_UP)
+        if to_stock:
+            if line.item.inventory_account is None:
+                raise InvoiceError(
+                    f"Item {line.item.code} has no inventory account (the Accountant sets it)."
+                )
+            add(line.item.inventory_account, to_stock, division, line.item.code)
+            adjustments.append((line.grn_line, _split(to_stock, lots)))
+        if difference - to_stock:
             variance = variance or _system("price_variance", "Purchase price variance")
-            add(variance, difference, division, line.item.code)
+            add(variance, difference - to_stock, division, line.item.code)
     lines = [
         journal.Line(
             account=account,
@@ -579,6 +636,21 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
         )
     except AccountingError as error:
         raise InvoiceError(str(error)) from None
+    for grn_line, shares in adjustments:
+        for lot, store, value in shares:
+            StockMovement.objects.create(
+                item=grn_line.item,
+                store_id=store,
+                division=grn_line.receipt.division,
+                lot_no=lot,
+                kind=StockMovement.Kind.PRICE,
+                movement_date=invoice.invoice_date,
+                quantity=Decimal("0"),
+                value=value,
+                receipt_line=grn_line,
+                journal_entry=entry,
+                created_by=user,
+            )
     invoice.journal_entry = entry
     invoice.total_lkr = payable
     invoice.status = St.POSTED

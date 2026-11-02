@@ -463,6 +463,8 @@ class StockMovement(models.Model):
         REVERSED = "reversed", "GRN reversed"
         RETURNED = "returned", "Returned to the supplier"
         OPENING = "opening", "Opening stock"
+        # Value only: the supplier's invoice price differs from the PO price (IAS 2, P16-18).
+        PRICE = "price_diff", "Invoice price difference"
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="movements")
     store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="movements")
@@ -499,7 +501,9 @@ class StockMovement(models.Model):
         indexes = [models.Index(fields=["item", "store", "lot_no"], name="inventory_mv_balance")]
         constraints = [
             models.CheckConstraint(
-                condition=~models.Q(quantity=0), name="inventory_movement_not_zero"
+                condition=~models.Q(quantity=0)
+                | (models.Q(kind="price_diff") & ~models.Q(value=0)),
+                name="inventory_movement_not_zero",
             )
         ]
 

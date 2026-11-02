@@ -118,11 +118,17 @@ class TemplateDetailView(_Recurring):
         return Response(_detail(saved))
 
 
+class ActiveIn(serializers.Serializer):
+    active = serializers.BooleanField()
+
+
 class TemplateActiveView(_Recurring):
     def post(self, request, pk):
         template = get_object_or_404(recurring.visible(request.user), pk=pk)
+        body = ActiveIn(data=request.data)
+        body.is_valid(raise_exception=True)
         try:
-            saved = recurring.set_active(request.user, template, bool(request.data.get("active")))
+            saved = recurring.set_active(request.user, template, body.validated_data["active"])
         except AccountingError as error:
             return _error(error)
         return Response(_detail(saved))

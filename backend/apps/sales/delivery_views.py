@@ -97,7 +97,8 @@ def _detail(n: DeliveryNote, user) -> dict:
 
 class LineIn(serializers.Serializer):
     order_line = serializers.IntegerField()
-    quantity = serializers.CharField(max_length=30)
+    # Empty for a line that is not on this note (the screen lists every order line).
+    quantity = serializers.CharField(max_length=30, allow_blank=True)
 
 
 class NoteIn(serializers.Serializer):

@@ -30,6 +30,14 @@ OS = SalesOrder.Status
 PDF = b"%PDF-1.4\n" + b"0" * 64
 
 
+@pytest.fixture(autouse=True)
+def memory_storage(settings):
+    settings.STORAGES = {
+        **settings.STORAGES,
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+    }
+
+
 @pytest.fixture
 def executive():
     return person("sales@sml.lk", "sales_executive", all_divisions=True)

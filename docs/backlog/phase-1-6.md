@@ -253,3 +253,12 @@ Status: `[ ]` to do · `[x]` done
   Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,
   Accounts Clerk, Accountant, Director, Cashier); items, stores and open POs loaded; the
   accounting treatment confirmed with the auditors; the owner signs off.
+  - Preparation (2 Nov 2026): the demo data adds a Purchasing Officer, a Stores Manager and a
+    QC Inspector, four items, a resin inspection plan, and purchase orders at every stage (a
+    draft, one waiting for the Director, one partly received with 10 bags waiting for QC, one
+    received, accepted and invoiced, and one with 200 pieces rejected and its invoice held for
+    a price difference). On a PC that already has the earlier demo, running
+    `load_demo_data` again adds only the missing parts. The test scripts per role and the
+    go-live rows (items, stores, open POs, auditors' confirmation) are in the shared test
+    document. Stock starts at zero at go-live: opening stock comes with the Phase 2 migration
+    (spec 6.1), unless the owner decides otherwise.

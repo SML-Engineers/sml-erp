@@ -7,10 +7,14 @@ shared authenticator entry), suppliers, a bank account with a cheque book, tax r
 vouchers at every stage: draft, returned, waiting for the Accountant, waiting for the Director,
 approved, part-paid and paid. For sales (P15-12): customers, materials, machines and costing
 rates, and quotations at every stage (draft, waiting for the Director, sent and expiring this
-week, won with an open sales order and an advance, lost). Everything goes through the normal
-services, so every business rule applies.
+week, won with an open sales order and an advance, lost). For purchasing (P16-14): a Purchasing
+Officer, a Stores Manager and a QC Inspector, items, an inspection plan, and purchase orders at
+every stage through goods receipt, QC and the supplier invoice. Everything goes through the
+normal services, so every business rule applies.
 
-It refuses to run on a production server, and runs only once per database.
+It refuses to run on a production server. Each part (vouchers, sales, purchasing) loads once per
+database: on a PC that already has the earlier demo data, running it again adds only the parts
+that are missing, with the same password and authenticator entry.
 """
 
 import io
@@ -33,10 +37,18 @@ from apps.accounting import taxes
 from apps.accounting.models import Account, DetailType, TaxCode, TaxComponent
 from apps.core import crypto
 from apps.core.models import Division, Role, User, UserRole
+from apps.inventory import inspections, items, receipts
+from apps.inventory.inspections import ParameterInput, ResultInput
+from apps.inventory.models import IncomingInspection
+from apps.inventory.packages import PackageInput
 from apps.masters import banking, costing_rates, customers, suppliers
 from apps.masters import services as masters
-from apps.masters.models import Section
+from apps.masters.models import CompanyAccount, Section, Supplier
 from apps.payments import services as payments
+from apps.purchasing import invoices
+from apps.purchasing import orders as purchase_orders
+from apps.purchasing.invoices import LineInput as InvoiceLine
+from apps.purchasing.orders import LineInput as POLine
 from apps.sales import advances, orders, workflow
 from apps.sales import services as quotations
 from apps.sales.orders import Delivery
@@ -50,14 +62,20 @@ from apps.vouchers.services import CodingInput, LineInput, SplitInput
 DEMO_DOMAIN = "demo.sml.lk"
 # Public on purpose: demo users exist only on a PC or the test server (never production).
 PASSWORD = "Demo-SML-2026!"  # noqa: S105
+# (sign-in name, full name, role, part of the demo it comes with)
 PEOPLE = [
-    ("clerk", "Nimal Perera", "clerk"),
-    ("accountant", "Kumari Silva", "accountant"),
-    ("director", "Ruwan Jayasinghe", "director"),
-    ("cashier", "Sunil Fernando", "cashier"),
-    ("sales", "Dilini Wijesekara", "sales_executive"),
-    ("salesmanager", "Chaminda Ratnayake", "sales_manager"),
+    ("clerk", "Nimal Perera", "clerk", "vouchers"),
+    ("accountant", "Kumari Silva", "accountant", "vouchers"),
+    ("director", "Ruwan Jayasinghe", "director", "vouchers"),
+    ("cashier", "Sunil Fernando", "cashier", "vouchers"),
+    ("sales", "Dilini Wijesekara", "sales_executive", "sales"),
+    ("salesmanager", "Chaminda Ratnayake", "sales_manager", "sales"),
+    ("purchasing", "Priyanka Gunawardena", "purchasing_officer", "purchasing"),
+    ("stores", "Kamal Bandara", "store_supervisor", "purchasing"),
+    ("qc", "Sanjeewa Dias", "qc_inspector", "purchasing"),
 ]
+# Each part is there once its first person is.
+PARTS = ("vouchers", "sales", "purchasing")
 
 
 def invoice_pdf(title: str, lines: list[str]) -> SimpleUploadedFile:
@@ -82,24 +100,49 @@ class Command(BaseCommand):
         environment = os.environ.get("APP_ENVIRONMENT", "")
         if environment == "production" or not (settings.DEBUG or environment == "test"):
             raise CommandError("Demo data is only for a PC or the test server, never production.")
-        if User.objects.filter(email__endswith=f"@{DEMO_DOMAIN}").exists():
+        missing = [part for part in PARTS if not self.loaded(part)]
+        if not missing:
             raise CommandError("The demo data is already loaded.")
-        secret = pyotp.random_base32()
-        with transaction.atomic():
-            people = self.people(secret)
-            self.setup(people)
-            self.vouchers(people)
-            self.sales(people)
-        self.report(secret)
+        if "vouchers" in missing:
+            secret = pyotp.random_base32()
+        else:
+            clerk = User.objects.get(email=f"clerk@{DEMO_DOMAIN}")
+            secret = crypto.decrypt(clerk.totp_secret_encrypted)
+        try:
+            with transaction.atomic():
+                people = self.people(secret, missing)
+                if "vouchers" in missing:
+                    self.setup(people)
+                    self.vouchers(people)
+                else:
+                    self.existing()
+                if "sales" in missing:
+                    self.sales(people)
+                if "purchasing" in missing:
+                    self.purchasing(people)
+        except CommandError:
+            raise
+        except Exception as error:  # a clash with data already typed in on this PC
+            raise CommandError(
+                f"The demo data could not be added, nothing was saved: {error}"
+            ) from error
+        self.report(secret, missing)
+
+    @staticmethod
+    def loaded(part: str) -> bool:
+        first = next(key for key, _, _, p in PEOPLE if p == part)
+        return User.objects.filter(email=f"{first}@{DEMO_DOMAIN}").exists()
 
     # --- People ---------------------------------------------------------------------------
 
-    def people(self, secret: str) -> dict:
+    def people(self, secret: str, parts: list[str]) -> dict:
         people = {}
-        for key, name, role in PEOPLE:
-            user = User.objects.create_user(
-                f"{key}@{DEMO_DOMAIN}", name, PASSWORD, all_divisions=True
-            )
+        for key, name, role, part in PEOPLE:
+            email = f"{key}@{DEMO_DOMAIN}"
+            if part not in parts:
+                people[key] = User.objects.filter(email=email).first()
+                continue
+            user = User.objects.create_user(email, name, PASSWORD, all_divisions=True)
             UserRole.objects.create(user=user, role=Role.objects.get(code=role), reason="Demo data")
             user.two_factor_required = True
             user.totp_secret_encrypted = crypto.encrypt(secret)
@@ -107,6 +150,17 @@ class Command(BaseCommand):
             user.save()
             people[key] = User.objects.get(pk=user.pk)
         return people
+
+    def existing(self) -> None:
+        """The bank account and suppliers of the vouchers part, loaded earlier."""
+        self.bank = CompanyAccount.objects.get(code="COM-CUR")
+        self.payees = {
+            key: Supplier.objects.get(name=name)
+            for key, name in (
+                ("steel", "Lanka Steel Traders"),
+                ("resin", "Polymer Resins Lanka (Pvt) Ltd"),
+            )
+        }
 
     # --- Accounts, taxes, suppliers ---------------------------------------------------------
 
@@ -463,21 +517,201 @@ class Command(BaseCommand):
             executive, q, accepted=False, reason="price", note="A competitor quoted 9,800 each"
         )
 
+    # --- Purchasing, stores and QC (Phase 1.6) -------------------------------------------------
+
+    def purchasing(self, p: dict) -> None:
+        buyer, stores, qc = p["purchasing"], p["stores"], p["qc"]
+        clerk, accountant, director = p["clerk"], p["accountant"], p["director"]
+        today = timezone.localdate()
+        ws, im = Division.objects.get(code="WS"), Division.objects.get(code="IM")
+
+        # A tools supplier, with its bank details checked by the Accountant.
+        tools = suppliers.create_supplier(
+            clerk,
+            {
+                "name": "Precision Tools Lanka (Pvt) Ltd",
+                "category": "supplier",
+                "payment_terms_days": 30,
+            },
+        )
+        suppliers.add_bank_account(
+            accountant,
+            tools,
+            {
+                "bank_name": "Seylan Bank",
+                "account_name": "Precision Tools Lanka (Pvt) Ltd",
+                "account_number": "0450123456789",
+            },
+        )
+        suppliers.acknowledge_bank_change(accountant, tools)
+        resin_supplier, steel = self.payees["resin"], self.payees["steel"]
+
+        # Items (Purchasing and stores -> Items).
+        resin = items.create_item(
+            buyer,
+            {
+                "code": "PP-H-25",
+                "name": "PP homopolymer, natural (25 kg bags)",
+                "category": "raw_material",
+                "unit": "kg",
+                "package_type": "bag",
+                "package_tare": "0.1",
+                "division": "IM",
+            },
+        )
+        bar = items.create_item(
+            buyer,
+            {
+                "code": "EN8-40",
+                "name": "EN8 round bar, 40 mm",
+                "category": "raw_material",
+                "unit": "kg",
+                "package_type": "bar",
+                "standard_kg_per_m": "9.865",
+                "division": "WS",
+            },
+        )
+        insert = items.create_item(
+            buyer,
+            {
+                "code": "M8-INSERT",
+                "name": "M8 brass threaded insert",
+                "category": "bought_out",
+                "unit": "pcs",
+                "division": "IM",
+            },
+        )
+        cutter = items.create_item(
+            buyer,
+            {
+                "code": "CNMG-120408",
+                "name": "Carbide turning insert CNMG 120408",
+                "category": "consumable",
+                "unit": "pcs",
+                "inspection_required": False,
+                "division": "WS",
+            },
+        )
+
+        # What QC checks on the resin (Purchasing and stores -> Inspection plans).
+        inspections.save_plan(
+            qc,
+            None,
+            {"name": "PP resin", "item": resin, "sampling": "fixed", "sample_value": "2"},
+            [
+                ParameterInput("Melt flow index", "number", "10", "14", "g/10 min", critical=True),
+                ParameterInput("Bag condition", "pass_fail"),
+            ],
+        )
+
+        def po(supplier, division, item, quantity, price, days, *, submit=True, approve=True):
+            order = purchase_orders.create(
+                buyer,
+                supplier=supplier,
+                division=division,
+                delivery_date=today + timedelta(days=days),
+                lines=[POLine(item, quantity, price)],
+            )
+            if submit:
+                purchase_orders.submit(buyer, order)
+            if submit and approve:
+                order = purchase_orders.approve(director, order, "Price as agreed")
+            return order
+
+        def bags(count):
+            return [
+                PackageInput(supplier_lot=f"LOT-{n // 10 + 1:02d}", gross_weight="25.1")
+                for n in range(count)
+            ]
+
+        def scan(grn):
+            return invoice_pdf(f"Invoice {grn}", ["Demo supplier invoice"])
+
+        # 1. A draft PO, not yet sent to the Director.
+        po(steel, ws, bar, "500", "455", 10, submit=False)
+
+        # 2. A PO waiting for the Director.
+        po(tools, ws, cutter, "20", "1850", 7, approve=False)
+
+        # 3. An approved PO for 1,000 kg of resin. 10 bags (250 kg) have arrived and wait for
+        #    QC; the other 750 kg are still to come.
+        order = po(resin_supplier, im, resin, "1000", "420", 3)
+        grn = receipts.create(
+            stores, order, delivery_note_no="PRL-DN-5531", vehicle_no="WP LH-4471"
+        )
+        receipts.set_packages(stores, grn, 1, bags(10))
+        receipts.confirm(stores, grn)
+
+        # 4. Resin received, accepted by QC and invoiced: the invoice matched and is ready to pay.
+        order = po(resin_supplier, im, resin, "500", "420", 1)
+        grn = receipts.create(stores, order, delivery_note_no="PRL-DN-5502")
+        receipts.set_packages(stores, grn, 1, bags(20))
+        line = receipts.confirm(stores, grn).lines.get()
+        inspection = inspections.start(qc, line)
+        inspections.save(
+            qc,
+            inspection,
+            results=[ResultInput(1, value="12.1"), ResultInput(2, passed=True)],
+        )
+        inspections.decide(qc, inspection, IncomingInspection.Decision.ACCEPTED)
+        made = invoices.create(
+            clerk,
+            supplier=resin_supplier,
+            division=im,
+            invoice_no="PRL-2301",
+            lines=[InvoiceLine(line.pk, "500", "420")],
+        )
+        made = invoices.save(
+            clerk,
+            made,
+            stated_total="210000.00",
+            lines=[InvoiceLine(line.pk, "500", "420")],
+        )
+        invoices.add_attachment(clerk, made, scan("PRL-2301"))
+        invoices.match(clerk, made)
+
+        # 5. Inserts: QC rejected 200 of 5,000 (to go back to the supplier), and the invoice
+        #    came at 13.00 instead of the PO's 12.50, so it is held for the Accountant.
+        order = po(tools, im, insert, "5000", "12.50", 2)
+        grn = receipts.create(stores, order, delivery_note_no="PTL-DN-0918")
+        line = receipts.confirm(stores, grn).lines.get()
+        inspection = inspections.start(qc, line)
+        inspections.save(
+            qc, inspection, results=[], accepted_quantity="4800", notes="200 with damaged threads"
+        )
+        inspections.decide(qc, inspection, IncomingInspection.Decision.ACCEPTED)
+        made = invoices.create(
+            clerk,
+            supplier=tools,
+            division=im,
+            invoice_no="PTL-7702",
+            lines=[InvoiceLine(line.pk, "4800", "13.00")],
+        )
+        made = invoices.save(
+            clerk,
+            made,
+            stated_total="62400.00",
+            lines=[InvoiceLine(line.pk, "4800", "13.00")],
+        )
+        invoices.add_attachment(clerk, made, scan("PTL-7702"))
+        invoices.match(clerk, made)
+
     # --- The instructions ----------------------------------------------------------------------
 
-    def report(self, secret: str) -> None:
+    def report(self, secret: str, parts: list[str]) -> None:
         uri = pyotp.TOTP(secret).provisioning_uri(
             name=f"demo@{DEMO_DOMAIN}", issuer_name="SML ERP demo"
         )
         out = self.stdout
         out.write("")
-        out.write(self.style.SUCCESS("Demo data loaded."))
+        out.write(self.style.SUCCESS("Demo data loaded: " + ", ".join(parts) + "."))
         out.write("")
         out.write(
             "Sign in at the ERP's address with any of these (password for all: " + PASSWORD + "):"
         )
-        for key, name, role in PEOPLE:
-            out.write(f"  {key}@{DEMO_DOMAIN:<20} {name:<20} {role.title()}")
+        for key, name, role, _ in PEOPLE:
+            title = Role.objects.get(code=role).name
+            out.write(f"  {key + '@' + DEMO_DOMAIN:<28} {name:<22} {title}")
         out.write("")
         out.write("All of them use ONE authenticator entry. In Google or Microsoft Authenticator:")
         out.write("  + > Enter a setup key > Account: SML ERP demo > Key: " + secret)

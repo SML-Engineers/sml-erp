@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.accounting import taxes
 from apps.accounting.models import Account, TaxCode, TaxComponent
-from apps.core.models import Company, Division
+from apps.core.models import AccessOverride, Company, Division
 from apps.masters import customers
 from apps.sales import deliveries, invoice_printing, invoices, orders, services, words, workflow
 from apps.sales.deliveries import LineInput as DeliveryLine
@@ -262,23 +262,46 @@ def test_an_issued_invoice_never_changes(order, stores, accountant):
             DeliveryNote.objects.filter(pk=note.pk).update(status="cancelled", cancel_reason="x")
 
 
-def test_sales_the_director_and_the_accountant_issue(executive, director, stores, accountant):
-    """Owner's decision of 3 Nov 2026."""
+def grant_issuing(user, director):
+    """The Admin gives a salesperson the right to issue; the Director confirms it."""
+    admin = person("admin@sml.lk", "system_admin", all_divisions=True)
+    AccessOverride.objects.create(
+        user=user,
+        action="issue_tax_invoices",
+        effect=AccessOverride.Effect.GRANT,
+        reason="Issues the Workshop's invoices",
+        is_sensitive=True,
+        created_by=admin,
+        confirmed_by=director,
+        confirmed_at=timezone.now(),
+    )
+
+
+def test_the_director_the_accountant_and_chosen_salespeople_issue(
+    executive, director, stores, accountant
+):
+    """Owner's decision of 3 Nov 2026: not every salesperson issues invoices."""
+    chosen = person("sales3@sml.lk", "sales_executive", all_divisions=True)
+    grant_issuing(chosen, director)
     issued = []
-    for who in (executive, director, accountant):
+    for who in (chosen, director, accountant):
         o = make_order(
-            executive,
+            chosen,
             director,
             QuoteLine(description="Bush", quantity="2", unit_price="500.00"),
         )
         deliver(stores, o, "2")
-        draft = invoices.create(executive, o)
+        draft = invoices.create(chosen, o)
         assert invoices.can_issue(who, draft)
         issued.append(invoices.issue(who, draft).number)
     assert issued == [f"{NUMBER}01", f"{NUMBER}02", f"{NUMBER}03"]
-    clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
-    assert not invoices.can_issue_any(clerk)
-    assert not invoices.can_issue_any(stores)
+    for nobody in (executive, stores, person("clerk@sml.lk", "clerk", all_divisions=True)):
+        assert not invoices.can_issue_any(nobody)
+    o = make_order(executive, director, QuoteLine(description="Pin", quantity="1", unit_price="9"))
+    deliver(stores, o, "1")
+    draft = invoices.create(executive, o)  # every salesperson prepares
+    with pytest.raises(SalesError, match="right to issue"):
+        invoices.issue(executive, draft)
 
 
 def test_who_prepares_and_sees(order, stores, executive, accountant):
@@ -338,12 +361,13 @@ def test_the_api(order, stores, executive, accountant, director):
     assert made.status_code == 201, made.json()
     pk = made.json()["id"]
     assert made.json()["total_amount"] == "139487.43"
-    assert made.json()["can_issue"] is True
+    assert made.json()["can_issue"] is False  # this salesperson has not been given the right
     changed = client.put(
         f"/api/v1/tax-invoices/{pk}/", {"place_of_supply": "Ranala\nWarehouse 2"}, format="json"
     )
     assert changed.json()["place_of_supply"] == "Ranala, Warehouse 2"
     assert as_user(stores).post(f"/api/v1/tax-invoices/{pk}/issue/").status_code == 403
+    assert client.post(f"/api/v1/tax-invoices/{pk}/issue/").status_code == 400
     issued = as_user(director).post(f"/api/v1/tax-invoices/{pk}/issue/")
     assert issued.status_code == 200, issued.json()
     assert issued.json()["number"] == f"{NUMBER}01"

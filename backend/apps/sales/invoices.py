@@ -6,8 +6,9 @@
   invoice date's rates: SSCL on the net amount, then VAT on net plus SSCL, each rounded
   half-up to the cent (spec 6.1 example: 115,750.00 + 2,459.69 SSCL, VAT 21,277.74, total
   139,487.43).
-- Sales or the Accountant prepare the draft; Sales, the Director or the Accountant issue it
-  (owner's decision, 3 Nov 2026). Issuing:
+- Sales or the Accountant prepare the draft. It is issued by the Director, the Accountant,
+  or the salespeople the Admin gives the "Issue tax invoices" right to; not every
+  salesperson (owner, 3 Nov 2026). Issuing:
   - needs the division's tax invoice code (Settings -> Divisions) and the company's TIN;
   - numbers it YYMMM_QQQQ_XX from the "tax_invoice" series of the invoice date's month, per
     division, inside the same transaction (rule 10), so drafts leave no gaps;
@@ -70,14 +71,9 @@ def can_prepare(user: User) -> bool:
 
 
 def can_issue_any(user: User) -> bool:
-    """Sales (Executive and Manager), the Director and the Accountant issue invoices (owner's
-    decision, 3 Nov 2026)."""
-    access = effective_access(user)
-    return (
-        access.has("sales", "enter")
-        or access.has("sales", "approve")
-        or access.has("accounting", "enter")
-    )
+    """Issuing needs the "issue_tax_invoices" action: the Director and the Accountant by
+    their roles, and the salespeople the Admin grants it to (owner, 3 Nov 2026)."""
+    return can_view(user) and effective_access(user).can("issue_tax_invoices")
 
 
 def _sees_all(user: User) -> bool:
@@ -376,7 +372,10 @@ def issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
     with audit_context("tax_invoice_issued"), transaction.atomic():
         invoice = TaxInvoice.objects.select_for_update().get(pk=invoice.pk)
         if not can_issue(user, invoice):
-            raise SalesError("Sales, the Director or the Accountant issue a draft invoice.")
+            raise SalesError(
+                "Issuing tax invoices needs the right to issue them: the Director, the "
+                "Accountant, or a salesperson the Admin has given it to."
+            )
         division = Division.objects.get(pk=invoice.division_id)
         if not division.tax_invoice_code:
             raise SalesError(

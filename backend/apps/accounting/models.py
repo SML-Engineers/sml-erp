@@ -243,6 +243,15 @@ class ManualJournal(models.Model):
     )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
+    # Made from a recurring journal (P2-02), and an accrual reversed on this date.
+    recurring = models.ForeignKey(
+        "RecurringJournal",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="journals",
+    )
+    reverse_on = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ["-entry_date", "-number"]
@@ -295,6 +304,75 @@ class ManualJournalAttachment(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+# --- Recurring journals (backlog P2-02) --------------------------------------------------
+
+
+class RecurringJournal(models.Model):
+    """A journal made again every month, quarter or year: on its date a draft manual journal
+    is made from it, which its owner checks and sends for approval as usual."""
+
+    class Frequency(models.TextChoices):
+        MONTHLY = "monthly", "Every month"
+        QUARTERLY = "quarterly", "Every quarter"
+        YEARLY = "yearly", "Every year"
+
+    name = models.CharField(max_length=100)
+    narration = models.CharField(max_length=400)
+    frequency = models.CharField(max_length=10, choices=Frequency.choices)
+    # 1 to 28, or 31 for the last day of the month.
+    day_of_month = models.PositiveSmallIntegerField()
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    next_date = models.DateField()
+    # An accrual: the journal is reversed on the first day of the next month.
+    reverse_next_month = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(models.Q(day_of_month__gte=1) & models.Q(day_of_month__lte=28))
+                | models.Q(day_of_month=31),
+                name="accounting_recurring_day",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class RecurringJournalLine(models.Model):
+    recurring = models.ForeignKey(RecurringJournal, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey(
+        Division, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    description = models.CharField(max_length=500, blank=True)
+    debit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    credit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["recurring", "line_no"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recurring", "line_no"], name="accounting_recurring_line_no"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.recurring_id}/{self.line_no}"
 
 
 # --- Taxes (backlog P0-20) ---------------------------------------------------------------

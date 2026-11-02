@@ -15,6 +15,10 @@ export interface MJSummary {
   total_credit: string;
   created_by: string;
   journal_entry: { id: number; number: string } | null;
+  /** An accrual: reversed automatically on this date (the first of the next month). */
+  reverse_on?: string | null;
+  /** The recurring journal that made this draft, if any. */
+  recurring?: { id: number; name: string } | null;
 }
 
 export interface MJLine {
@@ -47,6 +51,7 @@ export interface MJLineInput {
 export interface MJInput {
   entry_date: string;
   narration: string;
+  reverse_next_month?: boolean;
   lines: MJLineInput[];
 }
 

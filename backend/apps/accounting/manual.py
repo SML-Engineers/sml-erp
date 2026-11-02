@@ -16,8 +16,9 @@
 """
 
 import hashlib
+import logging
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db import transaction
@@ -36,6 +37,8 @@ from . import journal
 from .catalogue import PROFIT_AND_LOSS, section_of
 from .models import Account, ManualJournal, ManualJournalAttachment, ManualJournalLine
 from .services import AccountingError
+
+log = logging.getLogger(__name__)
 
 DOC = "manual_journal"
 St = ManualJournal.Status
@@ -106,6 +109,15 @@ def _header(mj: ManualJournal, values: dict) -> None:
         mj.narration = " ".join((values["narration"] or "").split())[:500]
     if not mj.narration:
         raise AccountingError("The narration is required: say what the journal is for.")
+    if "reverse_next_month" in values:
+        mj.reverse_on = first_of_next_month(mj.entry_date) if values["reverse_next_month"] else None
+    elif mj.reverse_on is not None:
+        mj.reverse_on = first_of_next_month(mj.entry_date)  # follows a changed date
+
+
+def first_of_next_month(day: date) -> date:
+    """An accrual is reversed on the first day of the month after its date (P2-02)."""
+    return (day.replace(day=28) + timedelta(days=4)).replace(day=1)
 
 
 def _line(n: int, given: LineInput, user: User) -> ManualJournalLine:
@@ -370,3 +382,33 @@ def remove_attachment(user: User, attachment: ManualJournalAttachment) -> None:
             raise AccountingError("A file is removed only from a draft.")
         attachment.file.delete(save=False)
         attachment.delete()
+
+
+# --- Accruals reversed on the first of the next month (P2-02) ---------------------------------
+
+
+def reverse_due(today: date | None = None) -> int:
+    """Daily: reverse posted journals whose reversal date has come. The reversal is dated the
+    reversal date, or today if that month has been closed meanwhile, and is posted in the name
+    of the person who approved the journal."""
+    today = today or timezone.localdate()
+    count = 0
+    due = ManualJournal.objects.filter(
+        status=St.POSTED, reverse_on__lte=today, journal_entry__reversed_by__isnull=True
+    ).select_related("journal_entry__posted_by")
+    for mj in due:
+        entry = mj.journal_entry
+        on_date = mj.reverse_on if not journal.is_closed(mj.reverse_on) else today
+        try:
+            with audit_context("manual_journal_reversed"), transaction.atomic():
+                journal.reverse(
+                    entry.posted_by,
+                    entry,
+                    reason=f"accrual {mj.number} reversed as planned",
+                    on_date=on_date,
+                )
+        except AccountingError:
+            log.exception("Accrual %s could not be reversed", mj.number)
+            continue
+        count += 1
+    return count

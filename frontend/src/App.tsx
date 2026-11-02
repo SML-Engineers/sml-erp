@@ -45,6 +45,8 @@ import ManualJournalPage from "./pages/ManualJournalPage";
 import OpeningStockPage from "./pages/OpeningStockPage";
 import OpeningStocksPage from "./pages/OpeningStocksPage";
 import ManualJournalsPage from "./pages/ManualJournalsPage";
+import RecurringJournalPage from "./pages/RecurringJournalPage";
+import RecurringJournalsPage from "./pages/RecurringJournalsPage";
 import PeriodsPage from "./pages/PeriodsPage";
 import ReviewPage from "./pages/ReviewPage";
 import TaxesPage from "./pages/TaxesPage";
@@ -145,6 +147,8 @@ export default function App() {
         <Route path="journal" element={<WithMe page={(me) => <JournalPage me={me} />} />} />
         <Route path="journals/manual" element={<WithMe page={(me) => <ManualJournalsPage me={me} />} />} />
         <Route path="journals/manual/:id" element={<ManualJournalPage />} />
+        <Route path="journals/recurring" element={<WithMe page={(me) => <RecurringJournalsPage me={me} />} />} />
+        <Route path="journals/recurring/:id" element={<RecurringJournalPage />} />
         <Route path="opening-stock" element={<WithMe page={(me) => <OpeningStocksPage me={me} />} />} />
         <Route path="opening-stock/:id" element={<OpeningStockPage />} />
         <Route path="taxes" element={<WithMe page={(me) => <TaxesPage me={me} />} />} />

@@ -181,6 +181,15 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.sales.tasks.expire_quotations",
         "schedule": crontab(hour=0, minute=30),
     },
+    # Recurring journals made as drafts, and accruals reversed (P2-02), early each morning.
+    "make-recurring-journals": {
+        "task": "apps.accounting.tasks.make_recurring_journals",
+        "schedule": crontab(hour=0, minute=40),
+    },
+    "reverse-accruals": {
+        "task": "apps.accounting.tasks.reverse_accruals",
+        "schedule": crontab(hour=0, minute=45),
+    },
     "tidy-old-notifications": {
         "task": "apps.core.tasks.tidy_old_notifications",
         "schedule": crontab(hour=1, minute=10),

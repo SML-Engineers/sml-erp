@@ -3,6 +3,7 @@ from django.urls import path
 from . import journal_views as j
 from . import manual_views as mj
 from . import rate_views as rv
+from . import recurring_views as rj
 from . import tax_views as t
 from . import views as v
 
@@ -26,6 +27,13 @@ urlpatterns = [
     path("journal/", j.JournalListView.as_view(), name="journal-list"),
     path("journal/<int:pk>/", j.JournalDetailView.as_view(), name="journal-detail"),
     path("journal/<int:pk>/reverse/", j.JournalReverseView.as_view(), name="journal-reverse"),
+    path("recurring-journals/", rj.TemplateListView.as_view(), name="recurring-list"),
+    path("recurring-journals/<int:pk>/", rj.TemplateDetailView.as_view(), name="recurring"),
+    path(
+        "recurring-journals/<int:pk>/active/",
+        rj.TemplateActiveView.as_view(),
+        name="recurring-active",
+    ),
     path("manual-journals/", mj.JournalListView.as_view(), name="manual-journal-list"),
     path("manual-journals/<int:pk>/", mj.JournalDetailView.as_view(), name="manual-journal"),
     path("manual-journals/<int:pk>/submit/", mj.SubmitView.as_view(), name="mj-submit"),

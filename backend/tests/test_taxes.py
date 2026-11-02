@@ -111,7 +111,7 @@ def test_a_rate_must_be_a_sensible_percentage(accountant, rate, why):
 def test_once_used_a_tax_keeps_its_code_and_its_rates_in_force(accountant, rates):
     vat = component("VAT")
     taxes.mark_used(vat)
-    with pytest.raises(AccountingError, match="cannot start before today"):
+    with pytest.raises(AccountingError, match="Settings → Tax rates"):
         taxes.add_rate(accountant, vat, effective_from=TODAY - timedelta(days=1), rate="17")
     in_force = TaxRate.objects.get(component=vat, effective_from=GO_LIVE)
     with pytest.raises(AccountingError, match="add a new rate instead"):

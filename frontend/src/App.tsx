@@ -197,8 +197,8 @@ export default function App() {
         <Route
           path="settings/quotation-limits"
           element={<WithMe page={(me) => <QuotationLimitsPage me={me} />} />}
-        <Route path="settings/tax-rates" element={<TaxRatesPage />} />
         />
+        <Route path="settings/tax-rates" element={<TaxRatesPage />} />
         <Route
           path="settings/number-series"
           element={<WithMe page={(me) => <NumberSeriesPage me={me} />} />}

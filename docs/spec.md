@@ -885,6 +885,7 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
   3).
 
 - **Invoice price differences (owner, 2 Nov 2026; P16-18).** Stock is carried at what it actually cost (IAS 2). When the supplier's invoice price differs from the PO price, the difference (with any tax that cannot be recovered) adjusts the value of the goods still in stock; only the part for goods already used or gone goes to Purchase price variance.
+- **Foreign currency (owner, 2 Nov 2026; P16-19; IAS 21).** Goods are valued at the exchange rate of their receipt date; the supplier's invoice is posted at the rate of its date, and the difference from the receipt's rate goes to Exchange loss or Exchange gain. The payment's difference at its own date follows with foreign-currency payments (Phase 2, P2-11).
 
 ### 5A.4 Supplier invoices and three-way match
 

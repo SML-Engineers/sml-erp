@@ -57,6 +57,9 @@ SYSTEM_ROLES = {
     "price_variance": "Purchase price variance",
     # Paid to a supplier before the goods arrive, set off against its invoice (P16-11a).
     "supplier_advances": "Advances to suppliers",
+    # Differences between the exchange rates of a purchase's dates (IAS 21, P16-19).
+    "exchange_gain": "Exchange gain",
+    "exchange_loss": "Exchange loss",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

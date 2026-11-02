@@ -326,6 +326,15 @@ The owner's answers to the open go-live questions (also in spec 8.4):
     invoice price. For a non-stock item the difference goes to its expense account. The
     database allows a movement without quantity only for this kind, and only with a value.
 
-- [ ] **P16-19 Foreign-currency purchases at the transaction date's rate (IAS 21)**
+- [x] **P16-19 Foreign-currency purchases at the transaction date's rate (IAS 21)**
   Goods valued at the GRN date's rate, the invoice and payment at their own dates' rates,
   with realised exchange differences posted.
+  - Done: confirming a GRN fixes the exchange rate of its receipt date (latest rate on or
+    before it; refused if there is none), and QC-accepted goods go into stock at that rate.
+    A supplier invoice is posted at the rate of its date: Goods received not invoiced is
+    cleared at the receipt's rate, the payable taken at the invoice's, and the difference
+    posted to Exchange loss or Exchange gain (now system accounts, 8010 and 7010). Price
+    differences and tax are at the invoice's rate; debit notes reverse at it. Both rates are
+    kept on the GRN and the invoice and never change (database guard for GRNs; posted
+    invoices never change). LKR purchases are unchanged (rate 1). Paying a foreign invoice
+    in its own currency, with the realised difference at the payment date, is P2-11.

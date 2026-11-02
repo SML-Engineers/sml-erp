@@ -44,7 +44,10 @@ from apps.inventory.models import (
     StockMovement,
     Store,
 )
+from apps.inventory.stock import receipt_rate
+from apps.masters import currencies
 from apps.masters.models import Supplier
+from apps.masters.services import MastersError
 from apps.vouchers.services import FILE_TYPES, INVOICE_FREED, MAX_FILE_BYTES, invoice_key
 
 from .models import SupplierInvoice, SupplierInvoiceAttachment, SupplierInvoiceLine
@@ -545,10 +548,21 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
     The price difference (with any tax that cannot be recovered) is part of what the goods
     cost (IAS 2): for goods of the GRN line still in a main store it adjusts their value, lot
     by lot; only the part of the goods no longer in stock goes to Purchase price variance. For a
-    non-stock item it goes to the item's expense account."""
+    non-stock item it goes to the item's expense account.
+
+    In a foreign currency (IAS 21) the goods were put into stock, and Goods received not
+    invoiced credited, at the rate of the receipt date; the invoice is posted at the rate of
+    its own date. Goods received not invoiced is cleared at the receipt's rate and the payable
+    taken at the invoice's: the difference between the two is an exchange gain or loss."""
     division = invoice.division
     debits: dict[tuple, Decimal] = {}
     adjustments = []  # (grn line, [(lot, store, value)]) for goods still in stock
+    try:
+        lookup = currencies.rate_on(invoice.currency, invoice.invoice_date)
+    except MastersError as error:
+        raise InvoiceError(str(error)) from None
+    rate = lookup.rate
+    exchange = Decimal("0")
 
     def add(account, amount, line_division=None, description=""):
         key = (account.pk, line_division.pk if line_division else None, description)
@@ -559,10 +573,15 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
     for line in invoice.lines.select_related(
         "item__expense_account", "grn_line__receipt__purchase_order", "tax_code"
     ):
-        rate = line.grn_line.receipt.purchase_order.exchange_rate
         at_po = _lkr(line.quantity * line.po_unit_price, rate)
         if line.item.is_stock:
-            add(_system("grni", "Goods received not invoiced"), at_po, division, invoice.number)
+            at_receipt = _lkr(
+                line.quantity * line.po_unit_price, receipt_rate(line.grn_line.receipt)
+            )
+            add(
+                _system("grni", "Goods received not invoiced"), at_receipt, division, invoice.number
+            )
+            exchange += at_po - at_receipt
         else:
             if line.item.expense_account is None:
                 raise InvoiceError(
@@ -602,6 +621,10 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
         if difference - to_stock:
             variance = variance or _system("price_variance", "Purchase price variance")
             add(variance, difference - to_stock, division, line.item.code)
+    if exchange > 0:
+        add(_system("exchange_loss", "Exchange loss"), exchange, division, "Exchange difference")
+    elif exchange < 0:
+        add(_system("exchange_gain", "Exchange gain"), exchange, division, "Exchange difference")
     lines = [
         journal.Line(
             account=account,
@@ -651,11 +674,23 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
                 journal_entry=entry,
                 created_by=user,
             )
+    currencies.mark_rate_used(lookup)
     invoice.journal_entry = entry
     invoice.total_lkr = payable
+    invoice.exchange_rate = rate
+    invoice.rate_date = lookup.rate_date
     invoice.status = St.POSTED
     invoice.posted_at = timezone.now()
-    invoice.save(update_fields=["journal_entry", "total_lkr", "status", "posted_at"])
+    invoice.save(
+        update_fields=[
+            "journal_entry",
+            "total_lkr",
+            "exchange_rate",
+            "rate_date",
+            "status",
+            "posted_at",
+        ]
+    )
     from . import advances  # advances reads this module
 
     try:

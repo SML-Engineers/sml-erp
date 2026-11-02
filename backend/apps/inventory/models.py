@@ -170,6 +170,10 @@ class GoodsReceipt(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     confirmed_at = models.DateTimeField(null=True, blank=True)
+    # The exchange rate on the receipt date: the goods are valued at it (IAS 21, P16-19).
+    # Empty on GRNs confirmed before then, which were valued at the PO's rate.
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
+    rate_date = models.DateField(null=True, blank=True)
     reversal_reason = models.TextField(blank=True)
     reversed_at = models.DateTimeField(null=True, blank=True)
 

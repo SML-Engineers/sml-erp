@@ -83,6 +83,9 @@ DOCUMENT_TYPES = {
     "supplier_return": DocumentType(
         "Return of accepted goods", min_approvals=1, final_role="director"
     ),
+    # A journal the Accountant types in is posted only once approved; the Director approves
+    # every one until the owner decides otherwise (backlog P2-01, Phase 2 question 3).
+    "manual_journal": DocumentType("Manual journal", min_approvals=1, final_role="director"),
 }
 
 

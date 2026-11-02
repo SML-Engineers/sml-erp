@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
@@ -22,8 +23,10 @@ function ErrorLine({ error }: { error: unknown }) {
 /** Posted journal entries. Entries never change; a mistake is corrected by a reversal. */
 export default function JournalPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
-  const [draft, setDraft] = useState<JournalFilter>({});
-  const [filter, setFilter] = useState<JournalFilter>({});
+  const [params] = useSearchParams();
+  const start: JournalFilter = params.get("q") ? { q: params.get("q") ?? "" } : {};
+  const [draft, setDraft] = useState<JournalFilter>(start);
+  const [filter, setFilter] = useState<JournalFilter>(start);
   const [selected, setSelected] = useState<number | null>(null);
   const entries = useQuery({ queryKey: [...journalKey, filter], queryFn: () => listJournal(filter) });
   const canReverse = can(me.access, "accounting", "manage");

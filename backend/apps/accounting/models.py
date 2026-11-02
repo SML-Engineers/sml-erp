@@ -213,6 +213,90 @@ class JournalLine(models.Model):
         return f"{self.entry_id}/{self.line_no}"
 
 
+# --- Manual journals (backlog P2-01) ------------------------------------------------------
+
+
+class ManualJournal(models.Model):
+    """A journal the Accountant types in. It is a draft until approved; approval posts it as
+    a journal entry (above), which never changes. Once sent for approval the database refuses
+    changing it, and only a draft is deleted (migration 0008)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Waiting for approval"
+        POSTED = "posted", "Approved and posted"
+        REJECTED = "rejected", "Rejected"
+
+    number = models.CharField(max_length=30, unique=True)
+    entry_date = models.DateField()
+    narration = models.CharField(max_length=500)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    journal_entry = models.OneToOneField(
+        JournalEntry,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="manual_journal",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-entry_date", "-number"]
+
+    def __str__(self):
+        return self.number
+
+
+class ManualJournalLine(models.Model):
+    journal = models.ForeignKey(ManualJournal, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey(
+        Division, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    description = models.CharField(max_length=500, blank=True)
+    debit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    credit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["journal", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["journal", "line_no"], name="accounting_mj_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(debit__gte=0) & models.Q(credit__gte=0),
+                name="accounting_mj_line_not_negative",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.journal_id}/{self.line_no}"
+
+
+class ManualJournalAttachment(models.Model):
+    """A supporting document (PDF, JPG or PNG)."""
+
+    journal = models.ForeignKey(ManualJournal, on_delete=models.PROTECT, related_name="attachments")
+    file = models.FileField(upload_to="journals/%Y/%m/")
+    file_name = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    uploaded_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.file_name
+
+
 # --- Taxes (backlog P0-20) ---------------------------------------------------------------
 
 TAX_CODE_REGEX = r"^[A-Z0-9][A-Z0-9-]{0,19}$"

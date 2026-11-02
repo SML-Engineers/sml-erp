@@ -31,12 +31,20 @@ Status: `[ ]` to do · `[x]` done
 
 ## A. The ledger
 
-- [ ] **P2-01 Manual journal entries with approval** (spec 6, 4.6)
+- [x] **P2-01 Manual journal entries with approval** (spec 6, 4.6)
   The Accountant enters a journal (date, narration, lines with account, division, debit,
   credit; scans attached); it is numbered, and posted only when approved. Nobody approves
   their own journal. A line that debits a supplier's payable and credits a bank or cash
   account is refused (spec 4.6: suppliers are paid only through vouchers). Posted journals
   are reversed, never changed. Journals list with Excel and PDF.
+  - Done: Accounts → Manual journals. Numbered MJ{YY}{MM}{DD}{XX}; the Director approves
+    every journal for now (question 3 still open; the approval matrix can add an amount
+    limit later); returned journals go back to draft, rejected ones stay rejected. Approval
+    posts the entry (JV…), so a month closed meanwhile refuses it. Income and expense lines
+    need a division, payables lines need the supplier, and accounts receivable is not
+    offered (customer balances change only through sales documents). The payment lock is
+    also a database rule on every journal entry that is not a supplier payment. Once sent,
+    a journal, its lines and files never change (database guard); only drafts are deleted.
 
 - [ ] **P2-02 Recurring journals**
   A template (lines, amounts, every month or quarter, start and end) makes a draft journal on

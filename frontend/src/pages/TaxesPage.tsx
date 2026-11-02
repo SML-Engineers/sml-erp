@@ -161,7 +161,8 @@ function MakeUp({ code }: { code: TaxCode }) {
     <>
       {code.components
         .map((part, index) =>
-          index > 0 && part.base === "net_and_tax" ? `${part.code} (${t("taxes.onNetAndTax")})` : part.code,
+          (part.portion_pct && Number(part.portion_pct) !== 100 ? `${part.code} ${t("taxes.onShort", { pct: Number(part.portion_pct) })}` : part.code) +
+          (index > 0 && part.base === "net_and_tax" ? ` (${t("taxes.onNetAndTax")})` : ""),
         )
         .join(" → ")}
     </>
@@ -353,8 +354,8 @@ function CodePanel(props: { code?: TaxCode; components: TaxComponent[]; canManag
     name: code?.name ?? "",
     use: code?.use ?? ("both" as TaxUse),
   });
-  const [parts, setParts] = useState<{ component: number; base: TaxBase }[]>(
-    code?.components.map((p) => ({ component: p.component, base: p.base })) ?? [],
+  const [parts, setParts] = useState<{ component: number; base: TaxBase; portion_pct: string }[]>(
+    code?.components.map((p) => ({ component: p.component, base: p.base, portion_pct: p.portion_pct })) ?? [],
   );
   const [reason, setReason] = useState("");
   const charged = props.components.filter((c) => c.kind === "charged");
@@ -448,6 +449,16 @@ function CodePanel(props: { code?: TaxCode; components: TaxComponent[]; canManag
                   </select>
                 </label>
               )}
+              <label>
+                {t("taxes.share", { n: String(index + 1) })}
+                <input
+                  inputMode="decimal"
+                  className="num"
+                  value={part.portion_pct}
+                  disabled={locked}
+                  onChange={(e) => setParts((now) => now.map((p, i) => (i === index ? { ...p, portion_pct: e.target.value } : p)))}
+                />
+              </label>
               {!locked && (
                 <button type="button" className="small secondary" onClick={() => setParts((now) => now.filter((_, i) => i !== index))}>
                   {t("taxes.removeTax")}
@@ -459,7 +470,7 @@ function CodePanel(props: { code?: TaxCode; components: TaxComponent[]; canManag
             <button
               type="button"
               className="small secondary"
-              onClick={() => setParts((now) => [...now, { component: charged[0].id, base: "net" }])}
+              onClick={() => setParts((now) => [...now, { component: charged[0].id, base: "net", portion_pct: "100" }])}
             >
               {t("taxes.addTaxToCode")}
             </button>

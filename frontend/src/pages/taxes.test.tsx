@@ -52,8 +52,8 @@ const overview: TaxOverview = {
       is_active: true,
       in_use: false,
       components: [
-        { component: 2, code: "SSCL", base: "net" },
-        { component: 1, code: "VAT", base: "net_and_tax" },
+        { component: 2, code: "SSCL", base: "net", portion_pct: "85.00" },
+        { component: 1, code: "VAT", base: "net_and_tax", portion_pct: "100.00" },
       ],
     },
   ],
@@ -110,7 +110,7 @@ test("a tax code shows its taxes in order and the calculator gives the total", a
   renderAt("/taxes", <TaxesPage me={director} />);
 
   const codes = await screen.findByRole("table", { name: "Tax codes" });
-  expect(within(codes).getByText("SSCL → VAT (on the amount plus the taxes above)")).toBeInTheDocument();
+  expect(within(codes).getByText("SSCL on 85% → VAT (on the amount plus the taxes above)")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Add tax code" })).not.toBeInTheDocument();
   const calculator = screen.getByRole("form", { name: "Tax calculator" });
   fireEvent.change(within(calculator).getByLabelText("Net amount"), { target: { value: "115750" } });

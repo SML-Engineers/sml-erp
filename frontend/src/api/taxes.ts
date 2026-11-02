@@ -31,7 +31,9 @@ export interface TaxCode {
   use: TaxUse;
   is_active: boolean;
   in_use: boolean;
-  components: { component: number; code: string; base: TaxBase }[];
+  /** portion_pct: the share of the amount the tax is charged on, e.g. "85.00" for SSCL on
+   * manufactured goods. */
+  components: { component: number; code: string; base: TaxBase; portion_pct: string }[];
 }
 
 export interface TaxOverview {
@@ -63,7 +65,7 @@ export interface CodeChange {
   description?: string;
   use?: TaxUse;
   is_active?: boolean;
-  components?: { component: number; base: TaxBase }[];
+  components?: { component: number; base: TaxBase; portion_pct: string }[];
   reason?: string;
 }
 

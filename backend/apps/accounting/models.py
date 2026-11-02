@@ -410,10 +410,17 @@ class TaxCodeLine(models.Model):
     sequence = models.PositiveSmallIntegerField()
     component = models.ForeignKey(TaxComponent, on_delete=models.PROTECT, related_name="in_codes")
     base = models.CharField(max_length=12, choices=Base.choices, default=Base.NET)
+    # The share of the base the tax is charged on, e.g. SSCL on 85% of a manufacturer's
+    # turnover: 2.5% x 85% = 2.125% (P16-17).
+    portion_pct = models.DecimalField(max_digits=5, decimal_places=2, default=100)
 
     class Meta:
         ordering = ["tax_code", "sequence"]
         constraints = [
+            models.CheckConstraint(
+                condition=models.Q(portion_pct__gt=0) & models.Q(portion_pct__lte=100),
+                name="accounting_taxcodeline_portion_range",
+            ),
             models.UniqueConstraint(
                 fields=["tax_code", "sequence"], name="accounting_taxcodeline_sequence"
             ),

@@ -199,3 +199,63 @@ def test_each_account_can_have_a_default_tax_code(accountant):
     response = client.patch(url, {"default_tax_code": "EXEMPT"}, format="json")
     assert response.status_code == 400 and "switched off" in response.json()["detail"]
     assert client.patch(url, {"default_tax_code": "NOPE"}, format="json").status_code == 400
+
+
+# --- SSCL on a share of the amount (P16-17) -------------------------------------------------
+
+
+@pytest.fixture
+def law_rates(accountant):
+    """SSCL at the rate in the law (2.5% of liable turnover) and VAT 18%."""
+    taxes.add_rate(accountant, component("SSCL"), effective_from=GO_LIVE, rate="2.5")
+    taxes.add_rate(accountant, component("VAT"), effective_from=GO_LIVE, rate="18")
+
+
+def test_sscl_codes_for_each_kind_of_supply(law_rates):
+    """Manufactured goods: SSCL on 85% (2.125%); resold goods: on 50% (1.25%); services: on
+    the whole amount (2.5%). The tax invoice example comes out exactly as before."""
+    made = taxes.calculate(code("VAT-SSCL-M"), "115750.00", TODAY)
+    assert [(x.component.code, x.rate, x.amount) for x in made.lines] == [
+        ("SSCL", Decimal("2.1250"), Decimal("2459.69")),
+        ("VAT", Decimal("18.0000"), Decimal("21277.74")),
+    ]
+    assert made.gross == Decimal("139487.43")
+    resold = taxes.calculate(code("VAT-SSCL-R"), "1000.00", TODAY)
+    assert [x.amount for x in resold.lines] == [Decimal("12.50"), Decimal("182.25")]
+    services = taxes.calculate(code("VAT-SSCL"), "1000.00", TODAY)
+    assert [x.amount for x in services.lines] == [Decimal("25.00"), Decimal("184.50")]
+    assert code("VAT-SSCL").name == "Services: SSCL on 100%, then VAT"
+    assert {code("VAT-SSCL-M").use, code("VAT-SSCL-R").use} == {"both"}
+
+
+def test_the_share_is_set_on_a_tax_code_and_fixed_once_used(accountant, law_rates):
+    new = taxes.save_code(
+        accountant,
+        None,
+        {
+            "code": "SSCL-30",
+            "name": "SSCL on 30%",
+            "components": [{"component": component("SSCL").pk, "portion_pct": "30"}],
+        },
+    )
+    assert taxes.calculate(new, "1000.00", TODAY).tax == Decimal("7.50")
+    for bad, why in (("0", "more than 0%"), ("101", "up to 100%"), ("x", "not a number")):
+        with pytest.raises(AccountingError, match=why):
+            taxes.save_code(
+                accountant,
+                new,
+                {"components": [{"component": component("SSCL").pk, "portion_pct": bad}]},
+            )
+    taxes.mark_used(new)
+    with pytest.raises(AccountingError, match="cannot change"):
+        taxes.save_code(
+            accountant,
+            new,
+            {"components": [{"component": component("SSCL").pk, "portion_pct": "40"}]},
+        )
+    with pytest.raises(DatabaseError):
+        with transaction.atomic():
+            TaxCodeLine.objects.filter(tax_code=new).update(portion_pct="40")
+    listed = as_user(accountant).get("/api/v1/taxes/").json()
+    mine = next(c for c in listed["codes"] if c["code"] == "SSCL-30")
+    assert mine["components"][0]["portion_pct"] == "30.00"

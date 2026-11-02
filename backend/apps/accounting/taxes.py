@@ -211,6 +211,21 @@ def save_code(user: User, tax_code: TaxCode | None, values: dict, reason="") -> 
         return tax_code
 
 
+def _portion(value, index: int) -> Decimal:
+    """The share of the base a tax is charged on, in percent: 100 unless given."""
+    if value in (None, ""):
+        return Decimal("100.00")
+    try:
+        portion = Decimal(str(value).replace("%", "").strip())
+    except InvalidOperation:
+        raise AccountingError(f"Line {index}: the share charged on is not a number.") from None
+    if not portion.is_finite() or not 0 < portion <= 100:
+        raise AccountingError(f"Line {index}: the share charged on is more than 0% and up to 100%.")
+    if portion != portion.quantize(CENT):
+        raise AccountingError(f"Line {index}: the share charged on has at most 2 decimals.")
+    return portion.quantize(CENT)
+
+
 def _set_components(tax_code: TaxCode, parts, used: bool) -> None:
     wanted = []
     for index, part in enumerate(parts or [], start=1):
@@ -227,10 +242,14 @@ def _set_components(tax_code: TaxCode, parts, used: bool) -> None:
             raise AccountingError(f"Line {index}: choose what {component.code} is charged on.")
         if index == 1 and base == TaxCodeLine.Base.NET_AND_TAX:
             base = TaxCodeLine.Base.NET  # nothing above the first tax
-        wanted.append((component.pk, base))
-    if len({pk for pk, _ in wanted}) != len(wanted):
+        portion = _portion(part.get("portion_pct"), index)
+        wanted.append((component.pk, base, portion))
+    if len({pk for pk, _, _ in wanted}) != len(wanted):
         raise AccountingError("A tax can appear only once in a tax code.")
-    current = list(tax_code.lines.values_list("component_id", "base"))
+    current = [
+        (pk, base, portion)
+        for pk, base, portion in tax_code.lines.values_list("component_id", "base", "portion_pct")
+    ]
     if current == wanted:
         return
     if used:
@@ -239,9 +258,15 @@ def _set_components(tax_code: TaxCode, parts, used: bool) -> None:
             "Make a new tax code and switch this one off."
         )
     tax_code.lines.all().delete()
-    for sequence, (pk, base) in enumerate(wanted, start=1):
-        TaxCodeLine.objects.create(tax_code=tax_code, sequence=sequence, component_id=pk, base=base)
-    record("update", tax_code, {"components": [current, wanted]})
+    for sequence, (pk, base, portion) in enumerate(wanted, start=1):
+        TaxCodeLine.objects.create(
+            tax_code=tax_code, sequence=sequence, component_id=pk, base=base, portion_pct=portion
+        )
+    record(
+        "update",
+        tax_code,
+        {"components": [[list(map(str, c)) for c in current], [list(map(str, w)) for w in wanted]]},
+    )
 
 
 def delete_code(user: User, tax_code: TaxCode, reason: str) -> None:
@@ -295,7 +320,10 @@ def calculate(tax_code: TaxCode, net, on_date: date) -> TaxResult:
         raise AccountingError("The amount is not a number.") from None
     result = TaxResult(net=net)
     for line in tax_code.lines.select_related("component"):
-        rate = rate_on(line.component, on_date).rate
+        # The rate on the document is the tax's rate on the share charged: SSCL 2.5% on 85%
+        # of the amount is shown and worked out as 2.125%.
+        rate = rate_on(line.component, on_date).rate * line.portion_pct / Decimal("100")
+        rate = rate.quantize(Decimal("0.0001"), ROUND_HALF_UP)
         base = net + (result.tax if line.base == TaxCodeLine.Base.NET_AND_TAX else Decimal("0"))
         amount = (base * rate / Decimal("100")).quantize(CENT, ROUND_HALF_UP)
         result.lines.append(TaxLine(component=line.component, rate=rate, base=base, amount=amount))

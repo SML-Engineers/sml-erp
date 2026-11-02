@@ -447,8 +447,8 @@ Four tabs:
 
 | Setting | Per | Example (to be set) |
 | --- | --- | --- |
-| Minimum margin % | Division (optional: per customer group) | Workshop 20%, Moulding 15% |
-| Value above which the Director approves | Division, in LKR (foreign-currency quotations converted at the day's rate) | LKR 1,000,000 |
+| Minimum margin % | Division (optional: per customer group) | Workshop 20%, Moulding 15%; 1% while none is confirmed (owner, 2 Nov 2026) |
+| Maximum value (a warning to the Director) | Division, in LKR (foreign-currency quotations converted at the day's rate); may be left empty for no maximum | LKR 1,000,000 |
 | Approver | Role | Director |
 
 - Each setting has an effective date and a history of earlier values.

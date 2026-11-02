@@ -552,16 +552,16 @@
   },
   "limits": {
     "title": "Quotation approval limits",
-    "help": "A quotation below its division's minimum margin, or above its value limit, needs the Director's approval before it is sent. Foreign-currency quotations are converted at the rate of their date. Changes entered by the Admin take effect only after the Director confirms them.",
+    "help": "The Director approves every quotation. A quotation below its division's minimum margin, or above its maximum value, is shown to the Director with a warning. Foreign-currency quotations are converted at the rate of their date. Changes entered by the Admin take effect only after the Director confirms them.",
     "inForce": "In force today",
     "minMargin": "Minimum margin %",
-    "directorAbove": "Director approves above (LKR)",
+    "directorAbove": "Maximum value (LKR)",
     "since": "Since",
     "notSet": "Not set",
-    "notSetHelp": "Until a division's limits are confirmed, every quotation of that division goes to the Director.",
+    "notSetHelp": "Until a division's limits are confirmed, the defaults apply: a minimum margin of 1% and no maximum value.",
     "waiting": "Waiting for the Director",
     "changeFor": "Change for {{division}}:",
-    "changeText": "from {{from}}, minimum margin {{margin}}, Director approves above LKR {{value}} (entered by {{by}}).",
+    "changeText": "from {{from}}, minimum margin {{margin}}, maximum value {{value}} (entered by {{by}}).",
     "rejectReason": "Reason for rejecting",
     "reject": "Reject",
     "withdraw": "Withdraw",
@@ -578,7 +578,9 @@
       "confirmed": "Confirmed",
       "rejected": "Rejected",
       "withdrawn": "Withdrawn"
-    }
+    },
+    "default": "default",
+    "noMaximum": "No maximum"
   },
   "payees": {
     "title": "Suppliers and payees",

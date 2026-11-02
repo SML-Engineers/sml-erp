@@ -34,6 +34,8 @@ function ErrorLine({ error }: { error: unknown }) {
 
 const localToday = () => new Date().toLocaleDateString("en-CA");
 const pct = (value: string) => `${formatDecimal(value)}%`;
+// With no confirmed limits these apply (owner's decision, 2 Nov 2026).
+const DEFAULT_MARGIN = "1.00";
 
 export default function QuotationLimitsPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
@@ -70,9 +72,11 @@ export default function QuotationLimitsPage({ me }: { me: CurrentUser }) {
                       <td>
                         {d.code} {d.name}
                       </td>
-                      <td className="num">{current ? pct(current.min_margin_pct) : "—"}</td>
                       <td className="num">
-                        {current ? formatDecimal(current.director_above_lkr) : t("limits.notSet")}
+                        {current ? pct(current.min_margin_pct) : `${pct(DEFAULT_MARGIN)} (${t("limits.default")})`}
+                      </td>
+                      <td className="num">
+                        {current?.director_above_lkr ? formatDecimal(current.director_above_lkr) : t("limits.noMaximum")}
                       </td>
                       <td>{current?.effective_from ?? "—"}</td>
                     </tr>
@@ -116,7 +120,7 @@ export default function QuotationLimitsPage({ me }: { me: CurrentUser }) {
                 id: "value",
                 header: t("limits.directorAbove"),
                 value: (r) => r.director_above_lkr,
-                cell: (r) => formatDecimal(r.director_above_lkr),
+                cell: (r) => (r.director_above_lkr ? formatDecimal(r.director_above_lkr) : t("limits.noMaximum")),
               },
               {
                 id: "status",
@@ -162,7 +166,7 @@ function PendingChange(props: { limit: QuotationLimit; canDecide: boolean; mine:
         {t("limits.changeText", {
           from: limit.effective_from,
           margin: pct(limit.min_margin_pct),
-          value: formatDecimal(limit.director_above_lkr),
+          value: limit.director_above_lkr ? `LKR ${formatDecimal(limit.director_above_lkr)}` : t("limits.noMaximum").toLowerCase(),
           by: limit.created_by,
         })}
       </p>
@@ -251,7 +255,7 @@ function ProposeForm({ divisions }: { divisions: string[] }) {
         </label>
         <label>
           {t("limits.directorAbove")}
-          <input inputMode="decimal" value={value} required onChange={(e) => setValue(e.target.value)} />
+          <input inputMode="decimal" value={value} placeholder={t("limits.noMaximum")} onChange={(e) => setValue(e.target.value)} />
         </label>
         <label>
           {t("access.reason")}

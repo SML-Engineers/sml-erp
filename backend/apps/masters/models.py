@@ -400,8 +400,9 @@ class QuotationLimit(models.Model):
     )
     effective_from = models.DateField()
     min_margin_pct = models.DecimalField("Minimum margin %", max_digits=5, decimal_places=2)
+    # Empty: no maximum value (owner, 2 Nov 2026).
     director_above_lkr = models.DecimalField(
-        "Director approves above (LKR)", max_digits=18, decimal_places=2
+        "Director approves above (LKR)", max_digits=18, decimal_places=2, null=True, blank=True
     )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     reason = models.TextField(blank=True)
@@ -423,7 +424,9 @@ class QuotationLimit(models.Model):
                 name="masters_limit_margin_range",
             ),
             models.CheckConstraint(
-                condition=models.Q(director_above_lkr__gt=0), name="masters_limit_value_positive"
+                condition=models.Q(director_above_lkr__isnull=True)
+                | models.Q(director_above_lkr__gt=0),
+                name="masters_limit_value_positive",
             ),
             models.UniqueConstraint(
                 fields=["division", "effective_from"],
@@ -440,7 +443,11 @@ class QuotationLimit(models.Model):
     def __str__(self):
         return (
             f"{self.division.code} from {self.effective_from}: margin {self.min_margin_pct}%, "
-            f"Director above LKR {self.director_above_lkr}"
+            + (
+                f"Director above LKR {self.director_above_lkr}"
+                if self.director_above_lkr is not None
+                else "no maximum value"
+            )
         )
 
 

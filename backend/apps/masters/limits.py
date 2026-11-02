@@ -20,6 +20,10 @@ from . import currencies
 from .models import QuotationLimit
 from .services import MastersError
 
+# With no confirmed limits, these apply (owner's decision, 2 Nov 2026): a minimum margin of
+# 1% and no maximum value.
+DEFAULT_MIN_MARGIN = Decimal("1.00")
+
 
 class LimitError(MastersError):
     pass
@@ -53,9 +57,11 @@ def propose(
     margin = _decimal(min_margin_pct, "The minimum margin", "0.01")
     if not 0 <= margin < 100:
         raise LimitError("The minimum margin must be from 0% to below 100%.")
-    value = _decimal(director_above_lkr, "The value limit", "0.01")
-    if value <= 0:
-        raise LimitError("The value limit must be more than zero.")
+    value = None  # left empty: no maximum value
+    if str(director_above_lkr if director_above_lkr is not None else "").strip():
+        value = _decimal(director_above_lkr, "The value limit", "0.01")
+        if value <= 0:
+            raise LimitError("The value limit must be more than zero, or left empty.")
     with audit_context("quotation_limit_proposed", reason), transaction.atomic():
         if not division.is_active:
             raise LimitError(f"Division {division.code} is deactivated.")
@@ -160,18 +166,17 @@ def check_quotation(
     *, division: Division, on_date: date, margin_pct, value, currency: str = "LKR"
 ) -> ApprovalCheck:
     """Does a quotation need the Director? A foreign-currency value is converted at the
-    rate of the quotation's date. With no limits set, every quotation goes to the Director."""
+    rate of the quotation's date. With no limits confirmed, the defaults apply: a minimum
+    margin of 1% and no maximum value."""
     lookup = currencies.rate_on(currency, on_date)
     value_lkr = currencies.to_lkr(Decimal(str(value)), lookup)
     limit = in_force(division, on_date)
-    if limit is None:
-        return ApprovalCheck(
-            True, [f"No confirmed quotation limits for {division.code} yet."], value_lkr, None
-        )
+    minimum = limit.min_margin_pct if limit else DEFAULT_MIN_MARGIN
+    maximum = limit.director_above_lkr if limit else None
     reasons = []
     margin = Decimal(str(margin_pct))
-    if margin < limit.min_margin_pct:
-        reasons.append(f"Margin {margin}% is below the minimum of {limit.min_margin_pct}%.")
-    if value_lkr > limit.director_above_lkr:
-        reasons.append(f"Value LKR {value_lkr:,} is above LKR {limit.director_above_lkr:,}.")
+    if margin < minimum:
+        reasons.append(f"Margin {margin}% is below the minimum of {minimum}%.")
+    if maximum is not None and value_lkr > maximum:
+        reasons.append(f"Value LKR {value_lkr:,} is above LKR {maximum:,}.")
     return ApprovalCheck(bool(reasons), reasons, value_lkr, limit)

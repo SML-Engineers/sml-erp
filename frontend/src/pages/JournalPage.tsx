@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
@@ -27,7 +27,7 @@ export default function JournalPage({ me }: { me: CurrentUser }) {
   const start: JournalFilter = params.get("q") ? { q: params.get("q") ?? "" } : {};
   const [draft, setDraft] = useState<JournalFilter>(start);
   const [filter, setFilter] = useState<JournalFilter>(start);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(params.get("entry") ? Number(params.get("entry")) : null);
   const entries = useQuery({ queryKey: [...journalKey, filter], queryFn: () => listJournal(filter) });
   const canReverse = can(me.access, "accounting", "manage");
   const field = (key: keyof JournalFilter) => (value: string) => setDraft((now) => ({ ...now, [key]: value }));
@@ -124,6 +124,12 @@ function EntryPanel({ id, canReverse }: { id: number; canReverse: boolean }) {
       <p className="muted">
         {t("journal.postedBy", { name: e.posted_by })}
         {e.source_id && ` · ${e.source_type} ${e.source_id}`}
+        {e.source_page && (
+          <>
+            {" · "}
+            <Link to={e.source_page}>{t("journal.openDocument")}</Link>
+          </>
+        )}
       </p>
       <div className="table-wrap">
         <table aria-label={t("journal.lines")}>

@@ -8,12 +8,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.access import division_scope, sees_all_divisions
+from apps.core import exports
+from apps.core.exports import Column
 from apps.core.permissions import AreaAccess
 
-from . import journal
+from . import journal, sources
 from .catalogue import TYPES
 from .models import Account, JournalEntry, JournalLine
+from .report_views import division_of
 from .services import AccountingError
 
 MAX_ROWS = 500
@@ -92,6 +94,9 @@ class JournalDetailView(_Journal):
     def get(self, request, pk):
         entry = get_object_or_404(_entries(), pk=pk)
         body = _summary(entry)
+        body["source_page"] = sources.paths([(entry.source_type, entry.source_id)]).get(
+            (entry.source_type, entry.source_id)
+        )
         body["lines"] = [
             {
                 "line_no": line.line_no,
@@ -170,15 +175,7 @@ class ProfitAndLossView(APIView):
         try:
             date_from = _date(params.get("from", ""), "start date")
             date_to = _date(params.get("to", ""), "end date")
-            division = None
-            if params.get("division"):
-                division = (
-                    division_scope(request.user).filter(code=params["division"].upper()).first()
-                )
-                if division is None:
-                    raise AccountingError("Unknown division.")
-            elif not sees_all_divisions(request.user):
-                raise AccountingError("Choose one of your divisions.")
+            division = division_of(request)
             totals = journal.profit_and_loss(date_from, date_to, division)
         except AccountingError as error:
             return _error(error)
@@ -193,6 +190,33 @@ class ProfitAndLossView(APIView):
             for pk, amount in sorted(totals.items(), key=lambda item: accounts[item[0]].number)
         ]
         profit = sum(totals.values())
+        fmt = (params.get("export") or "").lower()
+        if fmt in exports.FORMATS:
+            flat = [
+                {
+                    "number": r["account"]["number"],
+                    "account": r["account"]["name"],
+                    "type": r["account_type_label"],
+                    "amount": r["amount"],
+                }
+                for r in rows
+            ]
+            who = f"Division {division.code}" if division else "Company"
+            return exports.response(
+                fmt,
+                title="Profit and loss",
+                subtitle=f"{date_from:%d/%m/%Y} to {date_to:%d/%m/%Y} · {who} · "
+                "income positive, costs negative; the total is the profit",
+                columns=[
+                    Column("number", "No.", width=0.6),
+                    Column("account", "Account", width=2.6),
+                    Column("type", "Type", width=1.2),
+                    Column("amount", "Amount (LKR)", "money"),
+                ],
+                rows=flat,
+                filename=f"profit-and-loss-{date_from}-{date_to}",
+                user=request.user,
+            )
         return Response(
             {
                 "from": date_from,

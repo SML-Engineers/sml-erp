@@ -23,6 +23,7 @@ import ProformaPage from "./pages/ProformaPage";
 import ProformasPage from "./pages/ProformasPage";
 import SalesOrderPage from "./pages/SalesOrderPage";
 import SalesReportsPage from "./pages/SalesReportsPage";
+import FinancialReportsPage from "./pages/FinancialReportsPage";
 import GoodsReceiptPage from "./pages/GoodsReceiptPage";
 import GoodsReceiptsPage from "./pages/GoodsReceiptsPage";
 import InspectionPage from "./pages/InspectionPage";
@@ -149,6 +150,7 @@ export default function App() {
         <Route path="journals/manual/:id" element={<ManualJournalPage />} />
         <Route path="journals/recurring" element={<WithMe page={(me) => <RecurringJournalsPage me={me} />} />} />
         <Route path="journals/recurring/:id" element={<RecurringJournalPage />} />
+        <Route path="reports/financial" element={<FinancialReportsPage />} />
         <Route path="opening-stock" element={<WithMe page={(me) => <OpeningStocksPage me={me} />} />} />
         <Route path="opening-stock/:id" element={<OpeningStockPage />} />
         <Route path="taxes" element={<WithMe page={(me) => <TaxesPage me={me} />} />} />

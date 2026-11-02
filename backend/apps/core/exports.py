@@ -25,6 +25,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
 
 FORMATS = ("xlsx", "pdf")
+STRONG = "_strong"  # a row key: print the row in bold
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
@@ -67,7 +68,9 @@ def _totals(columns: list[Column], rows: list[dict]) -> dict:
     }
 
 
-def xlsx(title: str, subtitle: str, columns: list[Column], rows: list[dict]) -> bytes:
+def xlsx(
+    title: str, subtitle: str, columns: list[Column], rows: list[dict], totals: bool = True
+) -> bytes:
     book = Workbook()
     sheet = book.active
     # Excel refuses some characters in a sheet name (e.g. "Open sales orders: deliveries").
@@ -81,9 +84,12 @@ def xlsx(title: str, subtitle: str, columns: list[Column], rows: list[dict]) -> 
         cell.font = Font(bold=True)
     for row in rows:
         sheet.append([_value(row.get(c.key), c.kind) for c in columns])
-    totals = _totals(columns, rows)
-    if totals and rows:
-        foot = [totals.get(c.key, "Total" if i == 0 else None) for i, c in enumerate(columns)]
+        if row.get(STRONG):
+            for cell in sheet[sheet.max_row]:
+                cell.font = Font(bold=True)
+    sums = _totals(columns, rows) if totals else {}
+    if sums and rows:
+        foot = [sums.get(c.key, "Total" if i == 0 else None) for i, c in enumerate(columns)]
         sheet.append(foot)
         for cell in sheet[sheet.max_row]:
             cell.font = Font(bold=True)
@@ -104,7 +110,14 @@ def xlsx(title: str, subtitle: str, columns: list[Column], rows: list[dict]) -> 
     return out.getvalue()
 
 
-def pdf(title: str, subtitle: str, columns: list[Column], rows: list[dict], printed_by: str):
+def pdf(
+    title: str,
+    subtitle: str,
+    columns: list[Column],
+    rows: list[dict],
+    printed_by: str,
+    totals: bool = True,
+):
     page = landscape(A4)
     margin = 12 * mm
     width = page[0] - 2 * margin
@@ -124,13 +137,14 @@ def pdf(title: str, subtitle: str, columns: list[Column], rows: list[dict], prin
 
     data = [[cell(c.title, c, strong=True) for c in columns]]
     for row in rows:
-        data.append([cell(_text(row.get(c.key), c.kind), c) for c in columns])
-    totals = _totals(columns, rows)
-    if totals and rows:
+        strong = bool(row.get(STRONG))
+        data.append([cell(_text(row.get(c.key), c.kind), c, strong) for c in columns])
+    sums = _totals(columns, rows) if totals else {}
+    if sums and rows:
         data.append(
             [
                 cell(
-                    f"{totals[c.key]:,.2f}" if c.key in totals else ("Total" if i == 0 else ""),
+                    f"{sums[c.key]:,.2f}" if c.key in sums else ("Total" if i == 0 else ""),
                     c,
                     True,
                 )
@@ -183,12 +197,16 @@ def pdf(title: str, subtitle: str, columns: list[Column], rows: list[dict], prin
     return out.getvalue()
 
 
-def response(fmt: str, *, title, subtitle, columns, rows, filename, user) -> HttpResponse:
-    """The report as a download: fmt is "xlsx" or "pdf"."""
+def response(
+    fmt: str, *, title, subtitle, columns, rows, filename, user, totals: bool = True
+) -> HttpResponse:
+    """The report as a download: fmt is "xlsx" or "pdf". Rows with STRONG set print in bold
+    (subtotals); totals=False leaves out the summed foot line (e.g. a balance sheet)."""
     if fmt == "xlsx":
-        content, kind = xlsx(title, subtitle, columns, rows), XLSX
+        content, kind = xlsx(title, subtitle, columns, rows, totals), XLSX
     else:
-        content, kind = pdf(title, subtitle, columns, rows, user.full_name), "application/pdf"
+        content = pdf(title, subtitle, columns, rows, user.full_name, totals)
+        kind = "application/pdf"
     reply = HttpResponse(content, content_type=kind)
     reply["Content-Disposition"] = f'attachment; filename="{filename}.{fmt}"'
     return reply

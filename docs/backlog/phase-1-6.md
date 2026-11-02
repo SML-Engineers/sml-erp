@@ -261,4 +261,4 @@ Status: `[ ]` to do · `[x]` done
     `load_demo_data` again adds only the missing parts. The test scripts per role and the
     go-live rows (items, stores, open POs, auditors' confirmation) are in the shared test
     document. Stock starts at zero at go-live: opening stock comes with the Phase 2 migration
-    (spec 6.1), unless the owner decides otherwise.
+    (spec 6, "Migration at go-live"), unless the owner decides otherwise.

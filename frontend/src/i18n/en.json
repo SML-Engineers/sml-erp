@@ -753,7 +753,8 @@
     "credit": "Credit",
     "total": "Total",
     "reverse": "Reverse entry",
-    "reverseHelp": "Posts the mirror entry, dated like this one if its month is open, otherwise today. This entry stays as it is."
+    "reverseHelp": "Posts the mirror entry, dated like this one if its month is open, otherwise today. This entry stays as it is.",
+    "openDocument": "Open the document"
   },
   "periods": {
     "title": "Accounting periods",
@@ -2507,6 +2508,53 @@
     "restart": "Start making journals again",
     "made": "Journals made",
     "noneMade": "None yet."
+  },
+  "fr": {
+    "title": "Financial reports",
+    "help": "Read straight from the posted journal, so the reports always agree with each other. Choose the company or one division. Click any figure to see the ledger lines behind it; each line opens its journal entry and the document, with its scans, that posted it.",
+    "tabs": {
+      "tb": "Trial balance",
+      "bs": "Balance sheet",
+      "pl": "Profit and loss",
+      "gl": "General ledger"
+    },
+    "company": "Company (all divisions)",
+    "asAt": "As at",
+    "to": "To",
+    "compare": "Compare with",
+    "noCompare": "No comparison",
+    "previousMonth": "End of the previous month",
+    "previousYear": "Same day last year",
+    "rollUp": "Roll sub-accounts into their parent",
+    "type": "Type",
+    "debitOn": "Debit {{date}}",
+    "creditOn": "Credit {{date}}",
+    "amount": "Amount (LKR)",
+    "nothing": "Nothing posted for this choice.",
+    "sections": {
+      "assets": "Assets",
+      "liabilities": "Liabilities",
+      "equity": "Equity"
+    },
+    "totals": {
+      "assets": "Total assets",
+      "liabilities": "Total liabilities",
+      "equity": "Total equity"
+    },
+    "kinds": {
+      "profit": "Profit to date, not yet closed to retained earnings",
+      "company": "Funded at company level (bank, loans and equity not held by the division)"
+    },
+    "divisionNote": "A division's balance sheet shows only the lines that carry the division. Bank, loans and share capital belong to the company, so the difference is shown as funded at company level.",
+    "profit": "Profit (loss)",
+    "plNote": "Income is shown positive and costs negative, so the total is the profit. Comparisons with last year and the budget come with the budgets task.",
+    "allAccounts": "Every account that moved",
+    "withSub": "Include sub-accounts",
+    "entry": "Entry",
+    "balance": "Balance",
+    "broughtForward": "Balance brought forward",
+    "carriedForward": "Totals and balance carried forward",
+    "glNote": "Balances are debit minus credit: a credit balance shows as a negative figure. Lines of merged accounts are shown under the account that replaced them."
   },
   "os": {
     "title": "Opening stock",

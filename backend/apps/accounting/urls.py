@@ -4,6 +4,7 @@ from . import journal_views as j
 from . import manual_views as mj
 from . import rate_views as rv
 from . import recurring_views as rj
+from . import report_views as reports_api
 from . import tax_views as t
 from . import views as v
 
@@ -57,6 +58,13 @@ urlpatterns = [
         name="period-change",
     ),
     path("reports/profit-and-loss/", j.ProfitAndLossView.as_view(), name="profit-and-loss"),
+    path("reports/trial-balance/", reports_api.TrialBalanceView.as_view(), name="trial-balance"),
+    path("reports/balance-sheet/", reports_api.BalanceSheetView.as_view(), name="balance-sheet"),
+    path(
+        "reports/general-ledger/",
+        reports_api.GeneralLedgerView.as_view(),
+        name="general-ledger",
+    ),
     path("settings/tax-rates/", rv.RateListView.as_view(), name="tax-rates"),
     path("settings/tax-rates/<int:pk>/confirm/", rv.RateConfirmView.as_view(), name="rate-confirm"),
     path("settings/tax-rates/<int:pk>/reject/", rv.RateRejectView.as_view(), name="rate-reject"),

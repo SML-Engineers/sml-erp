@@ -59,11 +59,21 @@ Status: `[ ]` to do · `[x]` done
     of the next month, or today if that month has been closed meanwhile. Template changes
     affect only journals still to be made; a journal's template link never changes.
 
-- [ ] **P2-03 Trial balance, general ledger and balance sheet** (spec 6, reports)
+- [x] **P2-03 Trial balance, general ledger and balance sheet** (spec 6, reports)
   Trial balance for any date, general ledger detail per account for a period, balance sheet,
   each for the company or one division, with comparison columns (previous month, previous
   year). Every figure opens the transactions behind it, down to the document and its scans
   (spec 7A). Excel and PDF.
+  - Done: Accounts → Financial reports, with four tabs: trial balance, balance sheet, profit
+    and loss (the P0-16 report, now on screen and in Excel/PDF) and general ledger. Any date,
+    the company or one division, sub-accounts shown or rolled into their parent, comparison
+    with the end of the previous month or the same day last year. Every figure opens the
+    ledger behind it; every ledger line opens its journal entry and the document (with its
+    scans) that posted it: manual journal, opening stock, GRN, supplier invoice, debit note,
+    customer advance, or the voucher of a supplier payment. Merged accounts show under the
+    account that replaced them. Until the year-end close (P2-23), the profit to date is shown
+    inside equity, so the balance sheet balances; a division's balance sheet shows bank, loans
+    and capital as "funded at company level".
 
 ## B. Sales invoicing and receivables
 

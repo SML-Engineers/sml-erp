@@ -26,6 +26,8 @@ export interface JournalLine {
 
 export interface JournalDetail extends JournalSummary {
   lines: JournalLine[];
+  /** The page of the document that posted the entry, with its scans (P2-03). */
+  source_page?: string | null;
 }
 
 export interface PeriodMonth {

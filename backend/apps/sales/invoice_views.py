@@ -205,6 +205,9 @@ class InvoiceDetailView(_Invoices):
 
 
 class InvoiceIssueView(_Invoices):
+    # The Director (Sales: Approve) issues too; invoices.can_issue decides who may.
+    access_write_level = "view"
+
     def post(self, request, pk):
         try:
             invoices.issue(request.user, _get(request.user, pk))

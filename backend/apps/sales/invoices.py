@@ -6,8 +6,8 @@
   invoice date's rates: SSCL on the net amount, then VAT on net plus SSCL, each rounded
   half-up to the cent (spec 6.1 example: 115,750.00 + 2,459.69 SSCL, VAT 21,277.74, total
   139,487.43).
-- Sales prepare the draft; the Accountant issues it (owner's default of 3 Nov 2026: issuing
-  posts to the ledger). Issuing:
+- Sales or the Accountant prepare the draft; Sales, the Director or the Accountant issue it
+  (owner's decision, 3 Nov 2026). Issuing:
   - needs the division's tax invoice code (Settings -> Divisions) and the company's TIN;
   - numbers it YYMMM_QQQQ_XX from the "tax_invoice" series of the invoice date's month, per
     division, inside the same transaction (rule 10), so drafts leave no gaps;
@@ -70,8 +70,14 @@ def can_prepare(user: User) -> bool:
 
 
 def can_issue_any(user: User) -> bool:
-    """The Accountant issues invoices: issuing posts to the ledger."""
-    return effective_access(user).has("accounting", "enter")
+    """Sales (Executive and Manager), the Director and the Accountant issue invoices (owner's
+    decision, 3 Nov 2026)."""
+    access = effective_access(user)
+    return (
+        access.has("sales", "enter")
+        or access.has("sales", "approve")
+        or access.has("accounting", "enter")
+    )
 
 
 def _sees_all(user: User) -> bool:
@@ -104,7 +110,7 @@ def orders_to_invoice(user: User) -> QuerySet[SalesOrder]:
 def can_edit(user: User, invoice: TaxInvoice) -> bool:
     if invoice.status != St.DRAFT or not can_prepare(user):
         return False
-    return invoice.created_by_id == user.pk or can_issue_any(user)
+    return invoice.created_by_id == user.pk or effective_access(user).has("accounting", "enter")
 
 
 def can_issue(user: User, invoice: TaxInvoice) -> bool:
@@ -370,7 +376,7 @@ def issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
     with audit_context("tax_invoice_issued"), transaction.atomic():
         invoice = TaxInvoice.objects.select_for_update().get(pk=invoice.pk)
         if not can_issue(user, invoice):
-            raise SalesError("The Accountant issues a draft invoice.")
+            raise SalesError("Sales, the Director or the Accountant issue a draft invoice.")
         division = Division.objects.get(pk=invoice.division_id)
         if not division.tax_invoice_code:
             raise SalesError(

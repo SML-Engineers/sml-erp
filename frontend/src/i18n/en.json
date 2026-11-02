@@ -1893,7 +1893,7 @@
   },
   "ti": {
     "title": "Tax invoices",
-    "help": "Tax invoices in the Inland Revenue's format, made from what has been delivered. Sales or the Accountant prepare a draft; the Accountant issues it, which gives it its number (for example 26NOV_W1_01) and posts it to the accounts. An issued invoice is never changed or deleted: a credit note corrects it.",
+    "help": "Tax invoices in the Inland Revenue's format, made from what has been delivered. Sales or the Accountant prepare a draft; Sales, the Director or the Accountant issue it, which gives it its number (for example 26NOV_W1_01) and posts it to the accounts. An issued invoice is never changed or deleted: a credit note corrects it.",
     "waiting": "Delivered, not yet invoiced",
     "prepare": "Prepare the invoice",
     "prepareFromDeliveries": "Invoice the delivered quantities",
@@ -1928,7 +1928,7 @@
     "pdf": "Tax invoice PDF",
     "issue": "Issue the tax invoice",
     "issueHelp": "Gives the invoice its number and posts it. After this it is never changed.",
-    "accountantIssues": "The Accountant issues the invoice.",
+    "accountantIssues": "Sales, the Director or the Accountant issue the invoice.",
     "delete": "Delete the draft",
     "emails": "Emails sent",
     "emailSent": "sent",

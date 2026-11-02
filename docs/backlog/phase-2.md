@@ -99,7 +99,7 @@ Status: `[ ]` to do · `[x]` done
   - Done: Sales → Tax invoices. A draft is prepared by Sales or the Accountant from an
     order's delivery notes not yet invoiced (each delivery line is invoiced once, a database
     rule); prices, discount and tax codes come from the order, taxes at the invoice date's
-    rates. The Accountant issues it (default of 3 Nov 2026, question 11): only then is it
+    rates. Sales, the Director or the Accountant issue it (owner, 3 Nov 2026): only then is it
     numbered (YYMMM_IC_XX, monthly per division, so drafts leave no gaps), the supplier's and
     customer's details copied onto it, and Dr Accounts receivable (with the customer, a new
     field on ledger lines), Cr the division's sales account (Accounts → Sales accounts:
@@ -273,6 +273,5 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
 10. **Order of release.** Build all of Phase 2 and go live once, or release in stages (for
     example sales invoicing and receipts first, while the current system still keeps the
     books)? (all)
-11. **Who issues tax invoices.** Default of 3 Nov 2026: Sales or the Accountant prepare the
-    draft; the Accountant issues it (it posts to the ledger). The Director, or Sales
-    themselves, could issue instead if the owner prefers. (P2-05)
+11. **Who issues tax invoices.** Answered 3 Nov 2026: Sales, the Director and the Accountant
+    issue them; Sales or the Accountant prepare the draft. (P2-05)

@@ -83,6 +83,7 @@ def make_order(executive, director, *lines, discount=None):
             "tin": "114455667",
             "payment_terms_days": 30,
         },
+        confirmed=True,
     )
     q = services.save(
         executive,
@@ -155,8 +156,6 @@ def test_the_invoice_of_the_spec_s_example(order, stores, executive, accountant)
         ("VAT", D("18.0000"), D("21277.74")),
     ]
     assert draft.total_amount == D("139487.43")
-    with pytest.raises(SalesError, match="The Accountant issues"):
-        invoices.issue(executive, draft)
     invoice = invoices.issue(accountant, draft)
     assert invoice.number == f"{NUMBER}01"
     assert (invoice.supplier_tin, invoice.customer_tin) == ("134567890", "114455667")
@@ -263,6 +262,25 @@ def test_an_issued_invoice_never_changes(order, stores, accountant):
             DeliveryNote.objects.filter(pk=note.pk).update(status="cancelled", cancel_reason="x")
 
 
+def test_sales_the_director_and_the_accountant_issue(executive, director, stores, accountant):
+    """Owner's decision of 3 Nov 2026."""
+    issued = []
+    for who in (executive, director, accountant):
+        o = make_order(
+            executive,
+            director,
+            QuoteLine(description="Bush", quantity="2", unit_price="500.00"),
+        )
+        deliver(stores, o, "2")
+        draft = invoices.create(executive, o)
+        assert invoices.can_issue(who, draft)
+        issued.append(invoices.issue(who, draft).number)
+    assert issued == [f"{NUMBER}01", f"{NUMBER}02", f"{NUMBER}03"]
+    clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
+    assert not invoices.can_issue_any(clerk)
+    assert not invoices.can_issue_any(stores)
+
+
 def test_who_prepares_and_sees(order, stores, executive, accountant):
     deliver(stores, order, "50")
     other = person("sales2@sml.lk", "sales_executive", all_divisions=True)
@@ -311,7 +329,7 @@ def test_the_printed_invoice(order, stores, accountant):
     assert b"DRAFT" not in text
 
 
-def test_the_api(order, stores, executive, accountant):
+def test_the_api(order, stores, executive, accountant, director):
     deliver(stores, order, "50")
     client = as_user(executive)
     todo = client.get("/api/v1/tax-invoices/orders/").json()
@@ -320,13 +338,13 @@ def test_the_api(order, stores, executive, accountant):
     assert made.status_code == 201, made.json()
     pk = made.json()["id"]
     assert made.json()["total_amount"] == "139487.43"
-    assert made.json()["can_issue"] is False
+    assert made.json()["can_issue"] is True
     changed = client.put(
         f"/api/v1/tax-invoices/{pk}/", {"place_of_supply": "Ranala\nWarehouse 2"}, format="json"
     )
     assert changed.json()["place_of_supply"] == "Ranala, Warehouse 2"
-    assert client.post(f"/api/v1/tax-invoices/{pk}/issue/").status_code == 400
-    issued = as_user(accountant).post(f"/api/v1/tax-invoices/{pk}/issue/")
+    assert as_user(stores).post(f"/api/v1/tax-invoices/{pk}/issue/").status_code == 403
+    issued = as_user(director).post(f"/api/v1/tax-invoices/{pk}/issue/")
     assert issued.status_code == 200, issued.json()
     assert issued.json()["number"] == f"{NUMBER}01"
     pdf = client.get(f"/api/v1/tax-invoices/{pk}/pdf/")

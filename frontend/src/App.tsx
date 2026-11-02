@@ -41,6 +41,8 @@ import StoresPage from "./pages/settings/StoresPage";
 import SalesOrdersPage from "./pages/SalesOrdersPage";
 import PayPage from "./pages/PayPage";
 import JournalPage from "./pages/JournalPage";
+import ManualJournalPage from "./pages/ManualJournalPage";
+import ManualJournalsPage from "./pages/ManualJournalsPage";
 import PeriodsPage from "./pages/PeriodsPage";
 import ReviewPage from "./pages/ReviewPage";
 import TaxesPage from "./pages/TaxesPage";
@@ -138,6 +140,8 @@ export default function App() {
           element={<WithMe page={(me) => <ChartOfAccountsPage me={me} />} />}
         />
         <Route path="journal" element={<WithMe page={(me) => <JournalPage me={me} />} />} />
+        <Route path="journals/manual" element={<WithMe page={(me) => <ManualJournalsPage me={me} />} />} />
+        <Route path="journals/manual/:id" element={<ManualJournalPage />} />
         <Route path="taxes" element={<WithMe page={(me) => <TaxesPage me={me} />} />} />
         <Route path="vouchers" element={<WithMe page={(me) => <VouchersPage me={me} />} />} />
         <Route path="vouchers/review" element={<ReviewPage />} />

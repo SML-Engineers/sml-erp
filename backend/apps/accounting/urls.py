@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import journal_views as j
+from . import manual_views as mj
 from . import tax_views as t
 from . import views as v
 
@@ -24,6 +25,22 @@ urlpatterns = [
     path("journal/", j.JournalListView.as_view(), name="journal-list"),
     path("journal/<int:pk>/", j.JournalDetailView.as_view(), name="journal-detail"),
     path("journal/<int:pk>/reverse/", j.JournalReverseView.as_view(), name="journal-reverse"),
+    path("manual-journals/", mj.JournalListView.as_view(), name="manual-journal-list"),
+    path("manual-journals/<int:pk>/", mj.JournalDetailView.as_view(), name="manual-journal"),
+    path("manual-journals/<int:pk>/submit/", mj.SubmitView.as_view(), name="mj-submit"),
+    path("manual-journals/<int:pk>/approve/", mj.ApproveView.as_view(), name="mj-approve"),
+    path("manual-journals/<int:pk>/return/", mj.ReturnView.as_view(), name="mj-return"),
+    path("manual-journals/<int:pk>/reject/", mj.RejectView.as_view(), name="mj-reject"),
+    path(
+        "manual-journals/<int:pk>/attachments/",
+        mj.AttachmentListView.as_view(),
+        name="mj-attachments",
+    ),
+    path(
+        "manual-journals/<int:pk>/attachments/<int:attachment_pk>/",
+        mj.AttachmentDetailView.as_view(),
+        name="mj-attachment",
+    ),
     path("accounting-periods/", j.PeriodListView.as_view(), name="period-list"),
     path(
         "accounting-periods/<str:month>/<str:action>/",

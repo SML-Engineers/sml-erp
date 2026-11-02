@@ -462,6 +462,7 @@ class StockMovement(models.Model):
         REJECTED = "rejected", "Rejected by QC"
         REVERSED = "reversed", "GRN reversed"
         RETURNED = "returned", "Returned to the supplier"
+        OPENING = "opening", "Opening stock"
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="movements")
     store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="movements")
@@ -473,6 +474,13 @@ class StockMovement(models.Model):
     value = models.DecimalField(max_digits=18, decimal_places=2, default=0)  # LKR, signed
     receipt_line = models.ForeignKey(
         GoodsReceiptLine, null=True, blank=True, on_delete=models.PROTECT, related_name="movements"
+    )
+    opening_line = models.ForeignKey(
+        "OpeningStockLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="movements",
     )
     journal_entry = models.ForeignKey(
         "accounting.JournalEntry",
@@ -497,3 +505,66 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()} {self.quantity} {self.item.code} @ {self.store.code}"
+
+
+# --- Opening stock (backlog P16-15, owner's decision of 2 Nov 2026) --------------------------
+
+
+class OpeningStock(models.Model):
+    """The stores counted at go-live, with the cost of each item, loaded from Excel. It is a
+    draft until the Director approves it; approval puts the quantities into the main stores
+    and posts their value (Dr Inventory, Cr Opening balance equity). Once sent it never
+    changes, and only a draft is deleted (database guard)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Waiting for the Director"
+        POSTED = "posted", "Approved and in stock"
+        REJECTED = "rejected", "Rejected"
+
+    number = models.CharField(max_length=30, unique=True)
+    count_date = models.DateField()
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="opening_stock",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-count_date", "-number"]
+
+    def __str__(self):
+        return self.number
+
+
+class OpeningStockLine(models.Model):
+    opening = models.ForeignKey(OpeningStock, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveIntegerField()
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="+")
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="+")
+    lot_no = models.CharField(max_length=40)
+    quantity = _qty()
+    unit_cost = models.DecimalField(max_digits=18, decimal_places=4)
+    value = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["opening", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["opening", "line_no"], name="inventory_os_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0) & models.Q(unit_cost__gt=0),
+                name="inventory_os_line_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.opening_id}/{self.line_no}"

@@ -112,7 +112,14 @@ class MovementListView(_Stock):
     def get(self, request):
         rows = (
             _movements(request)
-            .select_related("item", "store", "receipt_line__receipt", "journal_entry", "created_by")
+            .select_related(
+                "item",
+                "store",
+                "receipt_line__receipt",
+                "opening_line__opening",
+                "journal_entry",
+                "created_by",
+            )
             .order_by("-movement_date", "-id")[:2000]
         )
         return Response(
@@ -129,6 +136,12 @@ class MovementListView(_Stock):
                     "grn": None
                     if m.receipt_line_id is None
                     else {"id": m.receipt_line.receipt_id, "number": m.receipt_line.receipt.number},
+                    "opening": None
+                    if m.opening_line_id is None
+                    else {
+                        "id": m.opening_line.opening_id,
+                        "number": m.opening_line.opening.number,
+                    },
                     "journal": None if m.journal_entry_id is None else m.journal_entry.number,
                     "by": m.created_by.full_name,
                 }

@@ -41,6 +41,8 @@ export interface DNDetail extends DNSummary {
   received_on: string | null;
   signed_copy: string | null;
   cancel_reason: string;
+  /** Tax invoices of this note (P2-05). */
+  invoices?: { id: number; number: string; status: string }[];
   lines: DNOrderLine[];
   can_edit: boolean;
   can_receive: boolean;

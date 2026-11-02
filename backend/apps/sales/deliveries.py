@@ -8,8 +8,8 @@
   customer to sign. The signed copy, who received the goods and when are recorded when it
   comes back.
 - An issued note never changes (database guard). A mistake is corrected by cancelling it with
-  a reason: its quantities are open on the order again. (From P2-05 a note that has been
-  invoiced cannot be cancelled.)
+  a reason: its quantities are open on the order again. A note on a tax invoice cannot be
+  cancelled (P2-05; also a database rule once the invoice is issued).
 - Finished-goods stock: none until Phase 3 (owner's question 4, the recommended default of
   3 Nov 2026). A delivery note records what was delivered and posts nothing.
 """
@@ -104,8 +104,12 @@ def can_receive(user: User, note: DeliveryNote) -> bool:
     return note.status == St.ISSUED and can_enter(user)
 
 
+def _invoiced(note: DeliveryNote) -> bool:
+    return DeliveryNoteLine.objects.filter(note=note, invoice_line__isnull=False).exists()
+
+
 def can_cancel(user: User, note: DeliveryNote) -> bool:
-    return note.status in COUNTED and can_manage(user)
+    return note.status in COUNTED and can_manage(user) and not _invoiced(note)
 
 
 # --- Quantities ------------------------------------------------------------------------------
@@ -318,6 +322,11 @@ def cancel(user: User, note: DeliveryNote, reason: str) -> DeliveryNote:
         raise SalesError("Give a reason for cancelling the delivery note.")
     with audit_context("delivery_note_cancelled", reason), transaction.atomic():
         note = DeliveryNote.objects.select_for_update().get(pk=note.pk)
+        if note.status in COUNTED and _invoiced(note):
+            raise SalesError(
+                "The delivery note is on a tax invoice: delete the draft invoice, or correct an "
+                "issued one with a credit note."
+            )
         if not can_cancel(user, note):
             raise SalesError(
                 "An issued delivery note is cancelled by the Sales Manager or the stores."

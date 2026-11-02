@@ -66,6 +66,12 @@ export default function DeliveryNotePage() {
             {t(`dn.statuses.${data.status}`)} · {data.delivery_date} · {data.customer.name} ·{" "}
             <Link to={`/sales-orders/${data.order.id}`}>{data.order.number}</Link>
             {data.order.customer_po && ` · ${t("dn.customerPo")} ${data.order.customer_po}`}
+            {(data.invoices ?? []).map((i) => (
+              <span key={i.id}>
+                {" · "}
+                <Link to={`/tax-invoices/${i.id}`}>{i.number || t("ti.draftNo", { id: i.id })}</Link>
+              </span>
+            ))}
           </p>
           {data.status === "cancelled" && <p className="notice">{t("proformas.cancelledBecause", { reason: data.cancel_reason })}</p>}
           {data.can_edit ? (

@@ -91,11 +91,23 @@ Status: `[ ]` to do · `[x]` done
     Manager or the stores cancel it with a reason and its quantities are open again. An order
     with delivery notes is completed, not cancelled. No finished-goods stock (question 4).
 
-- [ ] **P2-05 Tax invoices** (spec 6.1)
+- [x] **P2-05 Tax invoices** (spec 6.1)
   From delivered quantities: the Inland Revenue format exactly (Gazette 2481/22), numbered
   YYMMM_QQQQ_XXXXX per division, SSCL then VAT on (subtotal + SSCL), amount in words. Issuing
   posts Dr Accounts receivable, Cr Sales (per division), SSCL and VAT payable. Never edited or
   deleted once issued; refused for a division without its tax-invoice code. PDF and email.
+  - Done: Sales → Tax invoices. A draft is prepared by Sales or the Accountant from an
+    order's delivery notes not yet invoiced (each delivery line is invoiced once, a database
+    rule); prices, discount and tax codes come from the order, taxes at the invoice date's
+    rates. The Accountant issues it (default of 3 Nov 2026, question 11): only then is it
+    numbered (YYMMM_IC_XX, monthly per division, so drafts leave no gaps), the supplier's and
+    customer's details copied onto it, and Dr Accounts receivable (with the customer, a new
+    field on ledger lines), Cr the division's sales account (Accounts → Sales accounts:
+    goods and tooling), Cr SSCL and VAT payable posted. Needs the division's tax invoice code
+    and the company's TIN. Printed as in spec 6.1 (dates MM/DD/YYYY, amount in words,
+    Customer / Prepared By / Checked By), emailed with the PDF. Issued invoices, their lines
+    and taxes never change (database guard); an invoiced delivery note cannot be cancelled.
+    A delivered order is Completed once fully invoiced. LKR only until P2-09.
 
 - [ ] **P2-06 Credit notes**
   Against an issued invoice (returned goods, price correction), with a reason and the
@@ -261,3 +273,6 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
 10. **Order of release.** Build all of Phase 2 and go live once, or release in stages (for
     example sales invoicing and receipts first, while the current system still keeps the
     books)? (all)
+11. **Who issues tax invoices.** Default of 3 Nov 2026: Sales or the Accountant prepare the
+    draft; the Accountant issues it (it posts to the ledger). The Director, or Sales
+    themselves, could issue instead if the owner prefers. (P2-05)

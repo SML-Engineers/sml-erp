@@ -1422,6 +1422,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Export customers | Yes: foreign-currency quotations, proformas, invoices and receipts | 5.5 |
 | QuickBooks-style interactive features | Added to the plan in the phase each depends on; Sri Lankan equivalents where US services do not exist | 7A |
 | Tax invoice and quotation numbers | Tax invoice YYMMM_XX_PP per division, restarting monthly and carrying on past 99; quotation QL + YYMMDD + daily count; amounts as 115,750.00 | 3, 5.1, 6.1 |
+| Go-live (owner, 2 Nov 2026) | Opening stock counted and loaded; open paper vouchers typed into the ERP and approved again; amendments started by the Clerk only; quotation limits kept by the Admin (defaults 1% margin, no maximum); www redirects to the main address; usual accounting standards (IAS 2 and IAS 21 corrections), confirmed by the auditors; VAT 18%, SSCL chosen per line from SSCL codes, confirmed by the tax advisor | 5A, backlog phase 1.6 section H |
 
 **Still needed for initial setup**
 

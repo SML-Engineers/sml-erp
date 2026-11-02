@@ -86,6 +86,9 @@ DOCUMENT_TYPES = {
     # A journal the Accountant types in is posted only once approved; the Director approves
     # every one until the owner decides otherwise (backlog P2-01, Phase 2 question 3).
     "manual_journal": DocumentType("Manual journal", min_approvals=1, final_role="director"),
+    # The stores counted at go-live, with their cost: the Director approves before the stock
+    # and its value go in (owner, 2 Nov 2026; P16-15).
+    "opening_stock": DocumentType("Opening stock", min_approvals=1, final_role="director"),
 }
 
 

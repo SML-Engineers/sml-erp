@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import inspection_views as q
+from . import opening_views as ov
 from . import receipt_views as r
 from . import stock_views as sv
 from . import views
@@ -14,6 +15,13 @@ urlpatterns = [
     path("items/<int:pk>/active/", views.ItemActiveView.as_view(), name="item-active"),
     path("stores/", views.StoreListView.as_view(), name="store-list"),
     path("stores/<int:pk>/", views.StoreDetailView.as_view(), name="store-detail"),
+    path("opening-stock/", ov.OpeningListView.as_view(), name="opening-list"),
+    path("opening-stock/template/", ov.OpeningTemplateView.as_view(), name="opening-template"),
+    path("opening-stock/<int:pk>/", ov.OpeningDetailView.as_view(), name="opening-detail"),
+    path("opening-stock/<int:pk>/submit/", ov.SubmitView.as_view(), name="opening-submit"),
+    path("opening-stock/<int:pk>/approve/", ov.ApproveView.as_view(), name="opening-approve"),
+    path("opening-stock/<int:pk>/return/", ov.ReturnView.as_view(), name="opening-return"),
+    path("opening-stock/<int:pk>/reject/", ov.RejectView.as_view(), name="opening-reject"),
     path("goods-receipts/", r.ReceiptListView.as_view(), name="grn-list"),
     path("goods-receipts/receivable/", r.ReceivableView.as_view(), name="grn-receivable"),
     path("goods-receipts/<int:pk>/", r.ReceiptDetailView.as_view(), name="grn-detail"),

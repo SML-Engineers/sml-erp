@@ -92,6 +92,7 @@ export default function StockPage() {
                     <td className="num">{Number(m.value) !== 0 ? formatDecimal(m.value) : ""}</td>
                     <td>
                       {m.grn && <Link to={`/goods-receipts/${m.grn.id}`}>{m.grn.number}</Link>}
+                      {m.opening && <Link to={`/opening-stock/${m.opening.id}`}>{m.opening.number}</Link>}
                       {m.journal && ` · ${m.journal}`}
                     </td>
                   </tr>

@@ -2255,7 +2255,9 @@
       "damaged": "Received damaged",
       "accepted": "Accepted by QC",
       "rejected": "Rejected by QC",
-      "reversed": "GRN reversed"
+      "reversed": "GRN reversed",
+      "returned": "Returned to the supplier",
+      "opening": "Opening stock"
     }
   },
   "si": {
@@ -2463,5 +2465,45 @@
     "delete": "Delete the draft",
     "approve": "Approve and post",
     "reject": "Reject (needs a reason)"
+  },
+  "os": {
+    "title": "Opening stock",
+    "help": "The stores counted at go-live, with the cost of each item, loaded from Excel by the Accountant. Nothing goes into stock until the Director approves; then the quantities go into the main stores and their value is posted (Inventory against Opening balance equity). Only for items that have not yet moved in that store.",
+    "template": "Download the Excel sheet to fill in",
+    "load": "Load the counted stock",
+    "file": "Excel file (.xlsx)",
+    "countDate": "Date counted",
+    "notes": "Notes",
+    "check": "Check the file",
+    "make": "Load as a draft",
+    "loadAgain": "Load the sheet again (replaces the lines)",
+    "checked": "The file is fine: {{rows}} rows, LKR {{value}}.",
+    "none": "No opening stock yet.",
+    "number": "No.",
+    "lines": "Lines",
+    "value": "Value (LKR)",
+    "enteredBy": "Loaded by",
+    "postedAs": "Posted as",
+    "backToList": "← All opening stock",
+    "one": "Opening stock",
+    "statuses": {
+      "draft": "Draft",
+      "awaiting_approval": "Waiting for the Director",
+      "posted": "Approved and in stock",
+      "rejected": "Rejected"
+    },
+    "rows": "Counted stock",
+    "item": "Item",
+    "store": "Store",
+    "lot": "Lot",
+    "quantity": "Quantity",
+    "unitCost": "Cost per unit (LKR)",
+    "actions": "What to do with the opening stock",
+    "send": "Send to the Director",
+    "sendHelp": "After this it cannot be changed.",
+    "delete": "Delete the draft",
+    "approve": "Approve: put it into stock",
+    "reject": "Reject (needs a reason)",
+    "errors": "Rows to correct"
   }
 }

@@ -20,6 +20,7 @@ export interface Movement {
   quantity: string;
   value: string;
   grn: { id: number; number: string } | null;
+  opening?: { id: number; number: string } | null;
   journal: string | null;
   by: string;
 }

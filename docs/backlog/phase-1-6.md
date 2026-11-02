@@ -262,3 +262,50 @@ Status: `[ ]` to do · `[x]` done
     go-live rows (items, stores, open POs, auditors' confirmation) are in the shared test
     document. Stock starts at zero at go-live: opening stock comes with the Phase 2 migration
     (spec 6, "Migration at go-live"), unless the owner decides otherwise.
+
+## H. Before go-live: owner's decisions of 2 Nov 2026
+
+The owner's answers to the open go-live questions (also in spec 8.4):
+
+1. **Opening stock:** the stores are counted and the balances loaded at go-live (P16-15).
+2. **Paper vouchers still open at go-live** are typed into the ERP with their scans and the
+   signed paper voucher, and go through all three approvals again; a partly paid one is
+   entered for its unpaid balance only.
+3. **Amendments** are started by the Clerk only (as built).
+4. **Quotation limits** are settings the Admin keeps (the Director confirms); defaults: minimum
+   margin 1%, no maximum value (P16-16).
+5. **www.smlerp.com.lk** redirects to smlerp.com.lk (at server set-up).
+6. **Accounting treatment:** the usual standards. GRNI and supplier advances already follow
+   them; price differences go into the stock's cost while the goods are in stock (IAS 2,
+   P16-18) and foreign-currency purchases use the rate of each transaction's date (IAS 21,
+   P16-19). The auditors still confirm before go-live.
+7. **VAT** 18%. **SSCL** varies with the kind of supply (2.5% of liable turnover: 2.125% on
+   manufactured goods, 2.5% on services, 1.25% on resale): chosen per line from a list of
+   SSCL codes, to be confirmed by the tax advisor (P16-17).
+
+- [x] **P16-15 Opening stock from the stores count**
+  The Accountant loads the count from Excel (item, main store, quantity, cost per unit, lot);
+  checked first, all or nothing, every bad row listed. The Director approves; approval puts
+  the stock into the main stores and posts Dr Inventory, Cr Opening balance equity per
+  division. Only for an item and store that have not moved yet, and once per item and store.
+  - Done: Purchasing and stores → Opening stock. Numbered OS{YY}{MM}{DD}{XX}; the sheet to
+    fill in lists the active stock items and main stores; loading again replaces a draft's
+    lines; the count date cannot be in the future or in a closed month. Movements of kind
+    "Opening stock" link back to it from Stock on hand. Database guard: no change once sent,
+    only drafts deleted, posted and rejected for good.
+
+- [ ] **P16-16 Quotation limits: no maximum, defaults**
+  The maximum value can be left empty (no value warning); with no limits set, 1% and no
+  maximum apply.
+
+- [ ] **P16-17 SSCL codes per line**
+  SSCL tax codes (2.125%, 2.5%, 1.25%, exempt) chosen per line on quotations, proformas,
+  POs, supplier invoices and vouchers; VAT worked out on top as now.
+
+- [ ] **P16-18 Price differences into the cost of stock (IAS 2)**
+  An invoice price different from the PO price adjusts the value of the goods still in
+  stock; only the part already used goes to cost.
+
+- [ ] **P16-19 Foreign-currency purchases at the transaction date's rate (IAS 21)**
+  Goods valued at the GRN date's rate, the invoice and payment at their own dates' rates,
+  with realised exchange differences posted.

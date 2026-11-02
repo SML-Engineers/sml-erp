@@ -1,5 +1,5 @@
-"""Demo data for trying the ERP (backlog P1-12): loads through the normal services, never on
-production, once only."""
+"""Demo data for trying the ERP (backlog P1-12, P15-12, P16-14): loads through the normal
+services, never on production, each part once only."""
 
 import io
 import re
@@ -9,9 +9,13 @@ from django.core.management import CommandError, call_command
 
 from apps.core import crypto
 from apps.core.models import User
+from apps.inventory.models import GoodsReceipt, IncomingInspection, InspectionPlan, Item
 from apps.masters.models import Customer
 from apps.payments.models import SupplierPayment
+from apps.purchasing import reports
+from apps.purchasing.models import PurchaseOrder, SupplierInvoice
 from apps.sales.models import CustomerAdvance, Quotation, SalesOrder
+from apps.vouchers.management.commands import load_demo_data
 from apps.vouchers.models import Voucher
 
 pytestmark = pytest.mark.django_db
@@ -38,8 +42,11 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
         "cashier@demo.sml.lk",
         "clerk@demo.sml.lk",
         "director@demo.sml.lk",
+        "purchasing@demo.sml.lk",
+        "qc@demo.sml.lk",
         "sales@demo.sml.lk",
         "salesmanager@demo.sml.lk",
+        "stores@demo.sml.lk",
     ]
     secret = re.search(r"Key: ([A-Z2-7]{32})", text).group(1)
     assert {crypto.decrypt(u.totp_secret_encrypted) for u in people} == {secret}
@@ -73,6 +80,35 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
     assert order.lines.get().schedule.count() == 3
     assert CustomerAdvance.objects.get().status == "approved"
     assert Customer.objects.count() == 3
+    # Purchasing (P16-14): POs at every stage, a GRN waiting for QC, a posted and a held invoice.
+    assert sorted(Item.objects.values_list("code", flat=True)) == [
+        "CNMG-120408",
+        "EN8-40",
+        "M8-INSERT",
+        "PP-H-25",
+    ]
+    assert InspectionPlan.objects.get().parameters.count() == 2
+    assert sorted(PurchaseOrder.objects.values_list("status", flat=True)) == [
+        "awaiting_approval",
+        "draft",
+        "partly_received",
+        "received",
+        "received",
+    ]
+    assert GoodsReceipt.objects.filter(status="confirmed").count() == 3
+    waiting = GoodsReceipt.objects.get(lines__inspection__isnull=True)
+    assert waiting.lines.get().packages.count() == 10
+    assert sorted(IncomingInspection.objects.values_list("accepted_quantity", flat=True)) == [
+        500,
+        4800,
+    ]
+    assert sorted(SupplierInvoice.objects.values_list("invoice_no", "status")) == [
+        ("PRL-2301", "posted"),
+        ("PTL-7702", "held"),
+    ]
+    director = people.get(email="director@demo.sml.lk")
+    assert reports.grni_ledger_balance() == "60000.00"  # 4,800 inserts at 12.50, held
+    assert len(reports.held_invoices(director)) == 1
     with pytest.raises(CommandError, match="already loaded"):
         call_command("load_demo_data", stdout=io.StringIO())
 
@@ -86,3 +122,33 @@ def test_never_on_production(settings, monkeypatch):
     with pytest.raises(CommandError, match="never production"):
         call_command("load_demo_data", stdout=io.StringIO())
     assert not User.objects.filter(email__endswith="@demo.sml.lk").exists()
+
+
+def test_a_pc_with_the_earlier_demo_gets_only_the_missing_part(settings, monkeypatch):
+    """The owner's PC was loaded before purchasing existed: running the command again adds the
+    purchasing part with the same password and authenticator entry, and nothing twice."""
+    settings.DEBUG = True
+    monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
+    monkeypatch.setattr(load_demo_data, "PARTS", ("vouchers", "sales"))
+    call_command("load_demo_data", stdout=io.StringIO())
+    assert not User.objects.filter(email="stores@demo.sml.lk").exists()
+    assert not PurchaseOrder.objects.exists()
+    vouchers = Voucher.objects.count()
+
+    monkeypatch.undo()
+    settings.DEBUG = True
+    monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
+    out = io.StringIO()
+    call_command("load_demo_data", stdout=out)
+    assert "Demo data loaded: purchasing." in out.getvalue()
+    assert Voucher.objects.count() == vouchers
+    assert Customer.objects.count() == 3
+    assert PurchaseOrder.objects.count() == 5
+    secrets = {
+        crypto.decrypt(u.totp_secret_encrypted)
+        for u in User.objects.filter(email__endswith="@demo.sml.lk")
+    }
+    assert len(secrets) == 1
+    assert User.objects.get(email="qc@demo.sml.lk").check_password("Demo-SML-2026!")
+    with pytest.raises(CommandError, match="already loaded"):
+        call_command("load_demo_data", stdout=io.StringIO())

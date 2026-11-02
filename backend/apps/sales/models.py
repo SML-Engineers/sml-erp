@@ -633,6 +633,7 @@ class SalesOrder(models.Model):
         AWAITING_APPROVAL = "awaiting_approval", "Awaiting approval"
         OPEN = "open", "Open"
         PARTLY_DELIVERED = "partly_delivered", "Partly delivered"
+        DELIVERED = "delivered", "Delivered"
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
@@ -765,3 +766,69 @@ class DeliverySchedule(models.Model):
 
     def __str__(self):
         return f"{self.quantity} by {self.due_date}"
+
+
+# --- Delivery notes (P2-04, spec 5.3 and 6) --------------------------------------------------
+
+
+class DeliveryNote(models.Model):
+    """What leaves the factory against an open sales order: the quantity of each order line
+    delivered now, the vehicle and driver; printed for the customer to sign. Issuing it
+    moves the order to Partly delivered or Delivered. Until finished-goods stock exists
+    (Phase 3, owner's question 4), a delivery note records what was delivered and posts
+    nothing. The signed copy is kept with it when it comes back."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        ISSUED = "issued", "Issued"
+        RECEIVED = "received", "Signed by the customer"
+        CANCELLED = "cancelled", "Cancelled"
+
+    number = models.CharField(max_length=30, unique=True)
+    order = models.ForeignKey(SalesOrder, on_delete=models.PROTECT, related_name="deliveries")
+    delivery_date = models.DateField()
+    vehicle_no = models.CharField("Vehicle no.", max_length=30, blank=True)
+    driver = models.CharField(max_length=100, blank=True)
+    delivery_address = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    issued_at = models.DateTimeField(null=True, blank=True)
+    received_by = models.CharField("Received by (name)", max_length=100, blank=True)
+    received_on = models.DateField(null=True, blank=True)
+    signed_copy = models.FileField(upload_to="delivery-notes/%Y/%m/", blank=True)
+    signed_copy_name = models.CharField(max_length=200, blank=True)
+    signed_copy_type = models.CharField(max_length=100, blank=True)
+    signed_copy_sha256 = models.CharField(max_length=64, blank=True)
+    cancel_reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-delivery_date", "-number"]
+
+    def __str__(self):
+        return self.number
+
+
+class DeliveryNoteLine(models.Model):
+    note = models.ForeignKey(DeliveryNote, on_delete=models.CASCADE, related_name="lines")
+    order_line = models.ForeignKey(
+        SalesOrderLine, on_delete=models.PROTECT, related_name="delivered"
+    )
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+
+    class Meta:
+        ordering = ["note", "order_line__line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["note", "order_line"], name="sales_dn_line_once"),
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="sales_dn_line_qty"),
+        ]
+
+    def __str__(self):
+        return f"{self.note.number}: {self.quantity}"

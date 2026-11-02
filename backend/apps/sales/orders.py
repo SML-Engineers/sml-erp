@@ -7,8 +7,9 @@
 - Numbered SO{YY}{MM}{DD}{XX} on creation, in the saving transaction (rule 10).
 - The customer's PO number is required to confirm. Each line has a delivery schedule: one
   date or several (moulding call-offs), adding up to the line's quantity.
-- Status: Draft → (Awaiting approval, direct orders) → Open → Completed; Partly delivered comes
-  with deliveries in Phase 2; Cancelled with a reason. Once confirmed nothing on the order
+- Status: Draft → (Awaiting approval, direct orders) → Open → Partly delivered → Delivered
+  (moved by delivery notes, P2-04) → Completed; Cancelled with a reason, not once a delivery
+  note stands against it. Once confirmed nothing on the order
   changes (database guard), only its status.
 - Every document links back to the one it came from and forward to those made from it.
 """
@@ -104,7 +105,8 @@ def can_approve(user: User, order: SalesOrder) -> bool:
 
 
 def can_complete(user: User, order: SalesOrder) -> bool:
-    return order.status in (St.OPEN, St.PARTLY_DELIVERED) and _owner_or_manager(user, order)
+    done = (St.OPEN, St.PARTLY_DELIVERED, St.DELIVERED)
+    return order.status in done and _owner_or_manager(user, order)
 
 
 def can_cancel(user: User, order: SalesOrder) -> bool:
@@ -512,6 +514,11 @@ def cancel(user: User, order: SalesOrder, reason: str) -> SalesOrder:
             )
         if order.advances.filter(status=CustomerAdvance.Status.APPROVED).exists():
             raise SalesError("An advance has been received against this order; it stays open.")
+        if order.deliveries.exclude(status="cancelled").exists():
+            raise SalesError(
+                "The order has delivery notes: delete the drafts and cancel the issued ones "
+                "first, or complete the order instead."
+            )
         order.status = St.CANCELLED
         order.cancel_reason = reason[:1000]
         order.save(update_fields=["status", "cancel_reason"])

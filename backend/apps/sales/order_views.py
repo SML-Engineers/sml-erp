@@ -12,7 +12,7 @@ from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Customer, CustomerContact
 
-from . import orders, proformas
+from . import deliveries, orders, proformas
 from .models import QuotationLine, SalesOrder
 from .services import SalesError
 from .services import visible as visible_quotations
@@ -59,6 +59,7 @@ def _summary(o: SalesOrder) -> dict:
 def _detail(o: SalesOrder, user) -> dict:
     body = _summary(o)
     state = approvals.state_of(orders.DOC, o.pk)
+    done = deliveries.delivered(o)
     body |= {
         "quotation": None
         if o.quotation_id is None
@@ -94,6 +95,7 @@ def _detail(o: SalesOrder, user) -> dict:
                 "discount": str(line.discount),
                 "tax_amount": str(line.tax_amount),
                 "total": str(line.total),
+                "delivered": f"{done.get(line.pk, 0):.3f}",
                 "schedule": [
                     {"due_date": d.due_date, "quantity": str(d.quantity)}
                     for d in line.schedule.all()
@@ -112,6 +114,17 @@ def _detail(o: SalesOrder, user) -> dict:
             }
             for q in o.quotation.lines.all()
         ],
+        "deliveries": [
+            {
+                "id": n.pk,
+                "number": n.number,
+                "delivery_date": n.delivery_date,
+                "status": n.status,
+                "status_label": n.get_status_display(),
+            }
+            for n in o.deliveries.order_by("delivery_date", "number")
+        ],
+        "can_deliver": deliveries.orders_to_deliver(user).filter(pk=o.pk).exists(),
         "can_edit": orders.can_edit(user, o),
         "can_approve": orders.can_approve(user, o),
         "can_complete": orders.can_complete(user, o),

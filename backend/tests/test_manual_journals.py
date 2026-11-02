@@ -79,7 +79,7 @@ def accrual(amount="25000.00"):
 def make(accountant, lines=None, **values):
     values.setdefault("entry_date", TODAY)
     values.setdefault("narration", "Accrue October repairs")
-    return manual.create(accountant, lines=lines or accrual(), **values)
+    return manual.create(accountant, lines=accrual() if lines is None else lines, **values)
 
 
 def check_deferred():

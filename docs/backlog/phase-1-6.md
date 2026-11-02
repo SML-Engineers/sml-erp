@@ -294,9 +294,14 @@ The owner's answers to the open go-live questions (also in spec 8.4):
     "Opening stock" link back to it from Stock on hand. Database guard: no change once sent,
     only drafts deleted, posted and rejected for good.
 
-- [ ] **P16-16 Quotation limits: no maximum, defaults**
+- [x] **P16-16 Quotation limits: no maximum, defaults**
   The maximum value can be left empty (no value warning); with no limits set, 1% and no
   maximum apply.
+  - Done: Settings → Quotation limits: the maximum value may be left empty ("No maximum");
+    divisions without confirmed limits show "1.00% (default)" and "No maximum", and the
+    Director's review of a quotation warns only below 1%. The Admin still proposes and the
+    Director confirms every change. The page's wording now says the Director approves every
+    quotation and the limits are warnings.
 
 - [ ] **P16-17 SSCL codes per line**
   SSCL tax codes (2.125%, 2.5%, 1.25%, exempt) chosen per line on quotations, proformas,

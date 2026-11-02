@@ -71,7 +71,7 @@ const api = (extra = {}) => ({
   ...extra,
 });
 
-test("the page shows the limits in force, and divisions not set yet", async () => {
+test("the page shows the limits in force, and the defaults where none are set", async () => {
   mockApi(api());
   renderAt("/settings/quotation-limits", <QuotationLimitsPage me={director} />);
 
@@ -79,7 +79,8 @@ test("the page shows the limits in force, and divisions not set yet", async () =
   expect(within(ws).getByText("20.00%")).toBeInTheDocument();
   expect(within(ws).getByText("1,000,000.00")).toBeInTheDocument();
   const im = screen.getByText("IM Plastic Injection Moulding").closest("tr")!;
-  expect(within(im).getByText("Not set")).toBeInTheDocument();
+  expect(within(im).getByText("1.00% (default)")).toBeInTheDocument();
+  expect(within(im).getByText("No maximum")).toBeInTheDocument();
 });
 
 test("the Director confirms a change the Admin entered; the Director cannot propose", async () => {
@@ -119,7 +120,7 @@ test("the Admin proposes limits and can only withdraw their own pending change",
   const form = screen.getByRole("region", { name: "Propose new limits" });
   fireEvent.change(within(form).getByLabelText("Division"), { target: { value: "IM" } });
   fireEvent.change(within(form).getByLabelText("Minimum margin %"), { target: { value: "15" } });
-  fireEvent.change(within(form).getByLabelText("Director approves above (LKR)"), {
+  fireEvent.change(within(form).getByLabelText("Maximum value (LKR)"), {
     target: { value: "1000000" },
   });
   fireEvent.change(within(form).getByLabelText("Reason"), { target: { value: "board decision" } });
@@ -138,4 +139,19 @@ test("the Admin proposes limits and can only withdraw their own pending change",
     director_above_lkr: "1000000",
     reason: "board decision",
   });
+});
+
+test("the maximum value can be left empty", async () => {
+  const calls = mockApi(
+    api({ "POST /api/v1/settings/quotation-limits/": { status: 201, body: rows[1] } }),
+  );
+  renderAt("/settings/quotation-limits", <QuotationLimitsPage me={admin} />);
+  const form = await screen.findByRole("region", { name: "Propose new limits" });
+  expect(within(form).getByLabelText("Maximum value (LKR)")).not.toBeRequired();
+  fireEvent.change(within(form).getByLabelText("Minimum margin %"), { target: { value: "1" } });
+  fireEvent.change(within(form).getByLabelText("Reason"), { target: { value: "owner's defaults" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Send to the Director" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/settings/quotation-limits/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([, i]) => i?.method === "POST")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({ min_margin_pct: "1", director_above_lkr: "" });
 });

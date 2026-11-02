@@ -27,7 +27,7 @@ from apps.core.access import effective_access
 from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, User
-from apps.masters.limits import in_force
+from apps.masters.limits import DEFAULT_MIN_MARGIN, in_force
 from apps.masters.services import MastersError
 
 from . import costing, services
@@ -121,19 +121,14 @@ def review(quotation: Quotation) -> dict:
             CENT, ROUND_HALF_UP
         )
     value_lkr = (quotation.subtotal * quotation.exchange_rate).quantize(CENT, ROUND_HALF_UP)
+    # With no confirmed limits the defaults apply: 1% minimum margin, no maximum value.
     limit = in_force(quotation.division, quotation.quote_date)
-    if limit is None:
-        warnings.append(
-            f"No confirmed quotation limits for {quotation.division.code} on "
-            f"{quotation.quote_date:%d/%m/%Y}."
-        )
-    else:
-        if margin is not None and margin < limit.min_margin_pct:
-            warnings.append(f"Margin {margin}% is below the minimum of {limit.min_margin_pct}%.")
-        if value_lkr > limit.director_above_lkr:
-            warnings.append(
-                f"Value LKR {value_lkr:,} is above the limit of LKR {limit.director_above_lkr:,}."
-            )
+    minimum = limit.min_margin_pct if limit else DEFAULT_MIN_MARGIN
+    maximum = limit.director_above_lkr if limit else None
+    if margin is not None and margin < minimum:
+        warnings.append(f"Margin {margin}% is below the minimum of {minimum}%.")
+    if maximum is not None and value_lkr > maximum:
+        warnings.append(f"Value LKR {value_lkr:,} is above the limit of LKR {maximum:,}.")
     if quotation.valid_until < timezone.localdate() and quotation.status in (
         S.DRAFT,
         S.AWAITING_APPROVAL,
@@ -142,8 +137,8 @@ def review(quotation: Quotation) -> dict:
     return {
         "margin_pct": margin,
         "value_lkr": value_lkr,
-        "min_margin_pct": None if limit is None else limit.min_margin_pct,
-        "limit_lkr": None if limit is None else limit.director_above_lkr,
+        "min_margin_pct": minimum,
+        "limit_lkr": maximum,
         "warnings": warnings,
     }
 

@@ -201,7 +201,9 @@ def test_the_director_is_warned_but_not_blocked(executive, director, unilever, l
     found = workflow.review(q)
     assert found["margin_pct"] == Decimal("13.04")
     assert "Line 2 has no costing." in found["warnings"]
-    assert "No confirmed quotation limits for WS" in " ".join(found["warnings"])
+    # No limits confirmed: the defaults (1% minimum, no maximum) raise no warning here.
+    assert found["min_margin_pct"] == Decimal("1.00") and found["limit_lkr"] is None
+    assert not any("minimum" in w or "above" in w for w in found["warnings"])
     admin = person("admin@sml.lk", "system_admin", all_divisions=True)
     limit = limits.propose(
         user=admin,

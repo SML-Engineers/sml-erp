@@ -47,7 +47,7 @@ class LimitInput(serializers.Serializer):
     effective_from = serializers.DateField()
     # Text, so the figures stay exact (rule 1).
     min_margin_pct = serializers.CharField(max_length=20)
-    director_above_lkr = serializers.CharField(max_length=30)
+    director_above_lkr = serializers.CharField(max_length=30, required=False, allow_blank=True)
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
@@ -83,7 +83,7 @@ class LimitListView(_Limits):
                 division=division,
                 effective_from=v["effective_from"],
                 min_margin_pct=v["min_margin_pct"],
-                director_above_lkr=v["director_above_lkr"],
+                director_above_lkr=v.get("director_above_lkr", ""),
                 reason=v["reason"],
             )
         except limits.LimitError as error:

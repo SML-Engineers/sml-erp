@@ -8,7 +8,8 @@ export interface QuotationLimit {
   effective_from: string;
   /** Exact figures as text (rule 1). */
   min_margin_pct: string;
-  director_above_lkr: string;
+  /** Empty (null): no maximum value. */
+  director_above_lkr: string | null;
   status: LimitStatus;
   reason: string;
   created_by: string;

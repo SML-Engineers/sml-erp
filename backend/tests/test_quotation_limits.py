@@ -183,10 +183,27 @@ def test_a_foreign_currency_quotation_is_converted_at_the_rate_of_its_date(admin
     assert check.needs_director
 
 
-def test_without_confirmed_limits_every_quotation_goes_to_the_director():
-    check = limits.check_quotation(division=ws(), on_date=today(), margin_pct="50", value="1")
-    assert check.needs_director
-    assert "No confirmed quotation limits for WS" in check.reasons[0]
+def test_without_confirmed_limits_the_defaults_apply():
+    """Owner, 2 Nov 2026: a minimum margin of 1% and no maximum value."""
+    check = limits.check_quotation(
+        division=ws(), on_date=today(), margin_pct="1.5", value="999999999"
+    )
+    assert not check.needs_director and check.reasons == []
+    check = limits.check_quotation(division=ws(), on_date=today(), margin_pct="0.5", value="1")
+    assert check.reasons == ["Margin 0.5% is below the minimum of 1.00%."]
+
+
+def test_the_maximum_value_can_be_left_empty(admin, director):
+    limits.confirm(director, propose(admin, margin="12", value=""))
+    current = limits.in_force(ws(), today())
+    assert (current.min_margin_pct, current.director_above_lkr) == (Decimal("12.00"), None)
+    assert "no maximum value" in str(current)
+    check = limits.check_quotation(
+        division=ws(), on_date=today(), margin_pct="15", value="999999999"
+    )
+    assert check.reasons == []
+    with pytest.raises(limits.LimitError, match="more than zero, or left empty"):
+        propose(admin, value="0", division=Division.objects.get(code="IM"))
 
 
 # --- The settings page API --------------------------------------------------------------

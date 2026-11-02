@@ -1,7 +1,7 @@
 import { apiGet, apiSend } from "./client";
 
-export type SalesOrderStatus = "draft" | "awaiting_approval" | "open" | "partly_delivered" | "completed" | "cancelled";
-export const SALES_ORDER_STATUSES: SalesOrderStatus[] = ["draft", "awaiting_approval", "open", "partly_delivered", "completed", "cancelled"];
+export type SalesOrderStatus = "draft" | "awaiting_approval" | "open" | "partly_delivered" | "delivered" | "completed" | "cancelled";
+export const SALES_ORDER_STATUSES: SalesOrderStatus[] = ["draft", "awaiting_approval", "open", "partly_delivered", "delivered", "completed", "cancelled"];
 export type SalesOrderSource = "quotation" | "proforma" | "direct";
 
 export interface SalesOrderSummary {
@@ -41,6 +41,8 @@ export interface SalesOrderLine {
   discount: string;
   tax_amount: string;
   total: string;
+  /** Quantity delivered by issued delivery notes (P2-04). */
+  delivered?: string;
   schedule: Delivery[];
 }
 
@@ -71,6 +73,9 @@ export interface SalesOrderDetail extends SalesOrderSummary {
     history: { action: string; action_label: string; by: string; at: string; reason: string }[];
   } | null;
   advances: { id: number; number: string; status: string; amount: string }[];
+  /** Its delivery notes (P2-04). */
+  deliveries?: { id: number; number: string; delivery_date: string; status: string; status_label: string }[];
+  can_deliver?: boolean;
 }
 
 export interface SalesOrderLineInput {

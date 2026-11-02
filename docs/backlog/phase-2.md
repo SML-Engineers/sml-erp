@@ -77,10 +77,19 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Sales invoicing and receivables
 
-- [ ] **P2-04 Delivery notes** (spec 5.3, 6)
+- [x] **P2-04 Delivery notes** (spec 5.3, 6)
   From an open sales order, the delivery of what leaves the factory: quantities per line
   against the order's deliveries, vehicle, received by; printed for the customer to sign. The
   order becomes Partly delivered, then Delivered. (Finished-goods stock: see question 4.)
+  - Done: Sales → Delivery notes (also open to the Store Supervisor). Numbered
+    DN{YY}{MM}{DD}{XX}; made from an open order with the quantity of each line delivered
+    now, vehicle, driver and delivery address; issued when the goods leave, which moves the
+    order to Partly delivered or Delivered (a new order status). Never more than is still to
+    deliver (also a database rule, checked again at issue). Printed without prices, with a box
+    for the customer's name, signature, date and stamp; the signed copy (scan), who received
+    it and when are recorded when it comes back. An issued note never changes; the Sales
+    Manager or the stores cancel it with a reason and its quantities are open again. An order
+    with delivery notes is completed, not cancelled. No finished-goods stock (question 4).
 
 - [ ] **P2-05 Tax invoices** (spec 6.1)
   From delivered quantities: the Inland Revenue format exactly (Gazette 2481/22), numbered
@@ -236,6 +245,9 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
    Accountant up to a limit? (P2-01, P2-06)
 4. **Finished goods before Phase 3.** Should delivery notes reduce a finished-goods stock now,
    or only record what was delivered until production is built in Phase 3? (P2-04, P2-18)
+   - Default taken on 3 Nov 2026 (the recommendation, no answer yet): only record what was
+     delivered; finished-goods stock starts with production in Phase 3. The owner can still
+     choose otherwise before P2-18.
 5. **Credit limits.** When a customer is over their limit or overdue: warn only, or block new
    orders and invoices until the Director allows it? (P2-08)
 6. **Withholding tax.** Does SML deduct WHT on any payments (rent, services, interest)? To

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import advance_views, order_views, proforma_views, report_views, views
+from . import advance_views, delivery_views, order_views, proforma_views, report_views, views
 
 urlpatterns = [
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
@@ -92,6 +92,42 @@ urlpatterns = [
         "proformas/<int:pk>/email/",
         proforma_views.ProformaEmailView.as_view(),
         name="proforma-email",
+    ),
+    path("delivery-notes/", delivery_views.DeliveryListView.as_view(), name="delivery-list"),
+    path(
+        "delivery-notes/orders/",
+        delivery_views.OrdersToDeliverView.as_view(),
+        name="delivery-orders",
+    ),
+    path(
+        "delivery-notes/<int:pk>/",
+        delivery_views.DeliveryDetailView.as_view(),
+        name="delivery-detail",
+    ),
+    path(
+        "delivery-notes/<int:pk>/issue/",
+        delivery_views.DeliveryIssueView.as_view(),
+        name="delivery-issue",
+    ),
+    path(
+        "delivery-notes/<int:pk>/received/",
+        delivery_views.DeliveryReceivedView.as_view(),
+        name="delivery-received",
+    ),
+    path(
+        "delivery-notes/<int:pk>/cancel/",
+        delivery_views.DeliveryCancelView.as_view(),
+        name="delivery-cancel",
+    ),
+    path(
+        "delivery-notes/<int:pk>/pdf/",
+        delivery_views.DeliveryPdfView.as_view(),
+        name="delivery-pdf",
+    ),
+    path(
+        "delivery-notes/<int:pk>/signed-copy/",
+        delivery_views.SignedCopyView.as_view(),
+        name="delivery-signed-copy",
     ),
     path("sales-orders/", order_views.SalesOrderListView.as_view(), name="sales-order-list"),
     path(

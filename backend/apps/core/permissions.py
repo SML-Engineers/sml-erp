@@ -30,7 +30,9 @@ class AreaAccess(IsFullyAuthenticated):
     """Checks the user's access to the view's area (spec 1.2), on the server, every request.
 
     A view sets `access_area`, and optionally `access_write_level` (default "manage") for
-    methods that change data. Reading needs "view".
+    methods that change data. Reading needs "view". A view used by two departments may also
+    set `access_also_area`: the same level in either area is enough (e.g. delivery notes,
+    made by Sales or the stores).
     """
 
     message = "You do not have access to this part of the system."
@@ -46,7 +48,10 @@ class AreaAccess(IsFullyAuthenticated):
             if request.method in SAFE_METHODS
             else getattr(view, "access_write_level", "manage")
         )
-        return has_access(request.user, area, level)
+        if has_access(request.user, area, level):
+            return True
+        also = getattr(view, "access_also_area", None)
+        return bool(also) and has_access(request.user, also, level)
 
 
 class ReadForAllAreaWrite(AreaAccess):

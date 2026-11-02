@@ -67,6 +67,7 @@ export default function SalesOrderPage() {
           <p className="muted">{t("salesOrders.noSale")}</p>
           {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}-${data.status}`} order={data} /> : <ReadOnly order={data} />}
           <Actions order={data} />
+          <Deliveries order={data} />
         </>
       )}
       <ErrorLine error={order.error} />
@@ -405,6 +406,7 @@ function ReadOnly({ order }: { order: SalesOrderDetail }) {
               <th className="num">{t("quotations.unitPrice")}</th>
               <th className="num">{t("vouchers.total")}</th>
               <th>{t("salesOrders.deliveries")}</th>
+              <th className="num">{t("dn.deliveredSoFar")}</th>
             </tr>
           </thead>
           <tbody>
@@ -418,6 +420,7 @@ function ReadOnly({ order }: { order: SalesOrderDetail }) {
                 <td className="num">{formatDecimal(l.unit_price)}</td>
                 <td className="num">{formatDecimal(l.total)}</td>
                 <td>{l.schedule.map((d) => `${d.due_date}: ${formatQuantity(d.quantity)}`).join(" · ")}</td>
+                <td className="num">{l.delivered ? formatQuantity(l.delivered) : ""}</td>
               </tr>
             ))}
           </tbody>
@@ -506,6 +509,35 @@ function Actions({ order }: { order: SalesOrderDetail }) {
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+/** The order's delivery notes (P2-04), and a link to make the next one. */
+function Deliveries({ order }: { order: SalesOrderDetail }) {
+  const { t } = useTranslation();
+  const notes = order.deliveries ?? [];
+  if (notes.length === 0 && !order.can_deliver) return null;
+  return (
+    <section className="panel" aria-label={t("dn.title")}>
+      <h2>{t("dn.title")}</h2>
+      {notes.length > 0 && (
+        <ul>
+          {notes.map((n) => (
+            <li key={n.id}>
+              <Link to={`/delivery-notes/${n.id}`} className="mono">
+                {n.number}
+              </Link>{" "}
+              · {n.delivery_date} · {t(`dn.statuses.${n.status}`)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {order.can_deliver && (
+        <Link className="button-link" to={`/delivery-notes/new?order=${order.id}`}>
+          {t("dn.new")}
+        </Link>
       )}
     </section>
   );

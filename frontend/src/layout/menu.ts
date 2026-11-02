@@ -8,6 +8,14 @@ export interface MenuItem {
   area: string | null;
   /** A higher level needed in that area, when View is not enough. */
   level?: Level;
+  /** A second area that also opens the page (e.g. delivery notes: Sales or the stores). */
+  alsoArea?: string;
+}
+
+function allowed(access: Access | undefined, item: MenuItem): boolean {
+  if (item.area === null) return true;
+  const level = item.level ?? "view";
+  return can(access, item.area, level) || (item.alsoArea !== undefined && can(access, item.alsoArea, level));
 }
 
 export interface MenuSection {
@@ -42,6 +50,7 @@ export const MENU: MenuSection[] = [
       { label: "quotations.title", path: "/quotations", area: "sales" },
       { label: "proformas.title", path: "/proformas", area: "sales" },
       { label: "salesOrders.title", path: "/sales-orders", area: "sales" },
+      { label: "dn.title", path: "/delivery-notes", area: "sales", alsoArea: "stores" },
       { label: "salesReports.title", path: "/sales/reports", area: "sales" },
       { label: "customers.title", path: "/customers", area: "sales" },
       { label: "costing.title", path: "/costing-rates", area: "sales" },
@@ -107,7 +116,7 @@ export const MENU: MenuSection[] = [
 export function visibleMenu(access: Access | undefined): MenuSection[] {
   return MENU.map((section) => ({
     ...section,
-    items: section.items.filter((item) => item.area === null || can(access, item.area, item.level ?? "view")),
+    items: section.items.filter((item) => allowed(access, item)),
   })).filter((section) => section.items.length > 0);
 }
 
@@ -122,5 +131,5 @@ export function pageAllowed(pathname: string, access: Access | undefined): boole
       const matches = pathname === item.path || pathname.startsWith(`${item.path}/`);
       if (matches && (!owner || item.path.length > owner.path.length)) owner = item;
     }
-  return !owner || owner.area === null || can(access, owner.area, owner.level ?? "view");
+  return !owner || allowed(access, owner);
 }

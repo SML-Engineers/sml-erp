@@ -52,9 +52,14 @@ test("the stores make a delivery note from the order's remaining quantities", as
 
 test("an issued note is printed, then the signed copy is recorded", async () => {
   const issued: DNDetail = { ...draft, status: "issued", status_label: "Issued", issued_by: "Sunil", can_edit: false, can_receive: true, can_cancel: true };
+  const signed: DNDetail = { ...issued, status: "received", received_by: "N. Perera", received_on: "2026-11-03", signed_copy: "dn.pdf", can_receive: false };
+  let current = issued;
   const calls = mockApi({
-    "GET /api/v1/delivery-notes/8/": { body: issued },
-    "POST /api/v1/delivery-notes/8/received/": { body: { ...issued, status: "received", received_by: "N. Perera", received_on: "2026-11-03", signed_copy: "dn.pdf", can_receive: false } },
+    "GET /api/v1/delivery-notes/8/": () => ({ body: current }),
+    "POST /api/v1/delivery-notes/8/received/": () => {
+      current = signed;
+      return { body: signed };
+    },
   });
   renderAt("/delivery-notes/8", <DeliveryNotePage />, "/delivery-notes/:id");
   const lines = await screen.findByRole("table", { name: "What is delivered" });

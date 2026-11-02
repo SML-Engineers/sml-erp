@@ -63,7 +63,7 @@ def order(executive, director):
     )
     workflow.submit(executive, q)
     workflow.approve(director, q)
-    workflow.record_outcome(executive, q, accepted=True, reason="price")
+    q = workflow.record_outcome(executive, q, accepted=True, reason="price")
     o = orders.from_quotation(executive, q)
     caps, moulds = o.lines.order_by("line_no")
     orders.save(

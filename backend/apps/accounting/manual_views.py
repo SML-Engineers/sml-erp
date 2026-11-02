@@ -56,6 +56,10 @@ def _summary(mj: ManualJournal) -> dict:
         "journal_entry": None
         if mj.journal_entry_id is None
         else {"id": mj.journal_entry_id, "number": mj.journal_entry.number},
+        "reverse_on": mj.reverse_on,
+        "recurring": None
+        if mj.recurring_id is None
+        else {"id": mj.recurring_id, "name": mj.recurring.name},
     }
 
 
@@ -117,9 +121,8 @@ def _fresh(mj: ManualJournal, user) -> dict:
 
 
 def _rows():
-    return ManualJournal.objects.select_related("created_by", "journal_entry").annotate(
-        sum_debit=Sum("lines__debit"), sum_credit=Sum("lines__credit")
-    )
+    rows = ManualJournal.objects.select_related("created_by", "journal_entry", "recurring")
+    return rows.annotate(sum_debit=Sum("lines__debit"), sum_credit=Sum("lines__credit"))
 
 
 class LineIn(serializers.Serializer):
@@ -136,6 +139,7 @@ class LineIn(serializers.Serializer):
 class JournalIn(serializers.Serializer):
     entry_date = serializers.DateField()
     narration = serializers.CharField(max_length=500, allow_blank=True)
+    reverse_next_month = serializers.BooleanField(required=False)
     lines = LineIn(many=True)
 
 

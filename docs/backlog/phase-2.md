@@ -46,10 +46,18 @@ Status: `[ ]` to do · `[x]` done
     also a database rule on every journal entry that is not a supplier payment. Once sent,
     a journal, its lines and files never change (database guard); only drafts are deleted.
 
-- [ ] **P2-02 Recurring journals**
+- [x] **P2-02 Recurring journals**
   A template (lines, amounts, every month or quarter, start and end) makes a draft journal on
   its date, which then follows P2-01's approval. Accruals can be set to reverse on the first
   day of the next month.
+  - Done: Accounts → Recurring journals. The Accountant keeps templates (every month, quarter
+    or year, on a day 1–28 or the last day, from a start date to an optional end date). Each
+    morning (00:40) a due template makes a numbered draft for its owner, who is notified and
+    sends it for approval as usual; days the job missed are caught up, a closed month is
+    skipped with a notice, and a template stops after its end date. Any manual journal can be
+    marked as an accrual: once approved, it is reversed automatically (00:45) on the first day
+    of the next month, or today if that month has been closed meanwhile. Template changes
+    affect only journals still to be made; a journal's template link never changes.
 
 - [ ] **P2-03 Trial balance, general ledger and balance sheet** (spec 6, reports)
   Trial balance for any date, general ledger detail per account for a period, balance sheet,

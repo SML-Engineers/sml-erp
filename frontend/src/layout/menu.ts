@@ -69,6 +69,7 @@ export const MENU: MenuSection[] = [
       { label: "chart.title", path: "/chart-of-accounts", area: "accounting" },
       { label: "taxes.title", path: "/taxes", area: "accounting" },
       { label: "mj.title", path: "/journals/manual", area: "accounting" },
+      { label: "rj.title", path: "/journals/recurring", area: "accounting" },
       { label: "journal.title", path: "/journal", area: "accounting" },
       { label: "periods.title", path: "/accounting-periods", area: "accounting" },
     ],

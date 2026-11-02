@@ -2261,7 +2261,8 @@
       "rejected": "Rejected by QC",
       "reversed": "GRN reversed",
       "returned": "Returned to the supplier",
-      "opening": "Opening stock"
+      "opening": "Opening stock",
+      "price_diff": "Invoice price difference"
     }
   },
   "si": {

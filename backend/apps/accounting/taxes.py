@@ -132,45 +132,162 @@ def _percent(value) -> Decimal:
     return rate
 
 
+RS = TaxRate.Status
+
+
 def add_rate(user: User, component: TaxComponent, *, effective_from: date, rate, reason=""):
-    """A new rate from a date. Once the tax has been used on a document, a new rate can
-    only start today or later; before that, any date can be entered (setting up)."""
+    """Setting up: the first rates of a tax not yet used on any document, from any date. Once
+    a tax is in use, a change is proposed and confirmed by the Director (propose_rate)."""
     _manage(user)
     rate = _percent(rate)
-    today = timezone.localdate()
     with audit_context("tax_rate_added", reason), transaction.atomic():
         component = TaxComponent.objects.select_for_update().get(pk=component.pk)
-        if is_used(component) and effective_from < today:
+        if is_used(component):
             raise AccountingError(
-                f"{component.code} has been used on documents, so a new rate cannot start "
-                "before today."
+                f"{component.code} has been used on documents: change its rate under Settings → "
+                "Tax rates, where the Director confirms it."
             )
-        if TaxRate.objects.filter(component=component, effective_from=effective_from).exists():
+        if TaxRate.objects.filter(
+            component=component,
+            effective_from=effective_from,
+            status__in=[RS.PENDING, RS.CONFIRMED],
+        ).exists():
             raise AccountingError(f"{component.code} already has a rate from {effective_from}.")
         return TaxRate.objects.create(
             component=component, effective_from=effective_from, rate=rate, created_by=user
         )
 
 
+# --- Rate changes the Director confirms (P16-20) -------------------------------------------
+
+
+def can_propose_rates(user: User) -> bool:
+    access = effective_access(user)
+    return access.has("settings", "manage") or access.has("accounting", "manage")
+
+
+def can_confirm_rates(user: User) -> bool:
+    return effective_access(user).can("confirm_tax_rates")
+
+
+def propose_rate(
+    user: User, component: TaxComponent, *, effective_from: date, rate, reason: str
+) -> TaxRate:
+    """The Admin or the Accountant enters a new rate from a date (today or later); it takes
+    effect when the Director confirms it."""
+    if not can_propose_rates(user):
+        raise AccountingError("Only the Admin or the Accountant enters tax rates.")
+    reason = (reason or "").strip()
+    if not reason:
+        raise AccountingError("Give the reason, e.g. the gazette that changed the rate.")
+    rate = _percent(rate)
+    if effective_from < timezone.localdate():
+        raise AccountingError("A new rate cannot start in the past; choose today or later.")
+    with audit_context("tax_rate_proposed", reason), transaction.atomic():
+        component = TaxComponent.objects.select_for_update().get(pk=component.pk)
+        if component.rates.filter(status=RS.PENDING).exists():
+            raise AccountingError(
+                f"{component.code} already has a change waiting for the Director. Withdraw it "
+                "first, or wait for the decision."
+            )
+        if component.rates.filter(status=RS.CONFIRMED, effective_from=effective_from).exists():
+            raise AccountingError(f"{component.code} already has a rate from {effective_from}.")
+        return TaxRate.objects.create(
+            component=component,
+            effective_from=effective_from,
+            rate=rate,
+            status=RS.PENDING,
+            reason=reason,
+            created_by=user,
+        )
+
+
+def _pending(rate: TaxRate) -> TaxRate:
+    rate = TaxRate.objects.select_for_update().get(pk=rate.pk)
+    if rate.status != RS.PENDING:
+        raise AccountingError(f"This change is already {rate.get_status_display().lower()}.")
+    return rate
+
+
+def confirm_rate(user: User, rate: TaxRate) -> TaxRate:
+    """The rate applies from its date, or from today if confirmed later."""
+    with audit_context("tax_rate_confirmed"), transaction.atomic():
+        rate = _pending(rate)
+        if not can_confirm_rates(user):
+            raise AccountingError("Only the Director confirms tax rates.")
+        if rate.created_by_id == user.pk:
+            raise AccountingError("You cannot confirm a change you entered yourself.")
+        today = timezone.localdate()
+        if rate.effective_from < today:
+            rate.effective_from = today
+        if TaxRate.objects.filter(
+            component_id=rate.component_id, status=RS.CONFIRMED, effective_from=rate.effective_from
+        ).exists():
+            raise AccountingError(
+                f"There is already a confirmed rate from {rate.effective_from}; enter the change "
+                "from a later date."
+            )
+        rate.status = RS.CONFIRMED
+        rate.decided_by = user
+        rate.decided_at = timezone.now()
+        rate.save()
+        return rate
+
+
+def reject_rate(user: User, rate: TaxRate, note: str) -> TaxRate:
+    note = (note or "").strip()
+    if not note:
+        raise AccountingError("Give a reason for rejecting the change.")
+    with audit_context("tax_rate_rejected", note), transaction.atomic():
+        rate = _pending(rate)
+        if not can_confirm_rates(user):
+            raise AccountingError("Only the Director confirms or rejects tax rates.")
+        if rate.created_by_id == user.pk:
+            raise AccountingError("You cannot decide on a change you entered yourself.")
+        rate.status = RS.REJECTED
+        rate.decided_by = user
+        rate.decided_at = timezone.now()
+        rate.decision_note = note
+        rate.save()
+        return rate
+
+
+def withdraw_rate(user: User, rate: TaxRate) -> TaxRate:
+    with audit_context("tax_rate_withdrawn"), transaction.atomic():
+        rate = _pending(rate)
+        if rate.created_by_id != user.pk:
+            raise AccountingError("Only the person who entered the change can withdraw it.")
+        rate.status = RS.WITHDRAWN
+        rate.decided_by = user
+        rate.decided_at = timezone.now()
+        rate.save()
+        return rate
+
+
 def remove_rate(user: User, rate: TaxRate, reason: str) -> None:
     _manage(user)
     if not (reason or "").strip():
         raise AccountingError("Give a reason for removing the rate.")
-    in_force = rate.effective_from <= timezone.localdate()
-    if in_force and is_used(rate.component):
+    if is_used(rate.component):
         raise AccountingError(
-            "This rate is in force on a tax already used on documents; add a new rate instead."
+            "This tax is already used on documents, so its rates stay; add a new rate instead "
+            "(Settings → Tax rates)."
         )
     with audit_context("tax_rate_removed", reason):
         rate.delete()
 
 
 def rate_on(component: TaxComponent, on_date: date) -> TaxRate:
-    found = component.rates.filter(effective_from__lte=on_date).order_by("-effective_from").first()
+    """The confirmed rate in force on a date (a change waiting for the Director is not)."""
+    found = (
+        component.rates.filter(status=RS.CONFIRMED, effective_from__lte=on_date)
+        .order_by("-effective_from")
+        .first()
+    )
     if found is None:
         raise AccountingError(
-            f"{component.code} has no rate on {on_date}. The Accountant enters it under "
-            "Accounts → Taxes."
+            f"{component.code} has no rate on {on_date}. The Admin or the Accountant enters it "
+            "under Settings → Tax rates."
         )
     return found
 

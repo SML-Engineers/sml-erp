@@ -53,6 +53,7 @@ ACTIONS = {
     "confirm_sensitive_grants": "Confirm sensitive access grants",
     "confirm_limits": "Confirm quotation approval limits",
     "record_receipt": "Record customer receipts and advances",
+    "confirm_tax_rates": "Confirm changes to tax rates",
 }
 
 # Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
@@ -334,6 +335,10 @@ STANDARD_DIVISIONS_V1 = [
 # Phase 1.5 (P15-09, core migration 0017): the Cashier records customer advances, which the
 # Accountant approves (owner, 31 Oct 2026).
 ROLE_ACTIONS_V2 = {"cashier": ["record_receipt"]}
+
+# P16-20 (core migration 0020): the Director confirms tax rate changes the Admin or the
+# Accountant enters (owner, 2 Nov 2026).
+ROLE_ACTIONS_V3 = {"director": ["confirm_tax_rates"]}
 
 # Phase 1.6 (P16-02, core migration 0019): purchasing, stores and QC roles switched on. SML has
 # one stores person, called Stores Manager or Stores Executive (owner, 31 Oct 2026).

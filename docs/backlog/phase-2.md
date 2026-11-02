@@ -120,7 +120,10 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P2-15 Bank statement import** (spec 7A)
   Statement files (CSV or Excel) read with a template per bank: Commercial Bank, Sampath,
   Seylan, People's Bank, Bank of Ceylon and HNB first, each checked against a real export
-  (the owner supplies one per bank); then the other nine. The Accountant can correct a
+  (the owner supplies one per bank); then the other nine.
+  - Received (2 Nov 2026): a Commercial Bank statement as a PDF with real text (JasperReports),
+    columns date, description, debit, credit, balance with Cr/Dr. Kept outside the
+    repository (it holds account data). Excel/CSV exports asked for as well. The Accountant can correct a
   template or add a bank without a code change.
 
 - [ ] **P2-16 Bank reconciliation** (spec 6, 7A)

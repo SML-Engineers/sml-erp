@@ -27,12 +27,13 @@ def _account(account):
 
 
 def _component(c: TaxComponent, today: date) -> dict:
-    rates = list(c.rates.all())
+    rates = [r for r in c.rates.all() if r.status == TaxRate.Status.CONFIRMED]
     current = next((r for r in rates if r.effective_from <= today), None)
     return {
         "id": c.pk,
         "code": c.code,
         "name": c.name,
+        "printed_as": c.label,
         "kind": c.kind,
         "sales_account": _account(c.sales_account),
         "purchase_account": _account(c.purchase_account),

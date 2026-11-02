@@ -64,7 +64,7 @@ def taxes_by_component(lines, on_date: date):
             row.component_id: row.base for row in TaxCodeLine.objects.filter(tax_code=line.tax_code)
         }
         for part in taxes.calculate(line.tax_code, line.net, on_date).lines:
-            key = (part.component.code, part.rate)
+            key = (part.component.label, part.rate)
             on_tax = bases.get(part.component.pk) == TaxCodeLine.Base.NET_AND_TAX
             group = after if on_tax else before
             group[key] = group.get(key, Decimal("0")) + part.amount

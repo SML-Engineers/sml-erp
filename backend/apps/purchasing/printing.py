@@ -62,7 +62,7 @@ def _taxes(order: PurchaseOrder) -> OrderedDict:
             row.component_id: row.base for row in TaxCodeLine.objects.filter(tax_code=line.tax_code)
         }
         for part in taxes.calculate(line.tax_code, line.amount, order.po_date).lines:
-            key = (part.component.code, part.rate, bases.get(part.component.pk))
+            key = (part.component.label, part.rate, bases.get(part.component.pk))
             found[key] = found.get(key, Decimal("0")) + part.amount
     return found
 

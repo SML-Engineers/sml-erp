@@ -61,7 +61,12 @@ def _code(t: TaxCode) -> dict:
         "is_active": t.is_active,
         "in_use": t.first_used_at is not None,
         "components": [
-            {"component": line.component_id, "code": line.component.code, "base": line.base}
+            {
+                "component": line.component_id,
+                "code": line.component.code,
+                "base": line.base,
+                "portion_pct": f"{line.portion_pct:.2f}",
+            }
             for line in t.lines.all()
         ],
     }
@@ -160,6 +165,7 @@ class RateDetailView(_Taxes):
 class CodePart(serializers.Serializer):
     component = serializers.IntegerField()
     base = serializers.ChoiceField(choices=TaxCodeLine.Base.values, required=False)
+    portion_pct = serializers.CharField(max_length=10, required=False, allow_blank=True)
 
 
 class CodeInput(serializers.Serializer):

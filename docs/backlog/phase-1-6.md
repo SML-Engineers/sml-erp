@@ -298,9 +298,17 @@ The owner's answers to the open go-live questions (also in spec 8.4):
   The maximum value can be left empty (no value warning); with no limits set, 1% and no
   maximum apply.
 
-- [ ] **P16-17 SSCL codes per line**
+- [x] **P16-17 SSCL codes per line**
   SSCL tax codes (2.125%, 2.5%, 1.25%, exempt) chosen per line on quotations, proformas,
   POs, supplier invoices and vouchers; VAT worked out on top as now.
+  - Done: every document line already takes a tax code; a tax in a code can now be charged
+    on a share of the amount ("Charged on %", Taxes page), so SSCL keeps one dated rate as in
+    the law (2.5%) and the codes apply it to the liable share. New codes, for sales and
+    purchases: VAT-SSCL-M (manufactured goods, SSCL on 85% = 2.125%), VAT-SSCL-R (resold
+    goods, 50% = 1.25%); VAT-SSCL (if not yet used) is renamed "Services: SSCL on 100%".
+    VAT only, EXEMPT and NO-TAX are unchanged. Printed documents show the effective rate
+    (SSCL 2.125%). The share of a used code is fixed (database guard). The SSCL rate entered
+    on the Taxes page must be 2.5%. To be confirmed by the tax advisor.
 
 - [ ] **P16-18 Price differences into the cost of stock (IAS 2)**
   An invoice price different from the PO price adjusts the value of the goods still in

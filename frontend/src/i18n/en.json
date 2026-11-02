@@ -927,7 +927,9 @@
     "calculate": "Calculate",
     "result": "Tax calculation",
     "net": "Net amount",
-    "gross": "Total including taxes"
+    "gross": "Total including taxes",
+    "share": "Charged on (% of the amount), tax {{n}}",
+    "onShort": "on {{pct}}%"
   },
   "voucherTypes": {
     "title": "Voucher types",

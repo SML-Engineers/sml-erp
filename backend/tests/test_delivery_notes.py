@@ -76,7 +76,11 @@ def order(executive, director):
                 quotation_line=caps.quotation_line,
                 schedule=[Delivery(TODAY, "6000"), Delivery(TODAY + timedelta(days=30), "4000")],
             ),
-            OrderLine(quantity="2", quotation_line=moulds.quotation_line),
+            OrderLine(
+                quantity="2",
+                quotation_line=moulds.quotation_line,
+                schedule=[Delivery(TODAY, "2")],
+            ),
         ],
     )
     return orders.confirm(executive, o)

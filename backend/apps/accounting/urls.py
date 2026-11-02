@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import journal_views as j
 from . import manual_views as mj
+from . import rate_views as rv
 from . import tax_views as t
 from . import views as v
 
@@ -48,6 +49,14 @@ urlpatterns = [
         name="period-change",
     ),
     path("reports/profit-and-loss/", j.ProfitAndLossView.as_view(), name="profit-and-loss"),
+    path("settings/tax-rates/", rv.RateListView.as_view(), name="tax-rates"),
+    path("settings/tax-rates/<int:pk>/confirm/", rv.RateConfirmView.as_view(), name="rate-confirm"),
+    path("settings/tax-rates/<int:pk>/reject/", rv.RateRejectView.as_view(), name="rate-reject"),
+    path(
+        "settings/tax-rates/<int:pk>/withdraw/",
+        rv.RateWithdrawView.as_view(),
+        name="rate-withdraw",
+    ),
     path("taxes/", t.TaxOverviewView.as_view(), name="taxes"),
     path("taxes/calculate/", t.CalculateView.as_view(), name="tax-calculate"),
     path("taxes/components/", t.ComponentListView.as_view(), name="tax-component-list"),

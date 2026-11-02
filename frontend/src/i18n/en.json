@@ -2510,5 +2510,25 @@
     "approve": "Approve: put it into stock",
     "reject": "Reject (needs a reason)",
     "errors": "Rows to correct"
+  },
+  "taxRates": {
+    "title": "Tax rates",
+    "help": "The rates of VAT and SSCL used on quotations, proformas, POs, invoices and vouchers. SSCL has a rate for each kind of supply: manufactured goods (SSCL-M), services (SSCL) and resold goods (SSCL-R); all print as SSCL. When the government changes a rate, the Admin or the Accountant enters the new rate from its date; it applies only after the Director confirms it. Documents already made keep the rate of their date.",
+    "inForce": "Rates in force today",
+    "tax": "Tax",
+    "printedAs": "Printed as",
+    "rate": "Rate",
+    "since": "Since",
+    "coming": "Coming",
+    "fromDate": "from {{date}}",
+    "notSet": "Not set",
+    "waiting": "Waiting for the Director",
+    "changeFor": "Change to {{tax}}:",
+    "changeText": "{{rate}}% from {{from}} (entered by {{by}}).",
+    "rejectReason": "Reason for rejecting",
+    "propose": "Enter a new rate",
+    "newRate": "New rate (%)",
+    "reasonHint": "e.g. the gazette number",
+    "proposeHelp": "The new rate starts on its date once the Director confirms; if confirmed later, it starts on the day of confirmation."
   }
 }

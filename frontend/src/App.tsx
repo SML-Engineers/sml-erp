@@ -67,6 +67,7 @@ import NumberSeriesPage from "./pages/settings/NumberSeriesPage";
 import ShiftsPage from "./pages/settings/ShiftsPage";
 import CurrenciesPage from "./pages/settings/CurrenciesPage";
 import QuotationLimitsPage from "./pages/settings/QuotationLimitsPage";
+import TaxRatesPage from "./pages/settings/TaxRatesPage";
 import ApprovalMatrixPage from "./pages/settings/ApprovalMatrixPage";
 import DocumentEmailPage from "./pages/settings/DocumentEmailPage";
 import VoucherTypesPage from "./pages/settings/VoucherTypesPage";
@@ -196,6 +197,7 @@ export default function App() {
         <Route
           path="settings/quotation-limits"
           element={<WithMe page={(me) => <QuotationLimitsPage me={me} />} />}
+        <Route path="settings/tax-rates" element={<TaxRatesPage />} />
         />
         <Route
           path="settings/number-series"

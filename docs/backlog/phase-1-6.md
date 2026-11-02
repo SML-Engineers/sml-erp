@@ -315,6 +315,20 @@ The owner's answers to the open go-live questions (also in spec 8.4):
     (SSCL 2.125%). The share of a used code is fixed (database guard). The SSCL rate entered
     on the Taxes page must be 2.5%. To be confirmed by the tax advisor.
 
+- [x] **P16-20 Tax rates control panel** (owner's decision of 2 Nov 2026, evening)
+  The Admin enters the SSCL rates (2.125%, 2.5%, 1.25%) and VAT in a control panel and
+  changes them when the government does; the Director confirms every change.
+  - Done: Settings → Tax rates. SSCL now has its own tax per kind of supply, each with dated
+    rates: SSCL-M manufactured goods, SSCL services, SSCL-R resold goods; all print as "SSCL"
+    on documents. VAT-SSCL-M and VAT-SSCL-R use them at 100% (the "share" of P16-17 stays
+    for special cases). The Admin or the Accountant enters a new rate from today or later,
+    with a reason; it applies only after the Director confirms (not the person who entered
+    it); one change waits per tax; withdrawn and rejected changes never apply; documents keep
+    the rate of their date. The Taxes page's "add rate" is for setting up a tax not yet used.
+    Director action "confirm_tax_rates" (core migration 0020); database guard: confirmed,
+    rejected and withdrawn rates never change status, and a confirmed rate in force on a
+    used tax never changes.
+
 - [x] **P16-18 Price differences into the cost of stock (IAS 2)**
   An invoice price different from the PO price adjusts the value of the goods still in
   stock; only the part already used goes to cost.

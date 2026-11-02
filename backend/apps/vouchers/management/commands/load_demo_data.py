@@ -167,7 +167,7 @@ class Command(BaseCommand):
     def setup(self, p: dict) -> None:
         accountant = p["accountant"]
         start = date(timezone.localdate().year - 1, 1, 1)
-        for code, rate in (("VAT", "18"), ("SSCL", "2.5")):
+        for code, rate in (("VAT", "18"), ("SSCL", "2.5"), ("SSCL-M", "2.125"), ("SSCL-R", "1.25")):
             component = TaxComponent.objects.get(code=code)
             if not component.rates.exists():
                 taxes.add_rate(accountant, component, effective_from=start, rate=rate)

@@ -42,7 +42,13 @@ def rates(accountant):
 
 
 def test_starting_taxes_are_suggested_without_rates(accountant):
-    assert {c.code for c in TaxComponent.objects.all()} == {"VAT", "SSCL", "WHT"}
+    assert {c.code for c in TaxComponent.objects.all()} == {
+        "VAT",
+        "SSCL",
+        "SSCL-M",
+        "SSCL-R",
+        "WHT",
+    }
     assert component("VAT").sales_account.system_role == "vat_payable"
     assert component("VAT").purchase_account.system_role == "vat_receivable"
     assert component("WHT").kind == "withheld"
@@ -116,8 +122,12 @@ def test_once_used_a_tax_keeps_its_code_and_its_rates_in_force(accountant, rates
         taxes.save_component(accountant, vat, {"code": "VAT18"})
     with pytest.raises(DatabaseError), transaction.atomic():
         TaxComponent.objects.filter(pk=vat.pk).update(code="VAT18")
-    # a rate from today on is still possible, and the name can change
-    taxes.add_rate(accountant, vat, effective_from=TODAY + timedelta(days=30), rate="18.5")
+    # a change now goes to the Director (Settings → Tax rates, P16-20); the name can change
+    with pytest.raises(AccountingError, match="Settings → Tax rates"):
+        taxes.add_rate(accountant, vat, effective_from=TODAY + timedelta(days=30), rate="18.5")
+    taxes.propose_rate(
+        accountant, vat, effective_from=TODAY + timedelta(days=30), rate="18.5", reason="Gazette"
+    )
     taxes.save_component(accountant, vat, {"name": "Value Added Tax"})
 
 
@@ -206,16 +216,19 @@ def test_each_account_can_have_a_default_tax_code(accountant):
 
 @pytest.fixture
 def law_rates(accountant):
-    """SSCL at the rate in the law (2.5% of liable turnover) and VAT 18%."""
+    """The SSCL rate of each kind of supply, as entered in Settings → Tax rates (P16-20),
+    and VAT 18%."""
     taxes.add_rate(accountant, component("SSCL"), effective_from=GO_LIVE, rate="2.5")
+    taxes.add_rate(accountant, component("SSCL-M"), effective_from=GO_LIVE, rate="2.125")
+    taxes.add_rate(accountant, component("SSCL-R"), effective_from=GO_LIVE, rate="1.25")
     taxes.add_rate(accountant, component("VAT"), effective_from=GO_LIVE, rate="18")
 
 
 def test_sscl_codes_for_each_kind_of_supply(law_rates):
-    """Manufactured goods: SSCL on 85% (2.125%); resold goods: on 50% (1.25%); services: on
-    the whole amount (2.5%). The tax invoice example comes out exactly as before."""
+    """Manufactured goods 2.125%, resold goods 1.25%, services 2.5%, each its own SSCL rate,
+    all printed as SSCL. The tax invoice example comes out exactly as before."""
     made = taxes.calculate(code("VAT-SSCL-M"), "115750.00", TODAY)
-    assert [(x.component.code, x.rate, x.amount) for x in made.lines] == [
+    assert [(x.component.label, x.rate, x.amount) for x in made.lines] == [
         ("SSCL", Decimal("2.1250"), Decimal("2459.69")),
         ("VAT", Decimal("18.0000"), Decimal("21277.74")),
     ]
@@ -226,6 +239,10 @@ def test_sscl_codes_for_each_kind_of_supply(law_rates):
     assert [x.amount for x in services.lines] == [Decimal("25.00"), Decimal("184.50")]
     assert code("VAT-SSCL").name == "Services: SSCL on 100%, then VAT"
     assert {code("VAT-SSCL-M").use, code("VAT-SSCL-R").use} == {"both"}
+    assert list(code("VAT-SSCL-M").lines.values_list("component__code", "portion_pct")) == [
+        ("SSCL-M", Decimal("100.00")),
+        ("VAT", Decimal("100.00")),
+    ]
 
 
 def test_the_share_is_set_on_a_tax_code_and_fixed_once_used(accountant, law_rates):

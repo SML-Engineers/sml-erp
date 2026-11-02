@@ -324,6 +324,9 @@ class TaxComponent(models.Model):
         Account, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     is_active = models.BooleanField(default=True)
+    # The name printed on quotations and invoices when it differs from the code: the SSCL
+    # of manufactured goods (SSCL-M) prints as "SSCL" (P16-20).
+    printed_as = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
 
@@ -338,25 +341,52 @@ class TaxComponent(models.Model):
     def __str__(self):
         return self.code
 
+    @property
+    def label(self) -> str:
+        return self.printed_as or self.code
+
 
 class TaxRate(models.Model):
-    """A component's rate from a date (rule 11). A rate in force on a used tax is fixed."""
+    """A component's rate from a date (rule 11). A rate in force on a used tax is fixed.
+
+    A change to a tax in use is proposed (by the Admin or the Accountant) and takes effect
+    only when the Director confirms it (owner, 2 Nov 2026; P16-20)."""
 
     is_structure = True
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Waiting for the Director"
+        CONFIRMED = "confirmed", "Confirmed"
+        REJECTED = "rejected", "Rejected"
+        WITHDRAWN = "withdrawn", "Withdrawn"
 
     component = models.ForeignKey(TaxComponent, on_delete=models.PROTECT, related_name="rates")
     effective_from = models.DateField()
     rate = models.DecimalField(max_digits=7, decimal_places=4)  # percent, e.g. 18.0000
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.CONFIRMED)
+    reason = models.TextField(blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     created_at = models.DateTimeField(default=timezone.now)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.TextField(blank=True)
 
     class Meta:
         ordering = ["component", "-effective_from"]
         constraints = [
             models.UniqueConstraint(
-                fields=["component", "effective_from"], name="accounting_taxrate_one_per_day"
+                fields=["component", "effective_from"],
+                condition=models.Q(status__in=["pending", "confirmed"]),
+                name="accounting_taxrate_one_per_day",
+            ),
+            models.UniqueConstraint(
+                fields=["component"],
+                condition=models.Q(status="pending"),
+                name="accounting_taxrate_one_pending",
             ),
             models.CheckConstraint(
                 condition=models.Q(rate__gte=0) & models.Q(rate__lte=100),

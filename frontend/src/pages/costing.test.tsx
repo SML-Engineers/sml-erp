@@ -66,6 +66,8 @@ test("the Accountant adds division rates from a date", async () => {
 });
 
 test("the Accountant adds a material's price from a date", async () => {
+  // A date in the future: the form refuses dates before today.
+  const from = new Date(Date.now() + 30 * 86_400_000).toLocaleDateString("en-CA");
   const calls = mockApi(
     api({
       "POST /api/v1/costing/materials/3/rates/": {
@@ -78,13 +80,13 @@ test("the Accountant adds a material's price from a date", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "EN8-BAR" }));
   const prices = await screen.findByRole("group", { name: "Prices of EN8-BAR" });
   const add = within(prices).getByRole("form", { name: "Add price" });
-  fireEvent.change(within(add).getByLabelText("From"), { target: { value: "2026-11-01" } });
+  fireEvent.change(within(add).getByLabelText("From"), { target: { value: from } });
   fireEvent.change(within(add).getByLabelText("Price per kg (LKR)"), { target: { value: "425.50" } });
   fireEvent.click(within(add).getByRole("button", { name: "Add price" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
       "/api/v1/costing/materials/3/rates/",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ effective_from: "2026-11-01", rate: "425.50", reason: "" }) }),
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ effective_from: from, rate: "425.50", reason: "" }) }),
     ),
   );
 });

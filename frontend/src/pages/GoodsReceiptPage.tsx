@@ -24,6 +24,7 @@ import {
 } from "../api/goodsReceipts";
 import { poKey } from "../api/purchaseOrders";
 import PackagesPanel from "../components/PackagesPanel";
+import Trail from "../components/Trail";
 import { formatQuantity } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -85,6 +86,7 @@ export default function GoodsReceiptPage() {
           )}
           <Actions grn={data} />
           <Photos grn={data} />
+          {data.status !== "draft" && <Trail by="grn" id={data.id} />}
         </>
       )}
       <ErrorLine error={grn.error} />

@@ -46,6 +46,11 @@ export default function SupplierReturnPage() {
             {data.journal && ` · ${t("si.posted", { journal: data.journal })}`}
           </p>
           <p>{t("rtn.reasonGiven", { reason: data.reason })}</p>
+          <p>
+            <a className="button-link secondary" href={`/api/v1/supplier-returns/${data.id}/pdf/`} target="_blank" rel="noreferrer">
+              {t("rtn.print")}
+            </a>
+          </p>
           <div className="table-wrap">
             <table aria-label={t("rtn.lines")}>
               <thead>

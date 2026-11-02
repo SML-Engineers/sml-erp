@@ -234,10 +234,20 @@ Status: `[ ]` to do · `[x]` done
 
 ## G. Reports and go-live
 
-- [ ] **P16-13 Traceability and reports** (spec 5A.7, 6A.7)
+- [x] **P16-13 Traceability and reports** (spec 5A.7, 6A.7)
   The full trail on every document (PO ↔ GRN ↔ QC ↔ invoice ↔ voucher ↔ payment); open POs
   and overdue deliveries; GRNI; invoices held; exceptions approved; receipts and rejections
   by supplier; stock on hand. Excel and PDF; purchasing and stores tiles on the dashboard.
+  - Done: Purchasing and stores → Purchasing reports (Purchasing: View): open POs with what is
+    still to come, overdue deliveries (days late), GRNI at the PO price next to the GRNI
+    account's balance, invoices held with their differences and days held, exceptions the
+    Director approved (GRN excesses, QC deviations, invoice differences, returns of accepted
+    goods, advance payments) with the reason and approver, and receipts and rejections by
+    supplier (late deliveries, rejected %, returns); each to Excel and PDF, as is stock on
+    hand. A Trail panel on every PO, GRN and supplier invoice links the PO, its revisions,
+    GRNs, QC, invoices (unpaid), returns, vouchers (advances marked) and payments. Home page
+    tiles: waiting for me, open and overdue POs, waiting for QC, GRNI, invoices held, stock
+    value. The goods return note prints (PDF) for the supplier, with signatures.
 
 - [ ] **P16-14 User acceptance testing and go-live**
   Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,

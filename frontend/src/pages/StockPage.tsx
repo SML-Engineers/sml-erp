@@ -31,6 +31,9 @@ export default function StockPage() {
           <input type="checkbox" checked={lots === "1"} onChange={(e) => set("lots", e.target.checked ? "1" : "")} /> {t("stock.byLot")}
         </label>
         {stock.data && <strong>{t("stock.totalValue", { value: formatDecimal(stock.data.total_value) })}</strong>}
+        <span className="export-links">
+          <a href={`/api/v1/stock/?export=xlsx${lots ? "&lots=1" : ""}`}>Excel</a> · <a href={`/api/v1/stock/?export=pdf${lots ? "&lots=1" : ""}`}>PDF</a>
+        </span>
       </div>
       {stock.data && (
         <DataTable

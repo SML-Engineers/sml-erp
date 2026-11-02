@@ -27,6 +27,7 @@ import {
 } from "../api/purchaseOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
 import SearchSelect from "../components/SearchSelect";
+import Trail from "../components/Trail";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -92,6 +93,7 @@ export default function PurchaseOrderPage() {
           {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}`} order={data} /> : <ReadOnly order={data} />}
           <Actions order={data} />
           {(data.can_email || data.emails.length > 0) && <EmailPanel order={data} />}
+          {data.status !== "draft" && data.status !== "awaiting_approval" && <Trail by="po" id={data.id} />}
         </>
       )}
       <ErrorLine error={order.error} />

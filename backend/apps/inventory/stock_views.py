@@ -3,9 +3,11 @@ Stores: View, for the user's divisions."""
 
 from decimal import Decimal
 
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import exports
 from apps.core.access import division_scope
 from apps.core.permissions import AreaAccess
 
@@ -41,6 +43,41 @@ class StockOnHandView(_Stock):
         items = Item.objects.in_bulk({r["item"] for r in found})
         stores = Store.objects.select_related("division").in_bulk({r["store"] for r in found})
         total = sum((r["value"] for r in found), Decimal("0"))
+        fmt = (request.query_params.get("export") or "").lower()
+        if fmt in exports.FORMATS:
+            rows = [
+                {
+                    "item": f"{items[r['item']].code} {items[r['item']].name}",
+                    "store": stores[r["store"]].code,
+                    "lot": r.get("lot_no") or "",
+                    "quantity": f"{r['quantity'].normalize():f}",
+                    "unit": items[r["item"]].unit,
+                    "average_cost": f"{averages[r['item']]:,.2f}"
+                    if stores[r["store"]].kind == Store.Kind.MAIN and r["item"] in averages
+                    else "",
+                    "value": r["value"],
+                }
+                for r in found
+            ]
+            columns = [
+                exports.Column("item", "Item", width=2.2),
+                exports.Column("store", "Store", width=0.8),
+                *([exports.Column("lot", "Lot", width=1.4)] if by_lot else []),
+                exports.Column("quantity", "Quantity", "number", width=0.8),
+                exports.Column("unit", "Unit", width=0.5),
+                exports.Column("average_cost", "Average cost (LKR)", "number", width=0.9),
+                exports.Column("value", "Value (LKR)", "money"),
+            ]
+            return exports.response(
+                fmt,
+                title="Stock on hand",
+                subtitle=f"As at {timezone.localtime():%d/%m/%Y %H:%M}"
+                + (" by lot" if by_lot else ""),
+                columns=columns,
+                rows=rows,
+                filename="stock-on-hand",
+                user=request.user,
+            )
         return Response(
             {
                 "total_value": str(total),

@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -14,7 +15,7 @@ from apps.masters import banking
 from apps.masters.models import CompanyAccount
 from apps.vouchers import services as vouchers
 
-from . import cancellations, services
+from . import cancellations, certificate, services
 from .models import PaymentCancellation, SupplierPayment
 from .services import PaymentError
 
@@ -57,6 +58,9 @@ def payment_row(p: SupplierPayment, user=None) -> dict:
         # P2-11: what left the account, in its currency, and the rate; and cancelling.
         "currency": p.currency.code,
         "paid_amount": f"{p.paid_amount:.2f}",
+        # P2-12: the withholding tax kept and its certificate.
+        "wht_amount": f"{p.wht_amount:.2f}",
+        "wht_certificate": p.wht_certificate,
         "exchange_rate": f"{p.exchange_rate.normalize():f}",
         "cancelled": p.cancelled,
         "cancellation": _cancellation(p, user),
@@ -114,6 +118,9 @@ class ToPayView(_Payments):
                     "total_amount": f"{v.total_amount:.2f}",
                     "paid": f"{paid:.2f}",
                     "remaining": f"{v.total_amount - paid:.2f}",
+                    # P2-12: the WHT to keep, and what is left to pay the payee after it.
+                    "wht_total": f"{v.wht_total:.2f}",
+                    "to_receive": f"{services.to_receive(v):.2f}",
                     "methods": services.methods_for(v),
                     "suggested_account": suggested.pk if suggested else None,
                     # P2-11: it may also be paid in this currency, from an account in it.
@@ -279,3 +286,17 @@ class CancellationDecisionView(_Cancellations):
         except PaymentError as error:
             return _error(error)
         return Response(payment_row(_payment(request.user, payment.pk), request.user))
+
+
+class CertificateView(_Payments):
+    """The WHT certificate of a payment (P2-12), as a PDF."""
+
+    def get(self, request, pk):
+        payment = _payment(request.user, pk)
+        if not payment.wht_certificate:
+            return _error(
+                PaymentError(f"No withholding tax was kept from payment {payment.number}.")
+            )
+        response = HttpResponse(certificate.render(payment), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{payment.wht_certificate}.pdf"'
+        return response

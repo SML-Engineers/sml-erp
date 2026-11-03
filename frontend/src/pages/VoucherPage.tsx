@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { listDivisions } from "../api/admin";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
-import { approvePaymentCancellation, cancelPayment, rejectPaymentCancellation } from "../api/payments";
+import { approvePaymentCancellation, cancelPayment, rejectPaymentCancellation, whtCertificateUrl } from "../api/payments";
 import { listPayees } from "../api/payees";
 import { getAdvanceOrders, getPayableInvoices } from "../api/supplierInvoices";
 import { getTaxes, taxesKey } from "../api/taxes";
@@ -583,6 +583,14 @@ function ReadOnly({ voucher }: { voucher: VoucherDetail }) {
               <th colSpan={5}>{t("vouchers.total")}</th>
               <th className="num">{formatDecimal(voucher.total_amount)}</th>
             </tr>
+            {Number(voucher.wht_total ?? 0) > 0 && (
+              <tr>
+                <th colSpan={5}>
+                  {t("vouchers.whtKept")} · {t("vouchers.payable")} LKR {formatDecimal(voucher.payable ?? "0")}
+                </th>
+                <th className="num">{formatDecimal(voucher.wht_total ?? "0")}</th>
+              </tr>
+            )}
           </tfoot>
         </table>
       </div>
@@ -816,7 +824,16 @@ function Payments({ voucher }: { voucher: VoucherDetail }) {
                 <td>{p.payment_date}</td>
                 <td>{p.account.code}</td>
                 <td>{t(`payments.methods.${p.method}`)}</td>
-                <td>{p.reference}</td>
+                <td>
+                  {p.reference}
+                  {p.wht_certificate && (
+                    <div>
+                      <a href={whtCertificateUrl(p.id)} target="_blank" rel="noopener noreferrer">
+                        {t("payments.whtCertificateNo", { number: p.wht_certificate, amount: formatDecimal(p.wht_amount ?? "0") })}
+                      </a>
+                    </div>
+                  )}
+                </td>
                 <td className="num">
                   {p.cancelled ? <s>{formatDecimal(p.amount)}</s> : formatDecimal(p.amount)}
                   {p.currency && p.currency !== "LKR" && (

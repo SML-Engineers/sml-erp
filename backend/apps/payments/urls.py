@@ -6,6 +6,11 @@ urlpatterns = [
     path("payments/", v.PaymentListView.as_view(), name="payment-list"),
     path("payments/to-pay/", v.ToPayView.as_view(), name="payment-to-pay"),
     path("payments/accounts/", v.AccountsView.as_view(), name="payment-accounts"),
+    path(
+        "payments/<int:pk>/wht-certificate/",
+        v.CertificateView.as_view(),
+        name="payment-wht-certificate",
+    ),
     path("payments/<int:pk>/cancel/", v.CancelPaymentView.as_view(), name="payment-cancel"),
     path(
         "payment-cancellations/<int:pk>/approve/",

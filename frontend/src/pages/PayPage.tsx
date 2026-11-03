@@ -14,6 +14,7 @@ import {
   type Payment,
   type PaymentMethod,
   type ToPayRow,
+  whtCertificateUrl,
 } from "../api/payments";
 import { voucherPrintUrl, vouchersKey } from "../api/vouchers";
 import { formatDecimal } from "../lib/decimal";
@@ -60,7 +61,9 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
   const preferred = fitting.find((a) => a.id === voucher.suggested_account) ?? fitting[0];
   const [accountId, setAccountId] = useState<string>(preferred ? String(preferred.id) : "");
   const account = fitting.find((a) => String(a.id) === accountId);
-  const [amount, setAmount] = useState(voucher.remaining);
+  // P2-12: with withholding tax the Cashier enters what the payee receives.
+  const toReceive = voucher.to_receive ?? voucher.remaining;
+  const [amount, setAmount] = useState(toReceive);
   const [date, setDate] = useState(today());
   const [cheque, setCheque] = useState<string | null>(null);
   const [chequeDate, setChequeDate] = useState("");
@@ -112,6 +115,12 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
           paid: formatDecimal(voucher.paid),
           remaining: formatDecimal(voucher.remaining),
         })}
+        {Number(voucher.wht_total ?? 0) > 0 && (
+          <>
+            <br />
+            {t("payments.whtSummary", { wht: formatDecimal(voucher.wht_total ?? "0"), receive: formatDecimal(toReceive) })}
+          </>
+        )}
       </p>
       <label>
         {t("payments.method")}
@@ -130,7 +139,7 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
           setCheque(null);
           // From an account in the invoices' currency, the amount is in that currency (P2-11).
           const chosen = fitting.find((a) => String(a.id) === e.target.value);
-          setAmount(chosen && chosen.currency !== "LKR" && voucher.foreign ? voucher.foreign.left : voucher.remaining);
+          setAmount(chosen && chosen.currency !== "LKR" && voucher.foreign ? voucher.foreign.left : toReceive);
         }}>
           <option value="">—</option>
           {fitting.map((a) => (
@@ -207,6 +216,14 @@ function Done({ payment }: { payment: Payment }) {
           entry: payment.journal_entry,
         })}
       </p>
+      {payment.wht_certificate && (
+        <p>
+          {t("payments.whtKept", { amount: formatDecimal(payment.wht_amount ?? "0"), number: payment.wht_certificate })}{" "}
+          <a href={whtCertificateUrl(payment.id)} target="_blank" rel="noopener noreferrer">
+            {t("payments.whtCertificate")}
+          </a>
+        </p>
+      )}
       <div className="row-actions">
         <button type="button" onClick={() => window.open(voucherPrintUrl(payment.voucher.id, "A4"), "_blank", "noopener")}>
           {t("payments.print")}

@@ -1,4 +1,4 @@
-import { apiGet, apiSend } from "./client";
+import { API_BASE, apiGet, apiSend } from "./client";
 import type { VoucherStatus } from "./vouchers";
 
 export type PaymentMethod = "cheque" | "transfer" | "cash" | "card" | "qr";
@@ -16,6 +16,9 @@ export interface ToPayRow {
   total_amount: string;
   paid: string;
   remaining: string;
+  /** P2-12: the WHT to keep and what is left to pay the payee after it. */
+  wht_total?: string;
+  to_receive?: string;
   methods: PaymentMethod[];
   suggested_account: number | null;
   /** P2-11: a voucher of supplier invoices in one foreign currency may be paid in it. */
@@ -51,6 +54,9 @@ export interface Payment {
   currency?: string;
   paid_amount?: string;
   exchange_rate?: string;
+  /** P2-12: the withholding tax kept and its certificate number. */
+  wht_amount?: string;
+  wht_certificate?: string;
   cancelled?: boolean;
   can_cancel?: boolean;
   cancellation?: {
@@ -89,6 +95,8 @@ export function listPayments(filter: { from?: string; to?: string; division?: st
   const text = query.toString();
   return apiGet<Payment[]>(`/payments/${text ? `?${text}` : ""}`);
 }
+/** P2-12: the withholding tax certificate of a payment, as a PDF. */
+export const whtCertificateUrl = (id: number) => `${API_BASE}/payments/${id}/wht-certificate/`;
 export const recordPayment = (input: PaymentInput) => apiSend<Payment>("POST", "/payments/", input);
 
 /** Which accounts each method pays from: cash from cash boxes, cheques from current

@@ -89,6 +89,10 @@ export interface VoucherLineData {
   division: string | null;
   job_ref: string;
   splits: { division: string; amount: string; percent: string | null }[];
+  /** P2-12: withholding tax kept from the payment for this line. */
+  wht_component?: string | null;
+  wht_rate?: string;
+  wht_amount?: string;
   /** The matched supplier invoice this line pays (P16-11), with PO, GRN and invoice. */
   supplier_invoice?: PaidInvoice | null;
   /** An advance on this purchase order before the goods arrive (P16-11a). */
@@ -139,7 +143,14 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
   /** Payments made against the voucher (P1-07). */
   paid?: string;
   remaining?: string;
+  /** P2-12: what is left to pay the payee after the withholding tax still to keep. */
+  to_receive?: string;
   payments?: Payment[];
+  /** P2-12: the WHT kept, what the payee receives and the withholding taxes to choose from
+   * (empty until a rate is confirmed: built switched off). */
+  wht_total?: string;
+  payable?: string;
+  wht_choices?: { code: string; name: string; rate: string }[];
   lines: VoucherLineData[];
   attachments: VoucherAttachmentData[];
   warnings: string[];

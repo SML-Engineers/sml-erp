@@ -224,9 +224,23 @@ Status: `[ ]` to do · `[x]` done
     account and the rate; supplier statements now compare payments in the statement's
     currency.
 
-- [ ] **P2-12 Withholding tax on payments** (spec 6, tax)
+- [x] **P2-12 Withholding tax on payments** (spec 6, tax)
   Where the law requires it (question 6): WHT worked out on the voucher, the supplier paid the
   net, WHT payable credited, and a WHT certificate printed for the supplier.
+  - Done: built switched off (owner, 3 Nov 2026). A withholding tax can be chosen only once it
+    has a confirmed rate; the "WHT" tax has none, so nothing changes until the Accountant enters
+    a rate under Settings → Tax rates. Then, when coding a voucher, the Accountant picks WHT per
+    line (not on an advance line); it is the rate on the invoice date times the amount before
+    VAT, rounded half-up, kept on the line with its rate (rule 11). The voucher shows the WHT
+    kept and the amount payable; the Director approves both, and the database freezes them.
+    The Cashier enters what the payee receives: the payment settles the matching share of the
+    voucher, credits the bank with what was paid and the WHT payable account (2120) with the
+    rest, and numbers a WHT certificate (WHT{YY}{MM}{NNNN}) with the supplier's name and TIN,
+    gross, rate, tax kept and amount paid, printable as a PDF. The last payment keeps exactly
+    the WHT left; a cancelled payment gives its WHT back to keep again. A voucher with WHT is
+    paid in LKR. Supplier statement matching lists the WHT kept as its own credit, with the
+    certificate number. Defaults you can change: WHT is on the amount before VAT; the payment
+    date sets the certificate month.
 
 - [ ] **P2-13 Purchase requests and reorder alerts** (spec 6, 7A)
   A reorder level and quantity per item and store; falling below it notifies the stores

@@ -65,6 +65,8 @@ export const MENU: MenuSection[] = [
   {
     label: "menu.purchasing",
     items: [
+      { label: "reorder.title", path: "/reorder", area: "stores", alsoArea: "purchasing" },
+      { label: "prq.title", path: "/purchase-requests", area: "purchasing", alsoArea: "stores" },
       { label: "po.title", path: "/purchase-orders", area: "purchasing" },
       { label: "grn.title", path: "/goods-receipts", area: "stores" },
       { label: "qc.title", path: "/inspections", area: "quality" },

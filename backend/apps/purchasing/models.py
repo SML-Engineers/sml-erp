@@ -428,3 +428,105 @@ class SupplierStatementLine(models.Model):
 
     def __str__(self):
         return f"{self.statement_id}/{self.line_no}"
+
+
+# --- Reorder levels and purchase requests (backlog P2-13, spec 6 inventory alerts) ----------
+
+
+class ReorderLevel(models.Model):
+    """When the stock of an item in a main store, with what is already ordered or requested,
+    is at or below `level`, the stores person and purchasing are told once, and a purchase
+    request for `quantity` from the usual supplier is one click away. `alerted_at` is set when
+    they are told and cleared when the stock is above the level again."""
+
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
+    store = models.ForeignKey("inventory.Store", on_delete=models.PROTECT, related_name="+")
+    level = qty_field()
+    quantity = qty_field()
+    usual_supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    alerted_at = models.DateTimeField(null=True, blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["store__code", "item__code"]
+        constraints = [
+            models.UniqueConstraint(fields=["item", "store"], name="purchasing_reorder_unique"),
+            models.CheckConstraint(condition=models.Q(level__gte=0), name="purchasing_reorder_lvl"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="purchasing_reorder_qty"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.item} @ {self.store}"
+
+
+class PurchaseRequest(models.Model):
+    """A request to buy (spec 6): raised by the stores person or purchasing, often in one
+    click from a reorder alert; approved through the approval engine; then made into a draft
+    purchase order by purchasing, which follows its own approval."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Awaiting approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        ORDERED = "ordered", "Purchase order made"
+        CANCELLED = "cancelled", "Cancelled"
+
+    number = models.CharField(max_length=30, unique=True)
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    store = models.ForeignKey(
+        "inventory.Store", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    needed_by = models.DateField(null=True, blank=True)
+    reason = models.TextField(blank=True)
+    from_reorder = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    end_reason = models.TextField(blank=True)  # why it was cancelled or rejected
+    purchase_order = models.OneToOneField(
+        PurchaseOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="request"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(status="ordered") | models.Q(purchase_order__isnull=False),
+                name="purchasing_request_ordered_po",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class PurchaseRequestLine(models.Model):
+    request = models.ForeignKey(PurchaseRequest, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
+    quantity = qty_field()
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["request", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["request", "line_no"], name="purchasing_req_line_no"),
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="purchasing_req_qty"),
+        ]
+
+    def __str__(self):
+        return f"{self.request_id}/{self.line_no}"

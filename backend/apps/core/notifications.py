@@ -30,6 +30,7 @@ EVENTS = {
     "journal_ready": "A recurring journal was made for me to check and send",
     "credit_hold_waiting": "A sales order or invoice is on credit hold and waits for me",
     "credit_hold_allowed": "A document of mine on credit hold was allowed",
+    "reorder_alert": "An item's stock fell to its reorder level",
 }
 
 log = logging.getLogger(__name__)

@@ -185,9 +185,24 @@ Status: `[ ]` to do · `[x]` done
 
 ## C. Payables, completed
 
-- [ ] **P2-10 Supplier statements and payables aging**
+- [x] **P2-10 Supplier statements and payables aging**
   Payables aging per supplier and division; the supplier's statement typed or imported and
   reconciled with our ledger, differences listed.
+  - Done: Vouchers -> Payables and supplier statements. What we owe each supplier comes from
+    our documents, so it covers both ways suppliers are paid: matched supplier invoices (LKR
+    total less advances set off, debit notes and the paid part of their vouchers) and invoices
+    on vouchers (each line less the paid part of its voucher; payments pay a voucher's lines in
+    proportion, as the ledger books them). Advances before goods are not payables. Aged by
+    days past the due date (the invoice's, or the voucher line's invoice date plus the
+    supplier's terms), at any date, per division, with Excel and PDF; a supplier opens its
+    items. Supplier statements: typed in or imported from Excel or CSV (heading row with
+    Date, Reference, Description, Debit, Credit found anywhere in the first 30 rows; totals
+    and balance lines skipped), then matched to our invoices, debit notes and payments of the
+    period by reference (letters and digits only; "Chq 000100" matches cheque 000100) and
+    payments without one by amount within a week. The page lists what agrees, what is only on
+    theirs, what is only in ours, and their closing balance against what we owe. The
+    Accountant marks it checked with a note; it then never changes (database). Suppliers in
+    another currency are compared for invoices only until foreign payments (P2-11).
 
 - [ ] **P2-11 Payment follow-ups: spoiled cheques, cancelled payments, foreign currency**
   (known gaps from Phase 1) A payment is cancelled with a reason and the Director's approval:
@@ -290,6 +305,26 @@ Status: `[ ]` to do · `[x]` done
   Excel templates, checked first and all or nothing: opening trial balance, open customer and
   supplier balances by invoice, open sales orders, the fixed asset register with accumulated
   depreciation, stock on hand with value. Totals must agree with the trial balance.
+  - Owner's QuickBooks exports received 3 Nov 2026 (as at 31 Oct 2026; kept out of the
+    repository: business data). Layouts to read, one sheet each, values in alternate columns
+    with empty spacer columns between:
+    - Trial balance: title row with the date ("Oct 31, 26"), then "Debit"/"Credit"; one row
+      per account in column B (sub-accounts as "Parent:Child"), debit in C, credit in E; a
+      "TOTAL" row in column A.
+    - A/R aging detail ("open invoices"): grouped by customer (a name row, the lines, a
+      "Total <customer>" row); columns Type, Date, Num, P. O. no, Terms, Due Date, Class,
+      Ageing, Open Balance; types Invoice, Payment, Credit Note, Cheque, General Journal.
+    - A/P aging detail ("open bills"): grouped by age band (Current, 1 - 30, 31 - 60, 61 - 90,
+      > 90 with "Total ..." rows); columns Type, Date, Num, Name, Due Date, Ageing, Open
+      Balance; types Bill, Bill Pmt -Cheque, Cheque, Credit, Deposit, General Journal.
+    - Item list: Item ("Parent:Child" for sub-items), Description, Type (Stock Part, Non-stock
+      Part, Service, VAT Item...), Cost, Price, VAT Code, VAT Code for Purchases, Quantity On
+      Hand, Reorder Pt (Min), Quantity On Purchase Order, Preferred Supplier.
+  - Findings sent to the owner for the Accountant to clear in QuickBooks before go-live: the
+    trial balance is out by 6,750.00; about 970 customer payments (-222.6 million) are not
+    applied to invoices, the debtors accounts have credit balances and Undeposited Funds holds
+    218.2 million; supplier cheques and credits are not matched to bills (A/P aging -5.4
+    million); Opening Balance Equity 20.3 million and Uncategorized income/expenses to clear.
 
 - [ ] **P2-29 Parallel run, user acceptance testing and go-live** (spec 8.2)
   One month entered in both systems; the trial balance, receivables, payables and bank

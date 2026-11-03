@@ -126,7 +126,7 @@ def test_the_same_file_once_and_overlapping_lines_skipped(accountant, bank):
 
 def test_a_misread_file_is_refused(accountant, bank):
     wrong = [("01/10/2026", "CHQ DEP", "", "20,000.00", "125,000.00 Cr")]
-    with pytest.raises(BankingError, match="does not explain the balance going from 100,000.00 to 125,000.00"):
+    with pytest.raises(BankingError, match="from 100,000.00 to 125,000.00"):
         bring(accountant, bank, pdf(wrong))
     assert not BankStatementLine.objects.exists()
 

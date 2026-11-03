@@ -27,6 +27,7 @@ test("the accountant reads a statement, checks it, then imports it", async () =>
   });
   renderAt("/bank-statements", <BankStatementsPage />);
   const form = await screen.findByRole("form", { name: "Import a statement" });
+  await within(form).findByRole("option", { name: "COM-CUR Commercial Bank current" });
   fireEvent.change(within(form).getByLabelText("Bank account"), { target: { value: "2" } });
   await within(form).findByRole("option", { name: /Commercial Bank of Ceylon/ });
   fireEvent.change(within(form).getByLabelText("Bank and file"), { target: { value: "1" } });

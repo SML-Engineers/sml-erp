@@ -18,7 +18,10 @@
   - sets off the approved advances of its order against it (P2-07).
 - An issued invoice is never changed or deleted (database guard); a credit note corrects
   it (P2-06). A delivery note on an invoice cannot be cancelled.
-- LKR only for now; invoices in the customer's currency come with P2-09.
+- In the order's currency (the customer's, P2-09): amounts and taxes in that currency, at the
+  exchange rate of the invoice date (the latest rate on or before it; rule 11). The ledger
+  carries LKR: each sales account and tax converted and rounded to the cent, the receivable
+  their sum (total_lkr). The tax codes on the lines decide the VAT treatment of exports.
 """
 
 from collections import OrderedDict
@@ -37,7 +40,8 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.models import Company, Division, User
 from apps.core.numbering import NumberSeriesError, allocate
-from apps.masters import customers
+from apps.masters import currencies, customers
+from apps.masters.services import MastersError
 
 from . import words
 from .models import (
@@ -191,7 +195,42 @@ def _compute(invoice: TaxInvoice) -> None:
     invoice.discount_total = discount_total
     invoice.tax_total = sum((amount for _, amount in groups.values()), Decimal("0"))
     invoice.total_amount = subtotal - discount_total + invoice.tax_total
-    invoice.amount_in_words = words.amount(invoice.total_amount)
+    invoice.amount_in_words = words.amount(invoice.total_amount, invoice.currency.code)
+    lookup = rate(invoice)
+    invoice.exchange_rate = lookup.rate
+    invoice.rate_date = lookup.rate_date
+    income, taxes_lkr = lkr_parts(invoice)
+    invoice.total_lkr = sum(income.values(), Decimal("0")) + sum(
+        (amount for _, amount in taxes_lkr), Decimal("0")
+    )
+
+
+def rate(invoice: TaxInvoice):
+    """The exchange rate of the invoice date (1 for LKR)."""
+    try:
+        return currencies.rate_on(invoice.currency, invoice.invoice_date)
+    except MastersError as error:
+        raise SalesError(str(error)) from None
+
+
+def to_lkr(amount: Decimal, exchange_rate: Decimal) -> Decimal:
+    return _round(Decimal(amount) * exchange_rate)
+
+
+def lkr_parts(invoice: TaxInvoice):
+    """The invoice in LKR, as posted: per sales account its net amount, and per tax line its
+    amount, each converted at the invoice's rate and rounded to the cent."""
+    income: OrderedDict = OrderedDict()
+    for line in invoice.lines.select_related("account").order_by("line_no"):
+        income[line.account] = income.get(line.account, Decimal("0")) + line.net
+    income = OrderedDict(
+        (account, to_lkr(amount, invoice.exchange_rate)) for account, amount in income.items()
+    )
+    taxes_lkr = [
+        (tax, to_lkr(tax.amount, invoice.exchange_rate))
+        for tax in invoice.taxes.select_related("component__sales_account").order_by("seq")
+    ]
+    return income, taxes_lkr
 
 
 # --- Making a draft -------------------------------------------------------------------------
@@ -251,11 +290,6 @@ def create(user: User, order: SalesOrder, notes: list[DeliveryNote] | None = Non
         order = SalesOrder.objects.select_for_update().get(pk=order.pk)
         if not orders_to_invoice(user).filter(pk=order.pk).exists():
             raise SalesError("The order has no delivered quantities waiting to be invoiced.")
-        base = Company.objects.filter(pk=1).values_list("base_currency", flat=True).first()
-        if order.currency.code != (base or "LKR"):
-            raise SalesError(
-                "Invoices in the customer's currency come with export invoicing (P2-09)."
-            )
         waiting = DeliveryNoteLine.objects.filter(
             note__order=order, note__status__in=DELIVERED, invoice_line__isnull=True
         ).select_related("note", "order_line__tax_code")
@@ -271,6 +305,7 @@ def create(user: User, order: SalesOrder, notes: list[DeliveryNote] | None = Non
             order=order,
             customer=order.customer,
             division=order.division,
+            currency=order.currency,
             invoice_date=today,
             supply_date=latest,
             place_of_supply=_one_line(rows[-1].note.delivery_address or order.delivery_address),
@@ -327,30 +362,33 @@ def delete(user: User, invoice: TaxInvoice) -> None:
 
 
 def _journal_lines(invoice: TaxInvoice) -> list[journal.Line]:
+    """Dr Accounts receivable (the customer) with the LKR total, Cr each sales account and
+    each tax's sales account, converted at the invoice's rate."""
     receivable = Account.objects.filter(system_role="accounts_receivable").first()
     if receivable is None:
         raise SalesError("The chart of accounts has no accounts receivable account.")
     division = invoice.division
     text = f"Tax invoice {invoice.number}"
+    if invoice.currency.code != "LKR":
+        rate = invoice.exchange_rate.normalize()
+        text += f" ({invoice.currency.code} {invoice.total_amount:,.2f} at {rate:f})"
+    income, taxes_lkr = lkr_parts(invoice)
     lines = [
         journal.Line(
             account=receivable,
-            debit=invoice.total_amount,
+            debit=invoice.total_lkr,
             division=division,
             customer=invoice.customer,
             description=text,
         )
     ]
-    income: OrderedDict = OrderedDict()
-    for line in invoice.lines.select_related("account"):
-        income[line.account] = income.get(line.account, Decimal("0")) + line.net
     for account, amount in income.items():
         if amount:
             lines.append(
                 journal.Line(account=account, credit=amount, division=division, description=text)
             )
-    for tax in invoice.taxes.select_related("component__sales_account"):
-        if not tax.amount:
+    for tax, amount in taxes_lkr:
+        if not amount:
             continue
         account = tax.component.sales_account
         if account is None:
@@ -361,7 +399,7 @@ def _journal_lines(invoice: TaxInvoice) -> list[journal.Line]:
         lines.append(
             journal.Line(
                 account=account,
-                credit=tax.amount,
+                credit=amount,
                 division=division,
                 description=f"{text}: {tax.label} {tax.rate.normalize():f}%",
             )
@@ -416,7 +454,7 @@ def _issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
             document_id=invoice.pk,
             label=f"the invoice for order {invoice.order.number}",
             customer=invoice.customer,
-            amount_lkr=invoice.total_amount,
+            amount_lkr=invoice.total_lkr,
         )
         customer = invoice.customer
         invoice.supplier_name = company.name
@@ -443,6 +481,7 @@ def _issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
             )
         except AccountingError as error:
             raise SalesError(str(error)) from None
+        currencies.mark_rate_used(rate(invoice))
         invoice.journal_entry = entry
         invoice.status = St.ISSUED
         invoice.issued_by = user

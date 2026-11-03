@@ -30,7 +30,7 @@ def _error(error):
 
 def _get(user, pk) -> TaxInvoice:
     rows = invoices.visible(user).select_related(
-        "order", "customer", "division", "created_by", "issued_by", "journal_entry"
+        "order", "customer", "division", "currency", "created_by", "issued_by", "journal_entry"
     )
     return get_object_or_404(rows, pk=pk)
 
@@ -46,6 +46,7 @@ def _summary(i: TaxInvoice) -> dict:
         "customer": {"id": i.customer_id, "name": i.customer.name},
         "order": {"id": i.order_id, "number": i.order.number},
         "customer_po": i.customer_po,
+        "currency": i.currency.code,
         "total_amount": f"{i.total_amount:.2f}",
         "created_by": i.created_by.full_name,
     }
@@ -64,6 +65,10 @@ def _detail(i: TaxInvoice, user) -> dict:
         "discount_total": f"{i.discount_total:.2f}",
         "tax_total": f"{i.tax_total:.2f}",
         "amount_in_words": i.amount_in_words,
+        # P2-09: the rate of the invoice date and the LKR the receivable is booked at.
+        "exchange_rate": f"{i.exchange_rate.normalize():f}",
+        "rate_date": i.rate_date,
+        "total_lkr": f"{i.total_lkr:.2f}",
         "lines": [
             {
                 "line_no": x.line_no,

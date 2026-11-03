@@ -39,6 +39,7 @@ def render(invoice: TaxInvoice, *, compress: bool = True) -> bytes:
     s = Styles()
     p = s.p
     draft = invoice.status == TaxInvoice.Status.DRAFT
+    unit = "Rs" if invoice.currency.code == "LKR" else invoice.currency.code
     company = Company.objects.filter(pk=1).first()
     supplier = {
         "name": invoice.supplier_name or (company.name if company else ""),
@@ -123,9 +124,9 @@ def render(invoice: TaxInvoice, *, compress: bool = True) -> bytes:
             p("Product Code", s.head),
             p("Description", s.head),
             p("PO No", s.head),
-            p("Rate (Rs)", s.head),
+            p(f"Rate ({unit})", s.head),
             p("Qty", s.head),
-            p("Amount (Rs)", s.head),
+            p(f"Amount ({unit})", s.head),
         ]
     ]
     for line in invoice.lines.all():
@@ -183,6 +184,16 @@ def render(invoice: TaxInvoice, *, compress: bool = True) -> bytes:
     )
     words = invoice.amount_in_words
     story += [Spacer(1, 3 * mm), p(f"Amount in words: {words}", s.bold)]
+    if unit != "Rs":
+        # An export invoice also shows its LKR value at the rate used (P2-09).
+        when = f" of {invoice.rate_date:%d/%m/%Y}" if invoice.rate_date else ""
+        story.append(
+            p(
+                f"Exchange rate{when}: 1 {unit} = LKR {invoice.exchange_rate.normalize():f}. "
+                f"Total in LKR: {money(invoice.total_lkr)}",
+                s.small,
+            )
+        )
     if invoice.notes:
         story += [Spacer(1, 2 * mm), p("Additional information", s.small), p(invoice.notes)]
     story += [Spacer(1, 14 * mm)]

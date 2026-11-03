@@ -51,6 +51,7 @@ def _summary(n: CreditNote) -> dict:
         "invoice": {"id": n.invoice_id, "number": n.invoice.number},
         "customer": {"id": n.customer_id, "name": n.customer.name},
         "division": n.division.code,
+        "currency": n.invoice.currency.code,
         "total_amount": f"{n.total_amount:.2f}",
         "created_by": n.created_by.full_name,
     }

@@ -175,3 +175,36 @@ test("the Accountant sets off an advance against an open invoice", async () => {
   expect(JSON.parse(String(init!.body))).toEqual({ invoice: 21, amount: "5794.98" });
   expect(await screen.findByText(/JE-2026-0009/)).toBeInTheDocument();
 });
+
+test("dollar invoices are paid in dollars into a dollar account (P2-09)", async () => {
+  const usd: ReceiptOptions = {
+    ...options,
+    customers: [
+      {
+        ...options.customers[0],
+        invoices: [
+          ...options.customers[0].invoices,
+          {
+            id: 30, number: "26NOV_W1_05", invoice_date: "2026-11-03", due_date: "2026-12-03", division: "WS",
+            customer_po: "MG/PO/55", currency: "USD", total_amount: "2500.00", open_amount: "2500.00",
+          },
+        ],
+      },
+    ],
+    accounts: [...options.accounts, { id: 3, code: "COM-USD", name: "Commercial Bank USD", kind: "current", currency: "USD" }],
+  };
+  mockApi({
+    "GET /api/v1/receipts/": { body: [] },
+    "GET /api/v1/receipts/options/": { body: usd },
+  });
+  renderAt("/receipts", <ReceiptsPage me={cashier} />);
+  const form = await screen.findByRole("form", { name: "Receive a payment for invoices" });
+  await chooseCustomer(form);
+  fireEvent.change(within(form).getByLabelText("Currency"), { target: { value: "USD" } });
+  expect(within(form).getByLabelText("Amount USD")).toBeInTheDocument();
+  expect(within(form).getByLabelText("Paid on 26NOV_W1_05")).toBeInTheDocument();
+  expect(within(form).queryByLabelText("Paid on 26NOV_W1_01")).not.toBeInTheDocument();
+  const account = within(form).getByLabelText("Into account");
+  expect(within(account).getByRole("option", { name: "COM-USD Commercial Bank USD" })).toBeInTheDocument();
+  expect(within(account).queryByRole("option", { name: /COM-CUR/ })).not.toBeInTheDocument();
+});

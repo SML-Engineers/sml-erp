@@ -15,6 +15,7 @@ export interface InvoiceSummary {
   customer: { id: number; name: string };
   order: { id: number; number: string };
   customer_po: string;
+  currency?: string;
   total_amount: string;
   created_by: string;
 }
@@ -29,6 +30,11 @@ export interface InvoiceDetail extends InvoiceSummary {
   discount_total: string;
   tax_total: string;
   amount_in_words: string;
+  /** P2-09: the invoice's currency (on the summary), the rate of its date and the LKR the
+   * receivable is booked at. Optional so older fixtures still type-check. */
+  exchange_rate?: string;
+  rate_date?: string | null;
+  total_lkr?: string;
   lines: {
     line_no: number;
     delivery_note: { id: number; number: string };

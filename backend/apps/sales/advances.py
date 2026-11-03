@@ -17,7 +17,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Sum
 from django.utils import timezone
 
 from apps.accounting import journal
@@ -292,3 +292,11 @@ def balance_lkr(advance: CustomerAdvance) -> Decimal:
     if advance.status != CustomerAdvance.Status.APPROVED:
         return Decimal("0.00")
     return advance.amount_lkr - advance.set_off_lkr
+
+
+def balance(advance: CustomerAdvance) -> Decimal:
+    """What is still to be set off, in the advance's currency (P2-09)."""
+    if advance.status != CustomerAdvance.Status.APPROVED:
+        return Decimal("0.00")
+    used = advance.set_offs.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    return advance.amount - used

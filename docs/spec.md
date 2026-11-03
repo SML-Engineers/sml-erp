@@ -1430,6 +1430,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Customer receipts (P2-07; owner, 3 Nov 2026) | Recorded by the Cashier and split over issued invoices, never more than is open; approved by the Accountant, or a person the Admin gives the right to, confirmed by the Director (receipts and advances); cheques to Undeposited funds, post-dated cheques posted on their date; extra money recorded as an advance, set off automatically against the customer's next or any later invoice; advances of an order set off first when its invoice is issued | 5.2, 6 |
 | Credit control (owner, 3 Nov 2026; P2-08) | Block: a customer with an overdue invoice, or over its credit limit with the new document, gets no sales order confirmed or tax invoice issued until the Director allows that document, with a note. An empty limit means no limit; one day overdue counts (defaults the owner can change) | 6, 7A |
 | Credit limits and payment terms (owner, 3 Nov 2026) | Changed only by the Accountant or the Director (or a person given the right, confirmed by the Director), with a reason; Sales see them | 5.4, 6 |
+| Export invoices (P2-09, IAS 21) | In the order's currency at the invoice date's rate; receipts and advances at their own rates; the realised difference to Exchange gain or Exchange loss; one currency per receipt, into an account of that currency | 5.5, 6 |
 
 **Still needed for initial setup**
 

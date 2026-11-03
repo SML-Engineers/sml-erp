@@ -31,7 +31,7 @@ def _error(error):
 
 def _get(user, pk) -> CustomerReceipt:
     rows = receipts.visible(user).select_related(
-        "customer", "account", "created_by", "approved_by", "journal_entry"
+        "customer", "account", "currency", "created_by", "approved_by", "journal_entry"
     )
     return get_object_or_404(rows, pk=pk)
 
@@ -45,7 +45,9 @@ def _row(r: CustomerReceipt) -> dict:
         "method": r.method,
         "reference": r.reference,
         "cheque_date": r.cheque_date,
+        "currency": r.currency.code,
         "amount": f"{r.amount:.2f}",
+        "amount_lkr": f"{r.amount_lkr:.2f}",
         "status": r.status,
         "created_by": r.created_by.full_name,
     }
@@ -58,6 +60,8 @@ def _detail(r: CustomerReceipt, user) -> dict:
         if r.account_id is None
         else {"id": r.account_id, "code": r.account.code, "name": r.account.name},
         "cheque_bank": r.cheque_bank,
+        "exchange_rate": f"{r.exchange_rate.normalize():f}",
+        "rate_date": r.rate_date,
         "notes": r.notes,
         "allocations": [
             {
@@ -101,6 +105,7 @@ def open_invoice(invoice: TaxInvoice, figures: dict) -> dict:
         "due_date": invoice.due_date,
         "division": invoice.division.code,
         "customer_po": invoice.customer_po,
+        "currency": invoice.currency.code,
         "total_amount": f"{figures['total']:.2f}",
         "open_amount": f"{figures['open']:.2f}",
     }
@@ -126,7 +131,7 @@ class ReceiptInput(serializers.Serializer):
 
 class ReceiptListView(_Receipts):
     def get(self, request):
-        rows = receipts.visible(request.user).select_related("customer", "created_by")
+        rows = receipts.visible(request.user).select_related("customer", "currency", "created_by")
         params = request.query_params
         if params.get("status"):
             rows = rows.filter(status__in=params["status"].split(","))
@@ -172,7 +177,7 @@ class ReceiptListView(_Receipts):
 
 class ReceiptOptionsView(_Receipts):
     """What the Cashier chooses from: customers with open invoices (oldest first, with what is
-    open on each) and the LKR accounts money is received into."""
+    open on each, in its currency) and the accounts money is received into."""
 
     def get(self, request):
         by_customer: dict[int, dict] = {}
@@ -196,7 +201,7 @@ class ReceiptOptionsView(_Receipts):
                         "currency": a.currency.code,
                     }
                     for a in CompanyAccount.objects.filter(
-                        is_active=True, ledger_account__isnull=False, currency__code="LKR"
+                        is_active=True, ledger_account__isnull=False
                     ).select_related("currency")
                 ],
             }

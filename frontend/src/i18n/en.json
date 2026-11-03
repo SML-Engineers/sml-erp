@@ -1939,7 +1939,8 @@
     "statuses": {
       "draft": "Draft",
       "issued": "Issued"
-    }
+    },
+    "inLkr": "Exchange rate {{date}}: 1 {{currency}} = LKR {{rate}}. Booked in LKR: {{amount}}."
   },
   "sa": {
     "title": "Sales accounts",
@@ -2803,7 +2804,8 @@
     "advanceSetOff": "advance set off",
     "setOffs": "Set off against invoices",
     "setOffNew": "Set off against an invoice",
-    "setOff": "Set off"
+    "setOff": "Set off",
+    "currencyNote": "Amounts in {{currency}}. The money goes into a {{currency}} account; any exchange difference is posted when approved."
   },
   "ar": {
     "title": "Receivables and statements",

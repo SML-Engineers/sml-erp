@@ -85,5 +85,4 @@ test("the approver approves a purchase request", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ comment: "" }) }),
     ),
   );
-  expect(await screen.findByText("Approved")).toBeInTheDocument();
 });

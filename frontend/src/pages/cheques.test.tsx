@@ -32,7 +32,7 @@ test("the cashier puts customers' cheques on a deposit slip", async () => {
     },
     "POST /api/v1/deposits/": (sent) => ({
       status: 201,
-      body: { id: 1, number: "DP26110001", account: { id: 2, code: "COM-CUR", name: "x" }, deposit_date: sent.deposit_date, slip_no: "", total: "20000.00", journal_entry: "JE1", created_by: "Kamal", cheques: [] },
+      body: { id: 1, number: "DP26110001", account: { id: 2, code: "COM-CUR", name: "x" }, deposit_date: (sent as { deposit_date: string }).deposit_date, slip_no: "", total: "20000.00", journal_entry: "JE1", created_by: "Kamal", cheques: [] },
     }),
   });
   renderAt("/cheques", <ChequesPage />);

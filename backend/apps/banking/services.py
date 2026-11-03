@@ -157,7 +157,7 @@ def deposit(
         raise BankingError("A cheque appears twice on the slip.")
     with audit_context("deposit_made"), transaction.atomic():
         found = list(
-            CustomerReceipt.objects.select_for_update()
+            CustomerReceipt.objects.select_for_update(of=("self",))
             .filter(pk__in=[r.pk for r in receipts])
             .select_related("customer", "journal_entry")
             .order_by("number")
@@ -267,7 +267,7 @@ def return_cheque(user: User, receipt: CustomerReceipt, *, returned_on, reason: 
         raise BankingError("Give the reason the bank returned the cheque.")
     with audit_context("cheque_returned", reason), transaction.atomic():
         receipt = (
-            CustomerReceipt.objects.select_for_update()
+            CustomerReceipt.objects.select_for_update(of=("self",))
             .select_related("customer", "journal_entry")
             .get(pk=receipt.pk)
         )

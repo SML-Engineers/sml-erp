@@ -110,10 +110,20 @@ Status: `[ ]` to do · `[x]` done
     and taxes never change (database guard); an invoiced delivery note cannot be cancelled.
     A delivered order is Completed once fully invoiced. LKR only until P2-09.
 
-- [ ] **P2-06 Credit notes**
+- [x] **P2-06 Credit notes**
   Against an issued invoice (returned goods, price correction), with a reason and the
   approval the owner chooses (question 3); posts the reverse of the invoice's lines, never more
   than what was invoiced.
+  - Done: Sales → Credit notes, made from an issued invoice by Sales or the Accountant: kind
+    (goods returned, price correction, other) and reason required; each line credits an
+    amount before tax (and the quantity for returned goods), never more than is left after
+    approved notes (database rule, checked again at approval); taxes at the invoice's rates.
+    Approved through the approval engine by the Director, or by a person the Admin gives the
+    "Approve credit notes" right to, confirmed by the Director (owner, 3 Nov 2026); the engine
+    now lets a document type name such a right. Approval numbers it CN{YY}{MM}{DD}{XX} and
+    posts Dr Sales, Dr SSCL and VAT payable, Cr Accounts receivable (the customer). Printed;
+    approved and rejected notes never change. Returned goods go back into no stock until
+    Phase 3.
 
 - [ ] **P2-07 Customer receipts and allocation**
   The Cashier records money in (cheque, transfer, cash, card, QR), allocated to one or more
@@ -256,6 +266,8 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
    P2-29)
 3. **Approvals.** Who approves manual journals and credit notes: the Director always, or the
    Accountant up to a limit? (P2-01, P2-06)
+   - Credit notes, answered 3 Nov 2026: the Director, and anyone the Admin gives the right to,
+     confirmed by the Director. Manual journals: still the Director.
 4. **Finished goods before Phase 3.** Should delivery notes reduce a finished-goods stock now,
    or only record what was delivered until production is built in Phase 3? (P2-04, P2-18)
    - Default taken on 3 Nov 2026 (the recommendation, no answer yet): only record what was

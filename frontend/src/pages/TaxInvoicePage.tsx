@@ -61,6 +61,7 @@ export default function TaxInvoicePage() {
           {data.can_edit ? <HeaderForm key={`${data.id}-${data.total_amount}-${data.invoice_date}`} invoice={data} /> : <Header invoice={data} />}
           <Lines invoice={data} />
           <Actions invoice={data} />
+          <CreditNotes invoice={data} />
         </>
       )}
       <ErrorLine error={invoice.error} />
@@ -295,6 +296,35 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
         </ul>
       )}
       <ErrorLine error={issue.error ?? remove.error ?? load.error} />
+    </section>
+  );
+}
+
+/** Credit notes against the invoice (P2-06), and a link to make one. */
+function CreditNotes({ invoice }: { invoice: InvoiceDetail }) {
+  const { t } = useTranslation();
+  const notes = invoice.credit_notes ?? [];
+  if (notes.length === 0 && !invoice.can_credit) return null;
+  return (
+    <section className="panel" aria-label={t("cn.title")}>
+      <h2>{t("cn.title")}</h2>
+      {notes.length > 0 && (
+        <ul>
+          {notes.map((n) => (
+            <li key={n.id}>
+              <Link to={`/credit-notes/${n.id}`} className="mono">
+                {n.number || t("cn.draftNo", { id: n.id })}
+              </Link>{" "}
+              · {n.credit_date} · {formatDecimal(n.total_amount)} · {t(`cn.statuses.${n.status}`)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {invoice.can_credit && (
+        <Link className="button-link" to={`/credit-notes/new?invoice=${invoice.id}`}>
+          {t("cn.new")}
+        </Link>
+      )}
     </section>
   );
 }

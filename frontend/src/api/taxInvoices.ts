@@ -48,6 +48,9 @@ export interface InvoiceDetail extends InvoiceSummary {
   journal_entry: { id: number; number: string } | null;
   issued_by: string | null;
   issued_at: string | null;
+  /** Its credit notes (P2-06). */
+  credit_notes?: { id: number; number: string; status: string; credit_date: string; total_amount: string }[];
+  can_credit?: boolean;
   can_edit: boolean;
   can_issue: boolean;
   can_email: boolean;

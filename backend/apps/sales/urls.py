@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import (
     advance_views,
+    credit_note_views,
     delivery_views,
     invoice_views,
     order_views,
@@ -100,6 +101,42 @@ urlpatterns = [
         "proformas/<int:pk>/email/",
         proforma_views.ProformaEmailView.as_view(),
         name="proforma-email",
+    ),
+    path("credit-notes/", credit_note_views.CreditListView.as_view(), name="credit-list"),
+    path(
+        "credit-notes/invoice/<int:pk>/",
+        credit_note_views.InvoiceLinesView.as_view(),
+        name="credit-invoice",
+    ),
+    path(
+        "credit-notes/<int:pk>/",
+        credit_note_views.CreditDetailView.as_view(),
+        name="credit-detail",
+    ),
+    path(
+        "credit-notes/<int:pk>/submit/",
+        credit_note_views.CreditSubmitView.as_view(),
+        name="credit-submit",
+    ),
+    path(
+        "credit-notes/<int:pk>/approve/",
+        credit_note_views.CreditApproveView.as_view(),
+        name="credit-approve",
+    ),
+    path(
+        "credit-notes/<int:pk>/return/",
+        credit_note_views.CreditReturnView.as_view(),
+        name="credit-return",
+    ),
+    path(
+        "credit-notes/<int:pk>/reject/",
+        credit_note_views.CreditRejectView.as_view(),
+        name="credit-reject",
+    ),
+    path(
+        "credit-notes/<int:pk>/pdf/",
+        credit_note_views.CreditPdfView.as_view(),
+        name="credit-pdf",
     ),
     path("tax-invoices/", invoice_views.InvoiceListView.as_view(), name="invoice-list"),
     path(

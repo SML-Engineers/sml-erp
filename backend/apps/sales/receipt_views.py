@@ -82,6 +82,12 @@ def _detail(r: CustomerReceipt, user) -> dict:
         "approved_by": r.approved_by.full_name if r.approved_by_id else None,
         "approved_at": r.approved_at,
         "posted_at": r.posted_at,
+        # P2-14: a returned cheque.
+        "returned_on": r.returned_on,
+        "return_reason": r.return_reason,
+        "return_entry": None
+        if r.return_entry_id is None
+        else {"id": r.return_entry_id, "number": r.return_entry.number},
         "can_approve": receipts.can_approve(user, r),
         "history": [
             {

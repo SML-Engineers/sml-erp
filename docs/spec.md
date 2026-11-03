@@ -1436,6 +1436,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Payment cancellation and foreign payments (P2-11) | A payment is cancelled only with the Director's approval: reversing entry, cheque spoiled, voucher open to pay again. Vouchers of supplier invoices in one foreign currency may be paid in it at the payment date's rate, the difference posted as exchange gain or loss (IAS 21) | 4.4, 4.6, 5A |
 | Withholding tax on payments (P2-12) | Built switched off (owner, 3 Nov 2026): none until the Accountant sets a rate. Then coded per voucher line on the amount before VAT; the payee is paid the net, WHT payable credited, and a numbered WHT certificate printed per payment | 4.4, 6 |
 | Reorder alerts and purchase requests (P2-13) | Reorder level and quantity per item and main store; at or below it (counting what is ordered or requested) the stores person and purchasing are told once; one click makes a draft request to the usual supplier. The Director approves requests by default (the Admin can change the role); purchasing makes an approved request into a draft PO at the last price | 6, 5A |
+| Cheque register and deposits (P2-14) | One register of our and customers' cheques; deposit slips from Undeposited funds; a returned cheque reverses its receipt (the bank credited) and opens the invoices again; transfers between own accounts stay Internal Transfer vouchers | 4.1, 6 |
 
 **Still needed for initial setup**
 

@@ -1125,6 +1125,9 @@ class CustomerReceipt(models.Model):
         POST_DATED = "post_dated", "Approved, cheque not yet due"
         POSTED = "posted", "Approved and posted"
         REJECTED = "rejected", "Rejected"
+        # The customer's cheque came back unpaid (P2-14): the receipt is reversed and the
+        # invoices are open again.
+        RETURNED = "returned", "Cheque returned"
 
     Method = CustomerAdvance.Method
 
@@ -1171,6 +1174,17 @@ class CustomerReceipt(models.Model):
     )
     approved_at = models.DateTimeField(null=True, blank=True)
     posted_at = models.DateTimeField(null=True, blank=True)
+    # A returned cheque (P2-14): when, why, and the entry that put the money back on the
+    # customer's account.
+    returned_on = models.DateField(null=True, blank=True)
+    return_reason = models.TextField(blank=True)
+    return_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="returned_receipt",
+    )
 
     class Meta:
         ordering = ["-receipt_date", "-number"]
@@ -1184,6 +1198,16 @@ class CustomerReceipt(models.Model):
             models.CheckConstraint(
                 condition=~models.Q(status="posted") | models.Q(journal_entry__isnull=False),
                 name="sales_receipt_posted_has_entry",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(status="returned")
+                | models.Q(
+                    method="cheque",
+                    journal_entry__isnull=False,
+                    return_entry__isnull=False,
+                    returned_on__isnull=False,
+                ),
+                name="sales_receipt_returned_cheque",
             ),
         ]
 

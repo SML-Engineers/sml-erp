@@ -2,8 +2,8 @@ import { API_BASE, apiGet, apiSend } from "./client";
 import type { ReceiptMethod } from "./advances";
 
 /** Customer receipts for tax invoices (P2-07). */
-export type ReceiptStatus = "awaiting_approval" | "post_dated" | "posted" | "rejected";
-export const RECEIPT_STATUSES: ReceiptStatus[] = ["awaiting_approval", "post_dated", "posted", "rejected"];
+export type ReceiptStatus = "awaiting_approval" | "post_dated" | "posted" | "rejected" | "returned";
+export const RECEIPT_STATUSES: ReceiptStatus[] = ["awaiting_approval", "post_dated", "posted", "rejected", "returned"];
 
 export interface ReceiptRow {
   id: number;
@@ -36,6 +36,10 @@ export interface ReceiptDetail extends ReceiptRow {
   approved_by: string | null;
   approved_at: string | null;
   posted_at: string | null;
+  /** P2-14: a returned cheque. */
+  returned_on?: string | null;
+  return_reason?: string;
+  return_entry?: { id: number; number: string } | null;
   can_approve: boolean;
   history: { action: string; action_label: string; by: string; at: string; reason: string }[];
 }

@@ -117,9 +117,11 @@ def open_at(rows: list[TaxInvoice], as_at: date) -> dict[int, Decimal]:
         .annotate(total=Sum("total_amount")),
         ReceiptAllocation.objects.filter(
             invoice__in=keys,
-            receipt__status=CustomerReceipt.Status.POSTED,
+            receipt__status__in=[CustomerReceipt.Status.POSTED, CustomerReceipt.Status.RETURNED],
             receipt__journal_entry__entry_date__lte=as_at,
         )
+        # A cheque returned by then pays nothing (P2-14).
+        .exclude(receipt__returned_on__lte=as_at)
         .values("invoice")
         .annotate(total=Sum("amount")),
         AdvanceSetOff.objects.filter(invoice__in=keys, set_off_date__lte=as_at)

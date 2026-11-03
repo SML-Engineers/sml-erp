@@ -342,6 +342,11 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
     invoices chosen has the extra recorded as an advance; cheques dated more than six months
     ahead or older than six months are refused; card payments (OnePay links) are recorded as
     money into the bank account they reach.
+    - Owner, 3 Nov 2026: the Accountant approves receipts, and the Admin can give that right
+      to any other person on the user page, confirmed by the Director (built as the action
+      "Approve customer receipts and advances", for receipts and advances alike). The extra
+      recorded as an advance is set off automatically against the customer's next invoice,
+      or any later one, after the advances of that invoice's own order.
 13. **Who changes credit limits and payment terms (P2-08).** Today salespeople can change
     them on the customer, which would let them lift their own customer's credit hold.
     Recommended: only the Accountant or the Director. Asked 3 Nov 2026; not built yet.

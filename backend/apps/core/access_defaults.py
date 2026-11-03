@@ -57,6 +57,7 @@ ACTIONS = {
     "issue_tax_invoices": "Issue tax invoices",
     "approve_credit_notes": "Approve credit notes",
     "allow_credit_holds": "Allow documents on credit hold",
+    "approve_customer_receipts": "Approve customer receipts and advances",
 }
 
 # Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
@@ -65,6 +66,7 @@ SENSITIVE_AREAS = {"hr_payroll"}
 SENSITIVE_ACTIONS = {
     "allow_credit_holds",
     "approve_credit_notes",
+    "approve_customer_receipts",
     "issue_tax_invoices",
     "record_payment",
     "record_receipt",
@@ -358,6 +360,11 @@ ROLE_ACTIONS_V5 = {"director": ["approve_credit_notes"]}
 # P2-08 (core migration 0023): a document on credit hold is allowed by the Director (owner,
 # 3 Nov 2026: block until the Director allows that document).
 ROLE_ACTIONS_V6 = {"director": ["allow_credit_holds"]}
+
+# P2-07 fix (core migration 0024): customer receipts and advances are approved by the
+# Accountant, or by a person the Admin gives "approve_customer_receipts" to and the Director
+# confirms (owner, 3 Nov 2026).
+ROLE_ACTIONS_V7 = {"accountant": ["approve_customer_receipts"]}
 
 # Phase 1.6 (P16-02, core migration 0019): purchasing, stores and QC roles switched on. SML has
 # one stores person, called Stores Manager or Stores Executive (owner, 31 Oct 2026).

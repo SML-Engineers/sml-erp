@@ -8,7 +8,9 @@ Receipts
   advances set off (also a database rule). A customer who pays more has the extra recorded as
   an advance. LKR only for now (invoices in other currencies come with P2-09).
 - Numbered from the receipts series RC{YY}{MM}{NNNN}, shared with advances (rule 10).
-- The Accountant approves, as for advances; nobody approves their own receipt (rule 5).
+- The Accountant approves, as for advances, or a person the Admin gives "Approve customer
+  receipts and advances" to and the Director confirms (owner, 3 Nov 2026); nobody approves
+  their own receipt (rule 5).
   Approval posts Dr the bank or cash account, Cr Accounts receivable with the customer, per
   invoice and division. A cheque goes to Undeposited funds until it is deposited (P2-14). A
   post-dated cheque is approved but waits: a daily job posts it on its date. Rejecting
@@ -17,7 +19,9 @@ Receipts
 Advance set-off (spec 5.2: "when the tax invoice is raised, the advance is set off
 automatically against it")
 - Issuing an invoice sets off the approved advances of its sales order (or of the order's
-  proforma or quotation), oldest first, up to the invoice's total.
+  proforma or quotation), then the customer's advances on account (against no order, e.g.
+  money paid over the invoices of a receipt), oldest first, up to the invoice's total
+  (owner, 3 Nov 2026).
 - The Accountant can also set off any approved advance of the customer against any of its
   open invoices.
 - Each set-off posts Dr Customer advances, Cr Accounts receivable (the customer). The database
@@ -31,7 +35,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import F, Q, QuerySet, Sum
+from django.db.models import Case, F, Q, QuerySet, Sum, Value, When
 from django.utils import timezone
 
 from apps.accounting import journal
@@ -482,25 +486,34 @@ def _set_off(
 
 
 def advances_for(invoice: TaxInvoice) -> QuerySet[CustomerAdvance]:
-    """Approved advances, not fully set off, paid for this invoice's order: against the order
-    itself, or before it existed against its proforma or quotation."""
+    """Approved advances, not fully set off, to take off this invoice: first those paid for
+    its order (against the order itself, or before it existed against its proforma or
+    quotation), then the customer's money on account, against no order (for example what was
+    paid over the invoices of a receipt; owner, 3 Nov 2026: set off against the next or any
+    future invoice). Oldest first in each group."""
     order = invoice.order
     match = Q(sales_order=order)
     if order.proforma_id:
         match |= Q(sales_order__isnull=True, proforma_id=order.proforma_id)
     if order.quotation_id:
         match |= Q(sales_order__isnull=True, quotation_id=order.quotation_id)
-    return CustomerAdvance.objects.filter(
-        match,
-        customer_id=invoice.customer_id,
-        status=CustomerAdvance.Status.APPROVED,
-        set_off_lkr__lt=F("amount_lkr"),
-    ).order_by("receipt_date", "pk")
+    on_account = Q(sales_order__isnull=True, proforma__isnull=True, quotation__isnull=True)
+    return (
+        CustomerAdvance.objects.filter(
+            match | on_account,
+            customer_id=invoice.customer_id,
+            status=CustomerAdvance.Status.APPROVED,
+            set_off_lkr__lt=F("amount_lkr"),
+        )
+        .annotate(group=Case(When(match, then=Value(0)), default=Value(1)))
+        .order_by("group", "receipt_date", "pk")
+    )
 
 
 def set_off_advances(user: User, invoice: TaxInvoice) -> list[AdvanceSetOff]:
-    """When an invoice is issued: its order's advances are set off against it, oldest first,
-    up to what is open on it. Runs inside the issuing transaction."""
+    """When an invoice is issued: its order's advances, then the customer's money on account,
+    are set off against it, oldest first, up to what is open on it. Runs inside the issuing
+    transaction."""
     done = []
     left = open_amount(invoice)
     for advance in advances_for(invoice).select_for_update():

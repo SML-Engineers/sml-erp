@@ -63,8 +63,15 @@ DOCUMENT_TYPES = {
     # Every quotation is approved by the Director before it is printed or sent (owner, 31 Oct
     # 2026; P15-06).
     "quotation": DocumentType("Quotation", min_approvals=1, final_role="director"),
-    # Recorded by the Cashier; the Accountant's approval is enough (owner, 31 Oct 2026; P15-09).
-    "customer_advance": DocumentType("Customer advance", min_approvals=1, final_role="accountant"),
+    # Recorded by the Cashier; the Accountant's approval is enough (owner, 31 Oct 2026; P15-09),
+    # or that of a person the Admin gives "approve_customer_receipts" to and the Director
+    # confirms (owner, 3 Nov 2026).
+    "customer_advance": DocumentType(
+        "Customer advance",
+        min_approvals=1,
+        final_role="accountant",
+        approver_action="approve_customer_receipts",
+    ),
     # A repeat order entered without a quotation: the Director approves its prices (P15-10).
     "sales_order": DocumentType("Sales order", min_approvals=1, final_role="director"),
     # Every purchase order is approved by the Director before it is sent (owner, 31 Oct 2026;
@@ -103,8 +110,14 @@ DOCUMENT_TYPES = {
         approver_action="approve_credit_notes",
     ),
     # Money received for issued tax invoices: recorded by the Cashier, approved by the
-    # Accountant, as for advances (P2-07).
-    "customer_receipt": DocumentType("Customer receipt", min_approvals=1, final_role="accountant"),
+    # Accountant or a person given "approve_customer_receipts", as for advances (P2-07; owner,
+    # 3 Nov 2026).
+    "customer_receipt": DocumentType(
+        "Customer receipt",
+        min_approvals=1,
+        final_role="accountant",
+        approver_action="approve_customer_receipts",
+    ),
 }
 
 

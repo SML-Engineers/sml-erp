@@ -13,7 +13,7 @@ from apps.accounting import services as chart
 from apps.accounting import sources, taxes
 from apps.accounting.models import Account, DetailType, TaxCode, TaxComponent
 from apps.core import approvals
-from apps.core.models import Company, Division, Notification
+from apps.core.models import AccessOverride, Company, Division, Notification, User
 from apps.masters import banking
 from apps.sales import advances, invoices, receipt, receipts
 from apps.sales.models import (
@@ -564,3 +564,78 @@ def test_the_printed_receipt_lists_the_invoices(two, cashier, bank):
     )
     pdf = receipt.render_receipt(made)
     assert pdf.startswith(b"%PDF")
+
+
+# --- Owner's answers of 3 Nov 2026 ----------------------------------------------------
+
+
+def grant(user, director, confirmed=True):
+    """The Admin gives "approve_customer_receipts" to someone; the Director confirms it."""
+    AccessOverride.objects.create(
+        user=user,
+        action="approve_customer_receipts",
+        effect=AccessOverride.Effect.GRANT,
+        reason="Approves receipts while the Accountant is on leave",
+        is_sensitive=True,
+        created_by=person("admin@sml.lk", "system_admin", all_divisions=True),
+        confirmed_by=director if confirmed else None,
+        confirmed_at=timezone.now() if confirmed else None,
+    )
+    return User.objects.get(pk=user.pk)  # access is worked out once per request
+
+
+def test_a_person_the_admin_chooses_approves_receipts_and_advances(
+    two, cashier, accountant, director, bank
+):
+    one, _ = two
+    chief = person("chief@sml.lk", "clerk", all_divisions=True)
+    made = pay(cashier, bank, (one, "1000.00"))
+    assert not receipts.can_approve(chief, made)
+    chief = grant(chief, director, confirmed=False)
+    assert not receipts.can_approve(chief, made)  # not until the Director confirms
+    AccessOverride.objects.filter(user=chief).update(
+        confirmed_by=director, confirmed_at=timezone.now()
+    )
+    chief = User.objects.get(pk=chief.pk)
+    assert receipts.approve(chief, made).status == S.POSTED
+    paid = advances.record(
+        cashier,
+        customer=one.customer,
+        account=bank,
+        method="transfer",
+        amount="500.00",
+        receipt_date=TODAY,
+        reference="CEFT 7",
+        division=Division.objects.get(code="WS"),
+    )
+    assert advances.approve(chief, paid).status == CustomerAdvance.Status.APPROVED
+
+
+def test_nobody_approves_a_receipt_they_recorded_even_with_the_right(two, cashier, director, bank):
+    one, _ = two
+    cashier = grant(cashier, director)
+    made = pay(cashier, bank, (one, "1000.00"))
+    assert not receipts.can_approve(cashier, made)
+    with pytest.raises(SalesError):
+        receipts.approve(cashier, made)
+
+
+def test_money_on_account_is_set_off_against_the_next_invoice(
+    order, stores, accountant, cashier, bank
+):
+    """The order's own advance goes first, then the customer's money on account (e.g. what
+    was paid over the invoices of a receipt), oldest first."""
+    ws = Division.objects.get(code="WS")
+    on_account = advance(cashier, accountant, order.customer, bank, "200000.00", division=ws)
+    for_order = advance(cashier, accountant, order.customer, bank, "40000.00", sales_order=order)
+    base.deliver(stores, order, "50")
+    invoice = invoices.issue(accountant, invoices.create(accountant, order))
+    assert [(s.advance, s.amount) for s in AdvanceSetOff.objects.order_by("id")] == [
+        (for_order, D("40000.00")),
+        (on_account, invoice.total_amount - D("40000.00")),
+    ]
+    assert receipts.open_amount(invoice) == 0
+    on_account.refresh_from_db()
+    assert advances.balance_lkr(on_account) == D("200000.00") - (
+        invoice.total_amount - D("40000.00")
+    )

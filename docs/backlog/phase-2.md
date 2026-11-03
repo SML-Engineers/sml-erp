@@ -309,11 +309,28 @@ Status: `[ ]` to do · `[x]` done
     until a real file imports correctly (the PDF itself is not kept). New library: pypdf, to
     read PDF text. The other banks' templates are added when their exports arrive.
 
-- [ ] **P2-16 Bank reconciliation** (spec 6, 7A)
+- [x] **P2-16 Bank reconciliation** (spec 6, 7A)
   Imported lines matched to payments, receipts, deposits and transfers (amount, date, cheque
   number, reference); suggestions for the rest from rules and earlier coding; bank charges and
   interest added with one click. Nothing posts without the Accountant's click. The month's
   reconciliation is locked when done.
+  - Done: Accounts → Bank reconciliation (Accountant). Each statement line is matched to the
+    journal entry that moved the same money through the bank account (supplier payment,
+    deposit slip, receipt or advance into the bank, internal transfer, journal): same amount
+    and direction, from 90 days before to 10 days after the line. The suggestion is the only
+    such entry, or the one whose cheque number, deposit or transfer reference appears on the
+    line; "Accept all suggestions" matches them in one click, and any line can be matched by
+    hand or undone. A line with nothing in the books (charges, interest) is posted from the
+    line in one click (Dr/Cr the account and the bank, dated like the line) to the account a
+    rule gives ("description contains...", kept on the same page) or that the same line went
+    to before, or one chosen. The page shows the balance per bank and per books, the book
+    items not yet on the statement, the lines not yet in the books, and the difference. A
+    month (ending on its last day) is finished only when every line to its end is in the
+    books and the difference is nil; it is then locked (database guard: its matches and
+    statement lines no longer change) and its matched cheques and deposits are marked cleared
+    on the statement date. Defaults you can change: the 90/10-day window; every bank line
+    must be in the books before the month is finished; book items dated before the first
+    imported statement are taken as already reconciled.
 
 - [ ] **P2-17 Petty cash** (spec 6)
   An imprest float per custodian; small expenses recorded with their slips; replenishment

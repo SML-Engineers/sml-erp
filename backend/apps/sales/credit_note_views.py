@@ -112,7 +112,7 @@ def _detail(n: CreditNote, user) -> dict:
                     "action": row.action,
                     "action_label": row.get_action_display(),
                     "by": row.user.full_name,
-                    "at": row.created_at,
+                    "at": row.acted_at,
                     "reason": row.reason,
                 }
                 for row in approvals.history(credit_notes.DOC, n.pk)

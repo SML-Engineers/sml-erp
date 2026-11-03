@@ -12,7 +12,7 @@ from apps.accounting import journal, taxes
 from apps.accounting.journal import Line
 from apps.accounting.models import Account, TaxCode, TaxComponent
 from apps.core import approvals
-from apps.core.models import AccessOverride, Company, Division, Notification
+from apps.core.models import AccessOverride, Company, Division, Notification, User
 from apps.sales import credit_note_printing, credit_notes, invoices
 from apps.sales.credit_notes import LineInput
 from apps.sales.models import CreditNote, CreditNoteLine
@@ -96,6 +96,12 @@ def grant(user, action, director, confirmed=True):
         confirmed_by=director if confirmed else None,
         confirmed_at=timezone.now() if confirmed else None,
     )
+    return fresh(user)
+
+
+def fresh(user):
+    """A user's access is worked out once per request; a new request sees a new grant."""
+    return User.objects.get(pk=user.pk)
 
 
 # --- The figures and the posting --------------------------------------------------------------
@@ -181,11 +187,12 @@ def test_who_approves(invoice, executive, director, accountant):
     with pytest.raises(SalesError, match="approved by the Director"):
         credit_notes.approve(accountant, note)
     # The Admin gives the Accountant the right; it counts only once the Director confirms.
-    grant(accountant, "approve_credit_notes", director, confirmed=False)
+    accountant = grant(accountant, "approve_credit_notes", director, confirmed=False)
     assert not credit_notes.can_approve(accountant, note)
     AccessOverride.objects.filter(user=accountant).update(
         confirmed_by=director, confirmed_at=timezone.now()
     )
+    accountant = fresh(accountant)
     assert credit_notes.can_approve(accountant, note)
     state = approvals.state_of("credit_note", note.pk)
     assert accountant in approvals.approvers(state)
@@ -195,7 +202,7 @@ def test_who_approves(invoice, executive, director, accountant):
 
 
 def test_nobody_approves_their_own(invoice, accountant, director):
-    grant(accountant, "approve_credit_notes", director)
+    accountant = grant(accountant, "approve_credit_notes", director)
     note = credit_notes.submit(accountant, price(accountant, invoice, "1000"))
     with pytest.raises(SalesError, match="created or submitted"):
         credit_notes.approve(accountant, note)

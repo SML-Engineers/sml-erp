@@ -1228,3 +1228,102 @@ class AdvanceSetOff(models.Model):
 
     def __str__(self):
         return f"{self.advance} -> {self.invoice}: {self.amount}"
+
+
+# --- Credit control and payment reminders (P2-08) ------------------------------------------
+
+
+class CreditHold(models.Model):
+    """A sales order or tax invoice stopped because its customer is over the credit limit or
+    has overdue invoices (owner, 3 Nov 2026: block). It waits until the Director allows that
+    one document, with a note. Allowed holds never change and no hold is deleted (database
+    guard), so every release is on record."""
+
+    class Kind(models.TextChoices):
+        SALES_ORDER = "sales_order", "Sales order"
+        TAX_INVOICE = "tax_invoice", "Tax invoice"
+
+    class Status(models.TextChoices):
+        WAITING = "waiting", "Waiting for the Director"
+        ALLOWED = "allowed", "Allowed by the Director"
+
+    document_type = models.CharField(max_length=20, choices=Kind.choices)
+    document_id = models.BigIntegerField()
+    document_label = models.CharField(max_length=100)
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="credit_holds"
+    )
+    # The figures when it was stopped (LKR).
+    amount_lkr = models.DecimalField(max_digits=18, decimal_places=2)
+    exposure_lkr = models.DecimalField(max_digits=18, decimal_places=2)
+    credit_limit = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    overdue_lkr = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    reasons = models.TextField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.WAITING)
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    requested_at = models.DateTimeField(default=timezone.now)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-requested_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status="waiting")
+                | (models.Q(decided_by__isnull=False) & models.Q(decided_at__isnull=False)),
+                name="sales_credit_hold_decided",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.document_label}: {self.get_status_display()}"
+
+
+class ReminderPlan(models.Model):
+    """Automatic payment reminders for one customer: when switched on, the customer's
+    statement is emailed from the finance mailbox every `every_days` days while it has
+    overdue invoices, and stops once they are paid. The emails go in the name of the person
+    who switched them on."""
+
+    customer = models.OneToOneField(
+        "masters.Customer", on_delete=models.PROTECT, related_name="reminder_plan"
+    )
+    is_on = models.BooleanField(default=False)
+    every_days = models.PositiveSmallIntegerField(default=7)
+    set_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(every_days__gte=1) & models.Q(every_days__lte=90),
+                name="sales_reminder_every_days",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Reminders for {self.customer}"
+
+
+class ReminderSent(models.Model):
+    """One automatic reminder, sent or attempted (the email itself is in the sent emails).
+    Insert-only (database guard)."""
+
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="reminders_sent"
+    )
+    email = models.OneToOneField("core.SentEmail", on_delete=models.PROTECT, related_name="+")
+    amount_due_lkr = models.DecimalField(max_digits=18, decimal_places=2)
+    overdue_lkr = models.DecimalField(max_digits=18, decimal_places=2)
+    sent_on = models.DateField()
+
+    class Meta:
+        ordering = ["-sent_on", "-id"]
+
+    def __str__(self):
+        return f"Reminder to {self.customer} on {self.sent_on}"

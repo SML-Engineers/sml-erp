@@ -28,6 +28,8 @@ EVENTS = {
     "admin_request_waiting": "An Admin request (such as a password reset) waits for my approval",
     "admin_request_decided": "An Admin request I made was approved or refused",
     "journal_ready": "A recurring journal was made for me to check and send",
+    "credit_hold_waiting": "A sales order or invoice is on credit hold and waits for me",
+    "credit_hold_allowed": "A document of mine on credit hold was allowed",
 }
 
 log = logging.getLogger(__name__)

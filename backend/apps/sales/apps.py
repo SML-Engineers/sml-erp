@@ -28,5 +28,7 @@ class SalesConfig(AppConfig):
             m.CustomerReceipt,
             m.ReceiptAllocation,
             m.AdvanceSetOff,
+            m.CreditHold,
+            m.ReminderPlan,
         ):
             register(model)

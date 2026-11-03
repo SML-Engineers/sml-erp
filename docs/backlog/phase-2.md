@@ -144,11 +144,27 @@ Status: `[ ]` to do · `[x]` done
     off any approved advance of the customer by hand, from the advance's page. The invoice page
     shows what was received, waiting, set off and still open. LKR only until P2-09.
 
-- [ ] **P2-08 Customer statements, aging and credit limits** (spec 6, 7A)
+- [x] **P2-08 Customer statements, aging and credit limits** (spec 6, 7A)
   Statements (PDF, email), receivables aging (current, 30, 60, 90, over 90 days), credit limit
   and payment terms per customer checked on new sales orders and invoices (question 5).
   Automatic reminders per customer on a schedule from the finance mailbox, stopping when paid;
   each reminder is recorded.
+  - Done: Sales → Receivables and statements. The aging shows per customer what is open on
+    its invoices at a date (not yet due, 1-30, 31-60, 61-90, over 90 days past the due date;
+    approved receipts only), next to its receivables ledger balance, with Excel and PDF. The
+    statement is the customer's receivables ledger for a period (opening balance, every
+    posting with a running balance, closing balance) with its open invoices by age, advances
+    held and credit status; printed, Excel, and emailed by the Accountant from the finance
+    mailbox. Credit control (question 5, block): confirming a sales order or issuing a tax
+    invoice is refused when the customer has an overdue invoice or would go over its credit
+    limit (open invoices less receipts recorded and advances held, plus the new document; no
+    limit when empty). The document goes on Sales → Credit holds, the Director is notified
+    and allows that one document with a note ("Allow documents on credit hold", Director's
+    role; sensitive); the allowance covers it up to that amount. Holds are never deleted and
+    allowed ones never change (database). Reminders: the Accountant switches them on per
+    customer with how often (1-90 days); a daily job (Monday to Saturday, 08:15) emails the
+    statement while invoices are overdue, in the name of the person who switched them on, and
+    stops once paid; each is recorded (insert-only).
 
 - [ ] **P2-09 Export invoices and exchange differences** (spec 5.5, 6)
   Tax invoices in the customer's currency at the day's rate; the receipt at its own rate posts
@@ -326,3 +342,6 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
     invoices chosen has the extra recorded as an advance; cheques dated more than six months
     ahead or older than six months are refused; card payments (OnePay links) are recorded as
     money into the bank account they reach.
+13. **Who changes credit limits and payment terms (P2-08).** Today salespeople can change
+    them on the customer, which would let them lift their own customer's credit hold.
+    Recommended: only the Accountant or the Director. Asked 3 Nov 2026; not built yet.

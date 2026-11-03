@@ -18,6 +18,9 @@ import CancellationsPage from "./pages/CancellationsPage";
 import VoucherReportsPage from "./pages/VoucherReportsPage";
 import AdvancePage from "./pages/AdvancePage";
 import CreditHoldsPage from "./pages/CreditHoldsPage";
+import PayablesPage from "./pages/PayablesPage";
+import SupplierStatementPage from "./pages/SupplierStatementPage";
+import SupplierStatementsPage from "./pages/SupplierStatementsPage";
 import ReceiptPage from "./pages/ReceiptPage";
 import ReceivablesPage from "./pages/ReceivablesPage";
 import StatementPage from "./pages/StatementPage";
@@ -189,6 +192,9 @@ export default function App() {
         <Route path="receivables" element={<ReceivablesPage />} />
         <Route path="receivables/:id" element={<StatementPage />} />
         <Route path="credit-holds" element={<CreditHoldsPage />} />
+        <Route path="payables" element={<PayablesPage />} />
+        <Route path="supplier-statements" element={<WithMe page={(me) => <SupplierStatementsPage me={me} />} />} />
+        <Route path="supplier-statements/:id" element={<SupplierStatementPage />} />
         <Route path="vouchers/:id" element={<WithMe page={(me) => <VoucherPage me={me} />} />} />
         <Route
           path="accounting-periods"

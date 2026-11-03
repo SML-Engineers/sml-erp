@@ -352,3 +352,79 @@ class DebitNote(models.Model):
 
     def __str__(self):
         return self.number
+
+
+# --- Supplier statements (P2-10) -------------------------------------------------------------
+
+
+class SupplierStatement(models.Model):
+    """A supplier's statement of account, typed in or imported from Excel or CSV, to check
+    against our records: each of its lines is matched to our invoices, debit notes and
+    payments, and the differences are listed. Once the Accountant marks it checked, it never
+    changes (database guard)."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Being checked"
+        CHECKED = "checked", "Checked"
+
+    supplier = models.ForeignKey(
+        "masters.Supplier", on_delete=models.PROTECT, related_name="statements"
+    )
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    from_date = models.DateField(null=True, blank=True)
+    statement_date = models.DateField()
+    # What the supplier says we owe at the statement date.
+    closing_balance = money()
+    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    checked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    checked_at = models.DateTimeField(null=True, blank=True)
+    check_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-statement_date", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status="open")
+                | (models.Q(checked_by__isnull=False) & models.Q(checked_at__isnull=False)),
+                name="purchasing_statement_checked",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.supplier} statement {self.statement_date}"
+
+
+class SupplierStatementLine(models.Model):
+    """One line as the supplier printed it: an invoice they charged us (debit) or a payment
+    or credit note they received or gave (credit)."""
+
+    statement = models.ForeignKey(SupplierStatement, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveIntegerField()
+    date = models.DateField()
+    reference = models.CharField(max_length=60, blank=True)
+    description = models.CharField(max_length=300, blank=True)
+    debit = money(default=0)
+    credit = money(default=0)
+
+    class Meta:
+        ordering = ["statement", "line_no"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["statement", "line_no"], name="purchasing_stmt_line_no"
+            ),
+            models.CheckConstraint(
+                condition=(models.Q(debit__gt=0) & models.Q(credit=0))
+                | (models.Q(credit__gt=0) & models.Q(debit=0)),
+                name="purchasing_stmt_line_one_side",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.statement_id}/{self.line_no}"

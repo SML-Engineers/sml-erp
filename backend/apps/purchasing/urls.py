@@ -1,11 +1,29 @@
 from django.urls import path
 
 from . import invoice_views as iv
+from . import payable_views as pv
 from . import report_views as pr
 from . import return_views as rv
 from . import views as v
 
 urlpatterns = [
+    path("payables/aging/", pv.AgingView.as_view(), name="payables-aging"),
+    path("supplier-statements/", pv.StatementListView.as_view(), name="supplier-statements"),
+    path(
+        "supplier-statements/import/",
+        pv.StatementImportView.as_view(),
+        name="supplier-statement-import",
+    ),
+    path(
+        "supplier-statements/<int:pk>/",
+        pv.StatementDetailView.as_view(),
+        name="supplier-statement",
+    ),
+    path(
+        "supplier-statements/<int:pk>/check/",
+        pv.StatementCheckView.as_view(),
+        name="supplier-statement-check",
+    ),
     path("purchase-orders/", v.OrderListView.as_view(), name="po-list"),
     path("purchase-orders/<int:pk>/", v.OrderDetailView.as_view(), name="po-detail"),
     path("purchase-orders/<int:pk>/submit/", v.SubmitView.as_view(), name="po-submit"),

@@ -286,7 +286,7 @@ Status: `[ ]` to do · `[x]` done
     cheque are a separate journal; advances paid by cheque still go straight to the bank
     account chosen.
 
-- [ ] **P2-15 Bank statement import** (spec 7A)
+- [x] **P2-15 Bank statement import** (spec 7A)
   Statement files (CSV or Excel) read with a template per bank: Commercial Bank, Sampath,
   Seylan, People's Bank, Bank of Ceylon and HNB first, each checked against a real export
   (the owner supplies one per bank); then the other nine.
@@ -294,6 +294,20 @@ Status: `[ ]` to do · `[x]` done
     columns date, description, debit, credit, balance with Cr/Dr. Kept outside the
     repository (it holds account data). Excel/CSV exports asked for as well. The Accountant can correct a
   template or add a bank without a code change.
+  - Done: Accounts → Bank statements (Accountant). A template per bank says how its file is
+    laid out: for Excel or CSV the column headings (date, description, reference, money out
+    and in, or one signed amount, balance) and the date format; for a PDF with text, each line
+    starting with a date is a transaction, its last amounts are money out/in and the balance
+    with Cr/Dr, and lines without a date continue the description. With only one amount the
+    direction comes from the balance. The file is read and shown first; every balance must
+    follow from the one before (from the "Balance B/F" line, the opening balance typed, or the
+    last statement's closing balance), so a misread file is refused. The same file is
+    imported once per account; lines already imported from an overlapping statement are
+    skipped. Imported lines never change (database guard); a wrong import is deleted whole.
+    The Accountant adds or corrects templates on the same page, with no code change. Loaded:
+    "COMBANK-PDF", built from the layout notes of 2 Nov 2026 and marked "not yet checked"
+    until a real file imports correctly (the PDF itself is not kept). New library: pypdf, to
+    read PDF text. The other banks' templates are added when their exports arrive.
 
 - [ ] **P2-16 Bank reconciliation** (spec 6, 7A)
   Imported lines matched to payments, receipts, deposits and transfers (amount, date, cheque

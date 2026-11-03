@@ -15,8 +15,8 @@ Debit, Credit), then matched line by line against our invoices, debit notes and 
 the period: by reference (case and spaces ignored), and payments without a match by the
 same amount within a week. The differences are listed, with the supplier's closing balance
 against ours. The Accountant marks a statement checked, with a note; it then never changes.
-Payments are in LKR for now, so for a supplier in another currency only its invoices are
-compared (foreign-currency payments come with P2-11).
+Payments are compared in the statement's currency (what left our account, P2-11); for a
+supplier in another currency the balances are not compared, as our books keep it in LKR.
 """
 
 import csv
@@ -562,21 +562,6 @@ def our_records(supplier: Supplier, currency, start: date, end: date) -> tuple[l
                         "amount": line.total,
                     }
                 )
-        for p in SupplierPayment.objects.filter(
-            voucher__payee=supplier, cancelled=False, payment_date__range=(start, end)
-        ).select_related("cheque", "voucher"):
-            refs = [p.reference] + ([str(p.cheque.number)] if p.cheque_id else [])
-            credits.append(
-                {
-                    "date": p.payment_date,
-                    "reference": " / ".join(r for r in refs if r),
-                    "keys": {_key(r) for r in refs if r}
-                    | ({_key(f"{p.cheque.number:06d}")} if p.cheque_id else set()),
-                    "document": p.number,
-                    "link": f"/vouchers/{p.voucher_id}",
-                    "amount": p.amount,
-                }
-            )
         for d in DebitNote.objects.filter(
             invoice__supplier=supplier, created_at__date__range=(start, end)
         ):
@@ -590,6 +575,24 @@ def our_records(supplier: Supplier, currency, start: date, end: date) -> tuple[l
                     "amount": d.total_lkr,
                 }
             )
+    for p in SupplierPayment.objects.filter(
+        voucher__payee=supplier,
+        cancelled=False,
+        currency=currency,
+        payment_date__range=(start, end),
+    ).select_related("cheque", "voucher"):
+        refs = [p.reference] + ([str(p.cheque.number)] if p.cheque_id else [])
+        credits.append(
+            {
+                "date": p.payment_date,
+                "reference": " / ".join(r for r in refs if r),
+                "keys": {_key(r) for r in refs if r}
+                | ({_key(f"{p.cheque.number:06d}")} if p.cheque_id else set()),
+                "document": p.number,
+                "link": f"/vouchers/{p.voucher_id}",
+                "amount": p.paid_amount,
+            }
+        )
     for row in charges:
         row["keys"] = {_key(row["reference"])} if row["reference"] else set()
     return charges, credits

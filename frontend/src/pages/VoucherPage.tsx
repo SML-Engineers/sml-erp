@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { listDivisions } from "../api/admin";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
+import { approvePaymentCancellation, cancelPayment, rejectPaymentCancellation } from "../api/payments";
 import { listPayees } from "../api/payees";
 import { getAdvanceOrders, getPayableInvoices } from "../api/supplierInvoices";
 import { getTaxes, taxesKey } from "../api/taxes";
@@ -786,7 +787,8 @@ function CancellationPanel({ voucher, request }: { voucher: VoucherDetail; reque
   );
 }
 
-/** Payments made against the voucher, and what is left to pay (P1-07). */
+/** Payments made against the voucher, and what is left to pay (P1-07); cancelling a payment
+ * with the Director's approval (P2-11). */
 function Payments({ voucher }: { voucher: VoucherDetail }) {
   const { t } = useTranslation();
   return (
@@ -806,13 +808,23 @@ function Payments({ voucher }: { voucher: VoucherDetail }) {
           </thead>
           <tbody>
             {voucher.payments?.map((p) => (
-              <tr key={p.id}>
-                <td className="mono">{p.number}</td>
+              <tr key={p.id} className={p.cancelled ? "muted" : undefined}>
+                <td className="mono">
+                  {p.number}
+                  {p.cancelled && <div>{t("payments.cancelled")}</div>}
+                </td>
                 <td>{p.payment_date}</td>
                 <td>{p.account.code}</td>
                 <td>{t(`payments.methods.${p.method}`)}</td>
                 <td>{p.reference}</td>
-                <td className="num">{formatDecimal(p.amount)}</td>
+                <td className="num">
+                  {p.cancelled ? <s>{formatDecimal(p.amount)}</s> : formatDecimal(p.amount)}
+                  {p.currency && p.currency !== "LKR" && (
+                    <div className="muted">
+                      {p.currency} {formatDecimal(p.paid_amount ?? "")} @ {p.exchange_rate}
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -824,6 +836,67 @@ function Payments({ voucher }: { voucher: VoucherDetail }) {
           </tfoot>
         </table>
       </div>
+      {voucher.payments?.map((p) => (
+        <PaymentCancel key={p.id} voucher={voucher} payment={p} />
+      ))}
     </section>
+  );
+}
+
+function PaymentCancel({ voucher, payment }: { voucher: VoucherDetail; payment: NonNullable<VoucherDetail["payments"]>[number] }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
+  const act = useMutation({
+    mutationFn: (call: () => Promise<unknown>) => call(),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: [...vouchersKey, "one", String(voucher.id)] }),
+  });
+  const c = payment.cancellation;
+  const error = act.error;
+  return (
+    <div aria-label={t("payments.cancelOf", { number: payment.number })} role="group">
+      {c?.status === "pending" && <p>{t("payments.cancelPending", { name: c.requested_by, reason: c.reason })}</p>}
+      {c?.status === "approved" && (
+        <p className="muted">{t("payments.cancelDone", { name: c.decided_by ?? "", reason: c.reason, entry: c.reversal_entry ?? "" })}</p>
+      )}
+      {c?.status === "rejected" && !payment.can_cancel && <p className="muted">{t("payments.cancelRejected", { name: c.decided_by ?? "" })}</p>}
+      {c?.can_decide && (
+        <div className="inline-form">
+          <label>
+            {t("payments.decisionNote")}
+            <input value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+          </label>
+          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approvePaymentCancellation(c.id, note))}>
+            {t("payments.approveCancel")}
+          </button>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => rejectPaymentCancellation(c.id, note))}>
+            {t("payments.rejectCancel")}
+          </button>
+        </div>
+      )}
+      {payment.can_cancel && (
+        <form
+          className="inline-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            act.mutate(() => cancelPayment(payment.id, reason));
+          }}
+        >
+          <label>
+            {t("payments.cancelReason")} ({payment.number})
+            <input value={reason} required maxLength={2000} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <button type="submit" className="secondary" disabled={act.isPending}>
+            {t("payments.askCancel")}
+          </button>
+        </form>
+      )}
+      {error ? (
+        <p className="form-error" role="alert">
+          {error instanceof ApiError && error.detail ? error.detail : t("common.error")}
+        </p>
+      ) : null}
+    </div>
   );
 }

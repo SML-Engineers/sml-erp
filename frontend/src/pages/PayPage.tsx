@@ -55,7 +55,8 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
   const queryClient = useQueryClient();
   const { voucher, accounts } = props;
   const [method, setMethod] = useState<PaymentMethod>(voucher.methods[0]);
-  const fitting = accounts.filter((a) => accountFits(a, method));
+  const foreign = voucher.foreign?.currency ?? null;
+  const fitting = accounts.filter((a) => accountFits(a, method, foreign));
   const preferred = fitting.find((a) => a.id === voucher.suggested_account) ?? fitting[0];
   const [accountId, setAccountId] = useState<string>(preferred ? String(preferred.id) : "");
   const account = fitting.find((a) => String(a.id) === accountId);
@@ -94,8 +95,8 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
 
   const changeMethod = (next: PaymentMethod) => {
     setMethod(next);
-    const first = accounts.find((a) => accountFits(a, next) && a.id === voucher.suggested_account) ??
-      accounts.find((a) => accountFits(a, next));
+    const first = accounts.find((a) => accountFits(a, next, foreign) && a.id === voucher.suggested_account) ??
+      accounts.find((a) => accountFits(a, next, foreign));
     setAccountId(first ? String(first.id) : "");
     setCheque(null);
   };
@@ -127,11 +128,15 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
         <select value={accountId} required onChange={(e) => {
           setAccountId(e.target.value);
           setCheque(null);
+          // From an account in the invoices' currency, the amount is in that currency (P2-11).
+          const chosen = fitting.find((a) => String(a.id) === e.target.value);
+          setAmount(chosen && chosen.currency !== "LKR" && voucher.foreign ? voucher.foreign.left : voucher.remaining);
         }}>
           <option value="">—</option>
           {fitting.map((a) => (
             <option key={a.id} value={a.id}>
               {a.code} {a.name}
+              {a.currency !== "LKR" ? ` (${a.currency})` : ""}
             </option>
           ))}
         </select>
@@ -140,9 +145,14 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
         <p className="wide form-error">{t("payments.noAccount")}</p>
       )}
       <label>
-        {t("payments.amount")}
+        {account && account.currency !== "LKR" ? t("payments.amountIn", { currency: account.currency }) : t("payments.amount")}
         <input inputMode="decimal" className="num" required value={amount} onChange={(e) => setAmount(e.target.value)} />
       </label>
+      {account && account.currency !== "LKR" && voucher.foreign && (
+        <p className="muted wide">
+          {t("payments.foreignNote", { currency: voucher.foreign.currency, left: formatDecimal(voucher.foreign.left) })}
+        </p>
+      )}
       <label>
         {t("payments.date")}
         <input type="date" required value={date} max={today()} onChange={(e) => setDate(e.target.value)} />

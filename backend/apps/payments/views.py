@@ -14,8 +14,8 @@ from apps.masters import banking
 from apps.masters.models import CompanyAccount
 from apps.vouchers import services as vouchers
 
-from . import services
-from .models import SupplierPayment
+from . import cancellations, services
+from .models import PaymentCancellation, SupplierPayment
 from .services import PaymentError
 
 
@@ -23,7 +23,25 @@ def _error(error):
     return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def payment_row(p: SupplierPayment) -> dict:
+def _cancellation(p: SupplierPayment, user) -> dict | None:
+    """The latest cancellation request of the payment, and what the user may do (P2-11)."""
+    latest = p.cancellations.select_related("requested_by", "decided_by").first()
+    if latest is None:
+        return None
+    return {
+        "id": latest.pk,
+        "status": latest.status,
+        "reason": latest.reason,
+        "requested_by": latest.requested_by.full_name,
+        "requested_at": latest.requested_at,
+        "decided_by": latest.decided_by.full_name if latest.decided_by_id else None,
+        "decided_at": latest.decided_at,
+        "reversal_entry": latest.reversal_entry.number if latest.reversal_entry_id else None,
+        "can_decide": user is not None and cancellations.can_decide(user, latest),
+    }
+
+
+def payment_row(p: SupplierPayment, user=None) -> dict:
     return {
         "id": p.pk,
         "number": p.number,
@@ -35,7 +53,16 @@ def payment_row(p: SupplierPayment) -> dict:
         "cheque_date": p.cheque_date,
         "payment_date": p.payment_date,
         "amount": f"{p.amount:.2f}",
-        "journal_entry": p.journal_entry.number,
+        # P2-11: what left the account, in its currency, and the rate; and cancelling.
+        "currency": p.currency.code,
+        "paid_amount": f"{p.paid_amount:.2f}",
+        "exchange_rate": f"{p.exchange_rate.normalize():f}",
+        "cancelled": p.cancelled,
+        "cancellation": _cancellation(p, user),
+        "can_cancel": user is not None
+        and not p.cancelled
+        and cancellations.can_request(user)
+        and cancellations.pending(p) is None,
         "notes": p.notes,
         "created_by": p.created_by.full_name,
         "created_at": p.created_at,
@@ -72,6 +99,7 @@ class ToPayView(_Payments):
         for v in vouchers:
             paid = services.paid_on(v)
             suggested = services.suggested_account(v)
+            currency, foreign_total = services.foreign_basis(v)
             rows.append(
                 {
                     "id": v.pk,
@@ -87,6 +115,14 @@ class ToPayView(_Payments):
                     "remaining": f"{v.total_amount - paid:.2f}",
                     "methods": services.methods_for(v),
                     "suggested_account": suggested.pk if suggested else None,
+                    # P2-11: it may also be paid in this currency, from an account in it.
+                    "foreign": None
+                    if currency is None
+                    else {
+                        "currency": currency.code,
+                        "total": f"{foreign_total:.2f}",
+                        "left": f"{services.foreign_left(v, foreign_total):.2f}",
+                    },
                 }
             )
         return Response(rows)
@@ -170,7 +206,7 @@ class PaymentListView(_Payments):
                 filename="payments",
                 user=request.user,
             )
-        return Response([payment_row(p) for p in rows[:1000]])
+        return Response([payment_row(p, request.user) for p in rows[:1000]])
 
     def post(self, request):
         data = PaymentInput(data=request.data)
@@ -197,4 +233,48 @@ class PaymentListView(_Payments):
         payment = SupplierPayment.objects.select_related(
             "voucher", "voucher__payee", "account", "journal_entry", "created_by"
         ).get(pk=payment.pk)
-        return Response(payment_row(payment), status=status.HTTP_201_CREATED)
+        return Response(payment_row(payment, request.user), status=status.HTTP_201_CREATED)
+
+
+def _payment(user, pk) -> SupplierPayment:
+    rows = services.visible(user).select_related(
+        "voucher", "voucher__payee", "account", "currency", "journal_entry", "created_by"
+    )
+    return get_object_or_404(rows, pk=pk)
+
+
+class _Cancellations(_Payments):
+    # The service decides: the Cashier or the Accountant asks, the Director decides.
+    access_write_level = "view"
+
+
+class CancelPaymentView(_Cancellations):
+    """Ask to cancel a payment, with the reason."""
+
+    def post(self, request, pk):
+        payment = _payment(request.user, pk)
+        try:
+            cancellations.request(request.user, payment, str(request.data.get("reason", "")))
+        except PaymentError as error:
+            return _error(error)
+        return Response(payment_row(_payment(request.user, pk), request.user))
+
+
+class CancellationDecisionView(_Cancellations):
+    decision = "approve"
+
+    def post(self, request, pk):
+        cancellation = get_object_or_404(PaymentCancellation, pk=pk)
+        payment = _payment(request.user, cancellation.payment_id)
+        try:
+            if self.decision == "approve":
+                cancellations.approve(
+                    request.user, cancellation, str(request.data.get("comment", ""))
+                )
+            else:
+                cancellations.reject(
+                    request.user, cancellation, str(request.data.get("reason", ""))
+                )
+        except PaymentError as error:
+            return _error(error)
+        return Response(payment_row(_payment(request.user, payment.pk), request.user))

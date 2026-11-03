@@ -140,3 +140,25 @@ test("a voucher that is not waiting to be paid cannot be paid here", async () =>
   expect(await screen.findByRole("alert")).toHaveTextContent("not waiting to be paid");
   expect(screen.queryByRole("form")).not.toBeInTheDocument();
 });
+
+test("a voucher of dollar invoices can be paid from the dollar account, in dollars (P2-11)", async () => {
+  const usd = { id: 4, code: "COM-USD", name: "Commercial USD", kind: "current" as const, currency: "USD", has_ledger: true, next_cheque: "000500" };
+  const calls = mockApi({
+    "GET /api/v1/payments/to-pay/": {
+      body: [row({ remaining: "3750000.00", paid: "0.00", total_amount: "3750000.00", methods: ["cheque"], foreign: { currency: "USD", total: "12500.00", left: "12500.00" } })],
+    },
+    "GET /api/v1/payments/accounts/": { body: [...accounts, usd, { ...usd, id: 5, code: "COM-EUR", currency: "EUR" }] },
+    "POST /api/v1/payments/": { status: 201, body: payment },
+  });
+  renderAt("/payments/new?voucher=1", <PayPage />, "/payments/new");
+  const form = await screen.findByRole("form", { name: "Record a payment" });
+  const from = within(form).getByLabelText("Paid from");
+  expect(within(from).queryByText(/COM-EUR/)).not.toBeInTheDocument(); // only the invoices' currency
+  fireEvent.change(from, { target: { value: "4" } });
+  expect(within(form).getByLabelText("Amount USD")).toHaveValue("12500.00");
+  expect(form).toHaveTextContent("USD 12,500.00 left to pay");
+  fireEvent.click(within(form).getByRole("button", { name: "Save payment" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/payments/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([, i]) => i?.method === "POST")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({ account: 4, amount: "12500.00" });
+});

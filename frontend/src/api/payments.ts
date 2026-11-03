@@ -18,6 +18,8 @@ export interface ToPayRow {
   remaining: string;
   methods: PaymentMethod[];
   suggested_account: number | null;
+  /** P2-11: a voucher of supplier invoices in one foreign currency may be paid in it. */
+  foreign?: { currency: string; total: string; left: string } | null;
 }
 
 export interface PayAccount {
@@ -45,6 +47,23 @@ export interface Payment {
   notes: string;
   created_by: string;
   created_at: string;
+  /** P2-11: what left the account in its currency, the rate, and cancelling. */
+  currency?: string;
+  paid_amount?: string;
+  exchange_rate?: string;
+  cancelled?: boolean;
+  can_cancel?: boolean;
+  cancellation?: {
+    id: number;
+    status: "pending" | "approved" | "rejected";
+    reason: string;
+    requested_by: string;
+    requested_at: string;
+    decided_by: string | null;
+    decided_at: string | null;
+    reversal_entry: string | null;
+    can_decide: boolean;
+  } | null;
 }
 
 export interface PaymentInput {
@@ -74,9 +93,15 @@ export const recordPayment = (input: PaymentInput) => apiSend<Payment>("POST", "
 
 /** Which accounts each method pays from: cash from cash boxes, cheques from current
  * accounts, the rest from any bank account (spec 4.4). */
-export function accountFits(account: PayAccount, method: PaymentMethod): boolean {
-  if (!account.has_ledger || account.currency !== "LKR") return false;
+export function accountFits(account: PayAccount, method: PaymentMethod, foreign: string | null = null): boolean {
+  if (!account.has_ledger || (account.currency !== "LKR" && account.currency !== foreign)) return false;
   if (method === "cash") return account.kind === "cash" || account.kind === "petty_cash";
   if (method === "cheque") return account.kind === "current";
   return account.kind === "current" || account.kind === "savings";
 }
+
+export const cancelPayment = (id: number, reason: string) => apiSend<Payment>("POST", `/payments/${id}/cancel/`, { reason });
+export const approvePaymentCancellation = (id: number, comment: string) =>
+  apiSend<Payment>("POST", `/payment-cancellations/${id}/approve/`, { comment });
+export const rejectPaymentCancellation = (id: number, reason: string) =>
+  apiSend<Payment>("POST", `/payment-cancellations/${id}/reject/`, { reason });

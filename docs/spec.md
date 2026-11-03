@@ -1433,6 +1433,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Export invoices (P2-09, IAS 21) | In the order's currency at the invoice date's rate; receipts and advances at their own rates; the realised difference to Exchange gain or Exchange loss; one currency per receipt, into an account of that currency | 5.5, 6 |
 | VAT on exports (owner, 3 Nov 2026) | Goods for an export customer are zero-rated (VAT 0%, no SSCL: tax code ZERO-RATED on every line); a local customer paying in a foreign currency pays VAT and SSCL as usual | 5.5, 6.1 |
 | Payables (P2-10) | What we owe each supplier comes from our documents (matched supplier invoices and invoices on vouchers, less set-offs, debit notes and what is paid); supplier statements typed or imported and matched line by line | 6 |
+| Payment cancellation and foreign payments (P2-11) | A payment is cancelled only with the Director's approval: reversing entry, cheque spoiled, voucher open to pay again. Vouchers of supplier invoices in one foreign currency may be paid in it at the payment date's rate, the difference posted as exchange gain or loss (IAS 21) | 4.4, 4.6, 5A |
 
 **Still needed for initial setup**
 

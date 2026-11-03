@@ -8,11 +8,17 @@ Each payment posts its journal entry in the same transaction: Dr the accounts th
 coded to (by division; recoverable VAT to its tax account), Cr the bank or cash account paid
 from. A part payment takes its share of each, so the voucher's coding is covered exactly once
 it is fully paid.
+
+Foreign currency (P2-11): a voucher whose lines all pay supplier invoices in one foreign
+currency may be paid from an account in that currency, at the rate of the payment date. The
+payment covers the voucher in proportion (in LKR at the invoices' rates, as the payable was
+booked); the bank is credited with the LKR value at the payment's rate, and the difference is
+an exchange gain or loss (IAS 21). Cancelling a payment is in cancellations.py.
 """
 
 from dataclasses import dataclass
 from datetime import date
-from decimal import ROUND_DOWN, Decimal, InvalidOperation
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.db import transaction
 from django.db.models import QuerySet, Sum
@@ -25,8 +31,8 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.models import Division, User
 from apps.core.numbering import NumberSeriesError, allocate
-from apps.masters import banking
-from apps.masters.models import ChequeLeaf, CompanyAccount
+from apps.masters import banking, currencies
+from apps.masters.models import ChequeLeaf, CompanyAccount, Currency
 from apps.masters.services import MastersError, mark_used
 from apps.vouchers.models import Voucher, VoucherCancellation, VoucherType
 
@@ -64,6 +70,35 @@ def paid_on(voucher: Voucher) -> Decimal:
 
 def remaining(voucher: Voucher) -> Decimal:
     return voucher.total_amount - paid_on(voucher)
+
+
+def foreign_basis(voucher: Voucher) -> tuple[Currency | None, Decimal | None]:
+    """The foreign currency a voucher may be paid in, and its total in that currency: only
+    when every line pays a supplier invoice in that one currency (P2-11)."""
+    lines = list(voucher.lines.select_related("supplier_invoice__currency"))
+    invoices = [line.supplier_invoice for line in lines]
+    if not lines or any(i is None for i in invoices):
+        return None, None
+    found = {i.currency_id for i in invoices}
+    currency = invoices[0].currency
+    if len(found) != 1 or currency.is_base:
+        return None, None
+    total = Decimal("0")
+    for line, invoice in zip(lines, invoices, strict=True):
+        if not invoice.total_lkr:
+            return None, None
+        total += (line.total * invoice.total_amount / invoice.total_lkr).quantize(
+            CENT, ROUND_HALF_UP
+        )
+    return currency, total
+
+
+def foreign_left(voucher: Voucher, foreign_total: Decimal) -> Decimal:
+    """What is left to pay in the foreign currency: the LKR left, in proportion."""
+    left = remaining(voucher)
+    if left == voucher.total_amount:
+        return foreign_total
+    return (left * foreign_total / voucher.total_amount).quantize(CENT, ROUND_HALF_UP)
 
 
 def methods_for(voucher: Voucher) -> list[str]:
@@ -213,8 +248,6 @@ def _money(value) -> Decimal:
 def _check_account(voucher: Voucher, account: CompanyAccount, method: str) -> Account:
     if not account.is_active:
         raise PaymentError(f"The account {account.code} is closed.")
-    if account.currency.code != "LKR":
-        raise PaymentError("Payments in other currencies come later; pay from an LKR account.")
     if method == Method.CASH and account.kind not in CASH_KINDS:
         raise PaymentError("A cash payment is made from a cash or petty cash account.")
     if method != Method.CASH and account.kind not in BANK_KINDS:
@@ -260,7 +293,32 @@ def record(
             raise PaymentError(refusal)
         before = paid_on(voucher)
         left = voucher.total_amount - before
-        if amount > left:
+        paid_amount, rate, covered = amount, Decimal("1"), amount
+        lookup = None
+        if not account.currency.is_base:
+            currency, foreign_total = foreign_basis(voucher)
+            if currency is None or currency.pk != account.currency_id:
+                raise PaymentError(
+                    f"Voucher {voucher.number} is paid from an LKR account: only a voucher that "
+                    f"pays supplier invoices in {account.currency.code} is paid in "
+                    f"{account.currency.code}."
+                )
+            still = foreign_left(voucher, foreign_total)
+            if amount > still:
+                raise PaymentError(
+                    f"Only {currency.code} {still:,.2f} of voucher {voucher.number} is left to pay."
+                )
+            covered = (
+                left
+                if amount == still
+                else min(left, (amount * voucher.total_amount / foreign_total).quantize(CENT))
+            )
+            try:
+                lookup = currencies.rate_on(currency, payment_date)
+            except MastersError as error:
+                raise PaymentError(str(error)) from None
+            rate = lookup.rate
+        if covered > left:
             raise PaymentError(
                 f"Only {left:,.2f} of voucher {voucher.number} is left to pay "
                 f"(approved {voucher.total_amount:,.2f})."
@@ -307,7 +365,12 @@ def record(
                 entry_date=payment_date,
                 narration=f"Payment {payment_no} of voucher {voucher.number} to {to} "
                 f"({SupplierPayment.Method(method).label} {reference})".strip(),
-                lines=journal_lines(voucher, before, amount, bank, payee),
+                lines=_with_exchange(
+                    journal_lines(voucher, before, covered, bank, payee),
+                    currencies.to_lkr(paid_amount, lookup) if lookup else covered,
+                    covered,
+                    voucher,
+                ),
                 source_type="supplier_payment",
                 source_id=payment_no,
             )
@@ -322,19 +385,61 @@ def record(
             cheque=leaf,
             cheque_date=cheque_date if method == Method.CHEQUE else None,
             payment_date=payment_date,
-            amount=amount,
+            amount=covered,
+            currency=account.currency,
+            paid_amount=paid_amount,
+            exchange_rate=rate,
             notes=(notes or "").strip()[:300],
             journal_entry=entry,
             created_by=user,
         )
         voucher.status = (
             Voucher.Status.PAID
-            if before + amount == voucher.total_amount
+            if before + covered == voucher.total_amount
             else Voucher.Status.PARTLY_PAID
         )
         voucher.save(update_fields=["status", "updated_at"])
         mark_used(account)
+        if lookup is not None:
+            currencies.mark_rate_used(lookup)
         return payment
+
+
+def _system(role: str, name: str) -> Account:
+    account = Account.objects.filter(system_role=role, is_active=True).first()
+    if account is None:
+        raise PaymentError(f"The chart of accounts has no {name} account; ask the Accountant.")
+    return account
+
+
+def _with_exchange(lines, banked: Decimal, covered: Decimal, voucher: Voucher):
+    """The bank line carries what left the bank in LKR; the difference from what the payment
+    covers is a realised exchange loss (more left the bank) or gain (P2-11)."""
+    if banked == covered:
+        return lines
+    bank_line = lines[-1]
+    bank_line.credit = banked
+    difference = banked - covered
+    text = f"{voucher.number}: exchange difference"
+    if difference > 0:
+        lines.append(
+            journal.Line(
+                account=_system("exchange_loss", "Exchange loss"),
+                debit=difference,
+                division=voucher.division,
+                description=text,
+            )
+        )
+    else:
+        lines.append(
+            journal.Line(
+                account=_system("exchange_gain", "Exchange gain"),
+                credit=-difference,
+                division=voucher.division,
+                description=text,
+            )
+        )
+    return lines
 
 
 def suggested_account(voucher: Voucher) -> CompanyAccount | None:

@@ -9,6 +9,7 @@ class PaymentsConfig(AppConfig):
     def ready(self):
         from apps.core.audit import register
 
-        from .models import SupplierPayment
+        from .models import PaymentCancellation, SupplierPayment
 
         register(SupplierPayment)
+        register(PaymentCancellation)

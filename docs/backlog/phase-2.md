@@ -204,10 +204,25 @@ Status: `[ ]` to do · `[x]` done
     Accountant marks it checked with a note; it then never changes (database). Suppliers in
     another currency are compared for invoices only until foreign payments (P2-11).
 
-- [ ] **P2-11 Payment follow-ups: spoiled cheques, cancelled payments, foreign currency**
+- [x] **P2-11 Payment follow-ups: spoiled cheques, cancelled payments, foreign currency**
   (known gaps from Phase 1) A payment is cancelled with a reason and the Director's approval:
   a reversing entry, the cheque leaf marked spoiled, the voucher open to pay again. Payments in
   the supplier's currency at the day's rate, with the realised exchange difference.
+  - Done: on the voucher page the Cashier or the Accountant asks to cancel a payment, with the
+    reason; the Director approves through the approval engine ("payment_cancellation", one
+    request at a time; nobody approves their own). Approval posts the reversing entry (dated
+    like the payment when its month is open, otherwise today), marks the payment cancelled and
+    its cheque leaf spoiled (the number is never used again), and opens the voucher to pay
+    again (approved, or partly paid). Refused when the voucher paid an advance already set off.
+    The database still keeps payments and cheque leaves insert-only, except exactly these
+    changes with an approved request, and a paid voucher locked except when a cancelled
+    payment leaves part of it unpaid. Foreign currency: a voucher whose lines all pay supplier
+    invoices in one foreign currency may be paid from an account in that currency, at the
+    payment date's rate; the payment covers the voucher in proportion (the last one exactly
+    what is left) and the difference between the bank's LKR and the invoices' rate is posted
+    to Exchange gain or Exchange loss. Payments keep their currency, the amount that left the
+    account and the rate; supplier statements now compare payments in the statement's
+    currency.
 
 - [ ] **P2-12 Withholding tax on payments** (spec 6, tax)
   Where the law requires it (question 6): WHT worked out on the voucher, the supplier paid the

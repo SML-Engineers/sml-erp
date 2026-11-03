@@ -12,7 +12,7 @@ from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Customer, CustomerContact
 
-from . import deliveries, orders, proformas
+from . import deliveries, invoices, orders, proformas
 from .models import QuotationLine, SalesOrder
 from .services import SalesError
 from .services import visible as visible_quotations
@@ -125,6 +125,17 @@ def _detail(o: SalesOrder, user) -> dict:
             for n in o.deliveries.order_by("delivery_date", "number")
         ],
         "can_deliver": deliveries.orders_to_deliver(user).filter(pk=o.pk).exists(),
+        "invoices": [
+            {
+                "id": i.pk,
+                "number": i.number,
+                "status": i.status,
+                "invoice_date": i.invoice_date,
+                "total_amount": f"{i.total_amount:.2f}",
+            }
+            for i in o.invoices.order_by("invoice_date", "id")
+        ],
+        "can_invoice": invoices.orders_to_invoice(user).filter(pk=o.pk).exists(),
         "can_edit": orders.can_edit(user, o),
         "can_approve": orders.can_approve(user, o),
         "can_complete": orders.can_complete(user, o),

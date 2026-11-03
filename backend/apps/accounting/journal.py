@@ -46,6 +46,7 @@ class Line:
     division: Division | None = None
     supplier: object = None  # apps.masters.models.Supplier
     description: str = ""
+    customer: object = None  # apps.masters.models.Customer, on receivables lines (P2-05)
 
 
 def _amount(value, where: str) -> Decimal:
@@ -107,6 +108,10 @@ def _check_lines(lines: list[Line]) -> list[tuple[Line, Decimal, Decimal]]:
                 f"{where}: {account.name} is an income or expense account, so the line "
                 "needs a division."
             )
+        if account.account_type == "accounts_receivable" and line.customer is None:
+            raise AccountingError(
+                f"{where}: {account.name} is a receivables account, so the line needs the customer."
+            )
         if line.division is not None and not line.division.is_active:
             raise AccountingError(f"{where}: division {line.division.code} is deactivated.")
         if len(line.description or "") > 500:
@@ -167,6 +172,7 @@ def post(
                 account=line.account,
                 division=line.division,
                 supplier=line.supplier,
+                customer=line.customer,
                 description=(line.description or "").strip(),
                 debit=debit,
                 credit=credit,
@@ -225,6 +231,7 @@ def reverse(user: User, entry: JournalEntry, *, reason: str, on_date: date | Non
                     credit=line.debit,
                     division=line.division,
                     supplier=line.supplier,
+                    customer=line.customer,
                     description=line.description,
                 )
             )

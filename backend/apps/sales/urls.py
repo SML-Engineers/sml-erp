@@ -1,6 +1,14 @@
 from django.urls import path
 
-from . import advance_views, delivery_views, order_views, proforma_views, report_views, views
+from . import (
+    advance_views,
+    delivery_views,
+    invoice_views,
+    order_views,
+    proforma_views,
+    report_views,
+    views,
+)
 
 urlpatterns = [
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
@@ -93,6 +101,29 @@ urlpatterns = [
         proforma_views.ProformaEmailView.as_view(),
         name="proforma-email",
     ),
+    path("tax-invoices/", invoice_views.InvoiceListView.as_view(), name="invoice-list"),
+    path(
+        "tax-invoices/orders/",
+        invoice_views.OrdersToInvoiceView.as_view(),
+        name="invoice-orders",
+    ),
+    path(
+        "tax-invoices/<int:pk>/",
+        invoice_views.InvoiceDetailView.as_view(),
+        name="invoice-detail",
+    ),
+    path(
+        "tax-invoices/<int:pk>/issue/",
+        invoice_views.InvoiceIssueView.as_view(),
+        name="invoice-issue",
+    ),
+    path("tax-invoices/<int:pk>/pdf/", invoice_views.InvoicePdfView.as_view(), name="invoice-pdf"),
+    path(
+        "tax-invoices/<int:pk>/email/",
+        invoice_views.InvoiceEmailView.as_view(),
+        name="invoice-email",
+    ),
+    path("sales-accounts/", invoice_views.SalesAccountsView.as_view(), name="sales-accounts"),
     path("delivery-notes/", delivery_views.DeliveryListView.as_view(), name="delivery-list"),
     path(
         "delivery-notes/orders/",

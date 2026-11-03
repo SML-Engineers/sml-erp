@@ -193,6 +193,15 @@ class JournalLine(models.Model):
         on_delete=models.PROTECT,
         related_name="journal_lines",
     )
+    # The customer on an accounts receivable line (P2-05): customer balances, statements
+    # and aging are read from these lines.
+    customer = models.ForeignKey(
+        "masters.Customer",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="journal_lines",
+    )
     description = models.CharField(max_length=500, blank=True)
     debit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     credit = models.DecimalField(max_digits=18, decimal_places=2, default=0)

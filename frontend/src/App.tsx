@@ -52,6 +52,9 @@ import RecurringJournalPage from "./pages/RecurringJournalPage";
 import RecurringJournalsPage from "./pages/RecurringJournalsPage";
 import PeriodsPage from "./pages/PeriodsPage";
 import ReviewPage from "./pages/ReviewPage";
+import SalesAccountsPage from "./pages/SalesAccountsPage";
+import TaxInvoicePage from "./pages/TaxInvoicePage";
+import TaxInvoicesPage from "./pages/TaxInvoicesPage";
 import TaxesPage from "./pages/TaxesPage";
 import VoucherPage from "./pages/VoucherPage";
 import VouchersPage from "./pages/VouchersPage";
@@ -126,6 +129,9 @@ export default function App() {
         <Route path="proformas/:id" element={<ProformaPage />} />
         <Route path="sales-orders" element={<WithMe page={(me) => <SalesOrdersPage me={me} />} />} />
         <Route path="sales-orders/:id" element={<SalesOrderPage />} />
+        <Route path="tax-invoices" element={<TaxInvoicesPage />} />
+        <Route path="tax-invoices/:id" element={<TaxInvoicePage />} />
+        <Route path="sales-accounts" element={<WithMe page={(me) => <SalesAccountsPage me={me} />} />} />
         <Route path="delivery-notes" element={<DeliveryNotesPage />} />
         <Route path="delivery-notes/:id" element={<DeliveryNotePage />} />
         <Route path="sales/reports" element={<SalesReportsPage />} />

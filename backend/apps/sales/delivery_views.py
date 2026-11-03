@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from apps.core.permissions import AreaAccess
 
 from . import deliveries, delivery_printing
-from .models import DeliveryNote, SalesOrder, SalesOrderLine
+from .models import DeliveryNote, SalesOrder, SalesOrderLine, TaxInvoice
 from .services import SalesError
 
 
@@ -87,6 +87,10 @@ def _detail(n: DeliveryNote, user) -> dict:
         "received_on": n.received_on,
         "signed_copy": n.signed_copy_name or None,
         "cancel_reason": n.cancel_reason,
+        "invoices": [
+            {"id": i.pk, "number": i.number, "status": i.status}
+            for i in TaxInvoice.objects.filter(lines__delivery_line__note=n).distinct()
+        ],
         "lines": _order_lines(n.order, n),
         "can_edit": deliveries.can_edit(user, n),
         "can_receive": deliveries.can_receive(user, n),

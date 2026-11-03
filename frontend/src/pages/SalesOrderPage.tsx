@@ -68,6 +68,7 @@ export default function SalesOrderPage() {
           {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}-${data.status}`} order={data} /> : <ReadOnly order={data} />}
           <Actions order={data} />
           <Deliveries order={data} />
+          <Invoices order={data} />
         </>
       )}
       <ErrorLine error={order.error} />
@@ -537,6 +538,35 @@ function Deliveries({ order }: { order: SalesOrderDetail }) {
       {order.can_deliver && (
         <Link className="button-link" to={`/delivery-notes/new?order=${order.id}`}>
           {t("dn.new")}
+        </Link>
+      )}
+    </section>
+  );
+}
+
+/** The order's tax invoices (P2-05). New ones are prepared on the Tax invoices page. */
+function Invoices({ order }: { order: SalesOrderDetail }) {
+  const { t } = useTranslation();
+  const invoices = order.invoices ?? [];
+  if (invoices.length === 0 && !order.can_invoice) return null;
+  return (
+    <section className="panel" aria-label={t("ti.title")}>
+      <h2>{t("ti.title")}</h2>
+      {invoices.length > 0 && (
+        <ul>
+          {invoices.map((i) => (
+            <li key={i.id}>
+              <Link to={`/tax-invoices/${i.id}`} className="mono">
+                {i.number || t("ti.draftNo", { id: i.id })}
+              </Link>{" "}
+              · {i.invoice_date} · {formatDecimal(i.total_amount)} · {t(`ti.statuses.${i.status}`)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {order.can_invoice && (
+        <Link className="button-link" to="/tax-invoices">
+          {t("ti.prepareFromDeliveries")}
         </Link>
       )}
     </section>

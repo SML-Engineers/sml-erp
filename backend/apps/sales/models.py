@@ -832,3 +832,162 @@ class DeliveryNoteLine(models.Model):
 
     def __str__(self):
         return f"{self.note.number}: {self.quantity}"
+
+
+# --- Tax invoices (P2-05, spec 6.1) ----------------------------------------------------------
+
+
+class SalesAccount(models.Model):
+    """The income account a division's invoice lines are credited to: one for goods and
+    services, one for tooling (moulds charged once). Kept by the Accountant."""
+
+    is_structure = True
+
+    division = models.OneToOneField(
+        "core.Division", on_delete=models.PROTECT, related_name="sales_account"
+    )
+    account = models.ForeignKey("accounting.Account", on_delete=models.PROTECT, related_name="+")
+    tooling_account = models.ForeignKey(
+        "accounting.Account", on_delete=models.PROTECT, related_name="+"
+    )
+
+    def __str__(self):
+        return f"{self.division.code}: {self.account}"
+
+
+class TaxInvoice(models.Model):
+    """The tax invoice in the Inland Revenue's format (Gazette 2481/22): made from delivered
+    quantities of one sales order, numbered YYMMM_QQQQ_XX per division when issued, and then
+    never changed or deleted (a credit note corrects it, P2-06). Issuing posts Dr Accounts
+    receivable (the customer), Cr Sales per division, Cr each tax's payable account.
+
+    The supplier's and the customer's details are copied onto the invoice when it is issued,
+    so a later change of address or TIN does not change an issued invoice."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        ISSUED = "issued", "Issued"
+
+    number = models.CharField(max_length=40, blank=True)  # given when issued
+    order = models.ForeignKey(SalesOrder, on_delete=models.PROTECT, related_name="invoices")
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="tax_invoices"
+    )
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    invoice_date = models.DateField()
+    supply_date = models.DateField()
+    due_date = models.DateField()
+    place_of_supply = models.CharField(max_length=200, blank=True)
+    terms = models.CharField(max_length=200, blank=True)
+    notes = models.TextField(blank=True)
+    # Copied when issued (as printed).
+    supplier_name = models.CharField(max_length=200, blank=True)
+    supplier_tin = models.CharField(max_length=50, blank=True)
+    supplier_address = models.TextField(blank=True)
+    supplier_phone = models.CharField(max_length=50, blank=True)
+    supplier_email = models.CharField(max_length=254, blank=True)
+    customer_name = models.CharField(max_length=200, blank=True)
+    customer_tin = models.CharField(max_length=50, blank=True)
+    customer_address = models.TextField(blank=True)
+    customer_po = models.CharField(max_length=50, blank=True)
+    # Figures in LKR (export invoices in other currencies come with P2-09).
+    subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    discount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    tax_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    amount_in_words = models.CharField(max_length=400, blank=True)
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="tax_invoice",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    issued_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-invoice_date", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["number"],
+                condition=~models.Q(number=""),
+                name="sales_invoice_number_unique",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status="draft") | ~models.Q(number=""),
+                name="sales_invoice_issued_numbered",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number or f"Draft invoice {self.pk}"
+
+
+class TaxInvoiceLine(models.Model):
+    """One delivered line: each delivery note line is invoiced once."""
+
+    invoice = models.ForeignKey(TaxInvoice, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveSmallIntegerField()
+    delivery_line = models.OneToOneField(
+        DeliveryNoteLine, on_delete=models.PROTECT, related_name="invoice_line"
+    )
+    product_code = models.CharField(max_length=50, blank=True)
+    description = models.TextField()
+    po_no = models.CharField(max_length=50, blank=True)
+    unit = models.CharField(max_length=20, default="pcs")
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    rate = models.DecimalField(max_digits=18, decimal_places=2)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    discount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    tax_code = models.ForeignKey(
+        "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    tax_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    account = models.ForeignKey("accounting.Account", on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        ordering = ["invoice", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["invoice", "line_no"], name="sales_invoice_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0) & models.Q(rate__gte=0),
+                name="sales_invoice_line_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.invoice} line {self.line_no}"
+
+    @property
+    def net(self):
+        return self.amount - self.discount
+
+
+class TaxInvoiceTax(models.Model):
+    """The invoice's taxes by component and rate, as printed: those on the net amount (SSCL)
+    before the subtotal, those on net plus tax (VAT) after it."""
+
+    invoice = models.ForeignKey(TaxInvoice, on_delete=models.CASCADE, related_name="taxes")
+    seq = models.PositiveSmallIntegerField()
+    component = models.ForeignKey(
+        "accounting.TaxComponent", on_delete=models.PROTECT, related_name="+"
+    )
+    label = models.CharField(max_length=20)
+    rate = models.DecimalField(max_digits=7, decimal_places=4)
+    on_tax = models.BooleanField(default=False)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["invoice", "seq"]
+
+    def __str__(self):
+        return f"{self.label} {self.rate}%"

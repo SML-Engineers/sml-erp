@@ -76,6 +76,9 @@ export interface SalesOrderDetail extends SalesOrderSummary {
   /** Its delivery notes (P2-04). */
   deliveries?: { id: number; number: string; delivery_date: string; status: string; status_label: string }[];
   can_deliver?: boolean;
+  /** Its tax invoices (P2-05). */
+  invoices?: { id: number; number: string; status: string; invoice_date: string; total_amount: string }[];
+  can_invoice?: boolean;
 }
 
 export interface SalesOrderLineInput {

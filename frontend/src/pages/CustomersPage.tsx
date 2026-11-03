@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
-import { can } from "../api/access";
+import { can, canDo } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import {
@@ -15,6 +15,7 @@ import {
   listContacts,
   listCustomers,
   listPickerCurrencies,
+  setCreditTerms,
   setCustomerActive,
   updateContact,
   updateCustomer,
@@ -93,6 +94,7 @@ export default function CustomersPage({ me }: { me: CurrentUser }) {
       {selected === "import" && <ImportPanel onClose={() => setSelected(null)} />}
       {selected === "new" && <CustomerForm me={me} onDone={(id) => setSelected(id)} />}
       {current && <CustomerForm key={current.id} me={me} customer={current} onDone={() => setSelected(null)} />}
+      {current && canDo(me.access, "set_credit_terms") && <CreditTerms key={`terms-${current.id}`} customer={current} />}
       {current && <Contacts key={`contacts-${current.id}`} me={me} customer={current} />}
 
       {customers.data && (
@@ -225,7 +227,7 @@ function CustomerForm(props: { me: CurrentUser; customer?: Customer; onDone: (id
             min={0}
             max={365}
             value={values.payment_terms_days}
-            disabled={!canEnter}
+            disabled
             onChange={(e) => set("payment_terms_days")(e.target.value)}
           />
         </label>
@@ -236,10 +238,11 @@ function CustomerForm(props: { me: CurrentUser; customer?: Customer; onDone: (id
             className="num"
             value={values.credit_limit}
             placeholder={t("customers.noLimit")}
-            disabled={!canEnter}
+            disabled
             onChange={(e) => set("credit_limit")(e.target.value)}
           />
         </label>
+        <p className="muted wide">{t("customers.termsByAccountant")}</p>
         <label className="wide">
           {t("customers.field.billing_address")}
           <textarea rows={2} value={values.billing_address} disabled={!canEnter} onChange={(e) => set("billing_address")(e.target.value)} />
@@ -514,6 +517,57 @@ function ImportPanel({ onClose }: { onClose: () => void }) {
         </p>
       )}
       <ErrorLine error={run.error} />
+    </section>
+  );
+}
+
+/** The credit limit and payment terms, changed only by the Accountant or the Director (owner,
+ * 3 Nov 2026), so nobody lifts a credit hold by changing them. */
+function CreditTerms({ customer }: { customer: Customer }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [limit, setLimit] = useState(customer.credit_limit ?? "");
+  const [days, setDays] = useState(String(customer.payment_terms_days));
+  const [reason, setReason] = useState("");
+  const save = useMutation({
+    mutationFn: () => {
+      const amount = limit.replace(/,/g, "").trim();
+      return setCreditTerms(customer.id, amount === "" ? null : amount, Number(days), reason);
+    },
+    onSuccess: () => {
+      setReason("");
+      void queryClient.invalidateQueries({ queryKey: customersKey });
+    },
+  });
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    save.mutate();
+  }
+
+  return (
+    <section className="panel" aria-label={t("customers.creditTerms")}>
+      <h2>{t("customers.creditTerms")}</h2>
+      <form className="form-grid" onSubmit={submit}>
+        <label>
+          {t("customers.field.credit_limit")}
+          <input inputMode="decimal" className="num" value={limit} placeholder={t("customers.noLimit")} onChange={(e) => setLimit(e.target.value)} />
+        </label>
+        <label>
+          {t("customers.field.payment_terms_days")}
+          <input type="number" min={0} max={365} required value={days} onChange={(e) => setDays(e.target.value)} />
+        </label>
+        <label className="wide">
+          {t("access.reason")}
+          <input value={reason} required onChange={(e) => setReason(e.target.value)} />
+        </label>
+        <div className="wide">
+          <button type="submit" disabled={save.isPending}>
+            {t("customers.saveTerms")}
+          </button>
+        </div>
+      </form>
+      <ErrorLine error={save.error} />
     </section>
   );
 }

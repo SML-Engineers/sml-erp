@@ -65,12 +65,10 @@ def test_an_export_customer_has_its_currency_country_and_delivery_term(executive
             "country": "Sweden",
             "incoterm": "fob",
             "port_of_destination": "Gothenburg",
-            "credit_limit": "25000.50",
         },
     )
     assert buyer.currency.code == "EUR"
     assert buyer.incoterm == "FOB"
-    assert buyer.credit_limit == Decimal("25000.50")
     with pytest.raises(MastersError, match="country of an export customer"):
         customers.create_customer(executive, {"name": "Somewhere Ltd", "is_export": True})
 
@@ -192,18 +190,16 @@ def test_the_api_lists_searches_adds_and_changes_customers(executive, unilever):
     assert found[0]["main_contact"]["name"] == "Nimali Fernando"
     assert found[0]["in_use"] is False
 
-    added = client.post(
-        "/api/v1/customers/", {"name": "Hayleys Fabric", "credit_limit": "500000"}, format="json"
-    )
+    added = client.post("/api/v1/customers/", {"name": "Hayleys Fabric"}, format="json")
     assert added.status_code == 201
-    assert added.json()["credit_limit"] == "500000.00"
+    assert (added.json()["credit_limit"], added.json()["payment_terms_days"]) == (None, 30)
     duplicate = client.post("/api/v1/customers/", {"name": "Hayleys Fabric"}, format="json")
     assert duplicate.status_code == 409 and duplicate.json()["needs_confirmation"]
 
     changed = client.patch(
-        f"/api/v1/customers/{unilever.pk}/", {"payment_terms_days": 45}, format="json"
+        f"/api/v1/customers/{unilever.pk}/", {"phone": "011 2345678"}, format="json"
     )
-    assert changed.status_code == 200 and changed.json()["payment_terms_days"] == 45
+    assert changed.status_code == 200 and changed.json()["phone"] == "011 2345678"
     contact = client.post(
         f"/api/v1/customers/{unilever.pk}/contacts/",
         {"name": "Kasun", "email": "kasun@unilever.com", "is_main": True},
@@ -270,17 +266,22 @@ def test_the_export_can_be_edited_and_imported_again(executive, unilever):
     row = dict(zip(header, [c.value for c in sheet[2]], strict=True))
     assert (row["Code"], row["Main contact"], row["Active"]) == ("C0001", "Nimali", "Yes")
 
-    row["Payment terms (days)"] = 60
     row["Contact phone"] = "0777654321"
     result = upload(executive, book(row))
     assert result.status_code == 200, result.json()
     assert result.json() == {"dry_run": False, "created": 0, "updated": 1}
     unilever.refresh_from_db()
-    assert unilever.payment_terms_days == 60
     assert unilever.contacts.get(is_main=True).phone == "0777654321"
+    # Credit terms are not the salesperson's to change, in an import either.
+    row["Payment terms (days)"] = 60
+    refused = upload(executive, book(row))
+    assert refused.status_code == 400
+    assert "Only the Accountant or the Director" in refused.json()["errors"][0]
 
 
-def test_an_import_adds_new_customers_and_a_check_saves_nothing(executive):
+def test_an_import_adds_new_customers_and_a_check_saves_nothing():
+    # Someone who may both add customers and set credit terms.
+    importer = person("salesaccounts@sml.lk", "sales_executive", "accountant")
     content = book(
         {
             "Name": "Nordic Plast AB",
@@ -293,11 +294,11 @@ def test_an_import_adds_new_customers_and_a_check_saves_nothing(executive):
         },
         {"Name": "Hayleys Fabric", "Payment terms (days)": 45},
     )
-    checked = upload(executive, content, dry_run=True)
+    checked = upload(importer, content, dry_run=True)
     assert checked.json() == {"dry_run": True, "created": 2, "updated": 0}
     assert not Customer.objects.exists()
 
-    assert upload(executive, content).status_code == 200
+    assert upload(importer, content).status_code == 200
     nordic = Customer.objects.get(name="Nordic Plast AB")
     assert (nordic.currency.code, nordic.incoterm) == ("EUR", "FOB")
     assert nordic.credit_limit == Decimal("25000.50")  # read exactly, never as a float
@@ -327,3 +328,47 @@ def test_an_import_needs_a_reason_and_sales_access(executive, clerk):
         "Give a reason for the import."
     ]
     assert upload(clerk, book({"Name": "A"})).status_code == 403
+
+
+# --- Credit terms (owner, 3 Nov 2026) ----------------------------------------------------
+
+
+@pytest.fixture
+def accountant():
+    return person("accountant@sml.lk", "accountant")
+
+
+def test_only_the_accountant_or_director_changes_credit_terms(executive, accountant, unilever):
+    with pytest.raises(MastersError, match="Only the Accountant or the Director"):
+        customers.create_customer(executive, {"name": "Abans PLC", "credit_limit": "500000"})
+    with pytest.raises(MastersError, match="Only the Accountant or the Director"):
+        customers.update_customer(executive, unilever, {"payment_terms_days": 60})
+    # Saving the form with the same terms is fine.
+    customers.update_customer(executive, unilever, {"payment_terms_days": 30, "phone": "011"})
+    with pytest.raises(MastersError, match="Only the Accountant or the Director"):
+        customers.set_credit_terms(
+            executive, unilever, credit_limit="1", payment_terms_days=30, reason="x"
+        )
+    with pytest.raises(MastersError, match="reason"):
+        customers.set_credit_terms(
+            accountant, unilever, credit_limit="1", payment_terms_days=30, reason=" "
+        )
+    changed = customers.set_credit_terms(
+        accountant, unilever, credit_limit="750000", payment_terms_days=45, reason="Agreed"
+    )
+    assert (changed.credit_limit, changed.payment_terms_days) == (Decimal("750000.00"), 45)
+    assert AuditEvent.objects.filter(event="customer_credit_terms_changed").exists()
+
+
+def test_the_credit_terms_api(executive, accountant, unilever):
+    path = f"/api/v1/customers/{unilever.pk}/credit-terms/"
+    body = {"credit_limit": "250000", "payment_terms_days": 60, "reason": "Board decision"}
+    refused = as_user(executive).post(path, body, format="json")
+    assert refused.status_code == 400
+    done = as_user(accountant).post(path, body, format="json")
+    assert done.status_code == 200, done.json()
+    assert (done.json()["credit_limit"], done.json()["payment_terms_days"]) == ("250000.00", 60)
+    cleared = as_user(accountant).post(
+        path, {"credit_limit": "", "payment_terms_days": 60, "reason": "No limit"}, format="json"
+    )
+    assert cleared.json()["credit_limit"] is None

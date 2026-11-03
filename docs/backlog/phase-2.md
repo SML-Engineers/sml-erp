@@ -349,4 +349,9 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
       or any later one, after the advances of that invoice's own order.
 13. **Who changes credit limits and payment terms (P2-08).** Today salespeople can change
     them on the customer, which would let them lift their own customer's credit hold.
-    Recommended: only the Accountant or the Director. Asked 3 Nov 2026; not built yet.
+    Recommended: only the Accountant or the Director.
+    - Owner, 3 Nov 2026: yes. Built as the action "Change customers' credit limits and payment
+      terms" (Accountant and Director roles; a grant to anyone else is sensitive). On the
+      customer page they are read-only for Sales; the Accountant or Director changes them in
+      the "Credit terms" box, with a reason. A new customer starts with 30 days and no limit;
+      a customer import changing them is refused for anyone without the right.

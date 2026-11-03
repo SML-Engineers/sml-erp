@@ -68,6 +68,10 @@ export function listCustomers(q: string, includeInactive: boolean) {
 export const createCustomer = (change: CustomerChange) => apiSend<Customer>("POST", "/customers/", change);
 export const updateCustomer = (id: number, change: CustomerChange) =>
   apiSend<Customer>("PATCH", `/customers/${id}/`, change);
+/** The credit limit (null: no limit) and payment terms: the Accountant or the Director only
+ * (owner, 3 Nov 2026). */
+export const setCreditTerms = (id: number, credit_limit: string | null, payment_terms_days: number, reason: string) =>
+  apiSend<Customer>("POST", `/customers/${id}/credit-terms/`, { credit_limit, payment_terms_days, reason });
 export const setCustomerActive = (id: number, is_active: boolean, reason: string) =>
   apiSend<Customer>("POST", `/customers/${id}/active/`, { is_active, reason });
 export const listContacts = (id: number) => apiGet<Contact[]>(`/customers/${id}/contacts/`);

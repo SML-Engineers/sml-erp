@@ -403,10 +403,15 @@ class Command(BaseCommand):
 
         # Customers (Sales -> Customers).
         def customer(name, address, contact, days=30):
-            c = customers.create_customer(
-                executive,
-                {"name": name, "delivery_address": address, "payment_terms_days": days},
-            )
+            c = customers.create_customer(executive, {"name": name, "delivery_address": address})
+            if days != 30:  # credit terms are the Accountant's (owner, 3 Nov 2026)
+                c = customers.set_credit_terms(
+                    accountant,
+                    c,
+                    credit_limit=None,
+                    payment_terms_days=days,
+                    reason="Terms agreed with the customer",
+                )
             customers.add_contact(executive, c, {"name": contact})
             return c
 

@@ -8,6 +8,7 @@ import {
   importStatement,
   listStatements,
   listTemplates,
+  previewStatement,
   saveTemplate,
   statementsKey,
   type Preview,
@@ -154,11 +155,11 @@ function ImportForm() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const read = useMutation({
-    mutationFn: () => importStatement({ account, template, opening, file: file!, preview: true }),
-    onSuccess: (data) => setPreview(data as Preview),
+    mutationFn: () => previewStatement({ account, template, opening, file: file! }),
+    onSuccess: (data) => setPreview(data),
   });
   const save = useMutation({
-    mutationFn: () => importStatement({ account, template, opening, file: file!, preview: false }),
+    mutationFn: () => importStatement({ account, template, opening, file: file! }),
     onSuccess: () => {
       setPreview(null);
       setFile(null);

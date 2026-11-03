@@ -65,14 +65,19 @@ export const listStatements = () => apiGet<Statement[]>("/bank-statements/");
 export const getStatement = (id: number) => apiGet<Statement>(`/bank-statements/${id}/`);
 export const deleteStatement = (id: number) => apiSend<null>("DELETE", `/bank-statements/${id}/`);
 
-export function importStatement(input: { account: string; template: string; opening: string; file: File; preview: boolean }) {
+function statementForm(input: { account: string; template: string; opening: string; file: File }, preview: boolean) {
   const form = new FormData();
   form.append("account", input.account);
   form.append("template", input.template);
   if (input.opening) form.append("opening", input.opening);
-  if (input.preview) form.append("preview", "1");
+  if (preview) form.append("preview", "1");
   form.append("file", input.file);
-  return input.preview
-    ? apiUpload<Preview>("/bank-statements/import/", form, "POST")
-    : apiUpload<Statement>("/bank-statements/import/", form, "POST");
+  return form;
 }
+
+type ImportInput = { account: string; template: string; opening: string; file: File };
+
+export const previewStatement = (input: ImportInput) =>
+  apiUpload<Preview>("/bank-statements/import/", statementForm(input, true), "POST");
+export const importStatement = (input: ImportInput) =>
+  apiUpload<Statement>("/bank-statements/import/", statementForm(input, false), "POST");

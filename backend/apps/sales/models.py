@@ -1098,3 +1098,133 @@ class CreditNoteTax(models.Model):
 
     def __str__(self):
         return f"{self.label} {self.rate}%"
+
+
+# --- Customer receipts and advance set-off (P2-07) -----------------------------------------
+
+
+class CustomerReceipt(models.Model):
+    """Money received from a customer for issued tax invoices: recorded by the Cashier,
+    split across one or more of the customer's invoices (never more than is open on each),
+    and approved by the Accountant. Approval posts Dr the bank or cash account (Undeposited
+    funds for a cheque, until it is deposited, P2-14), Cr Accounts receivable (the customer)
+    per invoice. A post-dated cheque waits: it is posted on its date. In LKR (export invoices
+    in other currencies come with P2-09). Numbered from the receipts series (RC…), shared with
+    customer advances."""
+
+    class Status(models.TextChoices):
+        AWAITING_APPROVAL = "awaiting_approval", "Awaiting approval"
+        POST_DATED = "post_dated", "Approved, cheque not yet due"
+        POSTED = "posted", "Approved and posted"
+        REJECTED = "rejected", "Rejected"
+
+    Method = CustomerAdvance.Method
+
+    number = models.CharField(max_length=30, unique=True)
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="receipts"
+    )
+    receipt_date = models.DateField()
+    method = models.CharField(max_length=10, choices=Method.choices)
+    # The bank or cash account; none for a cheque, which waits in Undeposited funds.
+    account = models.ForeignKey(
+        "masters.CompanyAccount",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="customer_receipts",
+    )
+    reference = models.CharField(max_length=50, blank=True)
+    cheque_date = models.DateField(null=True, blank=True)
+    cheque_bank = models.CharField(max_length=100, blank=True)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    notes = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.AWAITING_APPROVAL
+    )
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="customer_receipt",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-receipt_date", "-number"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="sales_receipt_amount"),
+            models.CheckConstraint(
+                condition=models.Q(method="cheque", cheque_date__isnull=False)
+                | (~models.Q(method="cheque") & models.Q(account__isnull=False)),
+                name="sales_receipt_account_or_cheque",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(status="posted") | models.Q(journal_entry__isnull=False),
+                name="sales_receipt_posted_has_entry",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class ReceiptAllocation(models.Model):
+    """The part of a receipt paid towards one tax invoice."""
+
+    receipt = models.ForeignKey(
+        CustomerReceipt, on_delete=models.PROTECT, related_name="allocations"
+    )
+    invoice = models.ForeignKey(
+        TaxInvoice, on_delete=models.PROTECT, related_name="receipt_allocations"
+    )
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["receipt", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["receipt", "invoice"], name="sales_allocation_once"),
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="sales_allocation_amount"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.receipt}: {self.invoice} {self.amount}"
+
+
+class AdvanceSetOff(models.Model):
+    """Part of an approved customer advance taken off a tax invoice: Dr Customer advances,
+    Cr Accounts receivable (the customer). Made automatically when an invoice of the
+    advance's order is issued, or by the Accountant. Never changed (database guard); the
+    advance's "set off" total is kept by the database."""
+
+    advance = models.ForeignKey(CustomerAdvance, on_delete=models.PROTECT, related_name="set_offs")
+    invoice = models.ForeignKey(TaxInvoice, on_delete=models.PROTECT, related_name="set_offs")
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    set_off_date = models.DateField()
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", on_delete=models.PROTECT, related_name="advance_set_offs"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["set_off_date", "id"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="sales_set_off_amount"),
+        ]
+
+    def __str__(self):
+        return f"{self.advance} -> {self.invoice}: {self.amount}"

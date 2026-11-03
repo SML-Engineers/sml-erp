@@ -15,6 +15,7 @@
   - copies the supplier's and the customer's details onto it, as printed;
   - posts Dr Accounts receivable (with the customer), Cr Sales per division (the division's
     sales account, or its tooling account for tooling lines), Cr each tax's sales account.
+  - sets off the approved advances of its order against it (P2-07).
 - An issued invoice is never changed or deleted (database guard); a credit note corrects
   it (P2-06). A delivery note on an invoice cannot be cancelled.
 - LKR only for now; invoices in the customer's currency come with P2-09.
@@ -428,6 +429,10 @@ def issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
         invoice.save()
         customers.mark_used(customer)
         _complete_order(invoice.order_id)
+        # The order's advances are set off against it (spec 5.2; P2-07).
+        from . import receipts
+
+        receipts.set_off_advances(user, invoice)
         return invoice
 
 

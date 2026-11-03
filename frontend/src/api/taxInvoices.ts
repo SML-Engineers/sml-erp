@@ -51,6 +51,11 @@ export interface InvoiceDetail extends InvoiceSummary {
   /** Its credit notes (P2-06). */
   credit_notes?: { id: number; number: string; status: string; credit_date: string; total_amount: string }[];
   can_credit?: boolean;
+  /** What has been paid (P2-07): decimals as text. "pending" is receipts waiting for
+   * approval or a post-dated cheque's date. Null on a draft. */
+  settlement?: { total: string; credited: string; received: string; pending: string; set_off: string; open: string } | null;
+  receipts?: { id: number; number: string; receipt_date: string; status: string; amount: string }[];
+  set_offs?: { advance: { id: number; number: string }; set_off_date: string; amount: string }[];
   can_edit: boolean;
   can_issue: boolean;
   can_email: boolean;

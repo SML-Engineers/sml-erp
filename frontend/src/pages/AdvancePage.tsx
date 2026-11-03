@@ -3,9 +3,17 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router";
 
-import { advancesKey, approveAdvance, getAdvance, receiptUrl, rejectAdvance, type AdvanceDetail } from "../api/advances";
+import {
+  advancesKey,
+  approveAdvance,
+  getAdvance,
+  receiptUrl,
+  rejectAdvance,
+  setOffAdvance,
+  type AdvanceDetail,
+} from "../api/advances";
 import { ApiError } from "../api/client";
-import { formatDecimal } from "../lib/decimal";
+import { compareDecimal, formatDecimal } from "../lib/decimal";
 
 /** One customer advance: its details, the Accountant's approval, and the receipt. */
 export default function AdvancePage() {
@@ -15,6 +23,7 @@ export default function AdvancePage() {
   const advance = useQuery({ queryKey: [...advancesKey, "one", id], queryFn: () => getAdvance(Number(id)) });
   const [comment, setComment] = useState("");
   const [reason, setReason] = useState("");
+  const [setOff, setSetOff] = useState({ invoice: "", amount: "" });
   const done = (latest: AdvanceDetail) => {
     queryClient.setQueryData([...advancesKey, "one", id], latest);
     void queryClient.invalidateQueries({ queryKey: [...advancesKey, "list"] });
@@ -94,6 +103,59 @@ export default function AdvancePage() {
                 {t("advances.reject")}
               </button>
             </div>
+          )}
+          {(a.set_offs ?? []).length > 0 && (
+            <>
+              <h2>{t("receipts.setOffs")}</h2>
+              <ul aria-label={t("receipts.setOffs")}>
+                {(a.set_offs ?? []).map((s, i) => (
+                  <li key={i}>
+                    {s.set_off_date} · <Link to={`/tax-invoices/${s.invoice.id}`} className="mono">{s.invoice.number}</Link> · LKR{" "}
+                    {formatDecimal(s.amount)} · {s.journal_entry} · {s.by}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {a.can_set_off && (
+            <form
+              className="inline-form"
+              aria-label={t("receipts.setOffNew")}
+              onSubmit={(e) => {
+                e.preventDefault();
+                act.mutate(() => setOffAdvance(a.id, Number(setOff.invoice), setOff.amount.replace(/,/g, "")), {
+                  onSuccess: () => setSetOff({ invoice: "", amount: "" }),
+                });
+              }}
+            >
+              <label>
+                {t("receipts.invoice")}
+                <select
+                  value={setOff.invoice}
+                  required
+                  onChange={(e) => {
+                    const chosen = (a.open_invoices ?? []).find((i) => String(i.id) === e.target.value);
+                    const left = a.balance_lkr;
+                    const amount = chosen ? (compareDecimal(chosen.open_amount, left) < 0 ? chosen.open_amount : left) : "";
+                    setSetOff({ invoice: e.target.value, amount });
+                  }}
+                >
+                  <option value="">—</option>
+                  {(a.open_invoices ?? []).map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.number} ({t("receipts.open")} {formatDecimal(i.open_amount)})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t("advances.amountIn", { currency: "LKR" })}
+                <input inputMode="decimal" className="num" value={setOff.amount} required onChange={(e) => setSetOff({ ...setOff, amount: e.target.value })} />
+              </label>
+              <button type="submit" disabled={act.isPending}>
+                {t("receipts.setOff")}
+              </button>
+            </form>
           )}
           {a.history.length > 0 && (
             <ul className="changes" aria-label={t("quotations.approvalHistory")}>

@@ -62,6 +62,7 @@ export default function TaxInvoicePage() {
           <Lines invoice={data} />
           <Actions invoice={data} />
           <CreditNotes invoice={data} />
+          <Payments invoice={data} />
         </>
       )}
       <ErrorLine error={invoice.error} />
@@ -324,6 +325,71 @@ function CreditNotes({ invoice }: { invoice: InvoiceDetail }) {
         <Link className="button-link" to={`/credit-notes/new?invoice=${invoice.id}`}>
           {t("cn.new")}
         </Link>
+      )}
+    </section>
+  );
+}
+
+/** What has been paid on an issued invoice (P2-07): receipts, advances set off, and what is
+ * still open. */
+function Payments({ invoice }: { invoice: InvoiceDetail }) {
+  const { t } = useTranslation();
+  const figures = invoice.settlement;
+  if (!figures) return null;
+  const receipts = invoice.receipts ?? [];
+  const setOffs = invoice.set_offs ?? [];
+  return (
+    <section className="panel" aria-label={t("receipts.paid")}>
+      <h2>{t("receipts.paid")}</h2>
+      <dl className="details">
+        <dt>{t("receipts.total")}</dt>
+        <dd>{formatDecimal(figures.total)}</dd>
+        {figures.credited !== "0.00" && (
+          <>
+            <dt>{t("cn.title")}</dt>
+            <dd>{formatDecimal(figures.credited)}</dd>
+          </>
+        )}
+        <dt>{t("receipts.received")}</dt>
+        <dd>{formatDecimal(figures.received)}</dd>
+        {figures.pending !== "0.00" && (
+          <>
+            <dt>{t("receipts.pending")}</dt>
+            <dd>{formatDecimal(figures.pending)}</dd>
+          </>
+        )}
+        {figures.set_off !== "0.00" && (
+          <>
+            <dt>{t("receipts.advancesSetOff")}</dt>
+            <dd>{formatDecimal(figures.set_off)}</dd>
+          </>
+        )}
+        <dt>
+          <strong>{t("receipts.open")}</strong>
+        </dt>
+        <dd>
+          <strong>{formatDecimal(figures.open)}</strong>
+        </dd>
+      </dl>
+      {(receipts.length > 0 || setOffs.length > 0) && (
+        <ul>
+          {receipts.map((r) => (
+            <li key={`r${r.id}`}>
+              <Link to={`/receipts/${r.id}`} className="mono">
+                {r.number}
+              </Link>{" "}
+              · {r.receipt_date} · {formatDecimal(r.amount)} · {t(`receipts.statuses.${r.status}`)}
+            </li>
+          ))}
+          {setOffs.map((s, i) => (
+            <li key={`s${i}`}>
+              <Link to={`/advances/${s.advance.id}`} className="mono">
+                {s.advance.number}
+              </Link>{" "}
+              · {s.set_off_date} · {formatDecimal(s.amount)} · {t("receipts.advanceSetOff")}
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

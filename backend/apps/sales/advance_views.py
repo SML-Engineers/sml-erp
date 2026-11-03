@@ -14,7 +14,7 @@ from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import CompanyAccount, Customer
 
-from . import advances, receipt
+from . import advances, receipt, receipts
 from .models import CustomerAdvance, ProformaInvoice, Quotation, SalesOrder
 from .services import SalesError
 
@@ -61,6 +61,11 @@ def _row(a: CustomerAdvance) -> dict:
 
 def _detail(a: CustomerAdvance, user) -> dict:
     body = _row(a)
+    can_set_off = (
+        a.status == CustomerAdvance.Status.APPROVED
+        and advances.balance_lkr(a) > 0
+        and receipts.can_set_off(user)
+    )
     body |= {
         "account": {"id": a.account_id, "code": a.account.code, "name": a.account.name},
         "reference": a.reference,
@@ -73,6 +78,28 @@ def _detail(a: CustomerAdvance, user) -> dict:
         else {"id": a.journal_entry_id, "number": a.journal_entry.number},
         "approved_at": a.approved_at,
         "can_approve": advances.can_approve(user, a),
+        # Set off against tax invoices (P2-07): automatically when an invoice of its order is
+        # issued, or by the Accountant.
+        "set_offs": [
+            {
+                "invoice": {"id": s.invoice_id, "number": s.invoice.number},
+                "amount": f"{s.amount:.2f}",
+                "set_off_date": s.set_off_date,
+                "journal_entry": s.journal_entry.number,
+                "by": s.created_by.full_name,
+            }
+            for s in a.set_offs.select_related("invoice", "journal_entry", "created_by")
+        ],
+        "can_set_off": can_set_off,
+        "open_invoices": [
+            {
+                "id": i.pk,
+                "number": i.number,
+                "invoice_date": i.invoice_date,
+                "open_amount": f"{figures['open']:.2f}",
+            }
+            for i, figures in (receipts.open_invoices(user, a.customer) if can_set_off else [])
+        ],
         "history": [
             {
                 "action": row.action,

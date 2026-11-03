@@ -127,6 +127,21 @@ def _decimal(value, what: str, step: Decimal, *, positive: bool) -> Decimal:
     return number.quantize(step)
 
 
+ZERO_RATED = "ZERO-RATED"
+
+
+def sales_tax_code(customer, tax_code: TaxCode | None) -> TaxCode | None:
+    """Exports of goods are zero-rated for VAT and pay no SSCL (owner, 3 Nov 2026): every
+    line for an export customer gets the ZERO-RATED code, whatever was chosen. A local
+    customer paying in a foreign currency is charged VAT and SSCL as usual."""
+    if customer is None or not customer.is_export:
+        return tax_code
+    code = TaxCode.objects.filter(code=ZERO_RATED, is_active=True).first()
+    if code is None:
+        raise SalesError(f"The tax code {ZERO_RATED} for exports is missing; ask the Accountant.")
+    return code
+
+
 def _check_line(n: int, line: LineInput) -> dict:
     where = f"Line {n}: "
     description = (line.description or "").strip()
@@ -268,6 +283,8 @@ def save(user: User, quotation: Quotation | None, *, lines: list[LineInput], **v
         raise SalesError(f"A quotation can have at most {MAX_LINES} lines.")
     checked = [_check_line(n, line) for n, line in enumerate(lines, start=1)]
     header = _header(user, quotation, values)
+    for line in checked:
+        line["tax_code"] = sales_tax_code(header["customer"], line["tax_code"])
     try:
         lookup = currencies.rate_on(header["currency"], header["quote_date"])
     except MastersError as error:

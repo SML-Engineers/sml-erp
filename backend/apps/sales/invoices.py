@@ -53,7 +53,7 @@ from .models import (
     TaxInvoiceLine,
     TaxInvoiceTax,
 )
-from .services import SalesError
+from .services import SalesError, sales_tax_code
 
 DOC = "tax_invoice"
 CENT = Decimal("0.01")
@@ -330,7 +330,7 @@ def create(user: User, order: SalesOrder, notes: list[DeliveryNote] | None = Non
                 rate=ol.unit_price,
                 amount=amount,
                 discount=_round(amount * order.discount_pct / Decimal("100")),
-                tax_code=ol.tax_code,
+                tax_code=sales_tax_code(order.customer, ol.tax_code),
                 account=accounts.tooling_account if ol.is_tooling else accounts.account,
             )
         _compute(invoice)

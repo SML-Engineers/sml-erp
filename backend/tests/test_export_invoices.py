@@ -348,3 +348,72 @@ def test_aging_and_credit_control_count_rupees_at_the_invoice_s_rate(invoice, ac
     assert (row["current"], row["total"], row["ledger"]) == ("750000.00", "750000.00", "750000.00")
     figures = receivables.exposure(invoice.customer)
     assert figures.owed == D("750000.00")
+
+
+# --- VAT on exports (owner, 3 Nov 2026) --------------------------------------------------
+
+
+def test_an_export_customer_is_zero_rated_whatever_code_was_chosen(executive, director, buyer):
+    o = order_for(executive, director, buyer)
+    vat = TaxCode.objects.get(code="VAT-SSCL")
+    q = services.save(
+        executive,
+        None,
+        customer=buyer,
+        division=Division.objects.get(code="WS"),
+        lines=[QuoteLine(description="Gear blank", quantity="1", unit_price="10", tax_code=vat)],
+    )
+    assert q.lines.get().tax_code.code == "ZERO-RATED"
+    assert q.tax_total == 0
+    assert o.lines.get().tax_code.code == "ZERO-RATED"
+
+
+def test_a_local_customer_paying_in_dollars_pays_vat_and_sscl(
+    executive, director, stores, accountant
+):
+    local = customers.create_customer(executive, {"name": "Lanka Hotels PLC", "currency": "USD"})
+    q = services.save(
+        executive,
+        None,
+        customer=local,
+        division=Division.objects.get(code="WS"),
+        lines=[
+            QuoteLine(
+                description="Bracket",
+                quantity="100",
+                unit_price="25.00",
+                tax_code=TaxCode.objects.get(code="VAT-SSCL"),
+            )
+        ],
+    )
+    workflow.submit(executive, q)
+    workflow.approve(director, q)
+    q = workflow.record_outcome(executive, q, accepted=True, reason="price")
+    o = orders.from_quotation(executive, q)
+    orders.save(
+        executive,
+        o,
+        customer_po="LH/1",
+        payment_terms="30 days",
+        lines=[
+            OrderLine(
+                quantity=line.quantity,
+                quotation_line=line.quotation_line,
+                schedule=[Delivery(TODAY, line.quantity)],
+            )
+            for line in o.lines.order_by("line_no")
+        ],
+    )
+    invoice = issue(stores, accountant, orders.confirm(executive, o))
+    # USD 2,500.00 + SSCL 53.13 + VAT 459.56 = 3,012.69, booked at 300.00.
+    assert [(t.label, t.amount) for t in invoice.taxes.all()] == [
+        ("SSCL", D("53.13")),
+        ("VAT", D("459.56")),
+    ]
+    assert (invoice.total_amount, invoice.total_lkr) == (D("3012.69"), D("903807.00"))
+    assert lines(invoice.journal_entry) == [
+        (role("accounts_receivable"), D("903807.00"), 0),
+        ("4010", 0, D("750000.00")),
+        ("2110", 0, D("15939.00")),
+        ("2100", 0, D("137868.00")),
+    ]

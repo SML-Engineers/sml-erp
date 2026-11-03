@@ -372,3 +372,8 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
     says. Exports of goods are normally zero-rated for VAT and SSCL does not apply, but the tax
     advisor should confirm. Recommended: the Accountant adds a tax code "Zero-rated export"
     (VAT at 0%) on Accounts -> Taxes and Sales use it on export quotations. Asked 3 Nov 2026.
+    - Owner, 3 Nov 2026: exports of goods are zero-rated for VAT (0%) and SSCL does not
+      apply; local customers who pay in a foreign currency are charged VAT and SSCL as usual.
+      Built: the tax code ZERO-RATED (no tax), put on every quotation, proforma, sales order
+      and invoice line for a customer marked "Export customer", whatever code was chosen. The
+      currency does not decide it.

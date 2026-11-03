@@ -32,7 +32,7 @@ from apps.masters.models import CompanyAccount, Customer
 from apps.masters.services import MastersError, mark_used
 
 from .models import CustomerAdvance, ProformaInvoice, ProformaLine, Quotation, QuotationLine
-from .services import SalesError, _decimal, can_enter, sees_all
+from .services import SalesError, _decimal, can_enter, sales_tax_code, sees_all
 from .services import visible as visible_quotations
 
 CENT = Decimal("0.01")
@@ -138,7 +138,7 @@ def _check_line(n: int, line: LineInput, quotation: Quotation) -> dict:
         "unit": source.unit,
         "unit_price": price_for(source, quantity),
         "is_tooling": source.is_tooling,
-        "tax_code": source.tax_code,
+        "tax_code": sales_tax_code(source.quotation.customer, source.tax_code),
         **packing,
     }
 

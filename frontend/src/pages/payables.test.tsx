@@ -53,7 +53,7 @@ test("the aging lists what we owe and a supplier opens its items", async () => {
     },
   });
   renderAt("/payables", <PayablesPage />);
-  const table = await screen.findByRole("table", { name: "Payables and statements" });
+  const table = await screen.findByRole("table", { name: "Payables and supplier statements" });
   fireEvent.click(within(table).getByRole("button", { name: "S0001 Lanka Steel (Pvt) Ltd" }));
   const items = await screen.findByRole("table", { name: "What we owe this supplier" });
   expect(within(items).getByRole("link", { name: "WS261103001" })).toHaveAttribute("href", "/vouchers/9");

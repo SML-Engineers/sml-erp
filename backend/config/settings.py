@@ -187,6 +187,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.sales.tasks.post_due_cheques",
         "schedule": crontab(hour=0, minute=35),
     },
+    # Payment reminders to customers with overdue invoices (P2-08), on working mornings.
+    "send-payment-reminders": {
+        "task": "apps.sales.tasks.send_payment_reminders",
+        "schedule": crontab(hour=8, minute=15, day_of_week="mon-sat"),
+    },
     "make-recurring-journals": {
         "task": "apps.accounting.tasks.make_recurring_journals",
         "schedule": crontab(hour=0, minute=40),

@@ -8,6 +8,7 @@ from . import (
     order_views,
     proforma_views,
     receipt_views,
+    receivable_views,
     report_views,
     views,
 )
@@ -62,6 +63,28 @@ urlpatterns = [
         "quotations/<int:pk>/revise/",
         views.QuotationReviseView.as_view(),
         name="quotation-revise",
+    ),
+    path("receivables/aging/", receivable_views.AgingView.as_view(), name="receivables-aging"),
+    path(
+        "receivables/statements/<int:pk>/",
+        receivable_views.StatementView.as_view(),
+        name="customer-statement",
+    ),
+    path(
+        "receivables/statements/<int:pk>/email/",
+        receivable_views.StatementEmailView.as_view(),
+        name="customer-statement-email",
+    ),
+    path(
+        "receivables/statements/<int:pk>/reminders/",
+        receivable_views.RemindersView.as_view(),
+        name="customer-reminders",
+    ),
+    path("credit-holds/", receivable_views.CreditHoldListView.as_view(), name="credit-holds"),
+    path(
+        "credit-holds/<int:pk>/allow/",
+        receivable_views.CreditHoldAllowView.as_view(),
+        name="credit-hold-allow",
     ),
     path("receipts/", receipt_views.ReceiptListView.as_view(), name="receipt-list"),
     path("receipts/options/", receipt_views.ReceiptOptionsView.as_view(), name="receipt-options"),

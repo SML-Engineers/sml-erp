@@ -370,6 +370,20 @@ def _journal_lines(invoice: TaxInvoice) -> list[journal.Line]:
 
 
 def issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
+    """Issue the draft. A customer over its credit limit or with overdue invoices is stopped
+    until the Director allows this invoice (P2-08)."""
+    from . import receivables
+
+    try:
+        return _issue(user, invoice)
+    except receivables.CreditBlocked as blocked:
+        receivables.hold(user, blocked)
+        raise SalesError(str(blocked)) from None
+
+
+def _issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
+    from . import receivables
+
     with audit_context("tax_invoice_issued"), transaction.atomic():
         invoice = TaxInvoice.objects.select_for_update().get(pk=invoice.pk)
         if not can_issue(user, invoice):
@@ -396,6 +410,14 @@ def issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
         _compute(invoice)
         if invoice.total_amount <= 0:
             raise SalesError("The invoice total must be more than zero.")
+        receivables.require(
+            user,
+            kind="tax_invoice",
+            document_id=invoice.pk,
+            label=f"the invoice for order {invoice.order.number}",
+            customer=invoice.customer,
+            amount_lkr=invoice.total_amount,
+        )
         customer = invoice.customer
         invoice.supplier_name = company.name
         invoice.supplier_tin = company.tin

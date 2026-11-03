@@ -425,7 +425,21 @@ def save(user: User, order: SalesOrder, *, lines: list[LineInput], **values) -> 
 
 
 def confirm(user: User, order: SalesOrder, comment: str = "") -> SalesOrder:
-    """Open the order; a repeat order typed in goes to the Director first."""
+    """Open the order; a repeat order typed in goes to the Director first. A customer over
+    its credit limit or with overdue invoices is stopped until the Director allows this
+    order (P2-08)."""
+    from . import receivables
+
+    try:
+        return _confirm(user, order, comment)
+    except receivables.CreditBlocked as blocked:
+        receivables.hold(user, blocked)
+        raise SalesError(str(blocked)) from None
+
+
+def _confirm(user: User, order: SalesOrder, comment: str) -> SalesOrder:
+    from . import receivables
+
     with audit_context("sales_order_confirmed", comment), transaction.atomic():
         order = SalesOrder.objects.select_for_update().get(pk=order.pk)
         if not can_edit(user, order):
@@ -434,6 +448,14 @@ def confirm(user: User, order: SalesOrder, comment: str = "") -> SalesOrder:
             raise SalesError("Enter the customer's PO number first.")
         if not order.lines.exists():
             raise SalesError("A sales order needs at least one line.")
+        receivables.require(
+            user,
+            kind="sales_order",
+            document_id=order.pk,
+            label=f"Sales order {order.number}",
+            customer=order.customer,
+            amount_lkr=order.total_lkr,
+        )
         if order.source == SalesOrder.Source.DIRECT:
             try:
                 approvals.submit(

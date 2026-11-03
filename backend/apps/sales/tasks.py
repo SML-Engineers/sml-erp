@@ -15,3 +15,11 @@ def post_due_cheques() -> int:
     from .receipts import post_due
 
     return post_due()
+
+
+@shared_task
+def send_payment_reminders() -> int:
+    """Daily (P2-08): statements emailed to customers with reminders on and overdue invoices."""
+    from .receivables import send_reminders
+
+    return send_reminders()

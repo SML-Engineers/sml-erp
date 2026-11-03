@@ -102,6 +102,9 @@ DOCUMENT_TYPES = {
         final_role="director",
         approver_action="approve_credit_notes",
     ),
+    # Money received for issued tax invoices: recorded by the Cashier, approved by the
+    # Accountant, as for advances (P2-07).
+    "customer_receipt": DocumentType("Customer receipt", min_approvals=1, final_role="accountant"),
 }
 
 

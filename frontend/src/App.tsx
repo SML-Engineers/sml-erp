@@ -17,6 +17,8 @@ import AmendmentsPage from "./pages/AmendmentsPage";
 import CancellationsPage from "./pages/CancellationsPage";
 import VoucherReportsPage from "./pages/VoucherReportsPage";
 import AdvancePage from "./pages/AdvancePage";
+import ReceiptPage from "./pages/ReceiptPage";
+import ReceiptsPage from "./pages/ReceiptsPage";
 import AdvancesPage from "./pages/AdvancesPage";
 import PaymentsPage from "./pages/PaymentsPage";
 import ProformaPage from "./pages/ProformaPage";
@@ -179,6 +181,8 @@ export default function App() {
         <Route path="payments/new" element={<PayPage />} />
         <Route path="advances" element={<WithMe page={(me) => <AdvancesPage me={me} />} />} />
         <Route path="advances/:id" element={<AdvancePage />} />
+        <Route path="receipts" element={<WithMe page={(me) => <ReceiptsPage me={me} />} />} />
+        <Route path="receipts/:id" element={<ReceiptPage />} />
         <Route path="vouchers/:id" element={<WithMe page={(me) => <VoucherPage me={me} />} />} />
         <Route
           path="accounting-periods"

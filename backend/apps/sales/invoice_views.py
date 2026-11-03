@@ -11,7 +11,7 @@ from apps.accounting.models import Account
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 
-from . import invoice_email, invoice_printing, invoices
+from . import invoice_email, invoice_printing, invoices, receipts
 from .models import DeliveryNote, TaxInvoice
 from .proforma_views import EmailInput
 from .services import SalesError
@@ -108,6 +108,29 @@ def _detail(i: TaxInvoice, user) -> dict:
                 "total_amount": f"{n.total_amount:.2f}",
             }
             for n in i.credit_notes.order_by("credit_date", "id")
+        ],
+        # What has been paid on it (P2-07): receipts (posted, or waiting for approval or a
+        # post-dated cheque's date) and advances set off.
+        "settlement": None
+        if i.status != "issued"
+        else {k: f"{v:.2f}" for k, v in receipts.settlement([i])[i.pk].items()},
+        "receipts": [
+            {
+                "id": a.receipt_id,
+                "number": a.receipt.number,
+                "receipt_date": a.receipt.receipt_date,
+                "status": a.receipt.status,
+                "amount": f"{a.amount:.2f}",
+            }
+            for a in i.receipt_allocations.select_related("receipt").order_by("receipt__number")
+        ],
+        "set_offs": [
+            {
+                "advance": {"id": s.advance_id, "number": s.advance.number},
+                "set_off_date": s.set_off_date,
+                "amount": f"{s.amount:.2f}",
+            }
+            for s in i.set_offs.select_related("advance")
         ],
         "can_credit": i.status == "issued" and invoices.can_prepare(user),
         "can_edit": invoices.can_edit(user, i),

@@ -125,10 +125,24 @@ Status: `[ ]` to do · `[x]` done
     approved and rejected notes never change. Returned goods go back into no stock until
     Phase 3.
 
-- [ ] **P2-07 Customer receipts and allocation**
+- [x] **P2-07 Customer receipts and allocation**
   The Cashier records money in (cheque, transfer, cash, card, QR), allocated to one or more
   invoices; advances (Phase 1.5) set off against the invoice of their order. Cheques received
   go to Undeposited funds until deposited (P2-14); post-dated cheques wait for their date.
+  - Done: Vouchers and payments → Customer receipts. The Cashier records the money (how, the
+    reference, the date) and splits it over the customer's issued invoices, with a "fill
+    oldest first" button; the split must add up to the amount and no invoice gets more than
+    is open on it (total less approved credit notes, other receipts not rejected and advances
+    set off; also a database rule). Numbered from the RC series shared with advances. The
+    Accountant approves (question 12, default); approval posts Dr the bank or cash account
+    (Undeposited funds for a cheque), Cr Accounts receivable with the customer per invoice. A
+    post-dated cheque is approved but posted by a daily job on its date; cheques more than six
+    months ahead or old are refused. Rejecting posts nothing and frees the invoices. Printed
+    receipt listing the invoices paid. Issuing a tax invoice now sets off the approved
+    advances of its order (or of the order's proforma or quotation), oldest first, up to the
+    invoice total: Dr Customer advances, Cr Accounts receivable; the Accountant can also set
+    off any approved advance of the customer by hand, from the advance's page. The invoice page
+    shows what was received, waiting, set off and still open. LKR only until P2-09.
 
 - [ ] **P2-08 Customer statements, aging and credit limits** (spec 6, 7A)
   Statements (PDF, email), receivables aging (current, 30, 60, 90, over 90 days), credit limit
@@ -307,3 +321,8 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
     one on their user page (a sensitive grant the Director confirms). Sales or the Accountant
     prepare the draft. (P2-05) The Sales Manager too is granted it only when the Admin sets it
     and the Director confirms (owner, 3 Nov 2026).
+12. **Customer receipts (P2-07).** Defaults taken on 3 Nov 2026, the owner can change them:
+    the Accountant approves receipts (as for advances); a customer who pays more than the
+    invoices chosen has the extra recorded as an advance; cheques dated more than six months
+    ahead or older than six months are refused; card payments (OnePay links) are recorded as
+    money into the bank account they reach.

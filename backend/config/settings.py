@@ -182,6 +182,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=0, minute=30),
     },
     # Recurring journals made as drafts, and accruals reversed (P2-02), early each morning.
+    # Customers' post-dated cheques posted on their date (P2-07).
+    "post-due-cheques": {
+        "task": "apps.sales.tasks.post_due_cheques",
+        "schedule": crontab(hour=0, minute=35),
+    },
     "make-recurring-journals": {
         "task": "apps.accounting.tasks.make_recurring_journals",
         "schedule": crontab(hour=0, minute=40),

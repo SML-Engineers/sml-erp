@@ -2765,5 +2765,41 @@
     "newRate": "New rate (%)",
     "reasonHint": "e.g. the gazette number",
     "proposeHelp": "The new rate starts on its date once the Director confirms; if confirmed later, it starts on the day of confirmation."
+  },
+  "receipts": {
+    "title": "Customer receipts",
+    "help": "Money received for tax invoices. The Cashier records it and splits it over the customer's invoices; the Accountant approves it and it is posted (Dr bank, Cr the customer's receivable). A cheque waits in Undeposited funds until it is banked; a post-dated cheque is posted on its date.",
+    "new": "Receive a payment for invoices",
+    "none": "No receipts.",
+    "nothingOpen": "No customer has an open invoice.",
+    "statuses": {
+      "awaiting_approval": "Awaiting approval",
+      "post_dated": "Approved, cheque not yet due",
+      "posted": "Approved and posted",
+      "rejected": "Rejected"
+    },
+    "chequeDate": "Date on the cheque",
+    "chequeBank": "Bank of the cheque",
+    "chequeHelp": "A cheque goes to Undeposited funds until it is deposited. If it is dated later, it is posted on that date.",
+    "invoices": "Invoices paid",
+    "invoice": "Invoice",
+    "due": "Due",
+    "total": "Invoice total",
+    "open": "Open",
+    "pay": "Paid now",
+    "payOn": "Paid on {{number}}",
+    "fill": "Fill oldest first",
+    "allocated": "{{allocated}} of {{amount}} split over the invoices",
+    "recordHelp": "The split must add up to the amount. Nothing is posted until the Accountant approves it. Record any extra as an advance.",
+    "backToList": "← All receipts",
+    "postDatedHelp": "Approved. The cheque is posted on {{date}}.",
+    "paid": "Payments",
+    "received": "Received",
+    "pending": "Waiting (approval or cheque date)",
+    "advancesSetOff": "Advances set off",
+    "advanceSetOff": "advance set off",
+    "setOffs": "Set off against invoices",
+    "setOffNew": "Set off against an invoice",
+    "setOff": "Set off"
   }
 }

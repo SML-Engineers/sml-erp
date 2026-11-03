@@ -1,9 +1,10 @@
-"""The printed receipt for a customer advance (backlog P15-09): company letterhead, RECEIPT,
-the number and date, who paid, how much in figures and words (and its LKR value for a
-foreign-currency receipt), how it was paid, and what it is for.
+"""The printed receipt for a customer advance (backlog P15-09) or for money received against
+tax invoices (P2-07): company letterhead, RECEIPT, the number and date, who paid, how much in
+figures and words (and its LKR value for a foreign-currency receipt), how it was paid, and
+what it is for.
 
 A receipt not yet approved by the Accountant says "AWAITING APPROVAL"; a rejected one says
-"REJECTED – NOT VALID", so neither can pass for a valid receipt.
+"REJECTED – NOT VALID", so neither can pass for a valid receipt. A post-dated cheque says so.
 """
 
 from io import BytesIO
@@ -19,7 +20,7 @@ from apps.core.models import Company
 from apps.core.words import amount_in_words
 from apps.vouchers.printing import Table, _logo
 
-from .models import CustomerAdvance
+from .models import CustomerAdvance, CustomerReceipt
 
 GREY = colors.HexColor("#555555")
 LINE = colors.HexColor("#999999")
@@ -27,9 +28,79 @@ MARKS = {
     CustomerAdvance.Status.AWAITING_APPROVAL: "AWAITING APPROVAL",
     CustomerAdvance.Status.REJECTED: "REJECTED – NOT VALID",
 }
+RECEIPT_MARKS = {
+    CustomerReceipt.Status.AWAITING_APPROVAL: "AWAITING APPROVAL",
+    CustomerReceipt.Status.REJECTED: "REJECTED – NOT VALID",
+    CustomerReceipt.Status.POST_DATED: "POST-DATED CHEQUE – SUBJECT TO REALISATION",
+}
 
 
 def render(advance: CustomerAdvance) -> bytes:
+    currency = advance.currency.code
+    rows = [
+        ["Receipt no.", advance.number, "Date", advance.receipt_date.strftime("%d/%m/%Y")],
+        ["Received from", f"{advance.customer.name} ({advance.customer.code})", "", ""],
+        ["Amount", f"{currency} {advance.amount:,.2f}", "", ""],
+        ["In words", amount_in_words(advance.amount, currency), "", ""],
+    ]
+    if currency != "LKR":
+        rows.append(
+            [
+                "LKR value",
+                f"LKR {advance.amount_lkr:,.2f} at {advance.exchange_rate.normalize():f}",
+                "",
+                "",
+            ]
+        )
+    paid = advance.get_method_display()
+    if advance.reference:
+        paid += f" {advance.reference}"
+    rows.append(["Paid by", paid, "Into", advance.account.name])
+    towards = "Advance payment"
+    if advance.sales_order_id:
+        towards += f" against sales order {advance.sales_order.number}"
+        if advance.sales_order.customer_po:
+            towards += f" (your PO {advance.sales_order.customer_po})"
+    elif advance.proforma_id:
+        towards += f" against proforma invoice {advance.proforma.number}"
+    elif advance.quotation_id:
+        towards += f" against quotation {advance.quotation.label}"
+    rows.append(["For", towards, "", ""])
+    if advance.notes:
+        rows.append(["Notes", advance.notes, "", ""])
+    return _build(advance.number, MARKS.get(advance.status), rows, advance.created_by.full_name)
+
+
+def render_receipt(receipt: CustomerReceipt) -> bytes:
+    """Money received for tax invoices (P2-07), in LKR, with the invoices it pays."""
+    rows = [
+        ["Receipt no.", receipt.number, "Date", receipt.receipt_date.strftime("%d/%m/%Y")],
+        ["Received from", f"{receipt.customer.name} ({receipt.customer.code})", "", ""],
+        ["Amount", f"LKR {receipt.amount:,.2f}", "", ""],
+        ["In words", amount_in_words(receipt.amount, "LKR"), "", ""],
+    ]
+    paid = receipt.get_method_display()
+    if receipt.reference:
+        paid += f" {receipt.reference}"
+    if receipt.method == CustomerReceipt.Method.CHEQUE:
+        if receipt.cheque_bank:
+            paid += f", {receipt.cheque_bank}"
+        rows.append(["Paid by", paid, "Dated", receipt.cheque_date.strftime("%d/%m/%Y")])
+    else:
+        rows.append(["Paid by", paid, "Into", receipt.account.name])
+    paying = [
+        f"Tax invoice {a.invoice.number}: LKR {a.amount:,.2f}"
+        for a in receipt.allocations.select_related("invoice").order_by("id")
+    ]
+    rows.append(["For", "\n".join(paying), "", ""])
+    if receipt.notes:
+        rows.append(["Notes", receipt.notes, "", ""])
+    return _build(
+        receipt.number, RECEIPT_MARKS.get(receipt.status), rows, receipt.created_by.full_name
+    )
+
+
+def _build(number: str, mark: str | None, rows: list[list[str]], received_by: str) -> bytes:
     page = landscape(A5)
     margin = 12 * mm
 
@@ -69,44 +140,10 @@ def render(advance: CustomerAdvance) -> bytes:
     )
     story.append(Spacer(1, 4 * mm))
     story.append(p("RECEIPT", title))
-    mark = MARKS.get(advance.status)
     if mark:
         story.append(p(mark, warn))
     story.append(Spacer(1, 2 * mm))
 
-    currency = advance.currency.code
-    amount = f"{currency} {advance.amount:,.2f}"
-    rows = [
-        ["Receipt no.", advance.number, "Date", advance.receipt_date.strftime("%d/%m/%Y")],
-        ["Received from", f"{advance.customer.name} ({advance.customer.code})", "", ""],
-        ["Amount", amount, "", ""],
-        ["In words", amount_in_words(advance.amount, currency), "", ""],
-    ]
-    if currency != "LKR":
-        rows.append(
-            [
-                "LKR value",
-                f"LKR {advance.amount_lkr:,.2f} at {advance.exchange_rate.normalize():f}",
-                "",
-                "",
-            ]
-        )
-    paid = advance.get_method_display()
-    if advance.reference:
-        paid += f" {advance.reference}"
-    rows.append(["Paid by", paid, "Into", advance.account.name])
-    towards = "Advance payment"
-    if advance.sales_order_id:
-        towards += f" against sales order {advance.sales_order.number}"
-        if advance.sales_order.customer_po:
-            towards += f" (your PO {advance.sales_order.customer_po})"
-    elif advance.proforma_id:
-        towards += f" against proforma invoice {advance.proforma.number}"
-    elif advance.quotation_id:
-        towards += f" against quotation {advance.quotation.label}"
-    rows.append(["For", towards, "", ""])
-    if advance.notes:
-        rows.append(["Notes", advance.notes, "", ""])
     table = [[p(a, muted), p(b), p(c, muted), p(d)] for a, b, c, d in rows]
     story.append(
         Table(
@@ -115,10 +152,9 @@ def render(advance: CustomerAdvance) -> bytes:
             style=[
                 ("LINEBELOW", (0, 0), (-1, -1), 0.25, LINE),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("SPAN", (1, 1), (3, 1)),
-                ("SPAN", (1, 2), (3, 2)),
-                ("SPAN", (1, 3), (3, 3)),
-            ],
+            ]
+            # A row with nothing on its right uses the whole width.
+            + [("SPAN", (1, i), (3, i)) for i, row in enumerate(rows) if not (row[2] or row[3])],
         )
     )
     story.append(Spacer(1, 10 * mm))
@@ -126,7 +162,7 @@ def render(advance: CustomerAdvance) -> bytes:
         Table(
             [
                 [
-                    p(f"Received by: {advance.created_by.full_name}", muted),
+                    p(f"Received by: {received_by}", muted),
                     p("Signature: ________________", muted),
                 ]
             ],
@@ -142,6 +178,6 @@ def render(advance: CustomerAdvance) -> bytes:
         rightMargin=margin,
         topMargin=margin,
         bottomMargin=margin,
-        title=f"Receipt {advance.number}",
+        title=f"Receipt {number}",
     ).build(story)
     return buffer.getvalue()

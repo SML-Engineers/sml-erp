@@ -7,6 +7,7 @@ from . import (
     invoice_views,
     order_views,
     proforma_views,
+    receipt_views,
     report_views,
     views,
 )
@@ -61,6 +62,25 @@ urlpatterns = [
         "quotations/<int:pk>/revise/",
         views.QuotationReviseView.as_view(),
         name="quotation-revise",
+    ),
+    path("receipts/", receipt_views.ReceiptListView.as_view(), name="receipt-list"),
+    path("receipts/options/", receipt_views.ReceiptOptionsView.as_view(), name="receipt-options"),
+    path("receipts/<int:pk>/", receipt_views.ReceiptDetailView.as_view(), name="receipt-detail"),
+    path(
+        "receipts/<int:pk>/approve/",
+        receipt_views.ReceiptApproveView.as_view(),
+        name="receipt-approve",
+    ),
+    path(
+        "receipts/<int:pk>/reject/",
+        receipt_views.ReceiptRejectView.as_view(),
+        name="receipt-reject",
+    ),
+    path("receipts/<int:pk>/pdf/", receipt_views.ReceiptPdfView.as_view(), name="receipt-pdf"),
+    path(
+        "advances/<int:pk>/set-off/",
+        receipt_views.AdvanceSetOffView.as_view(),
+        name="advance-set-off",
     ),
     path("advances/", advance_views.AdvanceListView.as_view(), name="advance-list"),
     path("advances/options/", advance_views.AdvanceOptionsView.as_view(), name="advance-options"),

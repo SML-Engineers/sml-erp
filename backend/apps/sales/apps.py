@@ -25,5 +25,8 @@ class SalesConfig(AppConfig):
             m.SalesOrder,
             m.SalesOrderLine,
             m.DeliverySchedule,
+            m.CustomerReceipt,
+            m.ReceiptAllocation,
+            m.AdvanceSetOff,
         ):
             register(model)

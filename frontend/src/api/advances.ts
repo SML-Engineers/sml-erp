@@ -35,6 +35,11 @@ export interface AdvanceDetail extends AdvanceRow {
   approved_at: string | null;
   can_approve: boolean;
   history: { action: string; action_label: string; by: string; at: string; reason: string }[];
+  /** Set off against tax invoices (P2-07). */
+  set_offs?: { invoice: { id: number; number: string }; amount: string; set_off_date: string; journal_entry: string; by: string }[];
+  /** The Accountant may set it off by hand against these open invoices of the customer. */
+  can_set_off?: boolean;
+  open_invoices?: { id: number; number: string; invoice_date: string; open_amount: string }[];
 }
 
 export interface AdvanceOptions {
@@ -81,3 +86,5 @@ export const approveAdvance = (id: number, comment: string) =>
 export const rejectAdvance = (id: number, reason: string) =>
   apiSend<AdvanceDetail>("POST", `/advances/${id}/reject/`, { reason });
 export const receiptUrl = (id: number) => `${API_BASE}/advances/${id}/receipt/`;
+export const setOffAdvance = (id: number, invoice: number, amount: string) =>
+  apiSend<AdvanceDetail>("POST", `/advances/${id}/set-off/`, { invoice, amount });

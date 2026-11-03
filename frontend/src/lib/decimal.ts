@@ -52,3 +52,19 @@ export function formatQuantity(value: string | null | undefined): string {
   const kept = fraction.replace(/0+$/, "");
   return formatDecimal(kept ? `${whole}.${kept}` : whole);
 }
+
+/** Compare two decimal strings exactly: -1, 0 or 1. */
+export function compareDecimal(a: string, b: string, scale = 2): number {
+  const difference = toUnits(a, scale) - toUnits(b, scale);
+  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+
+/** True when the text is a decimal number with at most `scale` places, e.g. "1250.50". */
+export function isDecimal(value: string, scale = 2): boolean {
+  try {
+    toUnits(value.replace(/,/g, ""), scale);
+    return true;
+  } catch {
+    return false;
+  }
+}

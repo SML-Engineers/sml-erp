@@ -16,6 +16,9 @@ PAGES = {
     "customer_advance": ("sales.CustomerAdvance", "/advances/{pk}"),
     "tax_invoice": ("sales.TaxInvoice", "/tax-invoices/{pk}"),
     "credit_note": ("sales.CreditNote", "/credit-notes/{pk}"),
+    "customer_receipt": ("sales.CustomerReceipt", "/receipts/{pk}"),
+    # An advance set off against an invoice (P2-07): the invoice shows its set-offs.
+    "customer_set_off": ("sales.TaxInvoice", "/tax-invoices/{pk}"),
 }
 
 

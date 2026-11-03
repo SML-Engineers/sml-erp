@@ -53,6 +53,7 @@ def payment_row(p: SupplierPayment, user=None) -> dict:
         "cheque_date": p.cheque_date,
         "payment_date": p.payment_date,
         "amount": f"{p.amount:.2f}",
+        "journal_entry": p.journal_entry.number,
         # P2-11: what left the account, in its currency, and the rate; and cancelling.
         "currency": p.currency.code,
         "paid_amount": f"{p.paid_amount:.2f}",

@@ -15,6 +15,7 @@ PAGES = {
     "supplier_return": ("purchasing.SupplierReturn", "/supplier-returns/{pk}"),
     "customer_advance": ("sales.CustomerAdvance", "/advances/{pk}"),
     "tax_invoice": ("sales.TaxInvoice", "/tax-invoices/{pk}"),
+    "credit_note": ("sales.CreditNote", "/credit-notes/{pk}"),
 }
 
 

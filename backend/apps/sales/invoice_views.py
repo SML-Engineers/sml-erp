@@ -99,6 +99,17 @@ def _detail(i: TaxInvoice, user) -> dict:
         else {"id": i.journal_entry_id, "number": i.journal_entry.number},
         "issued_by": i.issued_by.full_name if i.issued_by else None,
         "issued_at": i.issued_at,
+        "credit_notes": [
+            {
+                "id": n.pk,
+                "number": n.number,
+                "status": n.status,
+                "credit_date": n.credit_date,
+                "total_amount": f"{n.total_amount:.2f}",
+            }
+            for n in i.credit_notes.order_by("credit_date", "id")
+        ],
+        "can_credit": i.status == "issued" and invoices.can_prepare(user),
         "can_edit": invoices.can_edit(user, i),
         "can_issue": invoices.can_issue(user, i),
         "can_email": invoice_email.can_email(user, i),

@@ -110,10 +110,20 @@ Status: `[ ]` to do · `[x]` done
     and taxes never change (database guard); an invoiced delivery note cannot be cancelled.
     A delivered order is Completed once fully invoiced. LKR only until P2-09.
 
-- [ ] **P2-06 Credit notes**
+- [x] **P2-06 Credit notes**
   Against an issued invoice (returned goods, price correction), with a reason and the
   approval the owner chooses (question 3); posts the reverse of the invoice's lines, never more
   than what was invoiced.
+  - Done: Sales → Credit notes, made from an issued invoice by Sales or the Accountant: kind
+    (goods returned, price correction, other) and reason required; each line credits an
+    amount before tax (and the quantity for returned goods), never more than is left after
+    approved notes (database rule, checked again at approval); taxes at the invoice's rates.
+    Approved through the approval engine by the Director, or by a person the Admin gives the
+    "Approve credit notes" right to, confirmed by the Director (owner, 3 Nov 2026); the engine
+    now lets a document type name such a right. Approval numbers it CN{YY}{MM}{DD}{XX} and
+    posts Dr Sales, Dr SSCL and VAT payable, Cr Accounts receivable (the customer). Printed;
+    approved and rejected notes never change. Returned goods go back into no stock until
+    Phase 3.
 
 - [ ] **P2-07 Customer receipts and allocation**
   The Cashier records money in (cheque, transfer, cash, card, QR), allocated to one or more
@@ -251,11 +261,16 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
 
 1. **The current accounting system.** What is it (QuickBooks, Tally, Excel or other), and can
    it export the trial balance and open invoices to Excel? (P2-28)
+   - Owner, 3 Nov 2026: QuickBooks; it exports to Excel. P2-28 reads QuickBooks' own Excel
+     exports (trial balance, open invoices and bills, item list) as well as the templates.
 2. **Financial year and start date.** Is the financial year April to March? Phase 2 is
    easiest to start on the first day of a financial year (e.g. 1 April 2027). (P2-23, P2-28,
    P2-29)
+   - Owner, 3 Nov 2026: yes, April to March. Go-live on 1 April (of the year agreed).
 3. **Approvals.** Who approves manual journals and credit notes: the Director always, or the
    Accountant up to a limit? (P2-01, P2-06)
+   - Credit notes, answered 3 Nov 2026: the Director, and anyone the Admin gives the right to,
+     confirmed by the Director. Manual journals: still the Director.
 4. **Finished goods before Phase 3.** Should delivery notes reduce a finished-goods stock now,
    or only record what was delivered until production is built in Phase 3? (P2-04, P2-18)
    - Default taken on 3 Nov 2026 (the recommendation, no answer yet): only record what was
@@ -263,19 +278,31 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
      choose otherwise before P2-18.
 5. **Credit limits.** When a customer is over their limit or overdue: warn only, or block new
    orders and invoices until the Director allows it? (P2-08)
+   - Owner, 3 Nov 2026: block. A customer over their credit limit or with overdue invoices
+     gets no new sales order or tax invoice until the Director allows it (for that document).
 6. **Withholding tax.** Does SML deduct WHT on any payments (rent, services, interest)? To
    confirm with the tax advisor. (P2-12)
+   - Owner, 3 Nov 2026: currently no. P2-12 is built switched off (no WHT unless the
+     Accountant sets it up), so it costs nothing until it is needed.
 7. **Opening stock.** Count the stores and load the balances at Phase 1.6 go-live, or at
    Phase 2 go-live? (P2-18, P2-28)
 8. **Depreciation.** The method and rate per asset class (straight line or reducing balance),
    as the auditors agree. (P2-19)
+   - Owner, 3 Nov 2026, asked which classes: proposed list sent (land, buildings, plant and
+     machinery, moulds and tooling, motor vehicles, furniture and fittings, office and computer
+     equipment); methods and rates to be agreed with the auditors.
 9. **Payment gateway.** Will SML open a PayHere (or other) merchant account for Pay Now? If
    not yet, P2-27 waits. (P2-27)
+   - Owner, 3 Nov 2026: no gateway account. When a customer asks to pay by card, SML sends
+     them a payment link. P2-27 becomes: invoice tracking (sent, viewed, paid) and recording a
+     card payment link sent to a customer; no Pay Now button.
 10. **Order of release.** Build all of Phase 2 and go live once, or release in stages (for
     example sales invoicing and receipts first, while the current system still keeps the
     books)? (all)
+    - Owner, 3 Nov 2026: all at once.
 11. **Who issues tax invoices.** Answered 3 Nov 2026: the Director and the Accountant, and the
     salespeople the Admin chooses (not every salesperson). Built as the special action "Issue
     tax invoices": held by the Director and Accountant roles, granted to a salesperson one by
     one on their user page (a sensitive grant the Director confirms). Sales or the Accountant
-    prepare the draft. (P2-05)
+    prepare the draft. (P2-05) The Sales Manager too is granted it only when the Admin sets it
+    and the Director confirms (owner, 3 Nov 2026).

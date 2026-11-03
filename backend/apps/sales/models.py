@@ -991,3 +991,110 @@ class TaxInvoiceTax(models.Model):
 
     def __str__(self):
         return f"{self.label} {self.rate}%"
+
+
+# --- Credit notes (P2-06) --------------------------------------------------------------------
+
+
+class CreditNote(models.Model):
+    """A correction of an issued tax invoice: goods returned, a price corrected, or another
+    reason. It credits part or all of the invoice's lines, never more than is left of them
+    after earlier credit notes, with the taxes worked out at the invoice's rates. Approved
+    through the approval engine ("credit_note": the Director, or a person given the right);
+    approval numbers it and posts the reverse of the invoice: Dr Sales, Dr SSCL and VAT
+    payable, Cr Accounts receivable (the customer). Approved notes never change."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Waiting for approval"
+        APPROVED = "approved", "Approved and posted"
+        REJECTED = "rejected", "Rejected"
+
+    class Kind(models.TextChoices):
+        RETURN = "return", "Goods returned"
+        PRICE = "price", "Price correction"
+        OTHER = "other", "Other"
+
+    number = models.CharField(max_length=40, blank=True)  # given when approved
+    invoice = models.ForeignKey(TaxInvoice, on_delete=models.PROTECT, related_name="credit_notes")
+    customer = models.ForeignKey(
+        "masters.Customer", on_delete=models.PROTECT, related_name="credit_notes"
+    )
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    reason = models.TextField()
+    credit_date = models.DateField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    tax_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    amount_in_words = models.CharField(max_length=400, blank=True)
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="credit_note",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-credit_date", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["number"],
+                condition=~models.Q(number=""),
+                name="sales_credit_number_unique",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number or f"Draft credit note {self.pk}"
+
+
+class CreditNoteLine(models.Model):
+    """The part of one invoice line credited: the quantity returned (for returned goods) and
+    the amount before tax."""
+
+    note = models.ForeignKey(CreditNote, on_delete=models.CASCADE, related_name="lines")
+    invoice_line = models.ForeignKey(
+        TaxInvoiceLine, on_delete=models.PROTECT, related_name="credits"
+    )
+    quantity = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    tax_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["note", "invoice_line__line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["note", "invoice_line"], name="sales_cn_line_once"),
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0) & models.Q(quantity__gte=0),
+                name="sales_cn_line_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.note}: {self.amount}"
+
+
+class CreditNoteTax(models.Model):
+    note = models.ForeignKey(CreditNote, on_delete=models.CASCADE, related_name="taxes")
+    seq = models.PositiveSmallIntegerField()
+    component = models.ForeignKey(
+        "accounting.TaxComponent", on_delete=models.PROTECT, related_name="+"
+    )
+    label = models.CharField(max_length=20)
+    rate = models.DecimalField(max_digits=7, decimal_places=4)
+    on_tax = models.BooleanField(default=False)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["note", "seq"]
+
+    def __str__(self):
+        return f"{self.label} {self.rate}%"

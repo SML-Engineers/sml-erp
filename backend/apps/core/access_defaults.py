@@ -55,12 +55,14 @@ ACTIONS = {
     "record_receipt": "Record customer receipts and advances",
     "confirm_tax_rates": "Confirm changes to tax rates",
     "issue_tax_invoices": "Issue tax invoices",
+    "approve_credit_notes": "Approve credit notes",
 }
 
 # Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
 SENSITIVE_AREA_LEVELS = {("vouchers", "approve"), ("users", "manage")}
 SENSITIVE_AREAS = {"hr_payroll"}
 SENSITIVE_ACTIONS = {
+    "approve_credit_notes",
     "issue_tax_invoices",
     "record_payment",
     "record_receipt",
@@ -346,6 +348,10 @@ ROLE_ACTIONS_V3 = {"director": ["confirm_tax_rates"]}
 # salespeople the Admin chooses (granted to them one by one, confirmed by the Director as a
 # sensitive grant); not every salesperson (owner, 3 Nov 2026).
 ROLE_ACTIONS_V4 = {"director": ["issue_tax_invoices"], "accountant": ["issue_tax_invoices"]}
+
+# P2-06 (core migration 0022): credit notes are approved by the Director, or by a person the
+# Admin gives "approve_credit_notes" to and the Director confirms (owner, 3 Nov 2026).
+ROLE_ACTIONS_V5 = {"director": ["approve_credit_notes"]}
 
 # Phase 1.6 (P16-02, core migration 0019): purchasing, stores and QC roles switched on. SML has
 # one stores person, called Stores Manager or Stores Executive (owner, 31 Oct 2026).

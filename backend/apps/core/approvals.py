@@ -21,7 +21,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from .access import division_scope
+from .access import division_scope, effective_access
 from .audit import _ip, audit_context
 from .models import (
     ApprovalLog,
@@ -45,6 +45,10 @@ class DocumentType:
     min_approvals: int = 1
     final_role: str = ""
     subtype_label: str = ""
+    # A special action that also lets its holder approve at the final role's level: held by
+    # that role by default and granted to chosen people one by one (a sensitive grant the
+    # Director confirms), e.g. credit notes (owner, 3 Nov 2026).
+    approver_action: str = ""
 
 
 # Document types come with the software; each module registers its own when it is built.
@@ -89,6 +93,15 @@ DOCUMENT_TYPES = {
     # The stores counted at go-live, with their cost: the Director approves before the stock
     # and its value go in (owner, 2 Nov 2026; P16-15).
     "opening_stock": DocumentType("Opening stock", min_approvals=1, final_role="director"),
+    # A credit note against an issued tax invoice: the Director approves, or a person the
+    # Admin gives the "approve_credit_notes" action to and the Director confirms (owner, 3 Nov
+    # 2026; P2-06).
+    "credit_note": DocumentType(
+        "Credit note",
+        min_approvals=1,
+        final_role="director",
+        approver_action="approve_credit_notes",
+    ),
 }
 
 
@@ -284,6 +297,18 @@ def holds_role(user: User, role_code: str) -> bool:
     )
 
 
+def _stands_in(user: User, document_type: str, step: dict) -> bool:
+    """Holds the document type's approver action, which counts as the final role."""
+    doc = DOCUMENT_TYPES.get(document_type)
+    if doc is None or not doc.approver_action or step["role"] != doc.final_role:
+        return False
+    return user.is_active and effective_access(user).can(doc.approver_action)
+
+
+def may_act_at(user: User, document_type: str, step: dict) -> bool:
+    return holds_role(user, step["role"]) or _stands_in(user, document_type, step)
+
+
 def _log(state: ApprovalState, user: User, level: int, action: str, reason: str = ""):
     return ApprovalLog.objects.create(
         document_type=state.document_type,
@@ -355,7 +380,7 @@ def why_not(user: User, state: ApprovalState) -> str | None:
     if state.status != ApprovalState.Status.IN_PROGRESS:
         return f"The document is {state.get_status_display().lower()}; nothing is waiting."
     step = next(s for s in state.route if s["level"] == state.current_level)
-    if not holds_role(user, step["role"]):
+    if not may_act_at(user, state.document_type, step):
         return f"Level {state.current_level} is approved by the {step['role_name']}."
     if (
         user.pk == state.created_by_id
@@ -514,12 +539,26 @@ def approvers(state: ApprovalState) -> list[User]:
     if state.status != ApprovalState.Status.IN_PROGRESS:
         return []
     step = next(s for s in state.route if s["level"] == state.current_level)
-    people = User.objects.filter(
-        is_active=True,
-        role_assignments__role__code=step["role"],
-        role_assignments__role__is_active=True,
-    ).distinct()
-    return [person for person in people if why_not(person, state) is None]
+    people = User.objects.filter(is_active=True).filter(
+        Q(role_assignments__role__code=step["role"], role_assignments__role__is_active=True)
+        | Q(pk__in=_action_holders(state.document_type))
+    )
+    return [person for person in people.distinct() if why_not(person, state) is None]
+
+
+def _action_holders(document_type: str):
+    """Users who may hold the document type's approver action (through a role or a grant);
+    why_not() then checks it is in force."""
+    doc = DOCUMENT_TYPES.get(document_type)
+    if doc is None or not doc.approver_action:
+        return User.objects.none().values("pk")
+    return User.objects.filter(
+        Q(
+            role_assignments__role__actions__action=doc.approver_action,
+            role_assignments__role__is_active=True,
+        )
+        | Q(access_overrides__action=doc.approver_action, access_overrides__effect="grant")
+    ).values("pk")
 
 
 def _tell_approvers(state: ApprovalState) -> None:
@@ -569,7 +608,11 @@ def waiting_for(user: User, document_type: str | None = None) -> list[ApprovalSt
     return [
         s
         for s in states
-        if any(step["level"] == s.current_level and step["role"] in codes for step in s.route)
+        if any(
+            step["level"] == s.current_level
+            and (step["role"] in codes or _stands_in(user, s.document_type, step))
+            for step in s.route
+        )
         and why_not(user, s) is None
     ]
 

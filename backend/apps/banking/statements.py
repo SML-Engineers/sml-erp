@@ -233,5 +233,11 @@ def statements(user: User) -> QuerySet[BankStatement]:
 
 def delete(user: User, statement: BankStatement) -> None:
     _accountant(user)
+    from .models import BankReconciliation
+
+    if BankReconciliation.objects.filter(
+        account=statement.account_id, period_end__gte=statement.from_date
+    ).exists():
+        raise BankingError("This statement is part of a reconciled month; it stays.")
     with audit_context("bank_statement_deleted"):
         statement.delete()

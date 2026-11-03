@@ -9,10 +9,22 @@ class BankingConfig(AppConfig):
     def ready(self):
         from apps.core.audit import register
 
-        from .models import BankStatement, ChequeClearance, Deposit, DepositLine, StatementTemplate
+        from .models import (
+            BankReconciliation,
+            BankRule,
+            BankStatement,
+            ChequeClearance,
+            Deposit,
+            DepositLine,
+            StatementMatch,
+            StatementTemplate,
+        )
 
         register(Deposit)
         register(DepositLine)
         register(ChequeClearance)
         register(StatementTemplate)
         register(BankStatement)
+        register(StatementMatch)
+        register(BankRule)
+        register(BankReconciliation)

@@ -1438,6 +1438,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Reorder alerts and purchase requests (P2-13) | Reorder level and quantity per item and main store; at or below it (counting what is ordered or requested) the stores person and purchasing are told once; one click makes a draft request to the usual supplier. The Director approves requests by default (the Admin can change the role); purchasing makes an approved request into a draft PO at the last price | 6, 5A |
 | Cheque register and deposits (P2-14) | One register of our and customers' cheques; deposit slips from Undeposited funds; a returned cheque reverses its receipt (the bank credited) and opens the invoices again; transfers between own accounts stay Internal Transfer vouchers | 4.1, 6 |
 | Bank statement import (P2-15) | Templates per bank kept by the Accountant (Excel/CSV headings, or PDF text line by line); every balance checked against the one before, so a misread file is refused; the same file once; overlapping lines skipped; imported lines never change | 7A |
+| Bank reconciliation (P2-16) | Statement lines matched to journal entries (amount, direction, date window, reference on the line); charges and interest posted from the line by rule or earlier coding; nothing without the Accountant's click; a month finished only with every line in the books and nil difference, then locked and its cheques marked cleared | 6, 7A |
 
 **Still needed for initial setup**
 

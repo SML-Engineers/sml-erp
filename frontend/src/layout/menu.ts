@@ -85,6 +85,7 @@ export const MENU: MenuSection[] = [
       { label: "banking.title", path: "/bank-accounts", area: "banking" },
       { label: "cheques.title", path: "/cheques", area: "banking", alsoArea: "payments" },
       { label: "bs.title", path: "/bank-statements", area: "banking" },
+      { label: "rec.title", path: "/reconciliation", area: "banking" },
       { label: "chart.title", path: "/chart-of-accounts", area: "accounting" },
       { label: "taxes.title", path: "/taxes", area: "accounting" },
       { label: "sa.title", path: "/sales-accounts", area: "accounting" },

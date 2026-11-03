@@ -196,3 +196,92 @@ class BankStatementLine(models.Model):
 
     def __str__(self):
         return f"{self.statement_id}/{self.line_no}"
+
+
+# --- Bank reconciliation (backlog P2-16) ------------------------------------------------------
+
+
+class StatementMatch(models.Model):
+    """A statement line matched to the journal entry that put the same money through the bank
+    account in our books: a payment, deposit, receipt, advance, transfer or journal. `posted`
+    marks an entry made from the line itself (bank charges, interest)."""
+
+    line = models.OneToOneField(BankStatementLine, on_delete=models.CASCADE, related_name="match")
+    entry = models.OneToOneField(
+        "accounting.JournalEntry", on_delete=models.PROTECT, related_name="statement_match"
+    )
+    posted = models.BooleanField(default=False)
+    matched_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    matched_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["line"]
+
+    def __str__(self):
+        return f"{self.line} = {self.entry}"
+
+
+class BankRule(models.Model):
+    """When a statement line's description contains `text`, suggest posting it to `ledger`
+    (bank charges, interest, standing orders). Kept by the Accountant."""
+
+    class Direction(models.TextChoices):
+        ANY = "any", "Money in or out"
+        OUT = "out", "Money out"
+        IN = "in", "Money in"
+
+    account = models.ForeignKey(
+        "masters.CompanyAccount",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="bank_rules",
+    )
+    text = models.CharField(max_length=100)
+    direction = models.CharField(max_length=3, choices=Direction.choices, default=Direction.ANY)
+    ledger = models.ForeignKey("accounting.Account", on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey(
+        "core.Division", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["text"]
+
+    def __str__(self):
+        return self.text
+
+
+class BankReconciliation(models.Model):
+    """A month of a bank account reconciled and locked: the statement lines up to its end are
+    all in the books and the difference is nil. Its matches never change afterwards."""
+
+    account = models.ForeignKey(
+        "masters.CompanyAccount", on_delete=models.PROTECT, related_name="reconciliations"
+    )
+    period_end = models.DateField()
+    bank_balance = models.DecimalField(max_digits=18, decimal_places=2)
+    book_balance = models.DecimalField(max_digits=18, decimal_places=2)
+    unpresented = models.DecimalField(max_digits=18, decimal_places=2)  # book items not on it
+    note = models.TextField(blank=True)
+    done_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    done_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-period_end", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account", "period_end"], name="banking_reconciliation_once"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.account} to {self.period_end}"

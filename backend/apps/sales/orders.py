@@ -45,7 +45,7 @@ from .models import (
 )
 from .proformas import price_for
 from .proformas import visible as visible_proformas
-from .services import SalesError, _decimal, can_enter, sees_all
+from .services import SalesError, _decimal, can_enter, sales_tax_code, sees_all
 from .services import visible as visible_quotations
 
 DOC = "sales_order"
@@ -318,6 +318,7 @@ def _check_line(n: int, line: LineInput, order: SalesOrder) -> dict:
             "is_tooling": source.is_tooling,
             "tax_code": source.tax_code,
         }
+    values["tax_code"] = sales_tax_code(order.customer, values["tax_code"])
     values["quantity"] = quantity
     values["schedule"] = _check_schedule(where, line.schedule, quantity)
     return values

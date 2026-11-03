@@ -57,6 +57,8 @@ ACTIONS = {
     "issue_tax_invoices": "Issue tax invoices",
     "approve_credit_notes": "Approve credit notes",
     "allow_credit_holds": "Allow documents on credit hold",
+    "approve_customer_receipts": "Approve customer receipts and advances",
+    "set_credit_terms": "Change customers' credit limits and payment terms",
 }
 
 # Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
@@ -65,6 +67,8 @@ SENSITIVE_AREAS = {"hr_payroll"}
 SENSITIVE_ACTIONS = {
     "allow_credit_holds",
     "approve_credit_notes",
+    "approve_customer_receipts",
+    "set_credit_terms",
     "issue_tax_invoices",
     "record_payment",
     "record_receipt",
@@ -358,6 +362,16 @@ ROLE_ACTIONS_V5 = {"director": ["approve_credit_notes"]}
 # P2-08 (core migration 0023): a document on credit hold is allowed by the Director (owner,
 # 3 Nov 2026: block until the Director allows that document).
 ROLE_ACTIONS_V6 = {"director": ["allow_credit_holds"]}
+
+# P2-07 fix (core migration 0024): customer receipts and advances are approved by the
+# Accountant, or by a person the Admin gives "approve_customer_receipts" to and the Director
+# confirms (owner, 3 Nov 2026).
+ROLE_ACTIONS_V7 = {"accountant": ["approve_customer_receipts"]}
+
+# Owner, 3 Nov 2026 (core migration 0025): only the Accountant and the Director change a
+# customer's credit limit and payment terms, so nobody lifts a credit hold (P2-08) by
+# changing them; a grant to anyone else is sensitive.
+ROLE_ACTIONS_V8 = {"director": ["set_credit_terms"], "accountant": ["set_credit_terms"]}
 
 # Phase 1.6 (P16-02, core migration 0019): purchasing, stores and QC roles switched on. SML has
 # one stores person, called Stores Manager or Stores Executive (owner, 31 Oct 2026).

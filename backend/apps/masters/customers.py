@@ -2,6 +2,9 @@
 
 - Sales Executives (Sales: Enter) add customers and keep their details and contacts; the
   Sales Manager and Director (Sales: Approve) also deactivate and reactivate them.
+- Only the Accountant and the Director ("set_credit_terms") change a customer's credit limit
+  and payment terms (owner, 3 Nov 2026), so nobody lifts a credit hold (P2-08) by changing
+  them; a new customer starts with 30 days and no limit.
 - A customer with documents keeps its code and is never deleted (rule 9, database guard).
 - A name or VAT number already used by another customer is a warning the user confirms.
 - Export and import in one Excel layout; an import is checked first and is all or nothing.
@@ -54,6 +57,17 @@ class NeedsConfirmation(MastersError):
 
 def can_enter(user: User) -> bool:
     return effective_access(user).has("sales", "enter")
+
+
+TERMS = ("credit_limit", "payment_terms_days")
+DEFAULT_TERMS = {"credit_limit": None, "payment_terms_days": 30}
+TERMS_REFUSED = (
+    "Only the Accountant or the Director changes a customer's credit limit and payment terms."
+)
+
+
+def can_set_terms(user: User) -> bool:
+    return effective_access(user).can("set_credit_terms")
 
 
 def can_deactivate(user: User) -> bool:
@@ -142,6 +156,10 @@ def create_customer(user: User, values: dict, *, confirmed: bool = False) -> Cus
     cleaned = _check_details(values)
     if not cleaned.get("name"):
         raise MastersError("The customer name is required.")
+    if not can_set_terms(user) and any(
+        key in cleaned and cleaned[key] != DEFAULT_TERMS[key] for key in TERMS
+    ):
+        raise MastersError(TERMS_REFUSED)
     warnings = duplicate_warnings(cleaned)
     if warnings and not confirmed:
         raise NeedsConfirmation(warnings)
@@ -163,6 +181,10 @@ def update_customer(
     with transaction.atomic():
         customer = Customer.objects.select_for_update().get(pk=customer.pk)
         cleaned = _check_details(values)
+        if not can_set_terms(user) and any(
+            key in cleaned and cleaned[key] != getattr(customer, key) for key in TERMS
+        ):
+            raise MastersError(TERMS_REFUSED)
         check = {k: cleaned[k] for k in ("vat_no", "name") if k in cleaned}
         new_values = {
             k: v for k, v in check.items() if (getattr(customer, k) or "").lower() != v.lower()
@@ -176,6 +198,27 @@ def update_customer(
         note = "; ".join(filter(None, [reason, *warnings]))
         with audit_context("customer_changed", note):
             customer.save()
+        return customer
+
+
+def set_credit_terms(
+    user: User, customer: Customer, *, credit_limit, payment_terms_days, reason: str
+) -> Customer:
+    """The Accountant or the Director changes the credit limit (empty: no limit) and the
+    payment terms, with a reason (both kept in the audit log)."""
+    if not can_set_terms(user):
+        raise MastersError(TERMS_REFUSED)
+    reason = (reason or "").strip()
+    if not reason:
+        raise MastersError("Give a reason for changing the credit terms.")
+    cleaned = _check_details(
+        {"credit_limit": credit_limit, "payment_terms_days": payment_terms_days}
+    )
+    with audit_context("customer_credit_terms_changed", reason), transaction.atomic():
+        customer = Customer.objects.select_for_update().get(pk=customer.pk)
+        for key, value in cleaned.items():
+            setattr(customer, key, value)
+        customer.save(update_fields=list(cleaned))
         return customer
 
 

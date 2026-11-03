@@ -1365,7 +1365,7 @@
     "exportCustomer": "Export customer",
     "noLimit": "No limit",
     "sameAsBilling": "Leave empty if the same as the billing address",
-    "creditLimitShown": "Credit limit {{currency}} {{amount}} (shown for information; checked against invoices from Phase 2).",
+    "creditLimitShown": "Credit limit {{currency}} {{amount}}.",
     "confirmDuplicate": "I have checked: this is a different customer. Save anyway.",
     "field": {
       "name": "Name",
@@ -1409,7 +1409,10 @@
     "hasLeft": "Has left",
     "isBack": "Back again",
     "addContact": "Add a contact",
-    "editContact": "Change contact"
+    "editContact": "Change contact",
+    "termsByAccountant": "The credit limit and payment terms are changed only by the Accountant or the Director.",
+    "creditTerms": "Credit terms",
+    "saveTerms": "Save the credit terms"
   },
   "costing": {
     "title": "Costing rates",

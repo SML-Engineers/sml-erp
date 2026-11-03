@@ -158,6 +158,32 @@ class CustomerDetailView(_Sales):
         return Response(CustomerSerializer(_rows().get(pk=pk)).data)
 
 
+class CreditTermsInput(serializers.Serializer):
+    credit_limit = serializers.CharField(allow_blank=True, allow_null=True)
+    payment_terms_days = serializers.IntegerField()
+    reason = serializers.CharField(allow_blank=True)
+
+
+class CustomerCreditTermsView(APIView):
+    """The credit limit and payment terms: the Accountant or the Director (the service checks
+    the "set_credit_terms" right); they may only view Sales."""
+
+    permission_classes = [AreaAccess]
+    access_area = "sales"
+    access_also_area = "accounting"
+    access_write_level = "view"
+
+    def post(self, request, pk):
+        customer = get_object_or_404(Customer, pk=pk)
+        data = CreditTermsInput(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            customers.set_credit_terms(request.user, customer, **data.validated_data)
+        except MastersError as error:
+            return _error(error)
+        return Response(CustomerSerializer(_rows().get(pk=pk)).data)
+
+
 class ActiveInput(serializers.Serializer):
     is_active = serializers.BooleanField()
     reason = serializers.CharField(required=False, allow_blank=True, default="")

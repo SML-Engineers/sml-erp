@@ -83,7 +83,7 @@ test("an export customer is added with its currency, country and delivery term",
   fireEvent.click(within(form).getByLabelText("Export customer"));
   fireEvent.change(within(form).getByLabelText("Country"), { target: { value: "Sweden" } });
   fireEvent.change(within(form).getByLabelText("Delivery term (Incoterm)"), { target: { value: "FOB" } });
-  fireEvent.change(within(form).getByLabelText("Credit limit"), { target: { value: "25000.50" } });
+  expect(within(form).getByLabelText("Credit limit")).toBeDisabled(); // the Accountant's or the Director's
   fireEvent.click(within(form).getByRole("button", { name: "Save" }));
 
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/customers/", expect.objectContaining({ method: "POST" })));
@@ -94,7 +94,8 @@ test("an export customer is added with its currency, country and delivery term",
     is_export: true,
     country: "Sweden",
     incoterm: "FOB",
-    credit_limit: "25000.50",
+    credit_limit: null,
+    payment_terms_days: 30,
   });
 });
 
@@ -204,4 +205,38 @@ test("the Sales Manager deactivates a customer with a reason", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ is_active: false, reason: "Closed down" }) }),
     ),
   );
+});
+
+test("the Accountant changes the credit terms, with a reason", async () => {
+  const accountant: CurrentUser = {
+    ...sampleUser,
+    access: { areas: { sales: ["view"], accounting: ["manage", "enter", "view"] }, actions: ["set_credit_terms"], divisions: "all" },
+  };
+  const calls = mockApi(
+    api({ "POST /api/v1/customers/1/credit-terms/": { body: { ...unilever, credit_limit: "750000.00", payment_terms_days: 45 } } }),
+  );
+  renderAt("/customers", <CustomersPage me={accountant} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Unilever Sri Lanka" }));
+  const terms = await screen.findByRole("region", { name: "Credit terms" });
+  fireEvent.change(within(terms).getByLabelText("Credit limit"), { target: { value: "750,000" } });
+  fireEvent.change(within(terms).getByLabelText("Payment terms (days; 0 = on receipt)"), { target: { value: "45" } });
+  fireEvent.change(within(terms).getByLabelText("Reason"), { target: { value: "Agreed with the Director" } });
+  fireEvent.click(within(terms).getByRole("button", { name: "Save the credit terms" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/customers/1/credit-terms/", expect.objectContaining({ method: "POST" })),
+  );
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/customers/1/credit-terms/")!;
+  expect(JSON.parse(String(init!.body))).toEqual({
+    credit_limit: "750000",
+    payment_terms_days: 45,
+    reason: "Agreed with the Director",
+  });
+});
+
+test("a salesperson does not see the credit terms box", async () => {
+  mockApi(api());
+  renderAt("/customers", <CustomersPage me={executive} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Unilever Sri Lanka" }));
+  await screen.findByRole("region", { name: "C0001 Unilever Sri Lanka" });
+  expect(screen.queryByRole("region", { name: "Credit terms" })).not.toBeInTheDocument();
 });

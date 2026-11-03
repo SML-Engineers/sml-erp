@@ -294,8 +294,9 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
 9. **Payment gateway.** Will SML open a PayHere (or other) merchant account for Pay Now? If
    not yet, P2-27 waits. (P2-27)
    - Owner, 3 Nov 2026: no gateway account. When a customer asks to pay by card, SML sends
-     them a payment link. P2-27 becomes: invoice tracking (sent, viewed, paid) and recording a
-     card payment link sent to a customer; no Pay Now button.
+     them a payment link from **OnePay** (owner, 3 Nov 2026). P2-27 becomes: invoice tracking
+     (sent, viewed, paid) and recording the OnePay link sent for an invoice and the card
+     payment received; no Pay Now button.
 10. **Order of release.** Build all of Phase 2 and go live once, or release in stages (for
     example sales invoicing and receipts first, while the current system still keeps the
     books)? (all)

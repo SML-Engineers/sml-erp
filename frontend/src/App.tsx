@@ -51,6 +51,7 @@ import PurchaseOrderPage from "./pages/PurchaseOrderPage";
 import PurchasingReportsPage from "./pages/PurchasingReportsPage";
 import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
 import PurchaseRequestPage from "./pages/PurchaseRequestPage";
+import ChequesPage from "./pages/ChequesPage";
 import PurchaseRequestsPage from "./pages/PurchaseRequestsPage";
 import ReorderPage from "./pages/ReorderPage";
 import StoresPage from "./pages/settings/StoresPage";
@@ -156,6 +157,7 @@ export default function App() {
         <Route path="purchase-requests" element={<PurchaseRequestsPage />} />
         <Route path="purchase-requests/:id" element={<PurchaseRequestPage />} />
         <Route path="reorder" element={<ReorderPage />} />
+        <Route path="cheques" element={<ChequesPage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />
         <Route path="goods-receipts/:id" element={<GoodsReceiptPage />} />
         <Route path="inspections" element={<InspectionsPage />} />

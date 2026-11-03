@@ -32,6 +32,7 @@ RECEIPT_MARKS = {
     CustomerReceipt.Status.AWAITING_APPROVAL: "AWAITING APPROVAL",
     CustomerReceipt.Status.REJECTED: "REJECTED – NOT VALID",
     CustomerReceipt.Status.POST_DATED: "POST-DATED CHEQUE – SUBJECT TO REALISATION",
+    CustomerReceipt.Status.RETURNED: "CHEQUE RETURNED – NOT PAID",
 }
 
 

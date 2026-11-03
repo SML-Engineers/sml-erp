@@ -68,6 +68,8 @@ DOC = "customer_receipt"
 SET_OFF = "customer_set_off"
 ZERO = Decimal("0.00")
 St = CustomerReceipt.Status
+# Receipts that no longer pay anything: rejected, or their cheque came back (P2-14).
+NOT_COUNTING = (St.REJECTED, St.RETURNED)
 Method = CustomerReceipt.Method
 # Cheques in Sri Lanka are valid for six months from their date.
 CHEQUE_LIFE = timedelta(days=183)
@@ -138,7 +140,7 @@ def settlement(invoices) -> dict[int, dict]:
         rows[r["invoice"]]["credited"] = r["total"]
     for r in (
         ReceiptAllocation.objects.filter(invoice__in=keys)
-        .exclude(receipt__status=St.REJECTED)
+        .exclude(receipt__status__in=NOT_COUNTING)
         .values("invoice", "receipt__status")
         .annotate(total=Sum("amount"))
     ):
@@ -178,7 +180,7 @@ def lkr_left(invoice: TaxInvoice) -> Decimal:
     )
     taken += (
         ReceiptAllocation.objects.filter(invoice=invoice)
-        .exclude(receipt__status=St.REJECTED)
+        .exclude(receipt__status__in=NOT_COUNTING)
         .aggregate(t=Sum("carrying_lkr"))["t"]
         or ZERO
     )

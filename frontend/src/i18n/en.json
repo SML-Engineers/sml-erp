@@ -2801,7 +2801,8 @@
       "awaiting_approval": "Awaiting approval",
       "post_dated": "Approved, cheque not yet due",
       "posted": "Approved and posted",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
+      "returned": "Cheque returned"
     },
     "chequeDate": "Date on the cheque",
     "chequeBank": "Bank of the cheque",
@@ -3006,5 +3007,46 @@
     "priceOf": "Price, line {{n}} ({{item}})",
     "makeOrderButton": "Make the draft purchase order",
     "history": "Approval history"
+  },
+  "cheques": {
+    "title": "Cheque register",
+    "help": "Our cheques and the customers' cheques in one place. Customers' cheques wait in Undeposited funds until they are put on a deposit slip. Mark a cheque cleared when the bank shows it; a customer's cheque that comes back unpaid is returned, which puts the money back on the customer's account and opens the invoices again. Transfers between our own accounts are Internal Transfer vouchers.",
+    "received": "Customers' cheques",
+    "issued": "Our cheques",
+    "statuses": {
+      "awaiting_approval": "Awaiting approval",
+      "post_dated": "Post-dated",
+      "in_hand": "In hand",
+      "deposited": "Deposited",
+      "cleared": "Cleared",
+      "returned": "Returned",
+      "issued": "Issued",
+      "spoiled": "Spoiled"
+    },
+    "all": "All",
+    "none": "No cheques.",
+    "receipt": "Receipt",
+    "customer": "Customer",
+    "cheque": "Cheque",
+    "chequeDate": "Cheque date",
+    "amount": "Amount (LKR)",
+    "status": "Status",
+    "payee": "Payee",
+    "payment": "Payment",
+    "account": "Account",
+    "date": "Date",
+    "clear": "Cleared",
+    "return": "Returned unpaid",
+    "reason": "Reason the bank gave",
+    "deposit": "Make a deposit slip",
+    "depositHelp": "Tick the cheques taken to the bank together. The bank is debited and Undeposited funds credited.",
+    "depositAccount": "Bank account",
+    "depositDate": "Deposit date",
+    "slipNo": "Bank slip number",
+    "depositButton": "Record the deposit",
+    "depositTotal": "Total {{amount}}",
+    "nothingInHand": "No cheques are waiting to be deposited.",
+    "deposits": "Deposit slips",
+    "journal": "Journal entry"
   }
 }

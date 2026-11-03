@@ -264,10 +264,27 @@ Status: `[ ]` to do · `[x]` done
 
 ## D. Banking and cash
 
-- [ ] **P2-14 Cheque register, deposits and transfers**
+- [x] **P2-14 Cheque register, deposits and transfers**
   Cheques issued and received in one register (status: issued, presented, cleared,
   returned, spoiled); deposit slips from Undeposited funds; returned cheques reverse the
   receipt; transfers between the company's own accounts, approved like vouchers.
+  - Done: Accounts → Cheque register (Cashier or Accountant). Customers' cheques: awaiting
+    approval, post-dated, in hand (posted to Undeposited funds), deposited, cleared, returned.
+    A deposit slip (DP{YY}{MM}{NNNN}) takes cheques in hand, dated on or before the deposit
+    day, to an LKR bank account: Dr the bank, Cr Undeposited funds. A returned cheque needs
+    the bank's reason: the receipt's entry is posted in reverse, crediting the bank it was
+    deposited in (or Undeposited funds if it never was), the receipt becomes "Cheque returned"
+    and its invoices are open again (also in the database's open-amount check and in the
+    aging at any date). A cleared cheque is not returned. Our cheques: issued, cleared,
+    spoiled (cancelled payments, P2-11), each with its payment and payee. "Presented" is not
+    kept separately: the bank shows a cheque only once it is paid, so it goes from issued to
+    cleared (by hand now; from the bank statement with P2-16). Deposits, deposit lines and
+    clearances are insert-only. Transfers between our own accounts were already Internal
+    Transfer vouchers (Clerk → Accountant → Director, paid by the Cashier); nothing new was
+    needed. Defaults you can change: no approval for deposits or returned cheques (the
+    Cashier or the Accountant records them, with the audit log); bank charges on a returned
+    cheque are a separate journal; advances paid by cheque still go straight to the bank
+    account chosen.
 
 - [ ] **P2-15 Bank statement import** (spec 7A)
   Statement files (CSV or Excel) read with a template per bank: Commercial Bank, Sampath,

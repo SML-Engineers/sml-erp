@@ -1437,6 +1437,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Withholding tax on payments (P2-12) | Built switched off (owner, 3 Nov 2026): none until the Accountant sets a rate. Then coded per voucher line on the amount before VAT; the payee is paid the net, WHT payable credited, and a numbered WHT certificate printed per payment | 4.4, 6 |
 | Reorder alerts and purchase requests (P2-13) | Reorder level and quantity per item and main store; at or below it (counting what is ordered or requested) the stores person and purchasing are told once; one click makes a draft request to the usual supplier. The Director approves requests by default (the Admin can change the role); purchasing makes an approved request into a draft PO at the last price | 6, 5A |
 | Cheque register and deposits (P2-14) | One register of our and customers' cheques; deposit slips from Undeposited funds; a returned cheque reverses its receipt (the bank credited) and opens the invoices again; transfers between own accounts stay Internal Transfer vouchers | 4.1, 6 |
+| Bank statement import (P2-15) | Templates per bank kept by the Accountant (Excel/CSV headings, or PDF text line by line); every balance checked against the one before, so a misread file is refused; the same file once; overlapping lines skipped; imported lines never change | 7A |
 
 **Still needed for initial setup**
 

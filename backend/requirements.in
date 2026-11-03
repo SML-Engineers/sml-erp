@@ -16,3 +16,4 @@ pyotp>=2.9,<3
 segno>=1.6,<2
 openpyxl>=3.1,<4
 reportlab>=5.0,<6
+pypdf>=6,<7

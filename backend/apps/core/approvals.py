@@ -112,6 +112,11 @@ DOCUMENT_TYPES = {
     # Money received for issued tax invoices: recorded by the Cashier, approved by the
     # Accountant or a person given "approve_customer_receipts", as for advances (P2-07; owner,
     # 3 Nov 2026).
+    # Cancelling a supplier payment (a spoiled cheque, a failed transfer): the Director
+    # approves every one (P2-11).
+    "payment_cancellation": DocumentType(
+        "Payment cancellation", min_approvals=1, final_role="director"
+    ),
     "customer_receipt": DocumentType(
         "Customer receipt",
         min_approvals=1,

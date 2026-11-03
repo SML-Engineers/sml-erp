@@ -894,7 +894,7 @@ def _payments(v: Voucher, user) -> dict:
     paid = paid_on(v)
     rows = (
         [
-            payment_row(p)
+            payment_row(p, user)
             for p in v.payments.select_related(
                 "voucher", "voucher__payee", "account", "journal_entry", "created_by"
             ).order_by("payment_date", "id")

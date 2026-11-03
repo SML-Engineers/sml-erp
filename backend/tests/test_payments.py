@@ -235,10 +235,21 @@ def raw_insert(voucher, account, amount, user):
             """
             INSERT INTO payments_supplierpayment
               (number, voucher_id, account_id, method, reference, payment_date, amount, notes,
-               journal_entry_id, cancelled, created_by_id, created_at)
-            VALUES (%s, %s, %s, 'transfer', 'X', %s, %s, '', %s, false, %s, now())
+               journal_entry_id, cancelled, created_by_id, created_at, currency_id,
+               paid_amount, exchange_rate)
+            VALUES (%s, %s, %s, 'transfer', 'X', %s, %s, '', %s, false, %s, now(), %s, %s, 1)
             """,
-            [f"RAW{entry.pk}", voucher.pk, account.pk, TODAY, amount, entry.pk, user.pk],
+            [
+                f"RAW{entry.pk}",
+                voucher.pk,
+                account.pk,
+                TODAY,
+                amount,
+                entry.pk,
+                user.pk,
+                account.currency_id,
+                amount,
+            ],
         )
 
 

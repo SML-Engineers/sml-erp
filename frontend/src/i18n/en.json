@@ -1270,7 +1270,20 @@
     "saved": "Payment saved",
     "savedText": "Payment {{number}} of LKR {{amount}} against voucher {{voucher}} is saved, with journal entry {{entry}}.",
     "print": "Print payment voucher",
-    "ofVoucher": "Payments"
+    "ofVoucher": "Payments",
+    "amountIn": "Amount {{currency}}",
+    "foreignNote": "{{currency}} {{left}} left to pay. It is converted at today's {{currency}} rate; the difference from the invoices' rate is posted as an exchange gain or loss.",
+    "cancelled": "Cancelled",
+    "cancel": "Cancel this payment",
+    "cancelReason": "Why cancel it (e.g. cheque spoiled)",
+    "askCancel": "Ask the Director",
+    "cancelPending": "Cancellation asked by {{name}}: {{reason}}. Waiting for the Director.",
+    "cancelDone": "Cancelled by {{name}}: {{reason}} (reversal {{entry}}).",
+    "cancelRejected": "Cancellation refused by {{name}}.",
+    "approveCancel": "Approve: cancel the payment",
+    "rejectCancel": "Refuse",
+    "decisionNote": "Note (required to refuse)",
+    "cancelOf": "Cancelling payment {{number}}"
   },
   "exports": {
     "excel": "Excel",

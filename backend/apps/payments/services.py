@@ -14,6 +14,12 @@ currency may be paid from an account in that currency, at the rate of the paymen
 payment covers the voucher in proportion (in LKR at the invoices' rates, as the payable was
 booked); the bank is credited with the LKR value at the payment's rate, and the difference is
 an exchange gain or loss (IAS 21). Cancelling a payment is in cancellations.py.
+
+Withholding tax (P2-12): when the Accountant coded WHT on a voucher, the Cashier enters what
+the payee receives. The payment settles the matching share of the voucher (`amount`, what the
+payment lock counts); the difference is the WHT kept, credited to the tax's payable account,
+and the payee gets a WHT certificate numbered from its own series. The last payment keeps
+exactly the WHT left. A voucher with WHT is paid in LKR.
 """
 
 from dataclasses import dataclass
@@ -70,6 +76,17 @@ def paid_on(voucher: Voucher) -> Decimal:
 
 def remaining(voucher: Voucher) -> Decimal:
     return voucher.total_amount - paid_on(voucher)
+
+
+def wht_kept(voucher: Voucher) -> Decimal:
+    total = voucher.payments.filter(cancelled=False).aggregate(total=Sum("wht_amount"))["total"]
+    return total or Decimal("0.00")
+
+
+def to_receive(voucher: Voucher) -> Decimal:
+    """What is left to pay the payee: what is left of the voucher less the WHT still to keep
+    (P2-12). The same as `remaining` when there is no WHT."""
+    return remaining(voucher) - (voucher.wht_total - wht_kept(voucher))
 
 
 def foreign_basis(voucher: Voucher) -> tuple[Currency | None, Decimal | None]:
@@ -202,9 +219,29 @@ def cost_pieces(voucher: Voucher) -> list[Piece]:
     return [p for p in pieces if p.amount]
 
 
-def journal_lines(voucher: Voucher, before: Decimal, amount: Decimal, bank: Account, payee):
+def wht_pieces(voucher: Voucher) -> list[tuple[Account, Decimal]]:
+    """The voucher's withholding tax by payable account (P2-12)."""
+    found: dict[int, list] = {}
+    for line in voucher.lines.filter(wht_amount__gt=0).select_related(
+        "wht_component__sales_account"
+    ):
+        account = line.wht_component.sales_account
+        found.setdefault(account.pk, [account, Decimal("0")])[1] += line.wht_amount
+    return [(account, amount) for account, amount in found.values()]
+
+
+def journal_lines(
+    voucher: Voucher,
+    before: Decimal,
+    amount: Decimal,
+    bank: Account,
+    payee,
+    wht_before: Decimal = Decimal("0"),
+    wht: Decimal = Decimal("0"),
+):
     """This payment's share of each piece: what the payments so far plus this one cover,
-    less what the payments so far covered."""
+    less what the payments so far covered. The WHT kept goes to its payable accounts, the
+    rest to the bank."""
     pieces = cost_pieces(voucher)
     weights = [p.amount for p in pieces]
     upto_before = share(before, weights)
@@ -224,8 +261,24 @@ def journal_lines(voucher: Voucher, before: Decimal, amount: Decimal, bank: Acco
                 description=voucher.number,
             )
         )
+    if wht:
+        pieces = wht_pieces(voucher)
+        weights = [a for _, a in pieces]
+        was = share(wht_before, weights)
+        now = share(wht_before + wht, weights)
+        for (account, _), a, b in zip(pieces, was, now, strict=True):
+            if b - a:
+                lines.append(
+                    journal.Line(
+                        account=account,
+                        credit=b - a,
+                        division=voucher.division,
+                        supplier=payee,
+                        description=f"{voucher.number}: WHT",
+                    )
+                )
     lines.append(
-        journal.Line(account=bank, credit=amount, supplier=payee, description=voucher.number)
+        journal.Line(account=bank, credit=amount - wht, supplier=payee, description=voucher.number)
     )
     return lines
 
@@ -295,6 +348,13 @@ def record(
         left = voucher.total_amount - before
         paid_amount, rate, covered = amount, Decimal("1"), amount
         lookup = None
+        wht_before, wht = wht_kept(voucher), Decimal("0")
+        if voucher.wht_total and not account.currency.is_base:
+            raise PaymentError(
+                f"Voucher {voucher.number} has withholding tax and is paid from an LKR account."
+            )
+        if voucher.wht_total:
+            covered, wht = _with_wht(voucher, amount, left, wht_before)
         if not account.currency.is_base:
             currency, foreign_total = foreign_basis(voucher)
             if currency is None or currency.pk != account.currency_id:
@@ -357,6 +417,12 @@ def record(
             payment_no = allocate("supplier_payment", on_date=payment_date)
         except NumberSeriesError as error:
             raise PaymentError(str(error)) from None
+        certificate = ""
+        if wht:
+            try:
+                certificate = allocate("wht_certificate", on_date=payment_date)
+            except NumberSeriesError as error:
+                raise PaymentError(str(error)) from None
         payee = voucher.payee
         to = payee.name if payee else (voucher.transfer_to.code if voucher.transfer_to else "")
         try:
@@ -366,7 +432,7 @@ def record(
                 narration=f"Payment {payment_no} of voucher {voucher.number} to {to} "
                 f"({SupplierPayment.Method(method).label} {reference})".strip(),
                 lines=_with_exchange(
-                    journal_lines(voucher, before, covered, bank, payee),
+                    journal_lines(voucher, before, covered, bank, payee, wht_before, wht),
                     currencies.to_lkr(paid_amount, lookup) if lookup else covered,
                     covered,
                     voucher,
@@ -389,6 +455,8 @@ def record(
             currency=account.currency,
             paid_amount=paid_amount,
             exchange_rate=rate,
+            wht_amount=wht,
+            wht_certificate=certificate,
             notes=(notes or "").strip()[:300],
             journal_entry=entry,
             created_by=user,
@@ -403,6 +471,25 @@ def record(
         if lookup is not None:
             currencies.mark_rate_used(lookup)
         return payment
+
+
+def _with_wht(voucher: Voucher, received, left: Decimal, wht_before: Decimal):
+    """The share of the voucher a payment of `received` to the payee settles, and the WHT
+    kept from it (P2-12). Paying all that is left keeps exactly the WHT left."""
+    still = left - (voucher.wht_total - wht_before)
+    if received > still:
+        raise PaymentError(
+            f"Only {still:,.2f} is left to pay the payee on voucher {voucher.number} "
+            f"(after withholding tax of {voucher.wht_total:,.2f})."
+        )
+    if received == still:
+        return left, left - received
+    payable = voucher.total_amount - voucher.wht_total
+    covered = (received * voucher.total_amount / payable).quantize(CENT, ROUND_HALF_UP)
+    covered = min(covered, received + voucher.wht_total - wht_before)
+    if covered >= left:
+        raise PaymentError(f"Pay the {still:,.2f} left in full.")
+    return covered, covered - received
 
 
 def _system(role: str, name: str) -> Account:

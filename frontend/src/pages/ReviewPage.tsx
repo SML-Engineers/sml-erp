@@ -37,6 +37,8 @@ interface Coding {
   tax_code: string;
   tax_amount: string;
   job_ref: string;
+  /** P2-12: the withholding tax kept from the payment for this line. */
+  wht: string;
   split: boolean;
   byPercent: boolean;
   splits: SplitRow[];
@@ -113,6 +115,7 @@ function toCoding(line: VoucherLineData, fallbackDivision: string): Coding {
     tax_code: line.tax_code ?? "",
     tax_amount: line.tax_amount,
     job_ref: line.job_ref,
+    wht: line.wht_component ?? "",
     split: line.splits.length > 0,
     byPercent: line.splits.some((s) => s.percent !== null),
     splits: line.splits.length
@@ -168,6 +171,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         tax_code: c.tax_code || null,
         tax_amount: c.tax_code ? "0" : c.tax_amount || "0",
         job_ref: c.job_ref,
+        wht_component: c.wht || null,
         splits: c.split
           ? c.splits.map((s) => (c.byPercent ? { division: s.division, percent: s.percent } : { division: s.division, amount: s.amount }))
           : [],
@@ -195,6 +199,28 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
     },
   });
   const current = voucher.attachments.find((a) => a.id === file);
+  const whtChoices = voucher.wht_choices ?? [];
+  // P2-12: shown only once a withholding tax has a confirmed rate (built switched off).
+  const whtSelect = (index: number, line: VoucherLineData) =>
+    whtChoices.length > 0 && !line.advance_order ? (
+      <div>
+        <select
+          aria-label={t("voucherReview.whtOf", { n: String(line.line_no) })}
+          value={codings[index].wht}
+          onChange={(e) => set(index, { wht: e.target.value })}
+        >
+          <option value="">{t("voucherReview.noWht")}</option>
+          {whtChoices.map((w) => (
+            <option key={w.code} value={w.code}>
+              {w.code} {w.rate}%
+            </option>
+          ))}
+        </select>
+        {line.wht_component && Number(line.wht_amount) > 0 && (
+          <span className="muted"> {formatDecimal(line.wht_amount ?? "0")}</span>
+        )}
+      </div>
+    ) : null;
   const title = `${t("vouchers.voucher")} ${voucher.number}`;
 
   return (
@@ -276,6 +302,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                     </td>
                     <td>
                       <input aria-label={t("voucherReview.jobOf", { n })} value={c.job_ref} maxLength={50} onChange={(e) => set(index, { job_ref: e.target.value })} />
+                      {whtSelect(index, line)}
                     </td>
                   </tr>
                 );
@@ -382,6 +409,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                   </td>
                   <td>
                     <input aria-label={t("voucherReview.jobOf", { n })} value={c.job_ref} maxLength={50} onChange={(e) => set(index, { job_ref: e.target.value })} />
+                    {whtSelect(index, line)}
                   </td>
                 </tr>
               );
@@ -394,6 +422,14 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                 LKR {formatDecimal(voucher.total_amount)}
               </th>
             </tr>
+            {Number(voucher.wht_total ?? 0) > 0 && (
+              <tr>
+                <th colSpan={5}>{t("vouchers.whtKept")}</th>
+                <th className="num" colSpan={2}>
+                  LKR {formatDecimal(voucher.wht_total ?? "0")} · {t("vouchers.payable")} LKR {formatDecimal(voucher.payable ?? "0")}
+                </th>
+              </tr>
+            )}
           </tfoot>
         </table>
       </div>

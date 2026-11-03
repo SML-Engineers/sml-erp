@@ -17,7 +17,8 @@ from django.db.models import Max, Q, QuerySet, Sum
 from django.utils import timezone
 
 from apps.accounting import taxes
-from apps.accounting.models import Account, TaxCode
+from apps.accounting.models import Account, TaxCode, TaxComponent
+from apps.accounting.services import AccountingError
 from apps.core import approvals
 from apps.core.access import division_scope, effective_access, has_access
 from apps.core.approvals import ApprovalError
@@ -468,17 +469,26 @@ def save(
             raise VoucherError(
                 " ".join(clashes) + " The same supplier invoice cannot be entered twice."
             )
-        voucher.total_amount = sum((line.total for line in new_lines), Decimal("0"))
+        coding = {}
+        if voucher.pk is not None:
+            coding = {
+                line.line_no: (line.account_id, line.division_id, line.job_ref, line.wht_component)
+                for line in voucher.lines.select_related("wht_component")
+            }
+        for line in new_lines:
+            if line.line_no not in coding:
+                continue
+            account_id, division_id, job_ref, wht = coding[line.line_no]
+            if not (line.supplier_invoice_id or line.advance_order_id):
+                line.account_id, line.division_id, line.job_ref = account_id, division_id, job_ref
+                line.division_id = line.division_id or voucher.division_id
+            if wht is not None and not line.advance_order_id and voucher.payee_id:
+                # The WHT the Accountant chose stays, worked out again on the new amount.
+                set_wht(voucher, line, wht, f"Line {line.line_no}")
+        _set_totals(voucher, new_lines)
         voucher.save()
-        coding = {
-            line.line_no: (line.account_id, line.division_id, line.job_ref)
-            for line in voucher.lines.all()
-        }
         voucher.lines.all().delete()
         for line in new_lines:
-            if line.line_no in coding and not (line.supplier_invoice_id or line.advance_order_id):
-                line.account_id, line.division_id, line.job_ref = coding[line.line_no]
-                line.division_id = line.division_id or voucher.division_id
             line.save()
         return voucher
 
@@ -753,6 +763,7 @@ class CodingInput:
     tax_amount: object = "0"
     job_ref: str = ""
     splits: list = ()
+    wht_component: TaxComponent | None = None
 
 
 def _percent(value, where: str) -> Decimal:
@@ -814,18 +825,23 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
     with audit_context("voucher_coded"), transaction.atomic():
         voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
         state = _acting_state(user, voucher)
-        before = voucher.total_amount
+        before, wht_before = voucher.total_amount, voucher.wht_total
         lines = {line.line_no: line for line in voucher.lines.select_for_update()}
         for coding in codings:
             where = f"Line {coding.line_no}"
             line = lines.get(coding.line_no)
             if line is None:
                 raise VoucherError(f"{where} is not on this voucher.")
+            if line.advance_order_id and coding.wht_component is not None:
+                raise VoucherError(
+                    f"{where}: an advance is paid in full; WHT is kept from the invoice payment."
+                )
+            set_wht(voucher, line, coding.wht_component, where)
             if line.supplier_invoice_id or line.advance_order_id:
                 # Pays a matched supplier invoice (Accounts payable) or an advance on a PO
                 # (Advances to suppliers): the account is fixed, no tax (P16-11, P16-11a).
                 line.job_ref = (coding.job_ref or "").strip()[:50]
-                line.save(update_fields=["job_ref"])
+                line.save(update_fields=["job_ref", "wht_component", "wht_rate", "wht_amount"])
                 continue
             if coding.account is not None:
                 _check_account(voucher, coding.account, where)
@@ -856,14 +872,73 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
                     raise VoucherError(f"{where}: division {coding.division.code} is deactivated.")
                 line.division = coding.division
                 line.save()
-        voucher.total_amount = sum((line.total for line in lines.values()), Decimal("0"))
+        _set_totals(voucher, lines.values())
         if voucher.total_amount <= 0:
             raise VoucherError("The voucher total must be more than zero.")
         voucher.save()
-        if voucher.total_amount != before and state.current_level != state.route[0]["level"]:
+        changes = []
+        if voucher.total_amount != before:
+            changes.append(f"Total: {before:,.2f} → {voucher.total_amount:,.2f}")
+        if voucher.wht_total != wht_before:
+            changes.append(f"WHT: {wht_before:,.2f} → {voucher.wht_total:,.2f}")
+        if changes and state.current_level != state.route[0]["level"]:
             # A later approver changed the tax and so the amount: the Accountant checks again.
-            _send_down(user, voucher, [f"Total: {before:,.2f} → {voucher.total_amount:,.2f}"])
+            _send_down(user, voucher, changes)
         return voucher
+
+
+def wht_choices(on: date) -> list[TaxComponent]:
+    """The withholding taxes that can be kept on a payment on a date: active, with an account
+    for the tax kept and a confirmed rate. None until the Director confirms a rate (P2-12:
+    built switched off)."""
+    found = []
+    components = TaxComponent.objects.filter(
+        kind=TaxComponent.Kind.WITHHELD, is_active=True, sales_account__isnull=False
+    )
+    for component in components.order_by("code"):
+        try:
+            taxes.rate_on(component, on)
+        except AccountingError:
+            continue
+        found.append(component)
+    return found
+
+
+def set_wht(voucher: Voucher, line: VoucherLine, component: TaxComponent | None, where: str):
+    """Withholding tax on a line (P2-12): the rate in force on the invoice date, on the amount
+    before VAT, rounded half-up to the cent. It is kept from the payment to the payee."""
+    if component is None:
+        line.wht_component, line.wht_rate, line.wht_amount = None, Decimal("0"), Decimal("0")
+        return
+    if voucher.payee_id is None:
+        raise VoucherError(f"{where}: withholding tax is kept only from a payment to a payee.")
+    if component.kind != TaxComponent.Kind.WITHHELD or not component.is_active:
+        raise VoucherError(f"{where}: {component.code} is not an active withholding tax.")
+    if component.sales_account_id is None:
+        raise VoucherError(
+            f"{where}: {component.code} has no account for the tax kept; set it under "
+            "Settings → Tax rates."
+        )
+    on = line.invoice_date or voucher.voucher_date
+    try:
+        rate = taxes.rate_on(component, on).rate
+    except AccountingError as error:
+        raise VoucherError(f"{where}: {error}") from None
+    taxes.mark_used(component)
+    line.wht_component = component
+    line.wht_rate = rate
+    line.wht_amount = (line.amount * rate / Decimal("100")).quantize(CENT, ROUND_HALF_UP)
+
+
+def _set_totals(voucher: Voucher, lines) -> None:
+    lines = list(lines)
+    voucher.total_amount = sum((line.total for line in lines), Decimal("0"))
+    voucher.wht_total = sum((line.wht_amount for line in lines), Decimal("0"))
+
+
+def payable(voucher: Voucher) -> Decimal:
+    """What the payee receives: the total less the withholding tax kept (P2-12)."""
+    return voucher.total_amount - voucher.wht_total
 
 
 def uncoded_lines(voucher: Voucher) -> list[int]:
@@ -1169,11 +1244,18 @@ def revise(
         if not changes:
             voucher.save()
             return voucher
-        old = {line.line_no: line for line in voucher.lines.prefetch_related("splits")}
+        old = {
+            line.line_no: line
+            for line in voucher.lines.select_related("wht_component").prefetch_related("splits")
+        }
         kept_splits = {}
         for line in new_lines:
             before = old.get(line.line_no)
-            if before is None or line.supplier_invoice_id or line.advance_order_id:
+            if before is None:
+                continue
+            if before.wht_component_id and not line.advance_order_id and payee is not None:
+                set_wht(voucher, line, before.wht_component, f"Line {line.line_no}")
+            if line.supplier_invoice_id or line.advance_order_id:
                 continue
             line.account_id, line.job_ref = before.account_id, before.job_ref
             splits = list(before.splits.all())
@@ -1185,7 +1267,7 @@ def revise(
                 line.division_id = before.division_id or (None if splits else voucher.division_id)
         voucher.payee = payee
         voucher.transfer_to = transfer_to
-        voucher.total_amount = sum((line.total for line in new_lines), Decimal("0"))
+        _set_totals(voucher, new_lines)
         voucher.save()
         voucher.lines.all().delete()
         for line in new_lines:
@@ -1265,6 +1347,7 @@ def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
             voucher_date=timezone.localdate(),
             description=voucher.description,
             total_amount=voucher.total_amount,
+            wht_total=voucher.wht_total,
             revision=revision,
             parent=voucher,
             created_by=user,

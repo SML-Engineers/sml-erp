@@ -1074,7 +1074,9 @@
     "noAdvanceOrders": "This payee has no approved purchase order waiting for goods in this division.",
     "advanceOrder": "{{po}}: LKR {{total}}, already advanced LKR {{advanced}}",
     "advanceOn": "Advance on {{po}}",
-    "advanceException": "Exception: advance of LKR {{amount}} on purchase order {{po}} (LKR {{total}}) before the goods arrive. It is set off against the supplier's invoice once paid."
+    "advanceException": "Exception: advance of LKR {{amount}} on purchase order {{po}} (LKR {{total}}) before the goods arrive. It is set off against the supplier's invoice once paid.",
+    "whtKept": "Withholding tax kept",
+    "payable": "Payable to the payee"
   },
   "voucherReview": {
     "title": "Waiting for my approval",
@@ -1105,7 +1107,9 @@
     "return": "Return to Clerk",
     "reject": "Reject",
     "saveFirst": "Approve saves the coding first. A voucher is approved at L2 only when every line has its account and division.",
-    "unsaved": "Coding changed and not saved yet."
+    "unsaved": "Coding changed and not saved yet.",
+    "whtOf": "Withholding tax, line {{n}}",
+    "noWht": "No WHT"
   },
   "director": {
     "title": "Approve vouchers",
@@ -1283,7 +1287,11 @@
     "approveCancel": "Approve: cancel the payment",
     "rejectCancel": "Refuse",
     "decisionNote": "Note (required to refuse)",
-    "cancelOf": "Cancelling payment {{number}}"
+    "cancelOf": "Cancelling payment {{number}}",
+    "whtSummary": "Withholding tax {{wht}} is kept; the payee receives {{receive}}. Enter what the payee receives.",
+    "whtKept": "Withholding tax {{amount}} kept, certificate {{number}}.",
+    "whtCertificate": "Print the WHT certificate",
+    "whtCertificateNo": "WHT certificate {{number}} ({{amount}})"
   },
   "exports": {
     "excel": "Excel",

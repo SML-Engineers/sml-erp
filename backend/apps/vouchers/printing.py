@@ -259,6 +259,15 @@ def render(voucher: Voucher, record: VoucherPrint) -> bytes:
     )
     story.append(Spacer(1, 2 * mm * scale))
     story.append(p(f"Amount in words: {amount_in_words(voucher.total_amount)}", bold))
+    if voucher.wht_total:
+        # P2-12: the withholding tax kept and what the payee receives.
+        story.append(
+            p(
+                f"Withholding tax kept: LKR {_money(voucher.wht_total)} · Payable to the payee: "
+                f"LKR {_money(voucher.total_amount - voucher.wht_total)}",
+                bold,
+            )
+        )
     story.append(Spacer(1, 4 * mm * scale))
 
     # Payment details: the payments made, or boxes to fill in by hand before payment.
@@ -283,7 +292,7 @@ def render(voucher: Voucher, record: VoucherPrint) -> bytes:
                     p(f"{pay.payment_date:%d/%m/%Y}"),
                     p(f"{pay.account.code} {pay.account.name}"),
                     p(pay.get_method_display()),
-                    p(reference),
+                    p(reference + (f" · WHT {_money(pay.wht_amount)}" if pay.wht_amount else "")),
                     p(_money(pay.amount), right),
                 ]
             )

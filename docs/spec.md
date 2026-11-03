@@ -330,7 +330,7 @@ Every list and report has a division filter, and the dashboard can be switched b
 
 - The Accountant keeps the taxes, with no code change (confirmed by the owner, 29 October 2026). A **tax** (VAT, SSCL, withholding tax…) has dated rates (rule 11) and the ledger accounts it is recorded in: on sales, the tax owed to the government; on purchases, the tax claimed back, or none when it is part of the cost.
 - A **tax code** is chosen on each document line. It lists the taxes charged, in order; each is charged on the net amount or on the net amount plus the taxes above it. The tax invoice's rule (6.1: SSCL, then VAT on the amount plus SSCL) is the starting code VAT-SSCL. Each tax is rounded half-up to the cent.
-- Once a document has used a tax, a new rate can only start today or later and a rate in force cannot change; once a tax code has been used, its taxes cannot change (a new code is made instead). Withholding tax is deducted when paying, not in tax codes.
+- Once a document has used a tax, a new rate can only start today or later and a rate in force cannot change; once a tax code has been used, its taxes cannot change (a new code is made instead). Withholding tax is deducted when paying, not in tax codes. The Accountant picks it per voucher line when coding; the Cashier pays the payee the net and prints a WHT certificate (P2-12).
 
 **Journal (the ledger)**
 
@@ -1434,6 +1434,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | VAT on exports (owner, 3 Nov 2026) | Goods for an export customer are zero-rated (VAT 0%, no SSCL: tax code ZERO-RATED on every line); a local customer paying in a foreign currency pays VAT and SSCL as usual | 5.5, 6.1 |
 | Payables (P2-10) | What we owe each supplier comes from our documents (matched supplier invoices and invoices on vouchers, less set-offs, debit notes and what is paid); supplier statements typed or imported and matched line by line | 6 |
 | Payment cancellation and foreign payments (P2-11) | A payment is cancelled only with the Director's approval: reversing entry, cheque spoiled, voucher open to pay again. Vouchers of supplier invoices in one foreign currency may be paid in it at the payment date's rate, the difference posted as exchange gain or loss (IAS 21) | 4.4, 4.6, 5A |
+| Withholding tax on payments (P2-12) | Built switched off (owner, 3 Nov 2026): none until the Accountant sets a rate. Then coded per voucher line on the amount before VAT; the payee is paid the net, WHT payable credited, and a numbered WHT certificate printed per payment | 4.4, 6 |
 
 **Still needed for initial setup**
 

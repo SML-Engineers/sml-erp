@@ -117,6 +117,7 @@ test("the accountant codes an electricity bill split across divisions and approv
         tax_code: null,
         tax_amount: "0.00",
         job_ref: "",
+        wht_component: null,
         splits: [
           { division: "WS", percent: "60" },
           { division: "IM", percent: "40" },
@@ -195,4 +196,38 @@ test("if the coding cannot be saved, the voucher is not approved", async () => {
 
   expect(await within(panel).findByText("The split percentages must add up to 100.")).toBeInTheDocument();
   expect(calls).not.toHaveBeenCalledWith("/api/v1/vouchers/9/approve/", expect.anything());
+});
+
+test("once WHT has a rate the accountant keeps it from the payment (P2-12)", async () => {
+  const withWht = { ...voucher, wht_choices: [{ code: "WHT", name: "Withholding tax", rate: "5" }] };
+  const calls = mockApi(
+    api({
+      "GET /api/v1/vouchers/9/": { body: withWht },
+      "PATCH /api/v1/vouchers/9/coding/": {
+        body: {
+          ...withWht,
+          wht_total: "1250.00",
+          payable: "23750.00",
+          lines: [{ ...voucher.lines[0], wht_component: "WHT", wht_rate: "5", wht_amount: "1250.00" }],
+        },
+      },
+    }),
+  );
+  renderAt("/vouchers/review?open=9", <ReviewPage />);
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  fireEvent.change(within(panel).getByLabelText("Withholding tax, line 1"), { target: { value: "WHT" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Save coding" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/coding/", expect.objectContaining({ method: "PATCH" })),
+  );
+  const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PATCH")!;
+  expect(JSON.parse(String(init!.body)).lines[0].wht_component).toBe("WHT");
+  expect(await within(panel).findByText(/23,750.00/)).toBeInTheDocument();
+});
+
+test("without a WHT rate there is nothing to choose (built switched off)", async () => {
+  mockApi(api());
+  renderAt("/vouchers/review?open=9", <ReviewPage />);
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  expect(within(panel).queryByLabelText("Withholding tax, line 1")).not.toBeInTheDocument();
 });

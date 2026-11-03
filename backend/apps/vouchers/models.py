@@ -93,6 +93,9 @@ class Voucher(models.Model):
     voucher_date = models.DateField()
     description = models.CharField(max_length=500, blank=True)
     total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    # Withholding tax kept back from the payee (P2-12): the sum of the lines' WHT. The payee is
+    # paid total_amount - wht_total; the rest goes to the WHT payable account.
+    wht_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.DRAFT)
     revision = models.PositiveIntegerField(default=0)
     parent = models.ForeignKey(
@@ -129,6 +132,11 @@ class Voucher(models.Model):
                 condition=~models.Q(status="deleted")
                 | models.Q(deleted_at__isnull=False, deleted_by__isnull=False),
                 name="vouchers_voucher_deleted_who",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(wht_total__gte=0)
+                & models.Q(wht_total__lte=models.F("total_amount")),
+                name="vouchers_voucher_wht",
             ),
         ]
 
@@ -176,6 +184,14 @@ class VoucherLine(models.Model):
         on_delete=models.PROTECT,
         related_name="advance_lines",
     )
+    # Withholding tax on this line (P2-12): a "withheld" tax component, its rate on the
+    # invoice date (kept, rule 11) and the tax on the amount before VAT. Set by the Accountant
+    # when coding; none while the tax has no confirmed rate (built switched off).
+    wht_component = models.ForeignKey(
+        "accounting.TaxComponent", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    wht_rate = models.DecimalField(max_digits=7, decimal_places=4, default=0)
+    wht_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
 
     class Meta:
         ordering = ["voucher", "line_no"]
@@ -183,6 +199,15 @@ class VoucherLine(models.Model):
             models.UniqueConstraint(fields=["voucher", "line_no"], name="vouchers_line_unique_no"),
             models.CheckConstraint(condition=models.Q(amount__gt=0), name="vouchers_line_amount"),
             models.CheckConstraint(condition=models.Q(tax_amount__gte=0), name="vouchers_line_tax"),
+            models.CheckConstraint(
+                condition=models.Q(wht_amount__gte=0)
+                & models.Q(wht_amount__lte=models.F("amount")),
+                name="vouchers_line_wht",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(wht_component__isnull=False) | models.Q(wht_amount=0),
+                name="vouchers_line_wht_component",
+            ),
         ]
 
     def __str__(self):

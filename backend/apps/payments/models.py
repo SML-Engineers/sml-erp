@@ -46,6 +46,10 @@ class SupplierPayment(models.Model):
     currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
     paid_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
+    # Withholding tax kept back from this payment (P2-12), part of `amount`: the payee got
+    # amount - wht_amount and is given a certificate with this number for the tax kept.
+    wht_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    wht_certificate = models.CharField(max_length=40, blank=True)
     notes = models.CharField(max_length=300, blank=True)
     journal_entry = models.OneToOneField(
         "accounting.JournalEntry", on_delete=models.PROTECT, related_name="supplier_payment"
@@ -67,6 +71,19 @@ class SupplierPayment(models.Model):
             models.CheckConstraint(
                 condition=~models.Q(method="cheque") | models.Q(cheque__isnull=False),
                 name="payments_cheque_has_leaf",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(wht_amount__gte=0) & models.Q(wht_amount__lt=models.F("amount")),
+                name="payments_wht_amount",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(wht_amount=0) | ~models.Q(wht_certificate=""),
+                name="payments_wht_certificate",
+            ),
+            models.UniqueConstraint(
+                fields=["wht_certificate"],
+                condition=~models.Q(wht_certificate=""),
+                name="payments_wht_certificate_unique",
             ),
         ]
 

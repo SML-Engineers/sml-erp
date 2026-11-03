@@ -593,6 +593,18 @@ def our_records(supplier: Supplier, currency, start: date, end: date) -> tuple[l
                 "amount": p.paid_amount,
             }
         )
+        if p.wht_amount:
+            # The WHT kept (P2-12): the supplier credits it against the certificate.
+            credits.append(
+                {
+                    "date": p.payment_date,
+                    "reference": p.wht_certificate,
+                    "keys": {_key(p.wht_certificate)},
+                    "document": p.number,
+                    "link": f"/vouchers/{p.voucher_id}",
+                    "amount": p.wht_amount,
+                }
+            )
     for row in charges:
         row["keys"] = {_key(row["reference"])} if row["reference"] else set()
     return charges, credits

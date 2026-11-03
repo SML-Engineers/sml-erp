@@ -11,7 +11,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounting.models import TaxCode
+from apps.accounting import taxes
+from apps.accounting.models import TaxCode, TaxComponent
 from apps.core import approvals, exports
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess, ReadForAllAreaWrite
@@ -181,6 +182,10 @@ def _detail(v: Voucher, user) -> dict:
                     "tax_code": line.tax_code.code if line.tax_code else None,
                     "tax_amount": f"{line.tax_amount:.2f}",
                     "total": f"{line.total:.2f}",
+                    # P2-12: withholding tax kept from the payment for this line.
+                    "wht_component": line.wht_component.code if line.wht_component else None,
+                    "wht_rate": f"{line.wht_rate.normalize():f}",
+                    "wht_amount": f"{line.wht_amount:.2f}",
                     "account": None
                     if line.account is None
                     else {
@@ -211,7 +216,12 @@ def _detail(v: Voucher, user) -> dict:
                     ],
                 }
                 for line in v.lines.select_related(
-                    "tax_code", "account", "division", "supplier_invoice", "advance_order"
+                    "tax_code",
+                    "account",
+                    "division",
+                    "supplier_invoice",
+                    "advance_order",
+                    "wht_component",
                 )
             ],
             "attachments": [
@@ -226,6 +236,20 @@ def _detail(v: Voucher, user) -> dict:
                 for a in v.attachments.all()
             ],
             "warnings": services.duplicate_invoices(v),
+            # P2-12: the WHT kept, what the payee receives, and the withholding taxes the
+            # Accountant can choose (none until a rate is confirmed: built switched off).
+            "wht_total": f"{v.wht_total:.2f}",
+            "payable": f"{services.payable(v):.2f}",
+            "wht_choices": [
+                {
+                    "code": c.code,
+                    "name": c.name,
+                    "rate": f"{taxes.rate_on(c, v.voucher_date).rate.normalize():f}",
+                }
+                for c in services.wht_choices(v.voucher_date)
+            ]
+            if v.payee_id
+            else [],
             **_approval(v, user),
             "can_edit": v.created_by_id == user.pk and v.status in services.EDITABLE,
             "payee_balance": services.payee_balance(v.payee) if v.payee else None,
@@ -557,6 +581,9 @@ class CodingSerializer(serializers.Serializer):
     tax_amount = serializers.CharField(max_length=30, required=False, allow_blank=True, default="0")
     job_ref = serializers.CharField(max_length=50, required=False, allow_blank=True, default="")
     splits = SplitSerializer(many=True, required=False, default=list)
+    wht_component = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, allow_null=True
+    )
 
 
 class CodingInput(serializers.Serializer):
@@ -588,9 +615,15 @@ def _codings(lines) -> list:
             code = TaxCode.objects.filter(code=line["tax_code"].upper()).first()
             if code is None:
                 raise VoucherError(f"{where}: unknown tax code {line['tax_code']}.")
+        wht = None
+        if line.get("wht_component"):
+            wht = TaxComponent.objects.filter(code=line["wht_component"].upper()).first()
+            if wht is None:
+                raise VoucherError(f"{where}: unknown tax {line['wht_component']}.")
         result.append(
             services.CodingInput(
                 line_no=line["line_no"],
+                wht_component=wht,
                 account=account,
                 division=_division(line.get("division"), where),
                 tax_code=code,
@@ -888,7 +921,7 @@ class CancellationDecisionView(_Approving):
 def _payments(v: Voucher, user) -> dict:
     """Payments made against the voucher (P1-07), for those who may see payments."""
     from apps.core.access import has_access
-    from apps.payments.services import paid_on
+    from apps.payments.services import paid_on, to_receive
     from apps.payments.views import payment_row
 
     paid = paid_on(v)
@@ -905,6 +938,7 @@ def _payments(v: Voucher, user) -> dict:
     return {
         "paid": f"{paid:.2f}",
         "remaining": f"{v.total_amount - paid:.2f}",
+        "to_receive": f"{to_receive(v):.2f}",
         "payments": rows,
     }
 

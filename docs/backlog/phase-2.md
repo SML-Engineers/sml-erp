@@ -261,7 +261,8 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
 
 1. **The current accounting system.** What is it (QuickBooks, Tally, Excel or other), and can
    it export the trial balance and open invoices to Excel? (P2-28)
-   - Owner, 3 Nov 2026: yes, it exports to Excel. Which system it is: still to confirm.
+   - Owner, 3 Nov 2026: QuickBooks; it exports to Excel. P2-28 reads QuickBooks' own Excel
+     exports (trial balance, open invoices and bills, item list) as well as the templates.
 2. **Financial year and start date.** Is the financial year April to March? Phase 2 is
    easiest to start on the first day of a financial year (e.g. 1 April 2027). (P2-23, P2-28,
    P2-29)
@@ -277,7 +278,8 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
      choose otherwise before P2-18.
 5. **Credit limits.** When a customer is over their limit or overdue: warn only, or block new
    orders and invoices until the Director allows it? (P2-08)
-   - Owner, 3 Nov 2026: "yes"; asked again whether warn or block.
+   - Owner, 3 Nov 2026: block. A customer over their credit limit or with overdue invoices
+     gets no new sales order or tax invoice until the Director allows it (for that document).
 6. **Withholding tax.** Does SML deduct WHT on any payments (rent, services, interest)? To
    confirm with the tax advisor. (P2-12)
    - Owner, 3 Nov 2026: currently no. P2-12 is built switched off (no WHT unless the

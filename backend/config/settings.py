@@ -187,6 +187,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.sales.tasks.post_due_cheques",
         "schedule": crontab(hour=0, minute=35),
     },
+    # Stock at or below its reorder level (P2-13): the stores person and purchasing are told.
+    "check-reorder-levels": {
+        "task": "apps.purchasing.tasks.check_reorder_levels",
+        "schedule": crontab(minute=5),
+    },
     # Payment reminders to customers with overdue invoices (P2-08), on working mornings.
     "send-payment-reminders": {
         "task": "apps.sales.tasks.send_payment_reminders",

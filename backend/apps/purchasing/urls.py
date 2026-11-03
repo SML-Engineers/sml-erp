@@ -3,6 +3,7 @@ from django.urls import path
 from . import invoice_views as iv
 from . import payable_views as pv
 from . import report_views as pr
+from . import request_views as qv
 from . import return_views as rv
 from . import views as v
 
@@ -23,6 +24,45 @@ urlpatterns = [
         "supplier-statements/<int:pk>/check/",
         pv.StatementCheckView.as_view(),
         name="supplier-statement-check",
+    ),
+    path("reorder-levels/", qv.LevelListView.as_view(), name="reorder-levels"),
+    path("reorder-levels/<int:pk>/", qv.LevelDetailView.as_view(), name="reorder-level"),
+    path(
+        "reorder-levels/<int:pk>/request/",
+        qv.LevelRequestView.as_view(),
+        name="reorder-level-request",
+    ),
+    path("purchase-requests/", qv.RequestListView.as_view(), name="pr-list"),
+    path("purchase-requests/<int:pk>/", qv.RequestDetailView.as_view(), name="pr-detail"),
+    path(
+        "purchase-requests/<int:pk>/submit/",
+        qv.RequestActionView.as_view(action="submit"),
+        name="pr-submit",
+    ),
+    path(
+        "purchase-requests/<int:pk>/approve/",
+        qv.RequestActionView.as_view(action="approve"),
+        name="pr-approve",
+    ),
+    path(
+        "purchase-requests/<int:pk>/return/",
+        qv.RequestActionView.as_view(action="return"),
+        name="pr-return",
+    ),
+    path(
+        "purchase-requests/<int:pk>/reject/",
+        qv.RequestActionView.as_view(action="reject"),
+        name="pr-reject",
+    ),
+    path(
+        "purchase-requests/<int:pk>/cancel/",
+        qv.RequestActionView.as_view(action="cancel"),
+        name="pr-cancel",
+    ),
+    path(
+        "purchase-requests/<int:pk>/order/",
+        qv.RequestActionView.as_view(action="order"),
+        name="pr-order",
     ),
     path("purchase-orders/", v.OrderListView.as_view(), name="po-list"),
     path("purchase-orders/<int:pk>/", v.OrderDetailView.as_view(), name="po-detail"),

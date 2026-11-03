@@ -119,6 +119,7 @@ def test_the_admin_sets_the_reminders(admin, accountant):
         ("customer_advance", True, 3),
         ("sales_order", True, 3),
         ("purchase_order", True, 2),
+        ("purchase_request", True, 1),
         ("goods_receipt", True, 1),
         ("goods_receipt_reversal", True, 1),
         ("quality_deviation", True, 1),

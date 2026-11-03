@@ -242,10 +242,25 @@ Status: `[ ]` to do · `[x]` done
     certificate number. Defaults you can change: WHT is on the amount before VAT; the payment
     date sets the certificate month.
 
-- [ ] **P2-13 Purchase requests and reorder alerts** (spec 6, 7A)
+- [x] **P2-13 Purchase requests and reorder alerts** (spec 6, 7A)
   A reorder level and quantity per item and store; falling below it notifies the stores
   person and purchasing, with a one-click purchase request to the usual supplier. Requests
   are approved, then become a draft PO.
+  - Done: Purchasing → Reorder levels. The stores person or purchasing sets a level and a
+    reorder quantity per stock item and main store, with the usual supplier (or, if none, the
+    supplier of the item's last order). Every hour (and when a level is saved) the stock in
+    the store plus what is coming (open purchase orders of the division and requests not yet
+    ordered) is compared with the level; at or below it, the stores person and purchasing of
+    that division are told once (bell and email, "reorder_alert"), and again only after the
+    stock has gone back above. One click raises a draft purchase request (PR{YY}{MM}{NNNN})
+    for the reorder quantity from the usual supplier; requests can also be typed in. Its
+    author sends it; it is approved through the approval engine, never by its author, and can
+    be returned or rejected. Purchasing then makes an approved request into a draft purchase
+    order, at the last price paid to that supplier unless a price is typed; the order goes to
+    the Director as usual. The database keeps a request's lines once it is sent and never
+    changes a rejected, cancelled or ordered one. Defaults you can change: the Director
+    approves requests (Settings → Approvals can give it to another role); "at or below" the
+    level raises the alert; the check runs hourly.
 
 ## D. Banking and cash
 

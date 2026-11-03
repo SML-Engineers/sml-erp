@@ -340,6 +340,8 @@ Status: `[ ]` to do · `[x]` done
     applied to invoices, the debtors accounts have credit balances and Undeposited Funds holds
     218.2 million; supplier cheques and credits are not matched to bills (A/P aging -5.4
     million); Opening Balance Equity 20.3 million and Uncategorized income/expenses to clear.
+  - Owner, 3 Nov 2026: the Accountant will fix all of these in QuickBooks before migrating;
+    the report formats and templates stay the same, so P2-28 reads these four layouts.
 
 - [ ] **P2-29 Parallel run, user acceptance testing and go-live** (spec 8.2)
   One month entered in both systems; the trial balance, receivables, payables and bank

@@ -332,9 +332,20 @@ Status: `[ ]` to do · `[x]` done
     must be in the books before the month is finished; book items dated before the first
     imported statement are taken as already reconciled.
 
-- [ ] **P2-17 Petty cash** (spec 6)
+- [x] **P2-17 Petty cash** (spec 6)
   An imprest float per custodian; small expenses recorded with their slips; replenishment
   through a petty cash voucher that follows the normal three approvals.
+  - Done: Accounts → Petty cash. A petty cash account (custodian and float, already in Bank
+    and cash accounts) is kept the imprest way. The custodian records each expense with a
+    photo or PDF of its slip (who was paid, what for, how much, and the account if known),
+    numbered PE{YY}{MM}{NNNN}; nothing is posted then, and what is spent and not yet paid back
+    can never be more than the float. The Clerk makes a draft Petty Cash voucher from the
+    expenses waiting, one line per expense with its slip attached and its account filled in;
+    it follows the three approvals, and paying it (in cash) posts the expenses and makes the
+    float whole. A rejected, deleted or cancelled voucher frees its expenses for the next
+    one. Once on a voucher, an expense never changes and is never deleted (database guard).
+    Default you can change: the custodian (or the Accountant) records expenses; the Clerk
+    makes the voucher, payable to the custodian as a payee.
 
 ## E. Stock and fixed assets
 

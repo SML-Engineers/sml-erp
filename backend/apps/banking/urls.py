@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import petty_views as pv
 from . import reconcile_views as rv
 from . import statement_views as sv
 from . import views as v
@@ -42,4 +43,13 @@ urlpatterns = [
     path("reconciliation/finish/", rv.FinishView.as_view(), name="reconciliation-finish"),
     path("bank-rules/", rv.RuleListView.as_view(), name="bank-rules"),
     path("bank-rules/<int:pk>/", rv.RuleDetailView.as_view(), name="bank-rule"),
+    path("petty-cash/", pv.FloatListView.as_view(), name="petty-floats"),
+    path("petty-cash/<int:pk>/expenses/", pv.ExpenseListView.as_view(), name="petty-expenses"),
+    path("petty-cash/<int:pk>/replenish/", pv.ReplenishView.as_view(), name="petty-replenish"),
+    path(
+        "petty-expenses/<int:pk>/",
+        pv.ExpenseDetailView.as_view(),
+        name="petty-expense",
+    ),
+    path("petty-expenses/<int:pk>/slip/", pv.SlipView.as_view(), name="petty-expense-slip"),
 ]

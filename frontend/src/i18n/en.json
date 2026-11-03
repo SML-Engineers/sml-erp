@@ -3141,5 +3141,37 @@
       "in": "Money in"
     },
     "addRule": "Add the rule"
+  },
+  "petty": {
+    "title": "Petty cash",
+    "help": "The custodian records each small expense with a photo of its slip; nothing is posted then. The Clerk tops the float up with a Petty Cash voucher listing the expenses, which goes through the three approvals; paying it posts the expenses and the float is whole again.",
+    "none": "You hold no petty cash, and there is none to see.",
+    "float": "Petty cash",
+    "figures": "The float",
+    "custodian": "Custodian",
+    "floatAmount": "Float",
+    "spent": "Spent, not yet paid back",
+    "cashInHand": "Cash that should be in the box",
+    "expenses": "Expenses",
+    "number": "Number",
+    "date": "Date",
+    "paidTo": "Paid to",
+    "description": "What for",
+    "amount": "Amount (LKR)",
+    "status": "Status",
+    "statuses": {
+      "open": "Waiting for a top-up",
+      "on_voucher": "On a voucher",
+      "paid_back": "Paid back"
+    },
+    "slip": "Slip",
+    "remove": "Remove",
+    "record": "Record an expense",
+    "slipFile": "Slip (photo or PDF)",
+    "save": "Save the expense",
+    "topUp": "Top up the float",
+    "topUpHelp": "{{amount}} of expenses are waiting. A draft Petty Cash voucher is made with one line per expense and its slip; check it and submit it.",
+    "payee": "Pay to (the custodian)",
+    "makeVoucher": "Make the Petty Cash voucher"
   }
 }

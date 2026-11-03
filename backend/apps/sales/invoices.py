@@ -196,7 +196,7 @@ def _compute(invoice: TaxInvoice) -> None:
     invoice.tax_total = sum((amount for _, amount in groups.values()), Decimal("0"))
     invoice.total_amount = subtotal - discount_total + invoice.tax_total
     invoice.amount_in_words = words.amount(invoice.total_amount, invoice.currency.code)
-    lookup = rate(invoice)
+    lookup = invoice_rate(invoice)
     invoice.exchange_rate = lookup.rate
     invoice.rate_date = lookup.rate_date
     income, taxes_lkr = lkr_parts(invoice)
@@ -205,7 +205,7 @@ def _compute(invoice: TaxInvoice) -> None:
     )
 
 
-def rate(invoice: TaxInvoice):
+def invoice_rate(invoice: TaxInvoice):
     """The exchange rate of the invoice date (1 for LKR)."""
     try:
         return currencies.rate_on(invoice.currency, invoice.invoice_date)
@@ -481,7 +481,7 @@ def _issue(user: User, invoice: TaxInvoice) -> TaxInvoice:
             )
         except AccountingError as error:
             raise SalesError(str(error)) from None
-        currencies.mark_rate_used(rate(invoice))
+        currencies.mark_rate_used(invoice_rate(invoice))
         invoice.journal_entry = entry
         invoice.status = St.ISSUED
         invoice.issued_by = user

@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from apps.accounting.models import Account
 from apps.core.models import Division
+from apps.core.permissions import AreaAccess
 from apps.masters.models import CompanyAccount, Supplier
 
 from . import petty
@@ -61,7 +62,7 @@ def _float(account: CompanyAccount, user) -> dict:
     }
 
 
-class FloatListView(_Petty):
+class PettyFloatListView(_Petty):
     def get(self, request):
         rows = petty.floats(request.user).select_related("custodian", "division")
         return Response([_float(a, request.user) for a in rows])
@@ -71,7 +72,7 @@ def _account(user, pk) -> CompanyAccount:
     return get_object_or_404(petty.floats(user).select_related("custodian", "division"), pk=pk)
 
 
-class ExpenseListView(_Petty):
+class PettyExpenseListView(_Petty):
     def get(self, request, pk):
         account = _account(request.user, pk)
         rows = account.petty_expenses.select_related("ledger", "division", "voucher", "created_by")
@@ -113,7 +114,7 @@ def _get_expense(user, pk) -> PettyExpense:
     return found
 
 
-class ExpenseDetailView(_Petty):
+class PettyExpenseDetailView(_Petty):
     def delete(self, request, pk):
         try:
             petty.remove(request.user, _get_expense(request.user, pk))
@@ -122,7 +123,7 @@ class ExpenseDetailView(_Petty):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SlipView(_Petty):
+class PettySlipView(_Petty):
     def get(self, request, pk):
         expense = _get_expense(request.user, pk)
         return FileResponse(
@@ -130,8 +131,12 @@ class SlipView(_Petty):
         )
 
 
-class ReplenishView(_Petty):
+class PettyReplenishView(_Petty):
     """The Clerk: a draft Petty Cash voucher for the expenses not yet paid back."""
+
+    permission_classes = [AreaAccess]
+    access_area = "vouchers"
+    access_write_level = "enter"
 
     def post(self, request, pk):
         account = _account(request.user, pk)

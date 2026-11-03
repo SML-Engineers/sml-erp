@@ -213,7 +213,9 @@ test("once WHT has a rate the accountant keeps it from the payment (P2-12)", asy
       },
     }),
   );
-  renderAt("/vouchers/review?open=9", <ReviewPage />);
+  renderAt("/vouchers/review", <ReviewPage />);
+  const queue = await screen.findByRole("region", { name: "Queue" });
+  fireEvent.click(await within(queue).findByRole("button", { name: /WS261029001/ }));
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
   fireEvent.change(within(panel).getByLabelText("Withholding tax, line 1"), { target: { value: "WHT" } });
   fireEvent.click(within(panel).getByRole("button", { name: "Save coding" }));
@@ -227,7 +229,9 @@ test("once WHT has a rate the accountant keeps it from the payment (P2-12)", asy
 
 test("without a WHT rate there is nothing to choose (built switched off)", async () => {
   mockApi(api());
-  renderAt("/vouchers/review?open=9", <ReviewPage />);
+  renderAt("/vouchers/review", <ReviewPage />);
+  const queue = await screen.findByRole("region", { name: "Queue" });
+  fireEvent.click(await within(queue).findByRole("button", { name: /WS261029001/ }));
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
   expect(within(panel).queryByLabelText("Withholding tax, line 1")).not.toBeInTheDocument();
 });

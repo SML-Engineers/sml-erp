@@ -137,7 +137,9 @@ def open_items(user: User, as_at: date, customer: Customer | None = None) -> lis
     rows = invoices.visible(user).filter(status=TaxInvoice.Status.ISSUED, invoice_date__lte=as_at)
     if customer is not None:
         rows = rows.filter(customer=customer)
-    rows = list(rows.select_related("customer", "division").order_by("invoice_date", "id"))
+    rows = list(
+        rows.select_related("customer", "division", "currency").order_by("invoice_date", "id")
+    )
     amounts = open_at(rows, as_at)
     items = []
     for invoice in rows:
@@ -146,7 +148,16 @@ def open_items(user: User, as_at: date, customer: Customer | None = None) -> lis
             continue
         days = (as_at - invoice.due_date).days
         items.append(
-            {"invoice": invoice, "open": amount, "days_overdue": days, "bucket": _bucket(days)}
+            {
+                "invoice": invoice,
+                "open": amount,  # in the invoice's currency
+                # In LKR at the invoice's rate, as the receivable carries it (P2-09).
+                "open_lkr": invoice.total_lkr
+                if amount == invoice.total_amount
+                else receipts.to_lkr(amount, invoice.exchange_rate),
+                "days_overdue": days,
+                "bucket": _bucket(days),
+            }
         )
     return items
 
@@ -181,8 +192,8 @@ def aging(user: User, as_at: date, customer: Customer | None = None) -> list[dic
 
     for item in open_items(user, as_at, customer):
         row = row_for(item["invoice"].customer)
-        row[item["bucket"]] += item["open"]
-        row["total"] += item["open"]
+        row[item["bucket"]] += item["open_lkr"]
+        row["total"] += item["open_lkr"]
     ledger = _ledger(user).filter(entry__entry_date__lte=as_at)
     if customer is not None:
         ledger = ledger.filter(customer=customer)
@@ -249,7 +260,7 @@ def statement(user: User, customer: Customer, start: date, end: date) -> Stateme
     items = open_items(user, end, customer)
     buckets = {key: ZERO for key, _ in BUCKETS}
     for item in items:
-        buckets[item["bucket"]] += item["open"]
+        buckets[item["bucket"]] += item["open_lkr"]
     overdue = sum((v for k, v in buckets.items() if k != "current"), ZERO)
     return Statement(
         customer=customer,
@@ -282,14 +293,15 @@ class Exposure:
 
 
 def exposure(customer: Customer, today: date | None = None) -> Exposure:
-    """What the customer owes now: open on its issued invoices (receipts recorded count as
-    paid), less approved advances not yet set off; and what of it is overdue."""
+    """What the customer owes now, in LKR: open on its issued invoices (receipts recorded
+    count as paid) at each invoice's rate, less approved advances not yet set off; and what
+    of it is overdue."""
     today = today or timezone.localdate()
     rows = list(TaxInvoice.objects.filter(customer=customer, status=TaxInvoice.Status.ISSUED))
     figures = receipts.settlement(rows)
     open_total, overdue, count, oldest = ZERO, ZERO, 0, 0
     for invoice in rows:
-        left = figures[invoice.pk]["open"]
+        left = receipts.to_lkr(figures[invoice.pk]["open"], invoice.exchange_rate)
         open_total += left
         if left > 0 and invoice.due_date < today:
             overdue += left

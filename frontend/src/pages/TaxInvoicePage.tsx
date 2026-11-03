@@ -224,13 +224,26 @@ function Lines({ invoice }: { invoice: InvoiceDetail }) {
               </tr>
             ))}
             <tr>
-              <th colSpan={5}>{t("ti.totalWithVat")}</th>
+              <th colSpan={5}>
+                {t("ti.totalWithVat")}
+                {invoice.currency && invoice.currency !== "LKR" ? ` (${invoice.currency})` : ""}
+              </th>
               <th className="num">{formatDecimal(invoice.total_amount)}</th>
             </tr>
           </tfoot>
         </table>
       </div>
       {invoice.amount_in_words && <p className="muted">{invoice.amount_in_words}</p>}
+      {invoice.currency && invoice.currency !== "LKR" && invoice.total_lkr && (
+        <p className="muted">
+          {t("ti.inLkr", {
+            currency: invoice.currency,
+            rate: invoice.exchange_rate ?? "",
+            date: invoice.rate_date ?? "",
+            amount: formatDecimal(invoice.total_lkr),
+          })}
+        </p>
+      )}
     </section>
   );
 }

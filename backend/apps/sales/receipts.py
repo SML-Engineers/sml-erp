@@ -32,7 +32,7 @@ import logging
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import transaction
 from django.db.models import Case, F, Q, QuerySet, Sum, Value, When
@@ -47,9 +47,9 @@ from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, User
 from apps.core.numbering import NumberSeriesError, allocate
-from apps.masters import customers
+from apps.masters import currencies, customers
 from apps.masters.models import CompanyAccount, Customer
-from apps.masters.services import mark_used
+from apps.masters.services import MastersError, mark_used
 
 from . import advances
 from .models import (
@@ -163,11 +163,56 @@ def open_amount(invoice: TaxInvoice) -> Decimal:
     return settlement([invoice])[invoice.pk]["open"]
 
 
+def to_lkr(amount: Decimal, exchange_rate: Decimal) -> Decimal:
+    return (Decimal(amount) * exchange_rate).quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+
+def lkr_left(invoice: TaxInvoice) -> Decimal:
+    """What is still on the receivable for the invoice in LKR: its LKR total less what
+    approved credit notes, receipts not rejected and set-offs took off at its rate."""
+    taken = (
+        CreditNote.objects.filter(invoice=invoice, status=CreditNote.Status.APPROVED).aggregate(
+            t=Sum("total_lkr")
+        )["t"]
+        or ZERO
+    )
+    taken += (
+        ReceiptAllocation.objects.filter(invoice=invoice)
+        .exclude(receipt__status=St.REJECTED)
+        .aggregate(t=Sum("carrying_lkr"))["t"]
+        or ZERO
+    )
+    taken += (
+        AdvanceSetOff.objects.filter(invoice=invoice).aggregate(t=Sum("carrying_lkr"))["t"] or ZERO
+    )
+    return invoice.total_lkr - taken
+
+
+def carrying(invoice: TaxInvoice, amount: Decimal, open_now: Decimal) -> Decimal:
+    """The LKR to take off the receivable for `amount` of the invoice's currency: at the
+    invoice's rate, or, when it clears what is open, exactly what is left in LKR, so a
+    settled invoice leaves no cents behind (P2-09)."""
+    if amount == open_now:
+        return lkr_left(invoice)
+    return to_lkr(amount, invoice.exchange_rate)
+
+
+def exchange_line(difference: Decimal, division, text: str) -> journal.Line | None:
+    """A realised exchange difference: a gain is credited, a loss debited (P2-09)."""
+    if not difference:
+        return None
+    if difference > 0:
+        account = _system_account("exchange_gain", "Exchange gain")
+        return journal.Line(account=account, credit=difference, division=division, description=text)
+    account = _system_account("exchange_loss", "Exchange loss")
+    return journal.Line(account=account, debit=-difference, division=division, description=text)
+
+
 def open_invoices(user: User, customer: Customer | None = None) -> list[tuple[TaxInvoice, dict]]:
     """Issued invoices of the user's divisions with something still open, oldest first."""
     rows = TaxInvoice.objects.filter(
         status=TaxInvoice.Status.ISSUED, division__in=division_scope(user)
-    ).select_related("customer", "division")
+    ).select_related("customer", "division", "currency")
     if customer is not None:
         rows = rows.filter(customer=customer)
     rows = list(rows.order_by("invoice_date", "id"))
@@ -178,14 +223,14 @@ def open_invoices(user: User, customer: Customer | None = None) -> list[tuple[Ta
 # --- Recording -------------------------------------------------------------------------------
 
 
-def _check_account(account, method: str) -> None:
+def _check_account(account, method: str, currency) -> None:
     if not isinstance(account, CompanyAccount):
         raise SalesError("Choose the account the money went into.")
     advances._check_account(account, method)
-    if account.currency.code != "LKR":
+    if account.currency_id != currency.pk:
         raise SalesError(
-            "Receipts for tax invoices go into an LKR account for now; foreign-currency "
-            "invoices and receipts come with export invoices (P2-09)."
+            f"The invoices are in {currency.code}: the money goes into a {currency.code} "
+            f"account, not {account.code} ({account.currency.code})."
         )
 
 
@@ -230,7 +275,6 @@ def record(
         cheque_bank = (cheque_bank or "").strip()[:100]
     else:
         cheque_date, cheque_bank = None, ""
-        _check_account(account, method)
     if not allocations:
         raise SalesError("Choose the invoices this money pays.")
     scope = division_scope(user)
@@ -256,6 +300,15 @@ def record(
             .order_by("pk")
         }
         figures = settlement(invoices.values())
+        currency = invoices[next(iter(given))].currency
+        if any(i.currency_id != currency.pk for i in invoices.values()):
+            raise SalesError("One receipt pays invoices of one currency: record one per currency.")
+        if method != Method.CHEQUE:
+            _check_account(account, method, currency)
+        try:
+            lookup = currencies.rate_on(currency, receipt_date)
+        except MastersError as error:
+            raise SalesError(str(error)) from None
         for pk, paid in given.items():
             invoice = invoices[pk]
             if invoice.customer_id != customer.pk:
@@ -283,12 +336,23 @@ def record(
             reference=reference,
             cheque_date=cheque_date,
             cheque_bank=cheque_bank,
+            currency=currency,
+            exchange_rate=lookup.rate,
+            rate_date=lookup.rate_date,
             amount=amount,
+            amount_lkr=currencies.to_lkr(amount, lookup),
             notes=(notes or "").strip()[:1000],
             created_by=user,
         )
         for pk, paid in given.items():
-            ReceiptAllocation.objects.create(receipt=receipt, invoice=invoices[pk], amount=paid)
+            invoice = invoices[pk]
+            ReceiptAllocation.objects.create(
+                receipt=receipt,
+                invoice=invoice,
+                amount=paid,
+                carrying_lkr=carrying(invoice, paid, figures[pk]["open"]),
+            )
+        currencies.mark_rate_used(lookup)
         first = invoices[next(iter(given))]
         try:
             approvals.submit(
@@ -320,8 +384,10 @@ def _system_account(role: str, name: str) -> Account:
 
 
 def journal_lines(receipt: CustomerReceipt) -> list[journal.Line]:
-    """Dr the bank or cash account (Undeposited funds for a cheque) per division, Cr Accounts
-    receivable with the customer per invoice."""
+    """Dr the bank or cash account (Undeposited funds for a cheque) per division with the LKR
+    value at the receipt's rate, Cr Accounts receivable with the customer per invoice with
+    what it carried at the invoice's rate; the difference is a realised exchange gain or
+    loss per division (P2-09). In LKR both are the same and there is no difference."""
     if receipt.method == Method.CHEQUE:
         into = _system_account("undeposited_funds", "Undeposited funds")
     else:
@@ -333,24 +399,34 @@ def journal_lines(receipt: CustomerReceipt) -> list[journal.Line]:
     receivable = _system_account("accounts_receivable", "Accounts receivable")
     text = f"Receipt {receipt.number} from {receipt.customer.name}"
     parts = list(receipt.allocations.select_related("invoice__division").order_by("id"))
+    # The LKR received, split over the invoices at the receipt's rate; the last takes the cents.
+    banked = [to_lkr(part.amount, receipt.exchange_rate) for part in parts]
+    banked[-1] += receipt.amount_lkr - sum(banked, ZERO)
     by_division: OrderedDict = OrderedDict()
-    for part in parts:
+    for part, lkr in zip(parts, banked, strict=True):
         division = part.invoice.division
-        by_division[division] = by_division.get(division, ZERO) + part.amount
+        into_total, carried = by_division.get(division, (ZERO, ZERO))
+        by_division[division] = (into_total + lkr, carried + part.carrying_lkr)
     lines = [
         journal.Line(account=into, debit=total, division=division, description=text)
-        for division, total in by_division.items()
+        for division, (total, _) in by_division.items()
+        if total
     ]
     lines += [
         journal.Line(
             account=receivable,
-            credit=part.amount,
+            credit=part.carrying_lkr,
             division=part.invoice.division,
             customer=receipt.customer,
             description=f"{text}: invoice {part.invoice.number}",
         )
         for part in parts
+        if part.carrying_lkr
     ]
+    for division, (total, carried) in by_division.items():
+        line = exchange_line(total - carried, division, f"{text}: exchange difference")
+        if line is not None:
+            lines.append(line)
     return lines
 
 
@@ -448,28 +524,36 @@ def post_due(today: date | None = None) -> int:
 def _set_off(
     user: User, advance: CustomerAdvance, invoice: TaxInvoice, amount: Decimal, on_date: date
 ) -> AdvanceSetOff:
-    """Posts Dr Customer advances, Cr Accounts receivable (inside the caller's transaction;
-    the database checks the advance and the invoice)."""
+    """Posts Dr Customer advances (in LKR at the advance's rate), Cr Accounts receivable (at
+    the invoice's rate), any difference to exchange gain or loss (P2-09). Inside the caller's
+    transaction; the database checks the advance and the invoice."""
     liability = _system_account("customer_advances", "Customer advances")
     receivable = _system_account("accounts_receivable", "Accounts receivable")
     text = f"Advance {advance.number} set off against invoice {invoice.number}"
+    if amount == advances.balance(advance):
+        held = advance.amount_lkr - advance.set_off_lkr  # all that is left, to the cent
+    else:
+        held = to_lkr(amount, advance.exchange_rate)
+    carried = carrying(invoice, amount, open_amount(invoice))
+    lines = [
+        journal.Line(account=liability, debit=held, division=advance.division, description=text),
+        journal.Line(
+            account=receivable,
+            credit=carried,
+            division=invoice.division,
+            customer=invoice.customer,
+            description=text,
+        ),
+    ]
+    difference = exchange_line(held - carried, invoice.division, f"{text}: exchange difference")
+    if difference is not None:
+        lines.append(difference)
     try:
         entry = journal.post(
             user,
             entry_date=on_date,
             narration=f"{text} ({invoice.customer.name})",
-            lines=[
-                journal.Line(
-                    account=liability, debit=amount, division=advance.division, description=text
-                ),
-                journal.Line(
-                    account=receivable,
-                    credit=amount,
-                    division=invoice.division,
-                    customer=invoice.customer,
-                    description=text,
-                ),
-            ],
+            lines=lines,
             source_type=SET_OFF,
             source_id=invoice.number,
         )
@@ -479,6 +563,8 @@ def _set_off(
         advance=advance,
         invoice=invoice,
         amount=amount,
+        amount_lkr=held,
+        carrying_lkr=carried,
         set_off_date=on_date,
         journal_entry=entry,
         created_by=user,
@@ -502,6 +588,7 @@ def advances_for(invoice: TaxInvoice) -> QuerySet[CustomerAdvance]:
         CustomerAdvance.objects.filter(
             match | on_account,
             customer_id=invoice.customer_id,
+            currency_id=invoice.currency_id,
             status=CustomerAdvance.Status.APPROVED,
             set_off_lkr__lt=F("amount_lkr"),
         )
@@ -519,7 +606,7 @@ def set_off_advances(user: User, invoice: TaxInvoice) -> list[AdvanceSetOff]:
     for advance in advances_for(invoice).select_for_update():
         if left <= 0:
             break
-        amount = min(advances.balance_lkr(advance), left)
+        amount = min(advances.balance(advance), left)
         if amount <= 0:
             continue
         with audit_context("customer_advance_set_off"):
@@ -548,7 +635,12 @@ def set_off(user: User, advance: CustomerAdvance, invoice: TaxInvoice, amount) -
         for division in (advance.division_id, invoice.division_id):
             if not scope.filter(pk=division).exists():
                 raise SalesError("The advance or the invoice is of a division you do not work in.")
-        left = advances.balance_lkr(advance)
+        left = advances.balance(advance)
+        if advance.currency_id != invoice.currency_id:
+            raise SalesError(
+                f"Advance {advance.number} is in {advance.currency.code} and invoice "
+                f"{invoice.number} in {invoice.currency.code}: they are not set off."
+            )
         if amount > left:
             raise SalesError(f"Advance {advance.number} has only {left:,.2f} left to set off.")
         open_now = open_amount(invoice)

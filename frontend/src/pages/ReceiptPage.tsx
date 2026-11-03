@@ -50,7 +50,10 @@ export default function ReceiptPage() {
               {r.customer.code} {r.customer.name}
             </dd>
             <dt>{t("advances.amount")}</dt>
-            <dd>LKR {formatDecimal(r.amount)}</dd>
+            <dd>
+              {r.currency ?? "LKR"} {formatDecimal(r.amount)}
+              {r.currency && r.currency !== "LKR" && r.amount_lkr && ` = LKR ${formatDecimal(r.amount_lkr)} (${r.exchange_rate ?? ""})`}
+            </dd>
             <dt>{t("advances.method")}</dt>
             <dd>
               {t(`advances.methods.${r.method}`)} {r.reference}

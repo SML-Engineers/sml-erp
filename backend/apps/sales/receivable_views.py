@@ -143,8 +143,10 @@ def _body(st, user) -> dict:
                     "invoice_date": item["invoice"].invoice_date,
                     "due_date": item["invoice"].due_date,
                     "total_amount": _money(item["invoice"].total_amount),
+                    "currency": item["invoice"].currency.code,
                 },
                 "open": _money(item["open"]),
+                "open_lkr": _money(item["open_lkr"]),
                 "days_overdue": max(item["days_overdue"], 0),
                 "bucket": item["bucket"],
             }

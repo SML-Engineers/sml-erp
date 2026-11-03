@@ -23,7 +23,7 @@ def _values(invoice: TaxInvoice) -> dict:
         "document_date": f"{invoice.invoice_date:%d-%b-%Y}",
         "due_date": f"{invoice.due_date:%d-%b-%Y}",
         "amount": f"{invoice.total_amount:,.2f}",
-        "currency": "LKR",
+        "currency": invoice.currency.code,
         "recipient_name": contact.name if contact else invoice.customer_name,
     }
 

@@ -13,8 +13,11 @@ export interface ReceiptRow {
   method: ReceiptMethod;
   reference: string;
   cheque_date: string | null;
-  /** Decimals as text, e.g. "75000.00"; always LKR for now. */
+  /** The invoices' currency (P2-09); LKR when missing. */
+  currency?: string;
+  /** Decimals as text, e.g. "75000.00", in the currency. */
   amount: string;
+  amount_lkr?: string;
   status: ReceiptStatus;
   created_by: string;
 }
@@ -22,6 +25,8 @@ export interface ReceiptRow {
 export interface ReceiptDetail extends ReceiptRow {
   account: { id: number; code: string; name: string } | null;
   cheque_bank: string;
+  exchange_rate?: string;
+  rate_date?: string | null;
   notes: string;
   allocations: {
     invoice: { id: number; number: string; invoice_date: string; division: string; total_amount: string };
@@ -42,6 +47,7 @@ export interface OpenInvoice {
   due_date: string;
   division: string;
   customer_po: string;
+  currency?: string;
   total_amount: string;
   open_amount: string;
 }

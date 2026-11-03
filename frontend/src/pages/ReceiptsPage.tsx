@@ -93,7 +93,12 @@ export default function ReceiptsPage({ me }: { me: CurrentUser }) {
               header: t("advances.method"),
               value: (r) => `${t(`advances.methods.${r.method}`)} ${r.reference}`.trim(),
             },
-            { id: "amount", header: t("advances.amountLkr"), value: (r) => r.amount, money: true },
+            {
+              id: "amount",
+              header: t("advances.amount"),
+              value: (r) => r.amount,
+              cell: (r) => `${r.currency && r.currency !== "LKR" ? `${r.currency} ` : ""}${formatDecimal(r.amount)}`,
+            },
             { id: "status", header: t("vouchers.status"), value: (r) => t(`receipts.statuses.${r.status}`) },
           ]}
         />
@@ -121,10 +126,18 @@ function NewReceipt() {
   const [paying, setPaying] = useState<Record<number, string>>({});
   const set = (field: keyof typeof values) => (value: string) => setValues((now) => ({ ...now, [field]: value }));
   const customer = options.data?.customers.find((c) => String(c.id) === values.customer);
-  const invoices: OpenInvoice[] = customer?.invoices ?? [];
+  const currencyOf = (i: OpenInvoice) => i.currency ?? "LKR";
+  const allInvoices: OpenInvoice[] = customer?.invoices ?? [];
+  const currencyChoices = [...new Set(allInvoices.map(currencyOf))];
+  const [chosenCurrency, setChosenCurrency] = useState("");
+  const currency = currencyChoices.includes(chosenCurrency) ? chosenCurrency : (currencyChoices[0] ?? "LKR");
+  // One receipt pays invoices of one currency, into an account of that currency (P2-09).
+  const invoices = allInvoices.filter((i) => currencyOf(i) === currency);
   const cashAccounts = ["cash", "petty_cash"];
-  const accounts = (options.data?.accounts ?? []).filter((a) =>
-    values.method === "cash" ? cashAccounts.includes(a.kind) : !cashAccounts.includes(a.kind),
+  const accounts = (options.data?.accounts ?? []).filter(
+    (a) =>
+      a.currency === currency &&
+      (values.method === "cash" ? cashAccounts.includes(a.kind) : !cashAccounts.includes(a.kind)),
   );
   const cheque = values.method === "cheque";
   const amounts = invoices.map((i) => clean(paying[i.id] ?? "")).filter((v) => v !== "");
@@ -225,7 +238,7 @@ function NewReceipt() {
         </label>
       )}
       <label>
-        {t("advances.amountIn", { currency: "LKR" })}
+        {t("advances.amountIn", { currency })}
         <input inputMode="decimal" className="num" value={values.amount} required onChange={(e) => set("amount")(e.target.value)} />
       </label>
       <label>
@@ -238,6 +251,26 @@ function NewReceipt() {
           <input value={values.reference} maxLength={50} onChange={(e) => set("reference")(e.target.value)} />
         </label>
       )}
+      {customer && currencyChoices.length > 1 && (
+        <label>
+          {t("customers.currency")}
+          <select
+            value={currency}
+            onChange={(e) => {
+              setChosenCurrency(e.target.value);
+              setPaying({});
+              setValues((now) => ({ ...now, account: "" }));
+            }}
+          >
+            {currencyChoices.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {customer && currency !== "LKR" && <p className="muted wide">{t("receipts.currencyNote", { currency })}</p>}
       {customer && (
         <div className="wide table-wrap">
           <table aria-label={t("receipts.invoices")}>

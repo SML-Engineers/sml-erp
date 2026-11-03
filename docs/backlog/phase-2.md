@@ -166,9 +166,22 @@ Status: `[ ]` to do · `[x]` done
     statement while invoices are overdue, in the name of the person who switched them on, and
     stops once paid; each is recorded (insert-only).
 
-- [ ] **P2-09 Export invoices and exchange differences** (spec 5.5, 6)
+- [x] **P2-09 Export invoices and exchange differences** (spec 5.5, 6)
   Tax invoices in the customer's currency at the day's rate; the receipt at its own rate posts
   the realised exchange gain or loss. Export VAT treatment as the tax advisor confirms.
+  - Done: a tax invoice is in its sales order's currency, at the rate of the invoice date (the
+    latest on or before it; no rate, no invoice), printed with the currency, the rate and the
+    LKR total. The ledger carries LKR: each sales account and tax converted, the receivable
+    their sum. Receipts are in the invoices' currency (one currency per receipt, into an
+    account of that currency; also a database rule) at the receipt date's rate: Dr bank at
+    that rate, Cr receivable at the invoice's rate, the difference to Exchange gain or
+    Exchange loss per division. The last payment of an invoice takes off exactly what is left
+    in LKR, so no cents stay behind. Advances are set off only against invoices of their
+    currency: Dr Customer advances at the advance's rate, Cr receivable at the invoice's,
+    difference to exchange gain or loss. Credit notes reverse at the invoice's rate. Aging,
+    statements and credit control count each invoice in LKR at its rate. Existing records
+    were all LKR (rate 1). VAT treatment of exports follows the tax code on the lines
+    (question 14). Month-end revaluation of what is still open is P2-21.
 
 ## C. Payables, completed
 
@@ -355,3 +368,7 @@ None blocks P2-01 to P2-03. Each names the tasks that need its answer.
       customer page they are read-only for Sales; the Accountant or Director changes them in
       the "Credit terms" box, with a reason. A new customer starts with 30 days and no limit;
       a customer import changing them is refused for anyone without the right.
+14. **VAT on export invoices (P2-09).** The ERP charges whatever the tax code on each line
+    says. Exports of goods are normally zero-rated for VAT and SSCL does not apply, but the tax
+    advisor should confirm. Recommended: the Accountant adds a tax code "Zero-rated export"
+    (VAT at 0%) on Accounts -> Taxes and Sales use it on export quotations. Asked 3 Nov 2026.

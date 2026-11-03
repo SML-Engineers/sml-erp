@@ -36,7 +36,7 @@ from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, User
 from apps.core.numbering import NumberSeriesError, allocate
 
-from . import invoices, words
+from . import invoices, receipts, words
 from .models import CreditNote, CreditNoteLine, CreditNoteTax, TaxInvoice, TaxInvoiceLine
 from .services import SalesError, _decimal
 
@@ -147,7 +147,7 @@ def _compute(note: CreditNote) -> None:
     note.subtotal = subtotal
     note.tax_total = sum((amount for _, amount in groups.values()), Decimal("0"))
     note.total_amount = subtotal + note.tax_total
-    note.amount_in_words = words.amount(note.total_amount)
+    note.amount_in_words = words.amount(note.total_amount, note.invoice.currency.code)
 
 
 # --- Making and changing -----------------------------------------------------------------------
@@ -280,7 +280,7 @@ def submit(user: User, note: CreditNote, comment: str = "") -> CreditNote:
                 DOC,
                 note.pk,
                 created_by=note.created_by,
-                amount=note.total_amount,
+                amount=receipts.to_lkr(note.total_amount, note.invoice.exchange_rate),
                 division=note.division,
                 comment=comment,
                 title=f"Credit note on {note.invoice.number} for {note.customer.name}",
@@ -295,30 +295,37 @@ def submit(user: User, note: CreditNote, comment: str = "") -> CreditNote:
 
 
 def _journal_lines(note: CreditNote) -> list[journal.Line]:
+    """The reverse of the invoice, in LKR at the invoice's rate (P2-09): Dr each sales account
+    and tax, Cr Accounts receivable with what the note takes off it (note.total_lkr). A cent
+    of rounding when the note clears the invoice goes to exchange gain or loss."""
     receivable = Account.objects.filter(system_role="accounts_receivable").first()
     if receivable is None:
         raise SalesError("The chart of accounts has no accounts receivable account.")
     division = note.division
+    rate = note.invoice.exchange_rate
     text = f"Credit note {note.number} on {note.invoice.number}"
     lines = []
     income: OrderedDict = OrderedDict()
     for line in note.lines.select_related("invoice_line__account"):
         account = line.invoice_line.account
         income[account] = income.get(account, Decimal("0")) + line.amount
+    debits = Decimal("0")
     for account, amount in income.items():
-        lines.append(
-            journal.Line(account=account, debit=amount, division=division, description=text)
-        )
+        lkr = receipts.to_lkr(amount, rate)
+        debits += lkr
+        lines.append(journal.Line(account=account, debit=lkr, division=division, description=text))
     for tax in note.taxes.select_related("component__sales_account"):
-        if not tax.amount:
+        lkr = receipts.to_lkr(tax.amount, rate)
+        if not lkr:
             continue
         account = tax.component.sales_account
         if account is None:
             raise SalesError(f"Tax {tax.component.code} has no sales account.")
+        debits += lkr
         lines.append(
             journal.Line(
                 account=account,
-                debit=tax.amount,
+                debit=lkr,
                 division=division,
                 description=f"{text}: {tax.label} {tax.rate.normalize():f}%",
             )
@@ -326,12 +333,15 @@ def _journal_lines(note: CreditNote) -> list[journal.Line]:
     lines.append(
         journal.Line(
             account=receivable,
-            credit=note.total_amount,
+            credit=note.total_lkr,
             division=division,
             customer=note.customer,
             description=text,
         )
     )
+    rounding = receipts.exchange_line(debits - note.total_lkr, division, f"{text}: rounding")
+    if rounding is not None:
+        lines.append(rounding)
     return lines
 
 
@@ -359,6 +369,10 @@ def approve(user: User, note: CreditNote, comment: str = "") -> CreditNote:
                 note.number = allocate(DOC, division=note.division, on_date=note.credit_date)
             except NumberSeriesError as error:
                 raise SalesError(str(error)) from None
+            invoice = TaxInvoice.objects.select_for_update().get(pk=note.invoice_id)
+            note.total_lkr = receipts.carrying(
+                invoice, note.total_amount, receipts.open_amount(invoice)
+            )
             try:
                 entry = journal.post(
                     user,
@@ -374,7 +388,9 @@ def approve(user: User, note: CreditNote, comment: str = "") -> CreditNote:
             note.journal_entry = entry
             note.status = St.APPROVED
             note.updated_at = timezone.now()
-            note.save(update_fields=["number", "journal_entry", "status", "updated_at"])
+            note.save(
+                update_fields=["number", "journal_entry", "status", "updated_at", "total_lkr"]
+            )
         return note
 
 

@@ -891,11 +891,17 @@ class TaxInvoice(models.Model):
     customer_tin = models.CharField(max_length=50, blank=True)
     customer_address = models.TextField(blank=True)
     customer_po = models.CharField(max_length=50, blank=True)
-    # Figures in LKR (export invoices in other currencies come with P2-09).
+    # In the order's (the customer's) currency (P2-09), at the rate of the invoice date; the
+    # ledger carries the LKR value (rule 11).
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
+    rate_date = models.DateField(null=True, blank=True)
     subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     discount_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     tax_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    # What the receivable is booked at in LKR (the sum of the converted sales and taxes).
+    total_lkr = models.DecimalField("Total (LKR)", max_digits=18, decimal_places=2, default=0)
     amount_in_words = models.CharField(max_length=400, blank=True)
     journal_entry = models.OneToOneField(
         "accounting.JournalEntry",
@@ -1028,6 +1034,8 @@ class CreditNote(models.Model):
     subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     tax_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    # The receivable it takes off, in LKR at the invoice's rate (P2-09).
+    total_lkr = models.DecimalField("Total (LKR)", max_digits=18, decimal_places=2, default=0)
     amount_in_words = models.CharField(max_length=400, blank=True)
     journal_entry = models.OneToOneField(
         "accounting.JournalEntry",
@@ -1137,7 +1145,12 @@ class CustomerReceipt(models.Model):
     reference = models.CharField(max_length=50, blank=True)
     cheque_date = models.DateField(null=True, blank=True)
     cheque_bank = models.CharField(max_length=100, blank=True)
+    # In the invoices' currency (P2-09), at the rate of the receipt date.
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, default=1)
+    rate_date = models.DateField(null=True, blank=True)
     amount = models.DecimalField(max_digits=18, decimal_places=2)
+    amount_lkr = models.DecimalField("Amount (LKR)", max_digits=18, decimal_places=2, default=0)
     notes = models.TextField(blank=True)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.AWAITING_APPROVAL
@@ -1187,7 +1200,9 @@ class ReceiptAllocation(models.Model):
     invoice = models.ForeignKey(
         TaxInvoice, on_delete=models.PROTECT, related_name="receipt_allocations"
     )
-    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)  # the invoice's currency
+    # The receivable it takes off, in LKR at the invoice's rate (P2-09).
+    carrying_lkr = models.DecimalField(max_digits=18, decimal_places=2, default=0)
 
     class Meta:
         ordering = ["receipt", "id"]
@@ -1210,7 +1225,11 @@ class AdvanceSetOff(models.Model):
 
     advance = models.ForeignKey(CustomerAdvance, on_delete=models.PROTECT, related_name="set_offs")
     invoice = models.ForeignKey(TaxInvoice, on_delete=models.PROTECT, related_name="set_offs")
-    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)  # in both documents' currency
+    # In LKR: what leaves Customer advances (at the advance's rate) and what leaves the
+    # receivable (at the invoice's rate); any difference is an exchange gain or loss (P2-09).
+    amount_lkr = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    carrying_lkr = models.DecimalField(max_digits=18, decimal_places=2, default=0)
     set_off_date = models.DateField()
     journal_entry = models.ForeignKey(
         "accounting.JournalEntry", on_delete=models.PROTECT, related_name="advance_set_offs"

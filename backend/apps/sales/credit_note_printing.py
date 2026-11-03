@@ -26,6 +26,7 @@ def render(note: CreditNote, *, compress: bool = True) -> bytes:
     s = Styles()
     p = s.p
     invoice = note.invoice
+    unit = "Rs" if invoice.currency.code == "LKR" else invoice.currency.code
     approved = note.status == CreditNote.Status.APPROVED
     story = letterhead(s) + [
         p("CREDIT NOTE", s.title.clone("centre_title", alignment=1)),
@@ -84,7 +85,7 @@ def render(note: CreditNote, *, compress: bool = True) -> bytes:
             p("Product Code", s.head),
             p("Description", s.head),
             p("Qty", s.head),
-            p("Amount (Rs)", s.head),
+            p(f"Amount ({unit})", s.head),
         ]
     ]
     for line in note.lines.select_related("invoice_line"):

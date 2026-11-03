@@ -203,7 +203,7 @@ function ImportForm() {
       </label>
       <label>
         {t("bs.file")}
-        <input type="file" accept=".pdf,.xlsx,.csv" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <input type="file" accept=".pdf,.xlsx,.csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
       </label>
       <div className="wide row-actions">
         <button type="submit" className="secondary" disabled={read.isPending || !file}>

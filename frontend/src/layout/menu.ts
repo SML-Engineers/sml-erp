@@ -30,7 +30,11 @@ export interface MenuSection {
 export const MENU: MenuSection[] = [
   {
     label: "menu.main",
-    items: [{ label: "menu.dashboard", path: "/", area: null }],
+    items: [
+      { label: "menu.dashboard", path: "/", area: null },
+      // A custodian can be anyone; the page shows only the floats the user may see (P2-17).
+      { label: "petty.title", path: "/petty-cash", area: null },
+    ],
   },
   {
     label: "menu.vouchers",

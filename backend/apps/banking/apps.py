@@ -16,6 +16,7 @@ class BankingConfig(AppConfig):
             ChequeClearance,
             Deposit,
             DepositLine,
+            PettyExpense,
             StatementMatch,
             StatementTemplate,
         )
@@ -28,3 +29,4 @@ class BankingConfig(AppConfig):
         register(StatementMatch)
         register(BankRule)
         register(BankReconciliation)
+        register(PettyExpense)

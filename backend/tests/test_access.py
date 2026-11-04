@@ -187,6 +187,12 @@ def test_every_endpoint_declares_its_access():
         "NotificationListView",  # own notifications only
         "NotificationReadView",  # own notifications only
         "PreferenceView",  # own notification choices only
+        # Petty cash (P2-17): a custodian may hold any role; each view shows only the floats
+        # the user holds or, for accounts staff, may see, and the service checks every change.
+        "PettyFloatListView",
+        "PettyExpenseListView",
+        "PettyExpenseDetailView",
+        "PettySlipView",
     }
 
     def walk(patterns):

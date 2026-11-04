@@ -54,6 +54,7 @@ import PurchaseRequestPage from "./pages/PurchaseRequestPage";
 import ChequesPage from "./pages/ChequesPage";
 import BankStatementsPage from "./pages/BankStatementsPage";
 import ReconciliationPage from "./pages/ReconciliationPage";
+import PettyCashPage from "./pages/PettyCashPage";
 import PurchaseRequestsPage from "./pages/PurchaseRequestsPage";
 import ReorderPage from "./pages/ReorderPage";
 import StoresPage from "./pages/settings/StoresPage";
@@ -162,6 +163,7 @@ export default function App() {
         <Route path="cheques" element={<ChequesPage />} />
         <Route path="bank-statements" element={<BankStatementsPage />} />
         <Route path="reconciliation" element={<ReconciliationPage />} />
+        <Route path="petty-cash" element={<PettyCashPage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />
         <Route path="goods-receipts/:id" element={<GoodsReceiptPage />} />
         <Route path="inspections" element={<InspectionsPage />} />

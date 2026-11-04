@@ -285,3 +285,56 @@ class BankReconciliation(models.Model):
 
     def __str__(self):
         return f"{self.account} to {self.period_end}"
+
+
+# --- Petty cash (backlog P2-17) ----------------------------------------------------------
+
+
+class PettyExpense(models.Model):
+    """A small expense paid from a petty cash float (imprest), with its slip. Nothing is posted
+    when it is spent: the float is topped up by a Petty Cash voucher listing the expenses,
+    which goes through the three approvals; paying it posts the expenses."""
+
+    number = models.CharField(max_length=30, unique=True)
+    account = models.ForeignKey(
+        "masters.CompanyAccount", on_delete=models.PROTECT, related_name="petty_expenses"
+    )
+    expense_date = models.DateField()
+    paid_to = models.CharField(max_length=150)
+    description = models.CharField(max_length=500)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    # Suggested coding, which the Accountant confirms on the voucher.
+    ledger = models.ForeignKey(
+        "accounting.Account", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    division = models.ForeignKey(
+        "core.Division", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    slip = models.FileField(upload_to="petty-cash/%Y/%m/")
+    slip_name = models.CharField(max_length=200)
+    slip_type = models.CharField(max_length=100)
+    slip_size = models.PositiveIntegerField()
+    slip_sha256 = models.CharField(max_length=64)
+    # The replenishment voucher that pays it back into the float.
+    voucher = models.ForeignKey(
+        "vouchers.Voucher",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="petty_expenses",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-expense_date", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="banking_petty_amount_positive"
+            ),
+        ]
+
+    def __str__(self):
+        return self.number

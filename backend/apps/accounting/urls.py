@@ -118,6 +118,12 @@ urlpatterns = [
         name="period-change",
     ),
     path("reports/profit-and-loss/", j.ProfitAndLossView.as_view(), name="profit-and-loss"),
+    path("reports/cash-flow/", reports_api.CashFlowView.as_view(), name="cash-flow"),
+    path(
+        "reports/dashboard/",
+        reports_api.FinancialDashboardView.as_view(),
+        name="financial-dashboard",
+    ),
     path("reports/trial-balance/", reports_api.TrialBalanceView.as_view(), name="trial-balance"),
     path("reports/balance-sheet/", reports_api.BalanceSheetView.as_view(), name="balance-sheet"),
     path(

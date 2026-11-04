@@ -468,9 +468,22 @@ Status: `[ ]` to do · `[x]` done
 
 ## G. Reports and dashboards
 
-- [ ] **P2-24 Cash flow statement and financial dashboard** (spec 6, 7A)
+- [x] **P2-24 Cash flow statement and financial dashboard** (spec 6, 7A)
   Cash flow statement (indirect method). Home page tiles for P&L, cash, receivables and
   payables, per division or for the company; every tile opens the report behind it.
+  - Done: Financial reports → Cash flow, for any period, on screen, Excel and PDF. It starts
+    from the period's profit, adds back depreciation (the asset classes' accumulated
+    depreciation accounts) and explains the rest of the change in cash (Bank-type accounts:
+    bank, cash, petty cash) by the change in each balance sheet account, by its type:
+    operating (receivables, other current assets, payables, credit cards, other current
+    liabilities), investing (fixed assets, other assets), financing (long-term liabilities,
+    equity). It always adds up to the actual change in cash; a difference would be shown. The
+    year-end closing entry is left out. Each account line opens its ledger. For the company
+    only (money moves between divisions through shared accounts). Home page (Financial
+    reports: View): profit this month (income, costs), profit of the financial year so far
+    with the approved budget so far, cash and bank (company, or the accounts set up for a
+    division), what customers owe us and what we owe suppliers with the overdue part; for the
+    company or a division; each tile opens its report.
 
 - [ ] **P2-25 Cash flow planner** (spec 7A)
   Bank balances projected day by day for 13 weeks from approved unpaid vouchers, invoices due

@@ -19,7 +19,7 @@ from apps.core.access import division_scope, sees_all_divisions
 from apps.core.exports import STRONG, Column
 from apps.core.permissions import AreaAccess
 
-from . import reports, sources
+from . import cash_flow, reports, sources
 from .catalogue import TYPES
 from .models import Account
 from .services import AccountingError
@@ -343,5 +343,134 @@ class GeneralLedgerView(_Report):
                     }
                     for ledger in ledgers
                 ],
+            }
+        )
+
+
+# --- Cash flow statement and home page tiles (P2-24) ------------------------------------------
+
+
+def _flow_rows(st) -> list[dict]:
+    rows = []
+    for section, title in (
+        (st.operating, "Operating activities"),
+        (st.investing, "Investing activities"),
+        (st.financing, "Financing activities"),
+    ):
+        rows.append({"section": section.key, "label": title, "kind": "heading", "amount": ""})
+        for r in section.rows:
+            rows.append(
+                {
+                    "section": section.key,
+                    "label": r.label,
+                    "kind": "line",
+                    "amount": _money(r.amount),
+                    "account": r.account.pk if r.account else None,
+                }
+            )
+        rows.append(
+            {
+                "section": section.key,
+                "label": f"Net cash from {title.lower()}",
+                "kind": "total",
+                "amount": _money(section.total),
+            }
+        )
+    return rows
+
+
+class CashFlowView(_Report):
+    """The cash flow statement (indirect method) for a period, for the company."""
+
+    def get(self, request):
+        params = request.query_params
+        today = timezone.localdate()
+        try:
+            if not sees_all_divisions(request.user):
+                raise AccountingError("The cash flow statement is for the whole company.")
+            date_from = _date(params.get("from"), "start date", today.replace(day=1))
+            date_to = _date(params.get("to"), "end date", today)
+            st = cash_flow.statement(date_from, date_to)
+        except AccountingError as error:
+            return _error(error)
+        rows = _flow_rows(st)
+        summary = [
+            ("Net change in cash", st.net_change),
+            ("Cash at the start", st.opening_cash),
+            ("Cash at the end", st.closing_cash),
+        ]
+        fmt = (params.get("export") or "").lower()
+        if fmt in exports.FORMATS:
+            flat = [
+                {
+                    "label": r["label"],
+                    "amount": r["amount"],
+                    STRONG: r["kind"] != "line",
+                }
+                for r in rows
+            ] + [{"label": k, "amount": _money(v), STRONG: True} for k, v in summary]
+            return exports.response(
+                fmt,
+                title="Cash flow statement",
+                subtitle=_subtitle(
+                    f"{date_from:%d/%m/%Y} to {date_to:%d/%m/%Y} · indirect method", None
+                ),
+                columns=[Column("label", "", width=3.0), Column("amount", "LKR", "money")],
+                rows=flat,
+                filename=f"cash-flow-{date_from}-{date_to}",
+                user=request.user,
+            )
+        return Response(
+            {
+                "from": date_from,
+                "to": date_to,
+                "profit": _money(st.profit),
+                "rows": rows,
+                "operating": _money(st.operating.total),
+                "investing": _money(st.investing.total),
+                "financing": _money(st.financing.total),
+                "net_change": _money(st.net_change),
+                "opening_cash": _money(st.opening_cash),
+                "closing_cash": _money(st.closing_cash),
+                "difference": _money(st.difference),
+            }
+        )
+
+
+class FinancialDashboardView(_Report):
+    """The financial tiles of the home page, for the company or one division."""
+
+    def get(self, request):
+        scope = list(division_scope(request.user).order_by("code"))
+        code = (request.query_params.get("division") or "").upper()
+        if code:
+            division = next((d for d in scope if d.code == code), None)
+            if division is None:
+                return _error("Unknown division.")
+        elif sees_all_divisions(request.user):
+            division = None
+        else:
+            division = scope[0] if scope else None
+            if division is None:
+                return _error("Choose one of your divisions.")
+        data = cash_flow.dashboard(request.user, division)
+
+        def money(value):
+            return None if value is None else _money(value)
+
+        def tile(values: dict) -> dict:
+            return {k: money(v) if isinstance(v, Decimal) else v for k, v in values.items()}
+
+        return Response(
+            {
+                "today": data["today"],
+                "division": data["division"],
+                "company": sees_all_divisions(request.user),
+                "divisions": [{"code": d.code, "name": d.name} for d in scope],
+                "this_month": tile(data["this_month"]),
+                "year_to_date": tile(data["year_to_date"]),
+                "cash": tile(data["cash"]),
+                "receivables": tile(data["receivables"]),
+                "payables": tile(data["payables"]),
             }
         )

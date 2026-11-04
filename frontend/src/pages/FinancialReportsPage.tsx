@@ -5,13 +5,13 @@ import { Link, useSearchParams } from "react-router";
 import { chartKey, listLedgerAccounts } from "../api/accounts";
 import { listDivisions } from "../api/admin";
 import { ApiError } from "../api/client";
-import { balanceSheet, generalLedger, profitAndLoss, reportsKey, trialBalance } from "../api/financialReports";
+import { balanceSheet, cashFlow, generalLedger, profitAndLoss, reportsKey, trialBalance } from "../api/financialReports";
 import ExportLinks from "../components/ExportLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal } from "../lib/decimal";
 
-type Tab = "tb" | "bs" | "pl" | "gl";
-const TABS: Tab[] = ["tb", "bs", "pl", "gl"];
+type Tab = "tb" | "bs" | "pl" | "cf" | "gl";
+const TABS: Tab[] = ["tb", "bs", "pl", "cf", "gl"];
 
 const today = () => new Date().toLocaleDateString("en-CA");
 const monthStart = (day: string) => `${day.slice(0, 8)}01`;
@@ -76,6 +76,7 @@ export default function FinancialReportsPage() {
         ))}
       </div>
       <div className="toolbar">
+        {tab !== "cf" && (
         <label>
           {t("vouchers.division")}
           <select value={division} onChange={(e) => set({ division: e.target.value })}>
@@ -87,6 +88,7 @@ export default function FinancialReportsPage() {
             ))}
           </select>
         </label>
+        )}
         {(tab === "tb" || tab === "bs") && (
           <>
             <label>
@@ -107,7 +109,7 @@ export default function FinancialReportsPage() {
             </label>
           </>
         )}
-        {(tab === "pl" || tab === "gl") && (
+        {(tab === "pl" || tab === "gl" || tab === "cf") && (
           <>
             <label>
               {t("exports.from")}
@@ -123,6 +125,7 @@ export default function FinancialReportsPage() {
       {tab === "tb" && <TrialBalanceTab params={{ as_at: asAt, division, compare: get("compare"), sub: get("sub") }} ledgerOf={ledgerOf} />}
       {tab === "bs" && <BalanceSheetTab params={{ as_at: asAt, division, compare: get("compare"), sub: get("sub") }} ledgerOf={ledgerOf} />}
       {tab === "pl" && <ProfitAndLossTab params={{ from, to, division }} ledgerOf={ledgerOf} />}
+      {tab === "cf" && <CashFlowTab params={{ from, to }} ledgerOf={ledgerOf} />}
       {tab === "gl" && (
         <LedgerTab
           params={{ from, to, division, account: get("account"), sub: get("sub") === "include" ? "include" : "" }}
@@ -291,6 +294,60 @@ function ProfitAndLossTab({ params, ledgerOf }: { params: Record<string, string>
       )}
       <p className="muted">{t("fr.plNote")}</p>
       {data?.has_budget && <p className="muted">{t("budget.plNote")}</p>}
+    </section>
+  );
+}
+
+function CashFlowTab({ params, ledgerOf }: { params: Record<string, string>; ledgerOf: LedgerOf }) {
+  const { t } = useTranslation();
+  const report = useQuery({ queryKey: [...reportsKey, "cf", params], queryFn: () => cashFlow(params) });
+  const data = report.data;
+  return (
+    <section className="panel" aria-label={t("fr.tabs.cf")}>
+      <ExportLinks path="/reports/cash-flow/" params={params} label={t("fr.tabs.cf")} />
+      <ErrorLine error={report.error} />
+      {data && (
+        <div className="table-wrap">
+          <table aria-label={t("fr.tabs.cf")}>
+            <tbody>
+              {data.rows.map((r, i) =>
+                r.kind === "heading" ? (
+                  <tr key={i}>
+                    <th colSpan={2}>{t(`fr.cf.${r.section}`)}</th>
+                  </tr>
+                ) : (
+                  <tr key={i} className={r.kind === "total" ? "total" : undefined}>
+                    <td>{r.kind === "total" ? <strong>{t(`fr.cf.${r.section}Total`)}</strong> : r.label}</td>
+                    <td className="num">
+                      {r.account ? <Link to={ledgerOf(r.account, data.from, data.to)}>{formatDecimal(r.amount)}</Link> : r.kind === "total" ? <strong>{formatDecimal(r.amount)}</strong> : formatDecimal(r.amount)}
+                    </td>
+                  </tr>
+                ),
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>{t("fr.cf.netChange")}</th>
+                <th className="num">{formatDecimal(data.net_change)}</th>
+              </tr>
+              <tr>
+                <td>{t("fr.cf.opening", { date: data.from })}</td>
+                <td className="num">{formatDecimal(data.opening_cash)}</td>
+              </tr>
+              <tr>
+                <th>{t("fr.cf.closing", { date: data.to })}</th>
+                <th className="num">{formatDecimal(data.closing_cash)}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+      {data && data.difference !== "0.00" && (
+        <p className="form-error" role="alert">
+          {t("fr.cf.difference", { amount: formatDecimal(data.difference) })}
+        </p>
+      )}
+      <p className="muted">{t("fr.cf.note")}</p>
     </section>
   );
 }

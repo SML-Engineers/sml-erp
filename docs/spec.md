@@ -1444,6 +1444,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Fixed assets (P2-19) | Classes with dated methods and rates entered as the auditors agree (none depreciated until then; land never); monthly depreciation checked then posted in order; disposals post the gain or loss; mould shot count kept for Phase 3 | 6 |
 | Tax reports (P2-20) | VAT return by month (standard, zero-rated exports apart, exempt, outside VAT; output VAT checked against the ledger; input VAT as claimed in the books), SSCL with its base, WHT with certificates; each line traced to its document; Excel and PDF | 6 |
 | Month-end revaluation (P2-21) | Open foreign-currency customer and supplier invoices revalued at the month-end rate, posted to Unrealised exchange gain or loss and reversed on the 1st; foreign-currency bank and cash balances (from the statement or typed) revalued to Exchange gain or loss and kept; checked by the Accountant then posted | 5.5, 6 |
+| Budgets (P2-22) | A financial year's budget by account, division and month, typed or imported from Excel, approved by the Director; revisions are new versions; the profit and loss shows budget, difference and % beside the actual | 6 |
 
 **Still needed for initial setup**
 

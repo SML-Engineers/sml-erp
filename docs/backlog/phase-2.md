@@ -429,9 +429,23 @@ Status: `[ ]` to do · `[x]` done
     would leave old differences on the bank account forever. A posted month never changes
     (database); no Director approval, like depreciation.
 
-- [ ] **P2-22 Budgets** (spec 6)
+- [x] **P2-22 Budgets** (spec 6)
   Budgets by account, division and month (typed or imported from Excel), approved by the
   Director; budget against actual in the P&L, with the difference and %.
+  - Done: Accounts → Budgets. A budget is a financial year (from the start month in Settings →
+    Organisation, April by default) of amounts per income or cost account, division and month,
+    in LKR, income and costs both typed as positive. The Accountant prepares it on the page
+    (a grid with a column per month) or imports it from Excel in the layout of its own
+    download (Account number or name, Division, then month columns such as "Apr 2027"; rows
+    with no amounts skipped; all or nothing, every wrong row listed), then sends it to the
+    Director ("budget" approval type, seeded with a 2-day reminder; never approved by the
+    person who prepared it), who approves, returns or rejects it. An approved budget never
+    changes: a revision is a new version of the year that starts as a copy and replaces the
+    approved one once approved; one version of a year is open at a time; rejected and replaced
+    ones are kept (database). The profit and loss (company or a division, any dates) shows the
+    approved budget for the months of the period beside each account, the difference (actual
+    less budget, positive is better: more income or lower costs) and the difference as a % of
+    the budget, also in Excel and PDF. Overhead allocation (spec 3.4) is not in the budget.
 
 - [ ] **P2-23 Month-end and year-end close**
   A month-end checklist (reconciliations, depreciation, revaluation, accruals) before the

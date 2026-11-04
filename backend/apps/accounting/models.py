@@ -632,3 +632,77 @@ class RevaluationLine(models.Model):
 
     def __str__(self):
         return f"{self.document} {self.difference}"
+
+
+# --- Budgets (backlog P2-22) -----------------------------------------------------------------
+
+
+class Budget(models.Model):
+    """A financial year's budget by account, division and month. The Accountant prepares it
+    (typed or imported from Excel) and the Director approves it. An approved budget never
+    changes: a revision is a new version, which replaces it once approved (database guard)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Awaiting approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        REPLACED = "replaced", "Replaced by a later version"
+
+    year_start = models.DateField()  # the first day of the financial year
+    version = models.PositiveSmallIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    notes = models.CharField(max_length=500, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-year_start", "-version"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["year_start", "version"], name="accounting_budget_version_once"
+            ),
+            models.UniqueConstraint(
+                fields=["year_start"],
+                condition=models.Q(status="approved"),
+                name="accounting_budget_one_approved",
+            ),
+            models.UniqueConstraint(
+                fields=["year_start"],
+                condition=models.Q(status__in=["draft", "awaiting_approval"]),
+                name="accounting_budget_one_open",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Budget {self.year_start:%Y-%m} v{self.version}"
+
+
+class BudgetLine(models.Model):
+    """The amount budgeted for an account and division in a month, in LKR, as a positive
+    amount for income and costs alike (a negative one only where the account is expected to
+    go the other way)."""
+
+    budget = models.ForeignKey(Budget, on_delete=models.CASCADE, related_name="lines")
+    account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, related_name="+")
+    month = models.DateField()  # the first day of the month
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["budget", "account", "division", "month"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["budget", "account", "division", "month"],
+                name="accounting_budgetline_once",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(amount=0), name="accounting_budgetline_not_zero"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.account_id}/{self.division_id} {self.month:%Y-%m} {self.amount}"

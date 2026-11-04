@@ -256,6 +256,9 @@ function ProfitAndLossTab({ params, ledgerOf }: { params: Record<string, string>
                 <th>{t("mj.account")}</th>
                 <th>{t("fr.type")}</th>
                 <th className="num">{t("fr.amount")}</th>
+                {data.has_budget && <th className="num">{t("budget.budget")}</th>}
+                {data.has_budget && <th className="num">{t("budget.difference")}</th>}
+                {data.has_budget && <th className="num">%</th>}
               </tr>
             </thead>
             <tbody>
@@ -268,6 +271,9 @@ function ProfitAndLossTab({ params, ledgerOf }: { params: Record<string, string>
                   <td className="num">
                     <Link to={ledgerOf(r.account.id, data.from, data.to)}>{formatDecimal(r.amount)}</Link>
                   </td>
+                  {data.has_budget && <td className="num">{formatDecimal(r.budget ?? "0.00")}</td>}
+                  {data.has_budget && <td className="num">{formatDecimal(r.difference ?? "0.00")}</td>}
+                  {data.has_budget && <td className="num">{r.percent ?? ""}</td>}
                 </tr>
               ))}
             </tbody>
@@ -275,12 +281,16 @@ function ProfitAndLossTab({ params, ledgerOf }: { params: Record<string, string>
               <tr>
                 <th colSpan={2}>{t("fr.profit")}</th>
                 <th className="num">{formatDecimal(data.profit)}</th>
+                {data.has_budget && <th className="num">{formatDecimal(data.budget_profit ?? "0.00")}</th>}
+                {data.has_budget && <th className="num">{formatDecimal(data.profit_difference ?? "0.00")}</th>}
+                {data.has_budget && <th />}
               </tr>
             </tfoot>
           </table>
         </div>
       )}
       <p className="muted">{t("fr.plNote")}</p>
+      {data?.has_budget && <p className="muted">{t("budget.plNote")}</p>}
     </section>
   );
 }

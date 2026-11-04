@@ -123,6 +123,9 @@ DOCUMENT_TYPES = {
     "payment_cancellation": DocumentType(
         "Payment cancellation", min_approvals=1, final_role="director"
     ),
+    # A financial year's budget, prepared by the Accountant: the Director approves it, and
+    # each revision (P2-22).
+    "budget": DocumentType("Budget", min_approvals=1, final_role="director"),
     "customer_receipt": DocumentType(
         "Customer receipt",
         min_approvals=1,

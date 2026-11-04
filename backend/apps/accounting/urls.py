@@ -5,10 +5,19 @@ from . import manual_views as mj
 from . import rate_views as rv
 from . import recurring_views as rj
 from . import report_views as reports_api
+from . import tax_report_views as tr
 from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
+    path("tax-reports/vat/", tr.VatView.as_view(), name="tax-report-vat"),
+    path(
+        "tax-reports/vat/purchases/",
+        tr.VatPurchasesExportView.as_view(),
+        name="tax-report-vat-purchases",
+    ),
+    path("tax-reports/sscl/", tr.SsclView.as_view(), name="tax-report-sscl"),
+    path("tax-reports/wht/", tr.WhtView.as_view(), name="tax-report-wht"),
     path("chart-of-accounts/", v.AccountListView.as_view(), name="account-list"),
     path("chart-of-accounts/types/", v.AccountTypesView.as_view(), name="account-types"),
     path(

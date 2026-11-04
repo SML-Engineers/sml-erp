@@ -98,6 +98,7 @@ export const MENU: MenuSection[] = [
       { label: "rj.title", path: "/journals/recurring", area: "accounting" },
       { label: "journal.title", path: "/journal", area: "accounting" },
       { label: "fa.title", path: "/fixed-assets", area: "accounting" },
+      { label: "tax.title", path: "/tax-reports", area: "accounting", alsoArea: "financial_reports" },
       { label: "fr.title", path: "/reports/financial", area: "financial_reports" },
       { label: "periods.title", path: "/accounting-periods", area: "accounting" },
     ],

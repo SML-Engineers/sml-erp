@@ -1442,6 +1442,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Petty cash (P2-17) | Imprest: the custodian records expenses with slips (never more than the float); the Clerk tops up with a Petty Cash voucher listing them, through the three approvals; paying it posts the expenses | 4.1, 6 |
 | Stock issues, adjustments and counts (P2-18) | Issues and returns at weighted average cost, oldest lot first, posted at once; adjustments, write-offs and count differences posted only on the Director's approval; WIP and finished goods accounts ready for Phase 3 | 6, 5A |
 | Fixed assets (P2-19) | Classes with dated methods and rates entered as the auditors agree (none depreciated until then; land never); monthly depreciation checked then posted in order; disposals post the gain or loss; mould shot count kept for Phase 3 | 6 |
+| Tax reports (P2-20) | VAT return by month (standard, zero-rated exports apart, exempt, outside VAT; output VAT checked against the ledger; input VAT as claimed in the books), SSCL with its base, WHT with certificates; each line traced to its document; Excel and PDF | 6 |
 
 **Still needed for initial setup**
 

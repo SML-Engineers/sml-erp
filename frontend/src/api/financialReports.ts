@@ -68,8 +68,20 @@ export interface ProfitAndLoss {
   from: string;
   to: string;
   division: string | null;
-  rows: { account: { id: number; number: string; name: string }; account_type: string; account_type_label: string; amount: string }[];
+  rows: {
+    account: { id: number; number: string; name: string };
+    account_type: string;
+    account_type_label: string;
+    amount: string;
+    // From the approved budget for the period's months (P2-22), when there is one.
+    budget?: string;
+    difference?: string;
+    percent?: string | null;
+  }[];
   profit: string;
+  has_budget?: boolean;
+  budget_profit?: string | null;
+  profit_difference?: string | null;
 }
 
 export const reportsKey = ["financial-reports"];

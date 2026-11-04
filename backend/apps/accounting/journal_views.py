@@ -1,6 +1,7 @@
 """Journal, accounting periods and profit and loss API (P0-16). Rules live in journal.py."""
 
 from datetime import date
+from decimal import Decimal
 
 from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404
@@ -12,7 +13,7 @@ from apps.core import exports
 from apps.core.exports import Column
 from apps.core.permissions import AreaAccess
 
-from . import journal, sources
+from . import budgets, journal, sources
 from .catalogue import TYPES
 from .models import Account, JournalEntry, JournalLine
 from .report_views import division_of
@@ -179,17 +180,35 @@ class ProfitAndLossView(APIView):
             totals = journal.profit_and_loss(date_from, date_to, division)
         except AccountingError as error:
             return _error(error)
-        accounts = Account.objects.in_bulk(totals.keys())
-        rows = [
-            {
+        # The approved budget for the months of the period (P2-22), signed like the actual.
+        planned = budgets.budgeted(date_from, date_to, division)
+        has_budget = bool(planned)
+        keys = set(totals) | set(planned)
+        accounts = Account.objects.in_bulk(keys)
+
+        def _row(pk):
+            amount = totals.get(pk, Decimal("0"))
+            row = {
                 "account": {"id": pk, "number": accounts[pk].number, "name": accounts[pk].name},
                 "account_type": accounts[pk].account_type,
                 "account_type_label": TYPES[accounts[pk].account_type][0],
                 "amount": f"{amount:.2f}",
             }
-            for pk, amount in sorted(totals.items(), key=lambda item: accounts[item[0]].number)
+            if has_budget:
+                budget = planned.get(pk, Decimal("0"))
+                difference, percent = budgets.compare(amount, budget)
+                row |= {
+                    "budget": f"{budget:.2f}",
+                    "difference": f"{difference:.2f}",
+                    "percent": None if percent is None else f"{percent}",
+                }
+            return row
+
+        rows = [
+            _row(pk) for pk in sorted(keys, key=lambda k: (accounts[k].number, accounts[k].name))
         ]
-        profit = sum(totals.values())
+        profit = sum(totals.values(), Decimal("0"))
+        budget_profit = sum(planned.values(), Decimal("0"))
         fmt = (params.get("export") or "").lower()
         if fmt in exports.FORMATS:
             flat = [
@@ -198,6 +217,9 @@ class ProfitAndLossView(APIView):
                     "account": r["account"]["name"],
                     "type": r["account_type_label"],
                     "amount": r["amount"],
+                    "budget": r.get("budget", ""),
+                    "difference": r.get("difference", ""),
+                    "percent": r.get("percent") or "",
                 }
                 for r in rows
             ]
@@ -212,6 +234,15 @@ class ProfitAndLossView(APIView):
                     Column("account", "Account", width=2.6),
                     Column("type", "Type", width=1.2),
                     Column("amount", "Amount (LKR)", "money"),
+                    *(
+                        [
+                            Column("budget", "Budget (LKR)", "money"),
+                            Column("difference", "Difference (LKR)", "money"),
+                            Column("percent", "%", width=0.6),
+                        ]
+                        if has_budget
+                        else []
+                    ),
                 ],
                 rows=flat,
                 filename=f"profit-and-loss-{date_from}-{date_to}",
@@ -224,5 +255,10 @@ class ProfitAndLossView(APIView):
                 "division": division.code if division else None,
                 "rows": rows,
                 "profit": f"{profit:.2f}" if rows else "0.00",
+                "has_budget": has_budget,
+                "budget_profit": f"{budget_profit:.2f}" if has_budget else None,
+                "profit_difference": f"{budgets.compare(profit, budget_profit)[0]:.2f}"
+                if has_budget
+                else None,
             }
         )

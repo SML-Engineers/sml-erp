@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import budget_views as bv
 from . import journal_views as j
 from . import manual_views as mj
 from . import rate_views as rv
@@ -11,6 +12,30 @@ from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
+    path("budgets/", bv.BudgetListView.as_view(), name="budget-list"),
+    path("budgets/<int:pk>/", bv.BudgetDetailView.as_view(), name="budget-detail"),
+    path("budgets/<int:pk>/export/", bv.BudgetExportView.as_view(), name="budget-export"),
+    path("budgets/<int:pk>/import/", bv.BudgetImportView.as_view(), name="budget-import"),
+    path(
+        "budgets/<int:pk>/submit/",
+        bv.BudgetActionView.as_view(action="submit"),
+        name="budget-submit",
+    ),
+    path(
+        "budgets/<int:pk>/approve/",
+        bv.BudgetActionView.as_view(action="approve"),
+        name="budget-approve",
+    ),
+    path(
+        "budgets/<int:pk>/return/",
+        bv.BudgetActionView.as_view(action="return"),
+        name="budget-return",
+    ),
+    path(
+        "budgets/<int:pk>/reject/",
+        bv.BudgetActionView.as_view(action="reject"),
+        name="budget-reject",
+    ),
     path("revaluations/", rev.RevaluationListView.as_view(), name="revaluation-list"),
     path(
         "revaluations/<int:pk>/post/",

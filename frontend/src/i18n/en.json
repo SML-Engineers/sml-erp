@@ -3335,5 +3335,42 @@
     "wht": "Withholding tax",
     "on": "on",
     "total": "Total"
+  },
+  "reval": {
+    "title": "Month-end revaluation",
+    "help": "At each month end, what is still open in a foreign currency is valued again at that day's exchange rate: customer and supplier invoices not yet settled, and the bank and cash accounts held in a foreign currency. The invoices' difference is an unrealised gain or loss, reversed on the first day of the next month; the bank balances keep their new value. Check the month, then post it.",
+    "workOut": "Work out a month",
+    "month": "Month",
+    "balancesHelp": "The balance of each foreign-currency account on the last day of the month, in its own currency. It is filled in from the month's imported bank statement; type it if there is none.",
+    "balances": "Foreign-currency account balances",
+    "account": "Account",
+    "currency": "Currency",
+    "balanceAtEnd": "Balance at the month end",
+    "balanceOf": "Balance of {{code}}",
+    "fromStatement": "from the statement to {{date}}",
+    "prepare": "Work out {{month}}",
+    "statuses": {
+      "draft": "to check",
+      "posted": "posted"
+    },
+    "openItemsTotal": "Open invoices: unrealised gain (loss is negative)",
+    "balancesTotal": "Bank and cash: exchange gain (loss is negative)",
+    "nothing": "Nothing is open in a foreign currency at this month end.",
+    "linesOf": "Revaluation of {{month}}",
+    "what": "What",
+    "party": "Customer, supplier or account",
+    "division": "Division",
+    "open": "Open",
+    "carried": "In the books (LKR)",
+    "rate": "Month-end rate",
+    "revalued": "At the month-end rate (LKR)",
+    "difference": "Gain or loss (LKR)",
+    "kinds": {
+      "receivable": "Customer invoice",
+      "payable": "Supplier invoice",
+      "balance": "Account"
+    },
+    "post": "Checked: post it",
+    "discard": "Discard"
   }
 }

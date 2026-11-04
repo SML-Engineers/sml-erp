@@ -58,6 +58,7 @@ import PettyCashPage from "./pages/PettyCashPage";
 import StockWorkPage from "./pages/StockWorkPage";
 import FixedAssetsPage from "./pages/FixedAssetsPage";
 import TaxReportsPage from "./pages/TaxReportsPage";
+import RevaluationPage from "./pages/RevaluationPage";
 import PurchaseRequestsPage from "./pages/PurchaseRequestsPage";
 import ReorderPage from "./pages/ReorderPage";
 import StoresPage from "./pages/settings/StoresPage";
@@ -170,6 +171,7 @@ export default function App() {
         <Route path="stores-work" element={<StockWorkPage />} />
         <Route path="fixed-assets" element={<FixedAssetsPage />} />
         <Route path="tax-reports" element={<TaxReportsPage />} />
+        <Route path="revaluation" element={<RevaluationPage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />
         <Route path="goods-receipts/:id" element={<GoodsReceiptPage />} />
         <Route path="inspections" element={<InspectionsPage />} />

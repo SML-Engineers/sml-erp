@@ -5,11 +5,23 @@ from . import manual_views as mj
 from . import rate_views as rv
 from . import recurring_views as rj
 from . import report_views as reports_api
+from . import revaluation_views as rev
 from . import tax_report_views as tr
 from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
+    path("revaluations/", rev.RevaluationListView.as_view(), name="revaluation-list"),
+    path(
+        "revaluations/<int:pk>/post/",
+        rev.RevaluationActionView.as_view(action="post"),
+        name="revaluation-post",
+    ),
+    path(
+        "revaluations/<int:pk>/discard/",
+        rev.RevaluationActionView.as_view(action="discard"),
+        name="revaluation-discard",
+    ),
     path("tax-reports/vat/", tr.VatView.as_view(), name="tax-report-vat"),
     path(
         "tax-reports/vat/purchases/",

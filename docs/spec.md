@@ -1443,6 +1443,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Stock issues, adjustments and counts (P2-18) | Issues and returns at weighted average cost, oldest lot first, posted at once; adjustments, write-offs and count differences posted only on the Director's approval; WIP and finished goods accounts ready for Phase 3 | 6, 5A |
 | Fixed assets (P2-19) | Classes with dated methods and rates entered as the auditors agree (none depreciated until then; land never); monthly depreciation checked then posted in order; disposals post the gain or loss; mould shot count kept for Phase 3 | 6 |
 | Tax reports (P2-20) | VAT return by month (standard, zero-rated exports apart, exempt, outside VAT; output VAT checked against the ledger; input VAT as claimed in the books), SSCL with its base, WHT with certificates; each line traced to its document; Excel and PDF | 6 |
+| Month-end revaluation (P2-21) | Open foreign-currency customer and supplier invoices revalued at the month-end rate, posted to Unrealised exchange gain or loss and reversed on the 1st; foreign-currency bank and cash balances (from the statement or typed) revalued to Exchange gain or loss and kept; checked by the Accountant then posted | 5.5, 6 |
 
 **Still needed for initial setup**
 

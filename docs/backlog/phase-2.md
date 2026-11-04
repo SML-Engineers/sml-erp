@@ -410,9 +410,24 @@ Status: `[ ]` to do · `[x]` done
     tax and amount paid. Every line links to its document. The layouts follow the return's
     boxes; the tax advisor confirms them before the first filing.
 
-- [ ] **P2-21 Month-end revaluation** (spec 5.5, 6)
+- [x] **P2-21 Month-end revaluation** (spec 5.5, 6)
   Open foreign-currency receivables, payables and bank balances revalued at the month-end rate;
   the unrealised difference posted and reversed on the first day of the next month.
+  - Done: Accounts → Month-end revaluation (Accountant). A month is worked out as a draft at
+    the month-end rate (the latest on or before the last day): issued customer tax invoices and
+    posted supplier invoices in a foreign currency with something open (what is left in the
+    currency, what the books carry in LKR at the invoice's rate, the value at the month-end
+    rate, the difference), and the foreign-currency bank and cash accounts (their balance in
+    the currency from the month's imported statement, or typed by the Accountant, against the
+    ledger's LKR balance). Advances are not revalued (IAS 21: settled in goods, not money).
+    Posted, the invoices' differences go to the receivable or payable (with the customer or
+    supplier, per division) against a new system account, Unrealised exchange gain or loss
+    (8020), dated the last day, and are reversed on the first day of the next month, so later
+    receipts and payments still work out the realised difference from the invoice's rate.
+    Default (owner may change): bank and cash differences go to Exchange gain or Exchange loss
+    and are not reversed, so the books carry the money held at the latest rate; reversing them
+    would leave old differences on the bank account forever. A posted month never changes
+    (database); no Director approval, like depreciation.
 
 - [ ] **P2-22 Budgets** (spec 6)
   Budgets by account, division and month (typed or imported from Excel), approved by the

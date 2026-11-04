@@ -49,6 +49,9 @@ def add(apps, schema_editor):
             ).first()
         )
         if account is not None:
+            # Accounts created above leave deferred checks pending; run them first, as the
+            # table cannot be altered while they wait.
+            schema_editor.execute("SET CONSTRAINTS ALL IMMEDIATE")
             schema_editor.execute(
                 "ALTER TABLE accounting_account DISABLE TRIGGER accounting_account_guard"
             )
@@ -56,6 +59,7 @@ def add(apps, schema_editor):
             schema_editor.execute(
                 "ALTER TABLE accounting_account ENABLE TRIGGER accounting_account_guard"
             )
+            schema_editor.execute("SET CONSTRAINTS ALL DEFERRED")
             continue
         detail, _ = DetailType.objects.get_or_create(account_type=account_type, name=name)
         Account.objects.create(

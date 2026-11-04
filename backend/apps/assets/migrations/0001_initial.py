@@ -9,8 +9,8 @@ from django.db import migrations, models
 # - Classes loaded from the list proposed to the owner (3 Nov 2026), with their accounts from
 #   the starter chart. Their depreciation methods and rates are agreed with the auditors and
 #   entered by the Accountant; until then nothing is depreciated (land never is).
-# - A posted depreciation month and its lines never change; a rate never changes and is
-#   removed only while no posted month used it; an asset's cost and dates are fixed once it
+# - A posted depreciation month and its lines never change; a rate is fixed once a posted
+#   month used it; an asset's cost and dates are fixed once it
 #   has posted depreciation, and a disposed asset never changes (shot count apart).
 # - Asset codes FA{NNNN}.
 
@@ -55,22 +55,18 @@ FOR EACH ROW EXECUTE FUNCTION assets_line_guard();
 
 CREATE OR REPLACE FUNCTION assets_rate_guard() RETURNS trigger AS $$
 BEGIN
-  -- Saving a row unchanged (as reloading test data does) is not a change.
-  IF TG_OP = 'UPDATE' AND NEW IS NOT DISTINCT FROM OLD THEN
-    RETURN NEW;
-  END IF;
-  IF TG_OP = 'UPDATE' THEN
-    RAISE EXCEPTION 'A depreciation rate never changes; add one from a later date'
-      USING ERRCODE = 'restrict_violation';
-  END IF;
+  -- A rate is fixed once a posted month has used it; before that it may still be corrected.
   IF EXISTS (
     SELECT 1 FROM assets_depreciationrun r
     WHERE r.status = 'posted' AND r.month_end >= OLD.effective_from
   ) THEN
-    RAISE EXCEPTION 'The rate from % has been used for posted depreciation', OLD.effective_from
-      USING ERRCODE = 'restrict_violation';
+    RAISE EXCEPTION 'The rate from % has been used for posted depreciation and never changes',
+      OLD.effective_from USING ERRCODE = 'restrict_violation';
   END IF;
-  RETURN OLD;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 

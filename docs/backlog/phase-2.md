@@ -563,6 +563,22 @@ Status: `[ ]` to do · `[x]` done
     million); Opening Balance Equity 20.3 million and Uncategorized income/expenses to clear.
   - Owner, 3 Nov 2026: the Accountant will fix all of these in QuickBooks before migrating;
     the report formats and templates stay the same, so P2-28 reads these four layouts.
+  - Part 1 done (opening balances): Accounts → Opening balances from QuickBooks. The
+    Accountant uploads the four QuickBooks exports as they are; they are checked first and
+    nothing is made while anything is wrong: the trial balance balances (and its TOTAL row
+    agrees), every QuickBooks account is found in the chart (full "Parent:Child" name, the
+    number when QuickBooks shows "1010 · Name", or a unique name), open invoices add up to
+    debtors and open bills to creditors, every customer and supplier is found by name; the
+    item list's stock value is compared with the stock accounts (a warning). Then one
+    opening entry, dated the trial balance's date, is made for the Director to approve
+    ("opening_balances", seeded with a 1-day reminder): balance sheet accounts at their
+    balances; debtors per customer and creditors per supplier; stock accounts against
+    Opening balance equity (the opening stock count posts the stock value itself); income
+    and costs as one line to Retained earnings. Posted once, never changed (database).
+    Stock on hand: Stores → Opening stock (P16-15); fixed asset register with depreciation
+    charged: Fixed assets (P2-19).
+  - Part 2 (next): the open invoices and bills themselves, so receipts and payments after
+    go-live are matched to them in the agings.
 
 - [ ] **P2-29 Parallel run, user acceptance testing and go-live** (spec 8.2)
   One month entered in both systems; the trial balance, receivables, payables and bank

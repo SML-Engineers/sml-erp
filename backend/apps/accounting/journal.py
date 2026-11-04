@@ -84,11 +84,13 @@ def _lock_period(day: date) -> AccountingPeriod:
     return AccountingPeriod.objects.select_for_update().get(month=month)
 
 
-def _check_lines(lines: list[Line]) -> list[tuple[Line, Decimal, Decimal]]:
+def _check_lines(
+    lines: list[Line], max_lines: int = MAX_LINES
+) -> list[tuple[Line, Decimal, Decimal]]:
     if len(lines) < 2:
         raise AccountingError("A journal entry needs at least two lines.")
-    if len(lines) > MAX_LINES:
-        raise AccountingError(f"A journal entry can have at most {MAX_LINES} lines.")
+    if len(lines) > max_lines:
+        raise AccountingError(f"A journal entry can have at most {max_lines} lines.")
     checked = []
     for number, line in enumerate(lines, start=1):
         where = f"Line {number}"
@@ -135,6 +137,7 @@ def post(
     source_type: str = "manual",
     source_id: str = "",
     reversal_of: JournalEntry | None = None,
+    max_lines: int = MAX_LINES,
 ) -> JournalEntry:
     """Post a balanced entry. Its number comes from the "journal" number series inside this
     transaction (rule 10). Raises AccountingError and saves nothing if any rule is broken."""
@@ -145,7 +148,7 @@ def post(
         raise AccountingError("The narration can have at most 500 characters.")
     if not source_type:
         raise AccountingError("The source of the entry is required.")
-    checked = _check_lines(lines)
+    checked = _check_lines(lines, max_lines)
     with audit_context("journal_posted"), transaction.atomic():
         period = _lock_period(entry_date)
         if period.is_closed:

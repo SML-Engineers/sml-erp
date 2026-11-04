@@ -84,8 +84,37 @@ export interface ProfitAndLoss {
   profit_difference?: string | null;
 }
 
+export interface CashFlow {
+  from: string;
+  to: string;
+  profit: string;
+  rows: { section: "operating" | "investing" | "financing"; label: string; kind: "heading" | "line" | "total"; amount: string; account?: number | null }[];
+  operating: string;
+  investing: string;
+  financing: string;
+  net_change: string;
+  opening_cash: string;
+  closing_cash: string;
+  difference: string;
+}
+
+export interface FinancialDashboard {
+  today: string;
+  division: string | null;
+  company: boolean;
+  divisions: { code: string; name: string }[];
+  this_month: { from: string; to: string; income: string; costs: string; profit: string };
+  year_to_date: { from: string; to: string; label: string; income: string; costs: string; profit: string; budget_profit: string | null };
+  cash: { balance: string; accounts: number | null };
+  receivables: { total: string; overdue: string; count: number };
+  payables: { total: string; overdue: string; count: number };
+}
+
 export const reportsKey = ["financial-reports"];
 export const trialBalance = (p: Record<string, string>) => apiGet<TrialBalance>(`/reports/trial-balance/${query(p)}`);
 export const balanceSheet = (p: Record<string, string>) => apiGet<BalanceSheet>(`/reports/balance-sheet/${query(p)}`);
 export const generalLedger = (p: Record<string, string>) => apiGet<GeneralLedger>(`/reports/general-ledger/${query(p)}`);
 export const profitAndLoss = (p: Record<string, string>) => apiGet<ProfitAndLoss>(`/reports/profit-and-loss/${query(p)}`);
+export const cashFlow = (p: Record<string, string>) => apiGet<CashFlow>(`/reports/cash-flow/${query(p)}`);
+export const financialDashboard = (division: string) =>
+  apiGet<FinancialDashboard>(`/reports/dashboard/${division ? `?division=${division}` : ""}`);

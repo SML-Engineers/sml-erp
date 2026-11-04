@@ -1359,7 +1359,19 @@
     "openOrders": "Open sales orders",
     "deliveriesDetail": "{{count}} orders · {{overdue}} deliveries overdue, {{week}} due this week",
     "advancesOpen": "Advances not yet set off",
-    "advanceCount": "{{count}} receipts"
+    "advanceCount": "{{count}} receipts",
+    "finance": "Finance",
+    "profitThisMonth": "Profit this month",
+    "incomeCosts": "Income {{income}}, costs {{costs}}",
+    "profitYear": "Profit {{label}} so far",
+    "noBudget": "No approved budget",
+    "againstBudget": "Budget so far: {{budget}}",
+    "cash": "Cash and bank",
+    "cashCompany": "All bank, cash and petty cash accounts",
+    "cashDivision": "Accounts set up for this division: {{count}}",
+    "receivables": "Customers owe us",
+    "payables": "We owe suppliers",
+    "overdue": "Overdue {{amount}} · {{count}} open"
   },
   "reminders": {
     "title": "Reminders",
@@ -2696,7 +2708,8 @@
       "tb": "Trial balance",
       "bs": "Balance sheet",
       "pl": "Profit and loss",
-      "gl": "General ledger"
+      "gl": "General ledger",
+      "cf": "Cash flow"
     },
     "company": "Company (all divisions)",
     "asAt": "As at",
@@ -2734,7 +2747,20 @@
     "balance": "Balance",
     "broughtForward": "Balance brought forward",
     "carriedForward": "Totals and balance carried forward",
-    "glNote": "Balances are debit minus credit: a credit balance shows as a negative figure. Lines of merged accounts are shown under the account that replaced them."
+    "glNote": "Balances are debit minus credit: a credit balance shows as a negative figure. Lines of merged accounts are shown under the account that replaced them.",
+    "cf": {
+      "operating": "Operating activities",
+      "investing": "Investing activities",
+      "financing": "Financing activities",
+      "operatingTotal": "Net cash from operating activities",
+      "investingTotal": "Net cash from investing activities",
+      "financingTotal": "Net cash from financing activities",
+      "netChange": "Net change in cash",
+      "opening": "Cash at the start ({{date}})",
+      "closing": "Cash at the end ({{date}})",
+      "difference": "The statement does not add up to the change in cash by LKR {{amount}}. Tell the Accountant.",
+      "note": "Indirect method, for the whole company: the period's profit, with depreciation added back, adjusted by the change in each balance sheet account. Cash means the bank, cash and petty cash accounts. A negative figure is cash used, for example more owed to us by customers or a machine bought."
+    }
   },
   "os": {
     "title": "Opening stock",

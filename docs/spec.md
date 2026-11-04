@@ -1449,6 +1449,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Budgets (P2-22) | A financial year's budget by account, division and month, typed or imported from Excel, approved by the Director; revisions are new versions; the profit and loss shows budget, difference and % beside the actual | 6 |
 | Month-end and year-end close (P2-23) | Month-end checklist (bank reconciliations, depreciation, revaluation, open journals, accruals) checked by the system or ticked with a note before the Director closes; year-end close carries income and costs to retained earnings on the next year's first day; reopening by the Director with a reason | 6 |
 | Quotation pictures (owner, 4 Nov 2026) | Up to 3 product pictures (JPG/PNG, 1 MB each) added to a draft quotation, shown to the approver and emailed with the quotation | 5.1 |
+| Cash flow and finance tiles (P2-24) | Cash flow statement (indirect method) for the company, adding up to the change in cash; home page tiles for profit (month, year with budget), cash, receivables and payables, per division or company, each opening its report | 6, 7A |
 
 **Still needed for initial setup**
 

@@ -1400,3 +1400,64 @@ class ReminderSent(models.Model):
 
     def __str__(self):
         return f"Reminder to {self.customer} on {self.sent_on}"
+
+
+# --- Invoice tracking (backlog P2-27) ----------------------------------------------------------
+
+
+class InvoiceLink(models.Model):
+    """The secret link to an issued tax invoice sent to the customer by email: a page showing
+    the invoice, its PDF and the bank transfer details, with no sign-in. Opening it is
+    recorded as "viewed"."""
+
+    invoice = models.OneToOneField(TaxInvoice, on_delete=models.PROTECT, related_name="link")
+    token = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Link to {self.invoice_id}"
+
+
+class InvoiceView(models.Model):
+    """The customer opened the invoice's link (the page or its PDF). Insert-only (database)."""
+
+    class What(models.TextChoices):
+        PAGE = "page", "Opened the invoice page"
+        PDF = "pdf", "Downloaded the PDF"
+
+    invoice = models.ForeignKey(TaxInvoice, on_delete=models.PROTECT, related_name="views")
+    what = models.CharField(max_length=10, choices=What.choices)
+    viewed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["viewed_at", "id"]
+
+    def __str__(self):
+        return f"{self.invoice_id} {self.what} {self.viewed_at:%Y-%m-%d %H:%M}"
+
+
+class CardPaymentLink(models.Model):
+    """A OnePay card payment link SML sent the customer for an invoice (owner, 3 Nov 2026: no
+    gateway account; links are made in OnePay and sent by hand). Recorded for the invoice's
+    history; the money is recorded as a card receipt when it arrives. Insert-only (database)."""
+
+    invoice = models.ForeignKey(TaxInvoice, on_delete=models.PROTECT, related_name="card_links")
+    url = models.URLField(max_length=500)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)  # in the invoice's currency
+    sent_on = models.DateField()
+    note = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["sent_on", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="sales_cardlink_amount_positive"
+            ),
+        ]
+
+    def __str__(self):
+        return f"OnePay link {self.amount} for {self.invoice_id}"

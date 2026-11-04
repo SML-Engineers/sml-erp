@@ -1978,7 +1978,25 @@
       "draft": "Draft",
       "issued": "Issued"
     },
-    "inLkr": "Exchange rate {{date}}: 1 {{currency}} = LKR {{rate}}. Booked in LKR: {{amount}}."
+    "inLkr": "Exchange rate {{date}}: 1 {{currency}} = LKR {{rate}}. Booked in LKR: {{amount}}.",
+    "tracking": "Tracking",
+    "states": {
+      "open": "Open",
+      "overdue": "Overdue",
+      "partly_paid": "Partly paid",
+      "paid": "Paid"
+    },
+    "viewedYes": "The customer has opened the invoice link.",
+    "viewedNo": "The customer has not opened the invoice link yet. The link is added to the invoice email.",
+    "history": "What happened",
+    "link": "link",
+    "recordCardLink": "Record a OnePay link sent",
+    "cardLinkHelp": "When the customer asks to pay by card, make a payment link in OnePay, send it to them, and record it here. When the money arrives, record it as a card receipt.",
+    "cardLinkUrl": "OnePay link",
+    "cardLinkAmount": "Amount ({{currency}})",
+    "cardLinkSent": "Sent on",
+    "cardLinkNote": "Note (optional)",
+    "save": "Save"
   },
   "sa": {
     "title": "Sales accounts",

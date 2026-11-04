@@ -1,6 +1,8 @@
 """Tax invoices API (P2-05). Rules live in invoices.py. Sales or Accounting (View to read;
 Sales or Accounting: Enter to prepare; the Accountant issues)."""
 
+from datetime import date
+
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
@@ -11,7 +13,7 @@ from apps.accounting.models import Account
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 
-from . import invoice_email, invoice_printing, invoices, receipts
+from . import invoice_email, invoice_printing, invoices, receipts, tracking
 from .models import DeliveryNote, TaxInvoice
 from .proforma_views import EmailInput
 from .services import SalesError
@@ -143,6 +145,17 @@ def _detail(i: TaxInvoice, user) -> dict:
         "can_email": invoice_email.can_email(user, i),
         "emails": invoice_email.history(i),
     }
+    if i.status == TaxInvoice.Status.ISSUED:
+        h = tracking.history(i)
+        body["tracking"] = {
+            "state": h["state"],
+            "open": f"{h['open']:.2f}",
+            "viewed": h["viewed"],
+            "events": [
+                {"at": e["at"], "kind": e["kind"], "text": e["text"], "url": e.get("url", "")}
+                for e in h["events"]
+            ],
+        }
     return body
 
 
@@ -270,7 +283,8 @@ class InvoiceEmailView(_Invoices):
 
     def get(self, request, pk):
         try:
-            return Response(invoice_email.draft(request.user, _get(request.user, pk)))
+            site = request.build_absolute_uri("/").rstrip("/")
+            return Response(invoice_email.draft(request.user, _get(request.user, pk), site))
         except SalesError as error:
             return _error(error)
 
@@ -332,3 +346,28 @@ class SalesAccountsView(APIView):
         except SalesError as error:
             return _error(error)
         return self.get(request)
+
+
+class CardLinkView(_Invoices):
+    """Record a OnePay card payment link sent to the customer (P2-27)."""
+
+    access_write_level = "view"  # Sales or the Accountant; the service checks
+
+    def post(self, request, pk):
+        invoice = _get(request.user, pk)
+        try:
+            sent_on = date.fromisoformat(str(request.data.get("sent_on") or date.today()))
+        except ValueError:
+            return _error(SalesError("Give the date the link was sent."))
+        try:
+            tracking.add_card_link(
+                request.user,
+                invoice,
+                url=str(request.data.get("url", "")),
+                amount=request.data.get("amount", ""),
+                sent_on=sent_on,
+                note=str(request.data.get("note", "")),
+            )
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(TaxInvoice.objects.get(pk=invoice.pk), request.user))

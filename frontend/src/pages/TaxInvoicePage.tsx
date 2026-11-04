@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import type { EmailDraft } from "../api/documentEmail";
 import {
+  addCardLink,
   deleteInvoice,
   getInvoice,
   getInvoiceEmail,
@@ -63,6 +64,7 @@ export default function TaxInvoicePage() {
           <Actions invoice={data} />
           <CreditNotes invoice={data} />
           <Payments invoice={data} />
+          {data.tracking && <Tracking invoice={data} />}
         </>
       )}
       <ErrorLine error={invoice.error} />
@@ -310,6 +312,83 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
         </ul>
       )}
       <ErrorLine error={issue.error ?? remove.error ?? load.error} />
+    </section>
+  );
+}
+
+/** Where the invoice stands and what happened to it (P2-27): emailed, viewed by the customer
+ * through its link, OnePay card links sent, payments and deposits. */
+function Tracking({ invoice }: { invoice: InvoiceDetail }) {
+  const { t } = useTranslation();
+  const done = useDone();
+  const today = new Date().toLocaleDateString("en-CA");
+  const [form, setForm] = useState({ url: "", amount: "", sent_on: today, note: "" });
+  const [open, setOpen] = useState(false);
+  const save = useMutation({
+    mutationFn: () => addCardLink(invoice.id, form),
+    onSuccess: (got) => {
+      done(got);
+      setOpen(false);
+      setForm({ url: "", amount: "", sent_on: today, note: "" });
+    },
+  });
+  const tr = invoice.tracking!;
+  return (
+    <section className="panel" aria-label={t("ti.tracking")}>
+      <h2>
+        {t("ti.tracking")} · <span className={tr.state === "overdue" ? "danger-text" : undefined}>{t(`ti.states.${tr.state}`)}</span>
+      </h2>
+      <p className="muted">{tr.viewed ? t("ti.viewedYes") : t("ti.viewedNo")}</p>
+      <ol aria-label={t("ti.history")}>
+        {tr.events.map((e, i) => (
+          <li key={i}>
+            {e.at.slice(0, 10)} · {e.text}
+            {e.url && (
+              <>
+                {" · "}
+                <a href={e.url} target="_blank" rel="noreferrer">
+                  {t("ti.link")}
+                </a>
+              </>
+            )}
+          </li>
+        ))}
+      </ol>
+      {invoice.can_email && !open && tr.state !== "paid" && (
+        <button type="button" className="secondary" onClick={() => setOpen(true)}>
+          {t("ti.recordCardLink")}
+        </button>
+      )}
+      {open && (
+        <div className="form-grid" role="form" aria-label={t("ti.recordCardLink")}>
+          <p className="muted wide">{t("ti.cardLinkHelp")}</p>
+          <label className="wide">
+            {t("ti.cardLinkUrl")}
+            <input inputMode="url" placeholder="https://" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
+          </label>
+          <label>
+            {t("ti.cardLinkAmount", { currency: invoice.currency })}
+            <input inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+          </label>
+          <label>
+            {t("ti.cardLinkSent")}
+            <input type="date" value={form.sent_on} onChange={(e) => setForm({ ...form, sent_on: e.target.value })} />
+          </label>
+          <label className="wide">
+            {t("ti.cardLinkNote")}
+            <input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          </label>
+          <div className="wide">
+            <button type="button" disabled={save.isPending} onClick={() => save.mutate()}>
+              {t("ti.save")}
+            </button>{" "}
+            <button type="button" className="secondary" onClick={() => setOpen(false)}>
+              {t("quotations.cancel")}
+            </button>
+          </div>
+        </div>
+      )}
+      <ErrorLine error={save.error} />
     </section>
   );
 }

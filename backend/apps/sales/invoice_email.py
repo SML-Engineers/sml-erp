@@ -5,7 +5,7 @@ from apps.core import document_email
 from apps.core.document_email import EmailError
 from apps.core.models import SentEmail, User
 
-from . import invoice_printing, invoices
+from . import invoice_printing, invoices, tracking
 from .models import TaxInvoice
 from .services import SalesError
 
@@ -35,14 +35,21 @@ def _check(user: User, invoice: TaxInvoice) -> None:
         raise SalesError("Sales or the Accountant email tax invoices.")
 
 
-def draft(user: User, invoice: TaxInvoice) -> dict:
+def draft(user: User, invoice: TaxInvoice, site: str = "") -> dict:
+    """The default message, with the invoice's secret link added at the end (P2-27). `site` is
+    the address the system is reached at, e.g. https://erp.smlengineers.lk."""
     _check(user, invoice)
     contact = invoice.order.contact
     to = [a for a in (contact.email if contact else "", invoice.customer.email) if a][:1]
     try:
-        return document_email.draft(user, KIND, _values(invoice), to=to)
+        message = document_email.draft(user, KIND, _values(invoice), to=to)
     except EmailError as error:
         raise SalesError(str(error)) from None
+    link = tracking.link_for(invoice)
+    url = site.rstrip("/") + tracking.PATH.format(token=link.token)
+    message["body"] = f"{message['body'].rstrip()}\n\nView or download this invoice online:\n{url}"
+    message["link"] = url
+    return message
 
 
 def send(user: User, invoice: TaxInvoice, *, to, subject, body, cc=()) -> SentEmail:

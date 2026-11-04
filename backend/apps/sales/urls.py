@@ -7,6 +7,7 @@ from . import (
     invoice_views,
     order_views,
     proforma_views,
+    public_views,
     receipt_views,
     receivable_views,
     report_views,
@@ -14,6 +15,17 @@ from . import (
 )
 
 urlpatterns = [
+    # The customer's page of an emailed invoice, by its secret link (P2-27): no sign-in.
+    path(
+        "public/invoices/<str:token>/",
+        public_views.PublicInvoiceView.as_view(),
+        name="public-invoice",
+    ),
+    path(
+        "public/invoices/<str:token>/pdf/",
+        public_views.PublicInvoicePdfView.as_view(),
+        name="public-invoice-pdf",
+    ),
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
     path("quotations/<int:pk>/", views.QuotationDetailView.as_view(), name="quotation-detail"),
     path(
@@ -208,6 +220,11 @@ urlpatterns = [
         name="invoice-issue",
     ),
     path("tax-invoices/<int:pk>/pdf/", invoice_views.InvoicePdfView.as_view(), name="invoice-pdf"),
+    path(
+        "tax-invoices/<int:pk>/card-links/",
+        invoice_views.CardLinkView.as_view(),
+        name="invoice-card-links",
+    ),
     path(
         "tax-invoices/<int:pk>/email/",
         invoice_views.InvoiceEmailView.as_view(),

@@ -3431,5 +3431,30 @@
     "budget": "Budget",
     "difference": "Difference",
     "plNote": "Budget: the approved budget for the months of the period. Difference: actual less budget, so a positive figure is better than budget (more income or lower costs); % is the difference as a share of the budget."
+  },
+  "close": {
+    "title": "Month-end and year-end close",
+    "help": "Before the Director closes a month, its checklist must be complete. The system checks what it can see; the Accountant marks the rest done with a note. Once all twelve months are closed, the Director closes the year: its profit goes to retained earnings and the next year starts from nil.",
+    "monthEnd": "Month-end checklist",
+    "month": "Month",
+    "monthClosed": "This month is closed.",
+    "closeMonth": "Close {{month}}",
+    "notReady": "The Director can close the month once every item is done.",
+    "tickedBy": "Marked done by {{by}}: {{note}}",
+    "noteFor": "Note for {{item}}",
+    "accrualsHint": "What was accrued or prepaid, e.g. electricity JNL-0004",
+    "otherHint": "How it was done, or why it is not needed this month",
+    "tick": "Mark done",
+    "yearEnd": "Year-end close",
+    "yearHelp": "Closing a year posts one entry on the first day of the next year that moves every income and cost account's balance to retained earnings. The closed year's profit and loss report does not change. The Director can reopen the year with a reason; the entry is then reversed.",
+    "yearStarting": "Financial year starting in",
+    "yearClosed": "closed",
+    "monthsOpen": "months still open: {{months}}",
+    "yearReady": "every month is closed; the year can be closed",
+    "closeYear": "Close the year {{label}}",
+    "reopenYear": "Reopen the year",
+    "reopenReason": "Reason for reopening",
+    "historyLine": "Closed by {{by}}: entry {{entry}} on {{date}}, profit LKR {{profit}}.",
+    "reopenedLine": "Reopened by {{by}} ({{reason}}), entry {{entry}}."
   }
 }

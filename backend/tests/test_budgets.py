@@ -23,13 +23,17 @@ pytestmark = pytest.mark.django_db
 
 TODAY = timezone.localdate()
 THIS_MONTH = TODAY.replace(day=1)
-YEAR = budgets.year_start_of(TODAY).year
 D = Decimal
+
+
+def this_year() -> int:
+    """The year this financial year starts in (the start month is a company setting)."""
+    return budgets.year_start_of(TODAY).year
 
 
 def plan(accountant, rows, budget=None):
     """A draft with `rows` of (account number, division, amount) for this month."""
-    budget = budget or budgets.start(accountant, YEAR)
+    budget = budget or budgets.start(accountant, this_year())
     return budgets.save_lines(
         accountant,
         budget,
@@ -106,11 +110,11 @@ def test_an_approved_budget_never_changes(accountant, director):
 
 def test_a_revision_starts_from_the_approved_one_and_replaces_it(accountant, director):
     first = approved(accountant, director, [("4010", "WS", "100")])
-    revision = budgets.start(accountant, YEAR, "Second half reforecast")
+    revision = budgets.start(accountant, this_year(), "Second half reforecast")
     assert revision.version == 2
     assert list(revision.lines.values_list("amount", flat=True)) == [D("100.00")]
     with pytest.raises(BudgetError, match="already has a version"):
-        budgets.start(accountant, YEAR)
+        budgets.start(accountant, this_year())
     # Until it is approved, the profit and loss uses the approved version.
     plan(accountant, [("4010", "WS", "150")], revision)
     assert budgets.budgeted(THIS_MONTH, TODAY) == {acc("4010").pk: D("100.00")}
@@ -128,14 +132,14 @@ def test_returned_goes_back_to_draft_and_rejected_is_final(accountant, director)
     assert budget.status == "rejected"
     with transaction.atomic(), pytest.raises(DatabaseError, match="never changes"):
         Budget.objects.filter(pk=budget.pk).update(status="draft")
-    assert budgets.start(accountant, YEAR).version == 2  # a new version can be prepared
+    assert budgets.start(accountant, this_year()).version == 2  # a new version can be prepared
 
 
 def test_what_a_budget_line_can_be(accountant):
-    budget = budgets.start(accountant, YEAR)
+    budget = budgets.start(accountant, this_year())
     with pytest.raises(BudgetError, match="not an income or cost account"):
         plan(accountant, [("1010", "WS", "100")], budget)
-    outside = date(YEAR + 1, budgets.start_month(), 1)
+    outside = date(this_year() + 1, budgets.start_month(), 1)
     with pytest.raises(BudgetError, match="is not in the"):
         budgets.save_lines(accountant, budget, [LineInput(acc("4010"), div("WS"), outside, D(1))])
     with pytest.raises(BudgetError, match="to the cent"):
@@ -143,7 +147,7 @@ def test_what_a_budget_line_can_be(accountant):
     with pytest.raises(BudgetError, match="no amounts"):
         budgets.submit(accountant, budget)
     with pytest.raises(BudgetError, match="Only the Accountant"):
-        budgets.start(person("clerk@sml.lk", "clerk", all_divisions=True), YEAR)
+        budgets.start(person("clerk@sml.lk", "clerk", all_divisions=True), this_year())
 
 
 def _workbook(rows) -> bytes:
@@ -156,7 +160,7 @@ def _workbook(rows) -> bytes:
 
 
 def test_the_budget_is_imported_from_excel(accountant):
-    budget = budgets.start(accountant, YEAR)
+    budget = budgets.start(accountant, this_year())
     first, second = budgets.months(budget.year_start)[:2]
     content = _workbook(
         [
@@ -212,7 +216,7 @@ def test_an_import_with_a_wrong_row_saves_nothing(accountant):
 
 def test_the_screens_api(accountant, director):
     api = as_user(accountant)
-    made = api.post("/api/v1/budgets/", {"year": YEAR}, format="json")
+    made = api.post("/api/v1/budgets/", {"year": this_year()}, format="json")
     assert made.status_code == 201, made.data
     pk = made.data["id"]
     assert made.data["can_edit"] and len(made.data["months"]) == 12

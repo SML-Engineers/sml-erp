@@ -101,6 +101,7 @@ export const MENU: MenuSection[] = [
       { label: "reval.title", path: "/revaluation", area: "accounting" },
       { label: "budget.title", path: "/budgets", area: "accounting" },
       { label: "close.title", path: "/month-end", area: "accounting" },
+      { label: "planner.title", path: "/cash-planner", area: "financial_reports" },
       { label: "tax.title", path: "/tax-reports", area: "accounting", alsoArea: "financial_reports" },
       { label: "fr.title", path: "/reports/financial", area: "financial_reports" },
       { label: "periods.title", path: "/accounting-periods", area: "accounting" },

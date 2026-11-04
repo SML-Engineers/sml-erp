@@ -765,3 +765,30 @@ class YearEndClose(models.Model):
 
     def __str__(self):
         return f"Year from {self.year_start} closed"
+
+
+# --- Cash flow planner (backlog P2-25) -------------------------------------------------------
+
+
+class CashPlanItem(models.Model):
+    """A "what-if" in the cash flow planner (a machine to buy, a receipt that may be late): it
+    changes the projection only and is never posted. Money in is positive, out negative."""
+
+    description = models.CharField(max_length=200)
+    on_date = models.DateField()
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["on_date", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(amount=0), name="accounting_cashplanitem_not_zero"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.on_date} {self.description} {self.amount}"

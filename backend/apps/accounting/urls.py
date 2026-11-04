@@ -4,6 +4,7 @@ from . import budget_views as bv
 from . import close_views as cv
 from . import journal_views as j
 from . import manual_views as mj
+from . import planner_views as pv
 from . import rate_views as rv
 from . import recurring_views as rj
 from . import report_views as reports_api
@@ -13,6 +14,13 @@ from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
+    path("cash-planner/", pv.PlannerView.as_view(), name="cash-planner"),
+    path("cash-planner/what-ifs/", pv.WhatIfView.as_view(), name="cash-planner-what-ifs"),
+    path(
+        "cash-planner/what-ifs/<int:pk>/",
+        pv.WhatIfDetailView.as_view(),
+        name="cash-planner-what-if",
+    ),
     path("month-end/<str:month>/", cv.ChecklistView.as_view(), name="month-end"),
     path("month-end/<str:month>/tick/", cv.TickView.as_view(), name="month-end-tick"),
     path("year-end/", cv.YearView.as_view(), name="year-end"),

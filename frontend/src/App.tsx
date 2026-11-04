@@ -62,6 +62,7 @@ import RevaluationPage from "./pages/RevaluationPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import BudgetPage from "./pages/BudgetPage";
 import ClosePage from "./pages/ClosePage";
+import CashPlannerPage from "./pages/CashPlannerPage";
 import PurchaseRequestsPage from "./pages/PurchaseRequestsPage";
 import ReorderPage from "./pages/ReorderPage";
 import StoresPage from "./pages/settings/StoresPage";
@@ -178,6 +179,7 @@ export default function App() {
         <Route path="budgets" element={<BudgetsPage />} />
         <Route path="budgets/:id" element={<BudgetPage />} />
         <Route path="month-end" element={<ClosePage />} />
+        <Route path="cash-planner" element={<CashPlannerPage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />
         <Route path="goods-receipts/:id" element={<GoodsReceiptPage />} />
         <Route path="inspections" element={<InspectionsPage />} />

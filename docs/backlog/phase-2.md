@@ -502,10 +502,22 @@ Status: `[ ]` to do · `[x]` done
     and removed by the Accountant, can be switched off on the page, and are never posted.
     Each week opens its items, each linked to its document. Payroll is added in Phase 2b.
 
-- [ ] **P2-26 Custom report builder** (spec 7A)
+- [x] **P2-26 Custom report builder** (spec 7A)
   From a standard report or a data source: columns, filters, grouping, subtotals and period
   columns; saved, shared with a role, exported and emailed. A user sees only what their role
   and divisions allow.
+  - Done: Report builder (main menu, for everyone; each source checks its own area). Data
+    sources: journal lines (Financial reports), payment vouchers (Vouchers: as on the voucher
+    pages), customer tax invoices (Sales), supplier invoices (Vouchers) and stock movements
+    (Stores), each limited to the person's divisions. Five ready-made reports to start from
+    (sales and purchases by month, costs by account and division, vouchers by payee, stock
+    value by item). Columns chosen and put in order by drag-and-drop (arrows on a phone);
+    filters (text is/contains, dates and amounts from/to/is); one grouping with subtotals and
+    a total; sort; period columns spreading one amount over months or divisions. At most
+    5,000 rows (the page says so). Saved by name, private or shared with a role (only the
+    owner changes or deletes it; whoever runs it sees only what they may); Excel and PDF;
+    emailed with the "report" message of Settings → Document email and the Excel attached.
+    Production data is added as a source in Phase 3.
 
 - [ ] **P2-27 Pay Now and invoice tracking** (spec 7A)
   The emailed invoice links to a customer page with the PDF, a Pay Now button through a Sri

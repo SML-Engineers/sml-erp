@@ -34,6 +34,8 @@ export const MENU: MenuSection[] = [
       { label: "menu.dashboard", path: "/", area: null },
       // A custodian can be anyone; the page shows only the floats the user may see (P2-17).
       { label: "petty.title", path: "/petty-cash", area: null },
+      // Each data source checks its own area and divisions (P2-26).
+      { label: "rb.title", path: "/report-builder", area: "dashboard" },
     ],
   },
   {

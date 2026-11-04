@@ -3302,5 +3302,38 @@
     "ratePercent": "Rate % a year",
     "agreedWith": "Agreed with the auditors on…",
     "addRate": "Add the rate"
+  },
+  "tax": {
+    "title": "Tax reports",
+    "help": "The month's VAT return, SSCL and withholding tax, for filing. Supplies and output VAT come from the issued tax invoices less credit notes, by the tax code on each line; exports are shown apart as zero-rated. Input VAT is what the books claimed. Every line links to its document; download Excel or PDF for the filing.",
+    "month": "Month",
+    "vat": "VAT return",
+    "categories": {
+      "standard": "Standard-rated supplies",
+      "zero": "Zero-rated supplies (exports)",
+      "exempt": "Exempt supplies",
+      "outside": "Outside VAT"
+    },
+    "short": {
+      "standard": "Standard",
+      "zero": "Zero-rated",
+      "exempt": "Exempt",
+      "outside": "Outside"
+    },
+    "outputVat": "Output VAT",
+    "inputVat": "Input VAT",
+    "payable": "VAT payable",
+    "vatShort": "VAT",
+    "ledgerDiffers": "The VAT payable account shows {{ledger}} for the month: check entries posted to it by hand.",
+    "sales": "Supplies by document",
+    "date": "Date",
+    "document": "Document",
+    "customer": "Customer",
+    "purchases": "Input VAT by document",
+    "none": "Nothing this month.",
+    "sscl": "SSCL",
+    "wht": "Withholding tax",
+    "on": "on",
+    "total": "Total"
   }
 }

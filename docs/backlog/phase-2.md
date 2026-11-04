@@ -395,9 +395,20 @@ Status: `[ ]` to do · `[x]` done
 
 ## F. Tax, currencies, budgets and closing
 
-- [ ] **P2-20 Tax reports** (spec 6)
+- [x] **P2-20 Tax reports** (spec 6)
   VAT return (output and input tax, by month), SSCL and WHT reports in the layouts the filings
   need, each traced to the invoices behind it. Rates stay dated master data.
+  - Done: Accounts → Tax reports (Accountant; Financial reports view too), by month, on screen
+    and as Excel or PDF. VAT return: supplies from issued tax invoices less approved credit
+    notes, by the tax code on each line, in LKR at each invoice's rate: standard-rated,
+    zero-rated (ZERO-RATED: exports, shown apart as decided on 3 Nov), exempt, outside VAT;
+    output VAT as charged, checked against the VAT payable account (a difference is shown);
+    input VAT as claimed in the books (every posting to VAT receivable: supplier invoices and
+    the recoverable VAT of paid vouchers), each with its document and supplier; VAT payable =
+    output − input. SSCL: the levy on each invoice less credit notes, with its rate and base.
+    WHT: tax kept from supplier payments, with the certificate, supplier and TIN, rate, gross,
+    tax and amount paid. Every line links to its document. The layouts follow the return's
+    boxes; the tax advisor confirms them before the first filing.
 
 - [ ] **P2-21 Month-end revaluation** (spec 5.5, 6)
   Open foreign-currency receivables, payables and bank balances revalued at the month-end rate;

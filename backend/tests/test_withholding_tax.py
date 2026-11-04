@@ -259,3 +259,18 @@ def test_no_certificate_for_a_payment_without_wht(clerk, accountant, director, c
     payment = pay(cashier, voucher, bank, "1000.00")
     response = as_user(cashier).get(f"/api/v1/payments/{payment.pk}/wht-certificate/")
     assert response.status_code == 400
+
+
+# --- The WHT report (P2-20) ----------------------------------------------------------------
+
+
+def test_the_wht_report_lists_each_certificate(clerk, accountant, director, cashier, bank, wht_on):
+    from apps.accounting import tax_reports
+
+    voucher = approved(clerk, accountant, director, component=wht_on)
+    payment = pay(cashier, voucher, bank, "950.00")
+    data = tax_reports.wht(payment.payment_date.year, payment.payment_date.month)
+    assert [
+        (r["certificate"], r["rate"], r["gross"], r["wht"], r["paid"]) for r in data["rows"]
+    ] == [(payment.wht_certificate, "5%", D("1000.00"), D("50.00"), D("950.00"))]
+    assert data["total"] == D("50.00")

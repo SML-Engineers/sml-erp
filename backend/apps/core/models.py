@@ -819,6 +819,9 @@ class SentEmail(models.Model):
     attachment = models.FileField(upload_to="sent-emails/%Y/%m/", blank=True)
     attachment_name = models.CharField(max_length=200, blank=True)
     attachment_sha256 = models.CharField(max_length=64, blank=True)
+    # Further files sent with the document, one per line: name and SHA-256 (e.g. a
+    # quotation's product pictures).
+    other_attachments = models.TextField(blank=True)
     status = models.CharField(max_length=10, choices=Status.choices)
     error = models.CharField(max_length=500, blank=True)
     sent_by = models.ForeignKey(

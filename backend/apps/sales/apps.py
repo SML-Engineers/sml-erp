@@ -16,6 +16,7 @@ class SalesConfig(AppConfig):
             m.QuotationLine,
             m.QuotationQtyBreak,
             m.QuotationFile,
+            m.QuotationImage,
             m.QuotationCosting,
             m.QuotationCostingOperation,
             m.QuotationCostingExtra,

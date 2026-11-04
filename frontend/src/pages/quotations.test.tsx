@@ -564,3 +564,28 @@ test("an accepted quotation makes a proforma invoice", async () => {
   const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/proformas/")!;
   expect(JSON.parse(String(init!.body))).toEqual({ quotation: 12 });
 });
+
+test("the pictures are shown to the approver and can be left out of the email", async () => {
+  const withPictures: QuotationDetail = {
+    ...saved, status: "approved", can_edit: false, can_submit: false, is_final: true, can_email: true, can_mark_sent: true,
+    images: [{ id: 3, file_name: "die.jpg", content_type: "image/jpeg", size: 120000, uploaded_at: "2026-11-04T09:00:00" }],
+  };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/": { body: withPictures },
+    "GET /api/v1/quotations/12/email/": {
+      body: { from: "SML <sales@smlengineers.lk>", ready: true, to: ["lars@nordic.se"], cc: [], subject: "Quotation", body: "Dear Lars,", images: ["die.jpg"] },
+    },
+    "POST /api/v1/quotations/12/email/": { body: { ...withPictures, status: "sent" } },
+  });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  expect(await screen.findByRole("img", { name: "die.jpg" })).toHaveAttribute("src", "/api/v1/quotations/12/images/3/");
+  fireEvent.click(screen.getByRole("button", { name: "Email to the customer" }));
+  const form = await screen.findByRole("form", { name: "Email to the customer" });
+  const box = within(form).getByRole("checkbox", { name: /Also attach the pictures \(1\)/ });
+  expect(box).toBeChecked();
+  fireEvent.click(box);
+  fireEvent.click(within(form).getByRole("button", { name: "Send" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/email/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/email/" && i?.method === "POST")!;
+  expect(JSON.parse(String(init!.body)).include_images).toBe(false);
+});

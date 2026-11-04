@@ -24,6 +24,11 @@ import {
   removeQuotationFile,
   updateQuotation,
   uploadQuotationFile,
+  uploadQuotationImage,
+  removeQuotationImage,
+  quotationImageUrl,
+  MAX_QUOTATION_IMAGES,
+  MAX_QUOTATION_IMAGE_BYTES,
   type LineInput,
   type QuotationDetail,
 } from "../api/quotations";
@@ -102,6 +107,7 @@ export default function QuotationPage() {
           <span className="muted">{t("quoteCosting.internalOnly")}</span>
         </p>
       )}
+      {data && (data.can_edit || (data.images ?? []).length > 0) && <Pictures quotation={data} />}
       {data && <Workflow key={`${data.id}-${data.status}`} quotation={data} />}
       {(isNew || data?.can_edit) && <QuotationForm key={data?.id ?? "new"} quotation={data} />}
       {data && !data.can_edit && <ReadOnly quotation={data} />}
@@ -592,6 +598,68 @@ function Files({ quotation }: { quotation: QuotationDetail }) {
   );
 }
 
+/** Product pictures for the customer (owner's request, 4 Nov 2026): up to three JPG or PNG
+ * of at most 1 MB, added while the quotation is a draft, seen by the approver and emailed. */
+function Pictures({ quotation }: { quotation: QuotationDetail }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [tooBig, setTooBig] = useState("");
+  const images = quotation.images ?? [];
+  const refresh = (latest: QuotationDetail) => queryClient.setQueryData([...quotationsKey, "one", String(quotation.id)], latest);
+  const upload = useMutation({ mutationFn: (file: File) => uploadQuotationImage(quotation.id, file), onSuccess: refresh });
+  const remove = useMutation({ mutationFn: (imageId: number) => removeQuotationImage(quotation.id, imageId), onSuccess: refresh });
+  return (
+    <section className="panel" aria-label={t("quotations.pictures")}>
+      <h2>{t("quotations.pictures")}</h2>
+      <p className="muted">{t("quotations.picturesHelp")}</p>
+      <div className="picture-row">
+        {images.map((i) => (
+          <figure key={i.id} className="picture">
+            <a href={quotationImageUrl(quotation.id, i.id)} target="_blank" rel="noreferrer">
+              <img src={quotationImageUrl(quotation.id, i.id)} alt={i.file_name} style={{ maxWidth: 220, maxHeight: 220, objectFit: "contain" }} />
+            </a>
+            <figcaption>
+              {i.file_name}{" "}
+              {quotation.can_edit && (
+                <button type="button" className="small secondary" onClick={() => remove.mutate(i.id)}>
+                  {t("vouchers.removeFile")}
+                </button>
+              )}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+      {quotation.can_edit && images.length < MAX_QUOTATION_IMAGES && (
+        <label>
+          {t("quotations.addPicture")}
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              if (file.size > MAX_QUOTATION_IMAGE_BYTES) {
+                setTooBig(t("quotations.pictureTooBig", { name: file.name }));
+                return;
+              }
+              setTooBig("");
+              upload.mutate(file);
+            }}
+          />
+        </label>
+      )}
+      {upload.isPending && <span role="status">{t("vouchers.uploading")}</span>}
+      {tooBig && (
+        <p className="form-error" role="alert">
+          {tooBig}
+        </p>
+      )}
+      <ErrorLine error={upload.error ?? remove.error} />
+    </section>
+  );
+}
+
 /** Approval by the Director, sending, the outcome and revisions (spec 5.1; P15-06). */
 function Workflow({ quotation }: { quotation: QuotationDetail }) {
   const { t } = useTranslation();
@@ -765,10 +833,14 @@ function EmailPanel({ quotation }: { quotation: QuotationDetail }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState({ to: "", cc: "", subject: "", body: "" });
   const [from, setFrom] = useState("");
+  const [pictures, setPictures] = useState<string[]>([]);
+  const [withPictures, setWithPictures] = useState(true);
   const load = useMutation({
     mutationFn: () => getQuotationEmail(quotation.id),
     onSuccess: (draft) => {
       setMessage({ to: draft.to.join(", "), cc: draft.cc.join(", "), subject: draft.subject, body: draft.body });
+      setPictures(draft.images ?? []);
+      setWithPictures(true);
       setFrom(draft.ready ? draft.from : "");
       setOpen(true);
     },
@@ -780,7 +852,13 @@ function EmailPanel({ quotation }: { quotation: QuotationDetail }) {
       .filter(Boolean);
   const send = useMutation({
     mutationFn: () =>
-      sendQuotationEmail(quotation.id, { to: split(message.to), cc: split(message.cc), subject: message.subject, body: message.body }),
+      sendQuotationEmail(quotation.id, {
+        to: split(message.to),
+        cc: split(message.cc),
+        subject: message.subject,
+        body: message.body,
+        ...(pictures.length > 0 ? { include_images: withPictures } : {}),
+      }),
     onSuccess: (latest) => {
       queryClient.setQueryData([...quotationsKey, "one", String(latest.id)], latest);
       void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "list"] });
@@ -824,6 +902,12 @@ function EmailPanel({ quotation }: { quotation: QuotationDetail }) {
             <textarea rows={8} value={message.body} required onChange={(e) => set("body")(e.target.value)} />
           </label>
           <p className="muted wide">{t("quotations.emailAttachment")}</p>
+          {pictures.length > 0 && (
+            <label className="wide checkbox">
+              <input type="checkbox" checked={withPictures} onChange={(e) => setWithPictures(e.target.checked)} />{" "}
+              {t("quotations.attachPictures", { count: pictures.length, names: pictures.join(", ") })}
+            </label>
+          )}
           <div className="wide">
             <button type="submit" disabled={send.isPending || !from}>
               {t("quotations.sendEmail")}

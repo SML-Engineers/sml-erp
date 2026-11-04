@@ -1602,7 +1602,12 @@
     "cancel": "Cancel",
     "emailsSent": "Emails sent",
     "discountPct": "Discount % (on every line, before tax)",
-    "discountLine": "Discount {{pct}}%"
+    "discountLine": "Discount {{pct}}%",
+    "pictures": "Product pictures for the customer",
+    "picturesHelp": "Up to 3 pictures, JPG or PNG, at most 1 MB each. The approver sees them, and they can be emailed with the quotation. They can be changed only while the quotation is a draft.",
+    "addPicture": "Add a picture",
+    "pictureTooBig": "{{name}} is larger than 1 MB. Make it smaller and try again.",
+    "attachPictures": "Also attach the pictures ({{count}}): {{names}}"
   },
   "quoteCosting": {
     "open": "Costing",

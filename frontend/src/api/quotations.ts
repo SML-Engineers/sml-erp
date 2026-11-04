@@ -46,6 +46,14 @@ export interface QuotationLine {
   breaks: QtyBreak[];
 }
 
+export interface QuotationImage {
+  id: number;
+  file_name: string;
+  content_type: string;
+  size: number;
+  uploaded_at: string;
+}
+
 export interface QuotationFile {
   id: number;
   line_no: number | null;
@@ -72,6 +80,8 @@ export interface QuotationDetail extends QuotationSummary {
   created_at: string;
   lines: QuotationLine[];
   files: QuotationFile[];
+  /** Product pictures for the customer (up to 3, 1 MB each), emailed with the quotation. */
+  images?: QuotationImage[];
   can_edit: boolean;
   /** Whether this user may open the costing (creator, Sales Manager, Accountant, Director). */
   can_see_costing: boolean;
@@ -164,6 +174,16 @@ export function uploadQuotationFile(id: number, file: File, lineNo: number | nul
 export const removeQuotationFile = (id: number, fileId: number) =>
   apiSend<QuotationDetail>("DELETE", `/quotations/${id}/files/${fileId}/`);
 export const quotationFileUrl = (id: number, fileId: number) => `${API_BASE}/quotations/${id}/files/${fileId}/`;
+export function uploadQuotationImage(id: number, file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  return apiUpload<QuotationDetail>(`/quotations/${id}/images/`, form, "POST");
+}
+export const removeQuotationImage = (id: number, imageId: number) =>
+  apiSend<QuotationDetail>("DELETE", `/quotations/${id}/images/${imageId}/`);
+export const quotationImageUrl = (id: number, imageId: number) => `${API_BASE}/quotations/${id}/images/${imageId}/`;
+export const MAX_QUOTATION_IMAGES = 3;
+export const MAX_QUOTATION_IMAGE_BYTES = 1024 * 1024;
 
 // --- Costing (P15-04): internal only, never on the customer's copy ---------------------
 
@@ -340,9 +360,14 @@ export interface EmailDraft {
   cc: string[];
   subject: string;
   body: string;
+  /** The names of the pictures that can go with the email. */
+  images?: string[];
 }
 
 export const quotationPdfUrl = (id: number) => `${API_BASE}/quotations/${id}/pdf/`;
 export const getQuotationEmail = (id: number) => apiGet<EmailDraft>(`/quotations/${id}/email/`);
-export const sendQuotationEmail = (id: number, message: { to: string[]; cc: string[]; subject: string; body: string }) =>
+export const sendQuotationEmail = (
+  id: number,
+  message: { to: string[]; cc: string[]; subject: string; body: string; include_images?: boolean },
+) =>
   apiSend<QuotationDetail>("POST", `/quotations/${id}/email/`, message);

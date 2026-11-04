@@ -17,6 +17,16 @@ urlpatterns = [
     path("quotations/", views.QuotationListView.as_view(), name="quotation-list"),
     path("quotations/<int:pk>/", views.QuotationDetailView.as_view(), name="quotation-detail"),
     path(
+        "quotations/<int:pk>/images/",
+        views.QuotationImageListView.as_view(),
+        name="quotation-images",
+    ),
+    path(
+        "quotations/<int:pk>/images/<int:image_pk>/",
+        views.QuotationImageDetailView.as_view(),
+        name="quotation-image",
+    ),
+    path(
         "quotations/<int:pk>/files/", views.QuotationFileListView.as_view(), name="quotation-files"
     ),
     path(

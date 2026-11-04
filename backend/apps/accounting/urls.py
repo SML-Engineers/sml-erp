@@ -7,6 +7,7 @@ from . import manual_views as mj
 from . import planner_views as pv
 from . import rate_views as rv
 from . import recurring_views as rj
+from . import report_builder_views as rbv
 from . import report_views as reports_api
 from . import revaluation_views as rev
 from . import tax_report_views as tr
@@ -14,6 +15,15 @@ from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
+    path("report-builder/", rbv.BuilderView.as_view(), name="report-builder"),
+    path("report-builder/run/", rbv.RunView.as_view(), name="report-builder-run"),
+    path("report-builder/email/", rbv.EmailView.as_view(), name="report-builder-email"),
+    path("report-builder/saved/", rbv.SavedListView.as_view(), name="report-builder-saved"),
+    path(
+        "report-builder/saved/<int:pk>/",
+        rbv.SavedDetailView.as_view(),
+        name="report-builder-saved-one",
+    ),
     path("cash-planner/", pv.PlannerView.as_view(), name="cash-planner"),
     path("cash-planner/what-ifs/", pv.WhatIfView.as_view(), name="cash-planner-what-ifs"),
     path(

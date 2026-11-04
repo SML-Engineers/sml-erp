@@ -792,3 +792,26 @@ class CashPlanItem(models.Model):
 
     def __str__(self):
         return f"{self.on_date} {self.description} {self.amount}"
+
+
+# --- Custom report builder (backlog P2-26) ---------------------------------------------------
+
+
+class SavedReport(models.Model):
+    """A report built in the report builder, kept by its owner and optionally shared with a
+    role. Whoever runs it sees only what their own access allows."""
+
+    name = models.CharField(max_length=100)
+    definition = models.JSONField()
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    shared_role = models.ForeignKey(
+        "core.Role", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["name", "id"]
+
+    def __str__(self):
+        return self.name

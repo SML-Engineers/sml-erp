@@ -13,7 +13,9 @@ export interface InvoiceSummary {
   due_date: string;
   division: string;
   customer: { id: number; name: string };
-  order: { id: number; number: string };
+  /** None for an invoice brought over from QuickBooks at go-live (P2-28). */
+  order: { id: number; number: string } | null;
+  opening?: boolean;
   customer_po: string;
   currency?: string;
   total_amount: string;

@@ -46,7 +46,8 @@ def _summary(i: TaxInvoice) -> dict:
         "due_date": i.due_date,
         "division": i.division.code,
         "customer": {"id": i.customer_id, "name": i.customer.name},
-        "order": {"id": i.order_id, "number": i.order.number},
+        "order": {"id": i.order_id, "number": i.order.number} if i.order_id else None,
+        "opening": i.opening,
         "customer_po": i.customer_po,
         "currency": i.currency.code,
         "total_amount": f"{i.total_amount:.2f}",
@@ -271,6 +272,10 @@ class InvoiceIssueView(_Invoices):
 class InvoicePdfView(_Invoices):
     def get(self, request, pk):
         invoice = _get(request.user, pk)
+        if invoice.opening:
+            return _error(
+                SalesError("This invoice was brought over from QuickBooks: print it there.")
+            )
         response = HttpResponse(invoice_printing.render(invoice), content_type="application/pdf")
         disposition = "attachment" if request.query_params.get("download") else "inline"
         name = invoice.number or f"draft-{invoice.pk}"

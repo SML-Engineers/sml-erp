@@ -57,7 +57,7 @@ export default function TaxInvoicesPage() {
             },
             { id: "date", header: t("ti.invoiceDate"), value: (r) => r.invoice_date },
             { id: "customer", header: t("dn.customer"), value: (r) => r.customer.name },
-            { id: "order", header: t("dn.order"), value: (r) => r.order.number },
+            { id: "order", header: t("dn.order"), value: (r) => r.order?.number ?? "QuickBooks" },
             { id: "division", header: t("vouchers.division"), value: (r) => r.division },
             { id: "total", header: t("ti.total"), value: (r) => r.total_amount, cell: (r) => formatDecimal(r.total_amount) },
             { id: "due", header: t("ti.dueDate"), value: (r) => r.due_date },

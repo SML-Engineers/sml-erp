@@ -155,6 +155,9 @@ class SupplierInvoice(models.Model):
     # P16-19). Empty on invoices posted before then, which used the PO's rate.
     exchange_rate = models.DecimalField(max_digits=18, decimal_places=6, null=True, blank=True)
     rate_date = models.DateField(null=True, blank=True)
+    # A bill open in QuickBooks at go-live (P2-28): only what was still open, no lines, no
+    # entry of its own (the opening balances carry it). It is paid on a voucher as any other.
+    opening = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-invoice_date", "-number"]

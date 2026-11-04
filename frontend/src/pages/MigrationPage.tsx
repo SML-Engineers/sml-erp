@@ -9,6 +9,8 @@ import {
   getMigration,
   migrationAction,
   migrationKey,
+  openItems,
+  type ItemsReport,
   type MigrationFile,
   type MigrationReport,
   type OpeningDoc,
@@ -110,6 +112,7 @@ export default function MigrationPage() {
       )}
       <ErrorLine error={data.error} />
       {data.data?.documents.map((d) => <Document key={d.id} doc={d} />)}
+      {data.data?.can_enter && <OpenItems posted={data.data.posted} state={data.data} />}
     </main>
   );
 }
@@ -206,6 +209,81 @@ function Document({ doc }: { doc: OpeningDoc }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+function ItemsLine({ title, report }: { title: string; report: ItemsReport }) {
+  const { t } = useTranslation();
+  return (
+    <div role="region" aria-label={title}>
+      <h3>{title}</h3>
+      <p>
+        {t("mig.documents", { count: String(report.documents), total: formatDecimal(report.total) })}
+        {report.loaded && ` · ${t("mig.loaded")}`}
+      </p>
+      {report.errors.length > 0 && (
+        <ul className="form-error" aria-label={`${title}: ${t("mig.problems")}`}>
+          {report.errors.map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+      )}
+      {report.warnings.map((w) => (
+        <p key={w} className="notice">
+          ⚠ {w}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function OpenItems({ posted, state }: { posted: boolean; state: { open_invoices: { count: number; total: string }; open_bills: { count: number; total: string } } }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [files, setFiles] = useState<{ receivables?: File; payables?: File }>({});
+  const [division, setDivision] = useState("HO");
+  const run = useMutation({
+    mutationFn: (load: boolean) => openItems(files, division, load),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: migrationKey }),
+  });
+  const result = run.data;
+  const clean = result && Object.values(result).every((r) => r && r.errors.length === 0);
+  return (
+    <section className="panel" aria-label={t("mig.part2")}>
+      <h2>{t("mig.part2")}</h2>
+      <p className="muted">{t("mig.part2Help")}</p>
+      <p>{t("mig.loadedInvoices", { count: String(state.open_invoices.count), total: formatDecimal(state.open_invoices.total) })}</p>
+      <p>{t("mig.loadedBills", { count: String(state.open_bills.count), total: formatDecimal(state.open_bills.total) })}</p>
+      {!posted ? (
+        <p className="notice">{t("mig.postFirst")}</p>
+      ) : (
+        <>
+          <label className="stacked">
+            {t("mig.file.receivables")}
+            <input type="file" accept=".xlsx" onChange={(e) => setFiles({ ...files, receivables: e.target.files?.[0] })} />
+          </label>
+          <label className="stacked">
+            {t("mig.file.payables")}
+            <input type="file" accept=".xlsx" onChange={(e) => setFiles({ ...files, payables: e.target.files?.[0] })} />
+          </label>
+          <label>
+            {t("mig.defaultDivision")}
+            <input value={division} maxLength={2} onChange={(e) => setDivision(e.target.value.toUpperCase())} />
+          </label>
+          <div className="row-actions">
+            <button type="button" disabled={!(files.receivables || files.payables) || run.isPending} onClick={() => run.mutate(false)}>
+              {t("mig.checkItems")}
+            </button>
+            <button type="button" className="secondary" disabled={!clean || run.isPending} onClick={() => run.mutate(true)}>
+              {t("mig.loadItems")}
+            </button>
+          </div>
+        </>
+      )}
+      <ErrorLine error={run.error} />
+      {result?.receivables && <ItemsLine title={t("mig.file.receivables")} report={result.receivables} />}
+      {result?.payables && <ItemsLine title={t("mig.file.payables")} report={result.payables} />}
     </section>
   );
 }

@@ -47,7 +47,8 @@ export default function TaxInvoicePage() {
       {data && (
         <>
           <p className="muted">
-            {t(`ti.statuses.${data.status}`)} · {data.customer.name} · <Link to={`/sales-orders/${data.order.id}`}>{data.order.number}</Link>
+            {t(`ti.statuses.${data.status}`)} · {data.customer.name} ·{" "}
+            {data.order ? <Link to={`/sales-orders/${data.order.id}`}>{data.order.number}</Link> : t("ti.fromQuickBooks")}
             {data.journal_entry && (
               <>
                 {" · "}
@@ -268,11 +269,15 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
 
   return (
     <section className="panel" aria-label={t("ti.actions")}>
-      <p>
-        <a className="button-link secondary" href={invoicePdfUrl(invoice.id)} target="_blank" rel="noreferrer">
-          {invoice.status === "draft" ? t("ti.preview") : t("ti.pdf")}
-        </a>
-      </p>
+      {invoice.opening ? (
+        <p className="muted">{t("ti.openingNote")}</p>
+      ) : (
+        <p>
+          <a className="button-link secondary" href={invoicePdfUrl(invoice.id)} target="_blank" rel="noreferrer">
+            {invoice.status === "draft" ? t("ti.preview") : t("ti.pdf")}
+          </a>
+        </p>
+      )}
       {invoice.can_issue && (
         <p>
           <button type="button" disabled={issue.isPending} onClick={() => issue.mutate()}>

@@ -13,7 +13,12 @@ KIND = "tax_invoice"
 
 
 def can_email(user: User, invoice: TaxInvoice) -> bool:
-    return invoice.status == TaxInvoice.Status.ISSUED and invoices.can_prepare(user)
+    # One brought over from QuickBooks (P2-28) was sent from QuickBooks: no PDF here.
+    return (
+        invoice.status == TaxInvoice.Status.ISSUED
+        and not invoice.opening
+        and invoices.can_prepare(user)
+    )
 
 
 def _values(invoice: TaxInvoice) -> dict:

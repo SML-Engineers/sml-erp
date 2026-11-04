@@ -1996,7 +1996,9 @@
     "cardLinkAmount": "Amount ({{currency}})",
     "cardLinkSent": "Sent on",
     "cardLinkNote": "Note (optional)",
-    "save": "Save"
+    "save": "Save",
+    "fromQuickBooks": "brought over from QuickBooks",
+    "openingNote": "Brought over from QuickBooks at go-live: only what was still to be paid. Its printed copy is in QuickBooks."
   },
   "sa": {
     "title": "Sales accounts",
@@ -3635,6 +3637,16 @@
     "delete": "Delete the draft",
     "approve": "Approve and post",
     "return": "Return for changes",
-    "reject": "Reject"
+    "reject": "Reject",
+    "part2": "Open invoices and bills",
+    "part2Help": "After the opening balances are posted, upload the same A/R and A/P ageing files again. Each open invoice and bill is brought over for what is still open, so receipts and vouchers after go-live are matched to them. Payments and credits not yet applied in QuickBooks are taken off the oldest. Each customer and supplier must agree with their opening balance.",
+    "defaultDivision": "Division for bills and invoices with no class",
+    "checkItems": "Check the open invoices and bills",
+    "loadItems": "Bring them over",
+    "loadedInvoices": "Open invoices brought over: {{count}}, LKR {{total}}",
+    "loadedBills": "Open bills brought over: {{count}}, LKR {{total}}",
+    "documents": "{{count}} documents, LKR {{total}}",
+    "loaded": "Brought over.",
+    "postFirst": "Post the opening balances first."
   }
 }

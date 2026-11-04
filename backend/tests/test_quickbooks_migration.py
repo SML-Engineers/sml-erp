@@ -206,3 +206,81 @@ def test_the_screens_api(accountant, masters):
     assert listed["documents"][0]["total_debit"] == "650000.00"
     clerk = as_user(person("clerk@sml.lk", "clerk", all_divisions=True))
     assert clerk.get("/api/v1/migration/").status_code == 403
+
+
+# --- Part 2: the open invoices and bills ------------------------------------------------------
+
+
+@pytest.fixture
+def posted(accountant, director, masters):
+    doc = qb.submit(accountant, qb.make(accountant, **files()))
+    return qb.approve(director, doc)
+
+
+def test_open_items_wait_for_the_opening_balances(accountant, masters):
+    report = qb.plan_open_items("receivables", receivables(), None)["report"]
+    assert any("Post the opening balances first" in e for e in report["errors"])
+
+
+def test_open_invoices_are_brought_over_and_agree_with_the_debtors(accountant, posted):
+    from apps.sales import receivables as ar
+    from apps.sales.models import TaxInvoice
+
+    report = qb.load_open_items(accountant, "receivables", receivables())
+    assert report == {"documents": 2, "total": "150000.00", "errors": [], "warnings": []}
+    rows = TaxInvoice.objects.filter(opening=True).order_by("number")
+    assert [(i.number, i.total_lkr, i.division.code, i.due_date) for i in rows] == [
+        ("QB-INV-0", D("100000.00"), "HO", date(2026, 10, 31)),
+        ("QB-INV-1", D("50000.00"), "HO", date(2026, 10, 31)),
+    ]
+    (row,) = ar.aging(accountant, date(2026, 11, 30))
+    assert (row["total"], row["ledger"]) == ("150000.00", "150000.00")
+    with pytest.raises(MigrationError, match="brought over already"):
+        qb.load_open_items(accountant, "receivables", receivables())
+
+
+def test_open_bills_are_brought_over_and_can_be_paid(accountant, posted):
+    from apps.purchasing import invoices
+    from apps.purchasing import payables as ap
+    from apps.purchasing.models import SupplierInvoice
+
+    qb.load_open_items(accountant, "payables", payables())
+    (bill,) = SupplierInvoice.objects.filter(opening=True)
+    assert (bill.invoice_no, bill.total_lkr, bill.status) == ("B-1", D("80000.00"), "posted")
+    assert sum(i["open"] for i in ap.open_items(date(2026, 11, 30))) == D("80000.00")
+    assert invoices.payable(bill.supplier, bill.division) == [bill]
+
+
+def test_a_party_that_does_not_agree_is_refused(accountant, posted):
+    report = qb.plan_open_items("receivables", receivables(amounts=(100000, 40000)), None)["report"]
+    assert any(
+        "come to 140,000.00 but the opening balances gave 150,000.00" in e for e in report["errors"]
+    )
+    with pytest.raises(MigrationError, match="Correct what the check found"):
+        qb.load_open_items(accountant, "receivables", receivables(amounts=(100000, 40000)))
+
+
+def test_unapplied_payments_are_taken_off_the_oldest():
+    items = [
+        {"amount": D("100"), "date": date(2026, 9, 1), "row": 1},
+        {"amount": D("50"), "date": date(2026, 10, 1), "row": 2},
+        {"amount": D("-120"), "date": date(2026, 10, 5), "row": 3},
+    ]
+    left, credit, applied = qb._apply_credits(items)
+    assert [(d["row"], d["amount"]) for d in left] == [(2, D("30"))]
+    assert (credit, applied) == (0, 1)
+
+
+def test_the_open_items_api(accountant, posted):
+    api = as_user(accountant)
+    upload = {
+        "receivables": SimpleUploadedFile("ar.xlsx", receivables()),
+        "payables": SimpleUploadedFile("ap.xlsx", payables()),
+        "load": "yes",
+    }
+    done = api.post("/api/v1/migration/open-items/", upload, format="multipart")
+    assert done.status_code == 200, done.json()
+    assert done.json()["receivables"]["documents"] == 2 and done.json()["payables"]["loaded"]
+    state = api.get("/api/v1/migration/").json()
+    assert state["open_invoices"] == {"count": 2, "total": "150000.00"}
+    assert state["open_bills"] == {"count": 1, "total": "80000.00"}

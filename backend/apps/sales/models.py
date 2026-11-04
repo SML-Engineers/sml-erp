@@ -899,12 +899,18 @@ class TaxInvoice(models.Model):
         ISSUED = "issued", "Issued"
 
     number = models.CharField(max_length=40, blank=True)  # given when issued
-    order = models.ForeignKey(SalesOrder, on_delete=models.PROTECT, related_name="invoices")
+    # None only on an invoice brought over from QuickBooks at go-live (P2-28).
+    order = models.ForeignKey(
+        SalesOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="invoices"
+    )
     customer = models.ForeignKey(
         "masters.Customer", on_delete=models.PROTECT, related_name="tax_invoices"
     )
     division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    # Open in QuickBooks at go-live (P2-28): only what was still open, no lines, no entry of
+    # its own (the opening balances carry it). It is paid and credited like any other.
+    opening = models.BooleanField(default=False)
     invoice_date = models.DateField()
     supply_date = models.DateField()
     due_date = models.DateField()

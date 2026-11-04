@@ -548,3 +548,87 @@ class TaxCodeLine(models.Model):
 
     def __str__(self):
         return f"{self.tax_code_id}/{self.sequence}"
+
+
+# --- Month-end revaluation (backlog P2-21) ---------------------------------------------------
+
+
+class Revaluation(models.Model):
+    """A month's revaluation of what is open in foreign currencies, at the month-end rate:
+    worked out as a draft for the Accountant to check, then posted. Receivables and payables
+    go to Unrealised exchange gain or loss and are reversed on the first day of the next
+    month; bank and cash balances go to Exchange gain or Exchange loss and stay. Posted, it
+    never changes (database guard)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Worked out, to check"
+        POSTED = "posted", "Posted"
+
+    month_end = models.DateField(unique=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    # Net differences in LKR: a gain is positive, a loss negative.
+    open_items_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    balances_total = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    journal_entry = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    reversal_entry = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    balances_entry = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    prepared_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    prepared_at = models.DateTimeField(default=timezone.now)
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-month_end"]
+
+    def __str__(self):
+        return f"Revaluation {self.month_end:%B %Y}"
+
+
+class RevaluationLine(models.Model):
+    """One open invoice, or one bank or cash account, revalued: what is open in its currency,
+    what the books carry in LKR, the month-end rate and the difference (a gain positive)."""
+
+    class Kind(models.TextChoices):
+        RECEIVABLE = "receivable", "Customer invoice"
+        PAYABLE = "payable", "Supplier invoice"
+        BALANCE = "balance", "Bank or cash balance"
+
+    revaluation = models.ForeignKey(Revaluation, on_delete=models.CASCADE, related_name="lines")
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    document = models.CharField(max_length=60)  # invoice number, or the account's code
+    link = models.CharField(max_length=100, blank=True)
+    customer = models.ForeignKey(
+        "masters.Customer", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    company_account = models.ForeignKey(
+        "masters.CompanyAccount", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    division = models.ForeignKey(Division, on_delete=models.PROTECT, related_name="+")
+    currency = models.ForeignKey("masters.Currency", on_delete=models.PROTECT, related_name="+")
+    open_amount = models.DecimalField(max_digits=18, decimal_places=2)  # in the currency
+    carried_lkr = models.DecimalField(max_digits=18, decimal_places=2)
+    rate = models.DecimalField(max_digits=18, decimal_places=6)
+    rate_date = models.DateField()
+    revalued_lkr = models.DecimalField(max_digits=18, decimal_places=2)
+    difference = models.DecimalField(max_digits=18, decimal_places=2)
+    # Bank balances: where the balance in the account's currency came from.
+    balance_from = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ["revaluation", "kind", "document", "id"]
+
+    def __str__(self):
+        return f"{self.document} {self.difference}"

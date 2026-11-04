@@ -209,6 +209,7 @@ def open_items(
                 "due_date": invoice.due_date,
                 "total": invoice.total_lkr,
                 "open": left,
+                "invoice": invoice,  # month-end revaluation reads its currency (P2-21)
             }
         )
     for item in items:

@@ -60,6 +60,8 @@ SYSTEM_ROLES = {
     # Differences between the exchange rates of a purchase's dates (IAS 21, P16-19).
     "exchange_gain": "Exchange gain",
     "exchange_loss": "Exchange loss",
+    # Month-end revaluation of open foreign-currency invoices, reversed the next day (P2-21).
+    "unrealised_exchange": "Unrealised exchange gain or loss",
     # Stock (P2-18): material issued, stock adjusted or written off; and, for Phase 3, work in
     # progress and finished goods.
     "materials_used": "Raw materials used",

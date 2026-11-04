@@ -469,6 +469,10 @@ class StockMovement(models.Model):
         OPENING = "opening", "Opening stock"
         # Value only: the supplier's invoice price differs from the PO price (IAS 2, P16-18).
         PRICE = "price_diff", "Invoice price difference"
+        # P2-18: issued to a division or section, returned to stores, adjusted or counted.
+        ISSUED = "issued", "Issued from stores"
+        BACK = "back_in", "Returned to stores"
+        ADJUSTED = "adjusted", "Adjustment or write-off"
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="movements")
     store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="movements")
@@ -483,6 +487,20 @@ class StockMovement(models.Model):
     )
     opening_line = models.ForeignKey(
         "OpeningStockLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="movements",
+    )
+    issue_line = models.ForeignKey(
+        "StockIssueLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="movements",
+    )
+    adjustment_line = models.ForeignKey(
+        "StockAdjustmentLine",
         null=True,
         blank=True,
         on_delete=models.PROTECT,
@@ -576,3 +594,211 @@ class OpeningStockLine(models.Model):
 
     def __str__(self):
         return f"{self.opening_id}/{self.line_no}"
+
+
+# --- Issues, returns, adjustments and counts (backlog P2-18) ---------------------------------
+
+
+class StockIssue(models.Model):
+    """Material issued from a main store to a division or section (a job or production order
+    in Phase 3), or returned to the store against an earlier issue. Posted when saved, at the
+    weighted average cost: Dr the item's expense (Raw materials used), Cr its inventory; a
+    return the other way at the cost it was issued at. Never changes (database guard)."""
+
+    class Kind(models.TextChoices):
+        ISSUE = "issue", "Issue"
+        RETURN = "return", "Return to stores"
+
+    number = models.CharField(max_length=30, unique=True)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="+")
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    section = models.ForeignKey(
+        "masters.Section", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    issue_date = models.DateField()
+    purpose = models.CharField(max_length=300, blank=True)
+    returns = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="returned_by"
+    )
+    total_value = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="stock_issue",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-issue_date", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(kind="issue", returns__isnull=True)
+                | models.Q(kind="return", returns__isnull=False),
+                name="inventory_issue_return_of",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class StockIssueLine(models.Model):
+    issue = models.ForeignKey(StockIssue, on_delete=models.PROTECT, related_name="lines")
+    line_no = models.PositiveIntegerField()
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="+")
+    lot_no = models.CharField(max_length=40)
+    quantity = _qty()
+    unit_cost = models.DecimalField(max_digits=18, decimal_places=4)
+    value = models.DecimalField(max_digits=18, decimal_places=2)
+    # On a return: the issue line it brings back.
+    returned_from = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="returns"
+    )
+
+    class Meta:
+        ordering = ["issue", "line_no"]
+        constraints = [
+            models.UniqueConstraint(fields=["issue", "line_no"], name="inventory_issue_line_no"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0) & models.Q(value__gte=0),
+                name="inventory_issue_line_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.issue_id}/{self.line_no}"
+
+
+class StockCount(models.Model):
+    """A count sheet for a main store: what the books say per item and lot on the count date,
+    and what was counted. Submitting it makes a stock adjustment for the differences, which
+    the Director approves."""
+
+    class Status(models.TextChoices):
+        COUNTING = "counting", "Being counted"
+        SUBMITTED = "submitted", "Differences sent for approval"
+        AGREED = "agreed", "Counted, no differences"
+        CANCELLED = "cancelled", "Cancelled"
+
+    number = models.CharField(max_length=30, unique=True)
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="+")
+    count_date = models.DateField()
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.COUNTING)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-count_date", "-id"]
+
+    def __str__(self):
+        return self.number
+
+
+class StockCountLine(models.Model):
+    count = models.ForeignKey(StockCount, on_delete=models.CASCADE, related_name="lines")
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="+")
+    lot_no = models.CharField(max_length=40)
+    system_quantity = _qty()
+    counted_quantity = _qty(null=True, blank=True)
+
+    class Meta:
+        ordering = ["count", "item__code", "lot_no"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["count", "item", "lot_no"], name="inventory_count_line_once"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(counted_quantity__isnull=True)
+                | models.Q(counted_quantity__gte=0),
+                name="inventory_count_not_negative",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.count_id} {self.item_id} {self.lot_no}"
+
+
+class StockAdjustment(models.Model):
+    """Stock found or lost, written off, or the differences of a count: posted only when the
+    Director approves (Dr/Cr the item's inventory and Stock adjustments and write-offs)."""
+
+    class Kind(models.TextChoices):
+        ADJUSTMENT = "adjustment", "Adjustment"
+        WRITE_OFF = "write_off", "Write-off"
+        COUNT = "count", "Stock count differences"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Waiting for the Director"
+        POSTED = "posted", "Approved and posted"
+        REJECTED = "rejected", "Rejected"
+
+    number = models.CharField(max_length=30, unique=True)
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="+")
+    adjustment_date = models.DateField()
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    count = models.OneToOneField(
+        StockCount, null=True, blank=True, on_delete=models.PROTECT, related_name="adjustment"
+    )
+    total_value = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="stock_adjustment",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-adjustment_date", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(status="posted") | models.Q(journal_entry__isnull=False),
+                name="inventory_adjustment_posted_entry",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class StockAdjustmentLine(models.Model):
+    adjustment = models.ForeignKey(StockAdjustment, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveIntegerField()
+    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="+")
+    lot_no = models.CharField(max_length=40)
+    quantity = _qty()  # + found, − lost or written off
+    # The cost of stock found that the store has never held (otherwise the average is used).
+    unit_cost = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    value = models.DecimalField(max_digits=18, decimal_places=2, default=0)  # signed, on posting
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["adjustment", "line_no"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["adjustment", "line_no"], name="inventory_adjustment_line_no"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(quantity=0), name="inventory_adjustment_line_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.adjustment_id}/{self.line_no}"

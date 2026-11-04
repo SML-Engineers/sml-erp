@@ -3173,5 +3173,71 @@
     "topUpHelp": "{{amount}} of expenses are waiting. A draft Petty Cash voucher is made with one line per expense and its slip; check it and submit it.",
     "payee": "Pay to (the custodian)",
     "makeVoucher": "Make the Petty Cash voucher"
+  },
+  "sw": {
+    "title": "Stores work",
+    "help": "Material issued to a division or section and returned, at the weighted average cost; adjustments and write-offs, which the Director approves before anything moves; and stock counts, whose differences go to the Director.",
+    "tabs": {
+      "issues": "Issues and returns",
+      "adjustments": "Adjustments and write-offs",
+      "counts": "Stock counts"
+    },
+    "issue": "Issue material",
+    "store": "Store",
+    "purpose": "For (division, section, job)",
+    "item": "Item",
+    "quantity": "Quantity",
+    "lotOptional": "Lot (empty: oldest first)",
+    "issueButton": "Issue",
+    "noIssues": "No issues yet.",
+    "kinds": {
+      "issue": "Issue",
+      "return": "Return to stores"
+    },
+    "against": "against {{number}}",
+    "lot": "Lot",
+    "back": "Back",
+    "backOf": "Coming back of {{item}} lot {{lot}}",
+    "returnButton": "Take back into the store",
+    "adjust": "Prepare an adjustment or write-off",
+    "kind": "Kind",
+    "adjustmentKinds": {
+      "write_off": "Write-off",
+      "adjustment": "Adjustment (found or lost)",
+      "count": "Stock count differences"
+    },
+    "reason": "Reason",
+    "signedQuantity": "Quantity (minus for stock out)",
+    "costIfNew": "Cost per unit (only for an item never held)",
+    "saveDraft": "Save as draft",
+    "noAdjustments": "No adjustments yet.",
+    "statuses": {
+      "draft": "Draft",
+      "awaiting_approval": "Waiting for the Director",
+      "posted": "Approved and posted",
+      "rejected": "Rejected"
+    },
+    "commentOrReason": "Comment (approve) or reason (return, reject)",
+    "submit": "Send to the Director",
+    "approve": "Approve",
+    "return": "Return",
+    "reject": "Reject",
+    "startCount": "Start a stock count",
+    "countHelp": "The sheet lists what the books say per item and lot today. Type what is counted (0 for what is not there); submitting sends the differences to the Director.",
+    "startButton": "Start the count",
+    "countStatuses": {
+      "counting": "Being counted",
+      "submitted": "Differences sent for approval",
+      "agreed": "Counted, no differences",
+      "cancelled": "Cancelled"
+    },
+    "differencesOn": "Differences on {{number}}",
+    "countSheet": "Count sheet {{number}}",
+    "books": "Books",
+    "counted": "Counted",
+    "countedOf": "Counted {{item}} lot {{lot}}",
+    "saveCounts": "Save the counts",
+    "submitCount": "Submit the count",
+    "cancelCount": "Cancel the count"
   }
 }

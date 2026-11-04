@@ -76,6 +76,7 @@ export const MENU: MenuSection[] = [
       { label: "qc.title", path: "/inspections", area: "quality" },
       { label: "plans.title", path: "/inspection-plans", area: "quality" },
       { label: "stock.title", path: "/stock", area: "stores" },
+      { label: "sw.title", path: "/stores-work", area: "stores", alsoArea: "accounting" },
       { label: "os.title", path: "/opening-stock", area: "stores" },
       { label: "rtn.title", path: "/supplier-returns", area: "stores" },
       { label: "items.title", path: "/items", area: "stores" },

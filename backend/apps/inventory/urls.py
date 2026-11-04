@@ -3,6 +3,7 @@ from django.urls import path
 from . import inspection_views as q
 from . import opening_views as ov
 from . import receipt_views as r
+from . import stock_ops_views as so
 from . import stock_views as sv
 from . import views
 
@@ -68,6 +69,53 @@ urlpatterns = [
         "inspections/<int:pk>/attachments/<int:attachment_pk>/",
         q.AttachmentDetailView.as_view(),
         name="inspection-attachment",
+    ),
+    path("stock-issues/", so.IssueListView.as_view(), name="stock-issues"),
+    path("stock-issues/lots/", so.LotsView.as_view(), name="stock-lots"),
+    path("stock-issues/<int:pk>/", so.IssueDetailView.as_view(), name="stock-issue"),
+    path("stock-issues/<int:pk>/return/", so.IssueReturnView.as_view(), name="stock-issue-return"),
+    path("stock-adjustments/", so.AdjustmentListView.as_view(), name="stock-adjustments"),
+    path(
+        "stock-adjustments/<int:pk>/",
+        so.AdjustmentDetailView.as_view(),
+        name="stock-adjustment",
+    ),
+    path(
+        "stock-adjustments/<int:pk>/submit/",
+        so.AdjustmentActionView.as_view(action="submit"),
+        name="stock-adjustment-submit",
+    ),
+    path(
+        "stock-adjustments/<int:pk>/approve/",
+        so.AdjustmentActionView.as_view(action="approve"),
+        name="stock-adjustment-approve",
+    ),
+    path(
+        "stock-adjustments/<int:pk>/return/",
+        so.AdjustmentActionView.as_view(action="return"),
+        name="stock-adjustment-return",
+    ),
+    path(
+        "stock-adjustments/<int:pk>/reject/",
+        so.AdjustmentActionView.as_view(action="reject"),
+        name="stock-adjustment-reject",
+    ),
+    path("stock-counts/", so.CountListView.as_view(), name="stock-counts"),
+    path("stock-counts/<int:pk>/", so.CountDetailView.as_view(), name="stock-count"),
+    path(
+        "stock-counts/<int:pk>/enter/",
+        so.CountActionView.as_view(action="enter"),
+        name="stock-count-enter",
+    ),
+    path(
+        "stock-counts/<int:pk>/submit/",
+        so.CountActionView.as_view(action="submit"),
+        name="stock-count-submit",
+    ),
+    path(
+        "stock-counts/<int:pk>/cancel/",
+        so.CountActionView.as_view(action="cancel"),
+        name="stock-count-cancel",
     ),
     path("stock/", sv.StockOnHandView.as_view(), name="stock-on-hand"),
     path("stock/movements/", sv.MovementListView.as_view(), name="stock-movements"),

@@ -55,6 +55,10 @@ FOR EACH ROW EXECUTE FUNCTION assets_line_guard();
 
 CREATE OR REPLACE FUNCTION assets_rate_guard() RETURNS trigger AS $$
 BEGIN
+  -- Saving a row unchanged (as reloading test data does) is not a change.
+  IF TG_OP = 'UPDATE' AND NEW IS NOT DISTINCT FROM OLD THEN
+    RETURN NEW;
+  END IF;
   IF TG_OP = 'UPDATE' THEN
     RAISE EXCEPTION 'A depreciation rate never changes; add one from a later date'
       USING ERRCODE = 'restrict_violation';

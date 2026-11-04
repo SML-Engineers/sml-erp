@@ -103,6 +103,9 @@ DOCUMENT_TYPES = {
     # The stores counted at go-live, with their cost: the Director approves before the stock
     # and its value go in (owner, 2 Nov 2026; P16-15).
     "opening_stock": DocumentType("Opening stock", min_approvals=1, final_role="director"),
+    # Stock found, lost or written off, and the differences of a stock count: the Director
+    # approves before anything is posted (P2-18).
+    "stock_adjustment": DocumentType("Stock adjustment", min_approvals=1, final_role="director"),
     # A credit note against an issued tax invoice: the Director approves, or a person the
     # Admin gives the "approve_credit_notes" action to and the Director confirms (owner, 3 Nov
     # 2026; P2-06).

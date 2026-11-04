@@ -127,6 +127,7 @@ def test_the_admin_sets_the_reminders(admin, accountant):
         ("supplier_return", True, 1),
         ("manual_journal", True, 2),
         ("opening_stock", True, 1),
+        ("stock_adjustment", True, 1),
         ("credit_note", True, 1),
         ("customer_receipt", True, 1),
         ("payment_cancellation", True, 1),

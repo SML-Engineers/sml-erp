@@ -60,6 +60,12 @@ SYSTEM_ROLES = {
     # Differences between the exchange rates of a purchase's dates (IAS 21, P16-19).
     "exchange_gain": "Exchange gain",
     "exchange_loss": "Exchange loss",
+    # Stock (P2-18): material issued, stock adjusted or written off; and, for Phase 3, work in
+    # progress and finished goods.
+    "materials_used": "Raw materials used",
+    "stock_adjustment": "Stock adjustments and write-offs",
+    "work_in_progress": "Work in progress",
+    "finished_goods": "Finished goods",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

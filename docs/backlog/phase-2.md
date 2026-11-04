@@ -349,12 +349,27 @@ Status: `[ ]` to do · `[x]` done
 
 ## E. Stock and fixed assets
 
-- [ ] **P2-18 Stock issues, adjustments and stock count** (spec 6, inventory valuation)
+- [x] **P2-18 Stock issues, adjustments and stock count** (spec 6, inventory valuation)
   Material issued to a division or section (later to a job or production order, Phase 3) and
   returned to stores, at weighted average cost; adjustments and write-offs with a reason and
   the Director's approval; a stock count sheet, counted quantities entered, differences
   approved and posted. The same count loads opening stock (question 7). Finished goods and WIP
   accounts are set up for Phase 3.
+  - Done: Purchasing → Stores work (stores person; the Accountant sees it). Issues
+    (MI{YY}{MM}{NNNN}) from a main store to a division or section take the oldest lot first
+    unless one is chosen, at the weighted average cost (the last of an item takes exactly the
+    value left), posted at once: Dr the item's expense account (Raw materials used, 5010, if
+    it has none), Cr its inventory account. Unused material comes back against its issue,
+    into the same lot, at the cost it went out at, never more than went out. Adjustments
+    (found or lost) and write-offs (out only) need a reason and lot per line and move nothing
+    until the Director approves (never their author): then Dr/Cr inventory against the new
+    Stock adjustments and write-offs (5070); stock found of an item never held needs its
+    cost typed. A stock count lists what the books hold per item and lot on the day; the
+    counts are typed in (0 for what is missing, new lines for what is found); submitting
+    sends the differences to the Director as an adjustment, or closes it as agreed. Issues
+    never change; adjustments only as drafts; count sheets only while counting (database
+    guards). Opening stock keeps its own count sheet (P16-15). Work in progress (1220) and
+    Finished goods (1230) are now system accounts, ready for Phase 3.
 
 - [ ] **P2-19 Fixed asset register and depreciation** (spec 6)
   Assets (machines, moulds, vehicles, buildings, equipment) with cost, date, division, method

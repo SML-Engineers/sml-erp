@@ -11,6 +11,7 @@ urlpatterns = [
     path("api/v1/", include("apps.inventory.urls")),
     path("api/v1/", include("apps.purchasing.urls")),
     path("api/v1/", include("apps.banking.urls")),
+    path("api/v1/", include("apps.assets.urls")),
 ]
 
 # Django's built-in admin signs in with a password only (no two-factor), so it is available

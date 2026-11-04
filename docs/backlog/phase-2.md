@@ -371,11 +371,27 @@ Status: `[ ]` to do · `[x]` done
     guards). Opening stock keeps its own count sheet (P16-15). Work in progress (1220) and
     Finished goods (1230) are now system accounts, ready for Phase 3.
 
-- [ ] **P2-19 Fixed asset register and depreciation** (spec 6)
+- [x] **P2-19 Fixed asset register and depreciation** (spec 6)
   Assets (machines, moulds, vehicles, buildings, equipment) with cost, date, division, method
   and rate per class (question 8); monthly depreciation posted after the Accountant checks
   it; disposals with the gain or loss; moulds carry their shot count, filled from production
   in Phase 3.
+  - Done: Accounts → Fixed assets (Accountant), a new "assets" app. Classes loaded from the
+    list proposed on 3 Nov: land, buildings, plant and machinery, moulds and tooling, motor
+    vehicles, furniture and fittings, office and computer equipment, with their accounts from
+    the starter chart (cost 1500–1560, accumulated depreciation 1590, depreciation 6800, gain
+    7030, loss 8020). Methods and rates are dated per class (rule 11) and entered by the
+    Accountant as the auditors agree; until then a class is not depreciated (a month with
+    such assets is refused, naming the class); land never is. Assets (FA{NNNN}) carry class,
+    division, machine, purchase date and cost, first month, residual value, depreciation
+    already charged (for the go-live register) and the mould shot count. A month is worked out
+    (straight line on cost less residual, or reducing balance on book value, a twelfth of the
+    yearly rate, never below the residual), checked as a draft, then posted in order: Dr
+    depreciation, Cr accumulated depreciation per class and division. A disposal needs the
+    months before it posted, and posts the cost out, the depreciation back, the money
+    received and the gain or loss; the asset is not depreciated in the month it goes. Posted
+    months, used rates, depreciated assets' cost and dates, and disposed assets never change
+    (database guards). Waiting for: the auditors' methods and rates.
 
 ## F. Tax, currencies, budgets and closing
 

@@ -38,6 +38,7 @@ from .models import (
     QuotationCostingExtra,
     QuotationCostingOperation,
     QuotationFile,
+    QuotationImage,
 )
 from .services import BreakInput, LineInput, SalesError, can_enter
 
@@ -328,6 +329,17 @@ def revise(user: User, quotation: Quotation) -> Quotation:
                 sha256=record.sha256,
                 uploaded_by=record.uploaded_by,
                 uploaded_at=record.uploaded_at,
+            )
+        for picture in old.images.all():
+            QuotationImage.objects.create(
+                quotation=new,
+                file=picture.file.name,
+                file_name=picture.file_name,
+                content_type=picture.content_type,
+                size=picture.size,
+                sha256=picture.sha256,
+                uploaded_by=picture.uploaded_by,
+                uploaded_at=picture.uploaded_at,
             )
         old.status = S.REVISED
         old.save(update_fields=["status"])

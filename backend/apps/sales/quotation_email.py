@@ -1,7 +1,8 @@
 """Emailing a quotation to the customer (backlog P15-07, spec 3B).
 
 Only a quotation approved by the Director is emailed (owner, 31 Oct 2026), by its creator or
-the Sales Manager, from the company's document mailbox, with the PDF attached. Every email
+the Sales Manager, from the company's document mailbox, with the PDF attached and the
+quotation's product pictures (up to three; owner, 4 Nov 2026) unless left out. Every email
 sent or attempted is recorded as sent (P0-19). The first email that goes out marks an
 approved quotation Sent.
 """
@@ -46,7 +47,8 @@ def draft(user: User, quotation: Quotation) -> dict:
     if not can_email(user, quotation):
         raise SalesError(_refusal(quotation))
     try:
-        return document_email.draft(user, KIND, _values(quotation), to=recipients(quotation))
+        message = document_email.draft(user, KIND, _values(quotation), to=recipients(quotation))
+        return message | {"images": [i.file_name for i in quotation.images.all()]}
     except EmailError as error:
         raise SalesError(str(error)) from None
 
@@ -60,9 +62,29 @@ def _refusal(quotation: Quotation) -> str:
     return "The quotation's creator or the Sales Manager emails it."
 
 
-def send(user: User, quotation: Quotation, *, to, subject: str, body: str, cc=()) -> SentEmail:
-    """Send the quotation with its PDF. Returns the record; a failed send is recorded too
-    and leaves the quotation as it was."""
+def pictures(quotation: Quotation) -> list[tuple[str, bytes, str]]:
+    """The quotation's product pictures as email attachments (owner's request, 4 Nov 2026)."""
+    out = []
+    for n, image in enumerate(quotation.images.all(), start=1):
+        with image.file.open("rb") as handle:
+            content = handle.read()
+        name = image.file_name or f"Picture-{n}"
+        out.append((name, content, image.content_type))
+    return out
+
+
+def send(
+    user: User,
+    quotation: Quotation,
+    *,
+    to,
+    subject: str,
+    body: str,
+    cc=(),
+    include_images: bool = True,
+) -> SentEmail:
+    """Send the quotation with its PDF and, unless left out, its product pictures. Returns
+    the record; a failed send is recorded too and leaves the quotation as it was."""
     if not can_email(user, quotation):
         raise SalesError(_refusal(quotation))
     name = (quotation.label if quotation.revision else quotation.number).replace(" ", "-")
@@ -77,6 +99,7 @@ def send(user: User, quotation: Quotation, *, to, subject: str, body: str, cc=()
             body=body,
             document_id=quotation.pk,
             attachment=(f"Quotation-{name}.pdf", printing.render(quotation), "application/pdf"),
+            others=pictures(quotation) if include_images else (),
         )
     except EmailError as error:
         raise SalesError(str(error)) from None

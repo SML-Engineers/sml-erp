@@ -16,7 +16,7 @@ from apps.core.permissions import AreaAccess
 from apps.masters.models import Customer, CustomerContact, Machine, Material
 
 from . import costing, orders, printing, proformas, quotation_email, services, workflow
-from .models import Quotation, QuotationFile
+from .models import Quotation, QuotationFile, QuotationImage
 from .services import BreakInput, LineInput, SalesError
 
 
@@ -108,6 +108,17 @@ def _detail(q: Quotation, user) -> dict:
                 "uploaded_at": f.uploaded_at,
             }
             for f in q.files.all()
+        ],
+        # Product pictures for the customer, shown to the approver and emailed (4 Nov 2026).
+        "images": [
+            {
+                "id": i.id,
+                "file_name": i.file_name,
+                "content_type": i.content_type,
+                "size": i.size,
+                "uploaded_at": i.uploaded_at,
+            }
+            for i in q.images.all()
         ],
         "can_edit": services.can_edit(user, q),
         "approved_at": q.approved_at,
@@ -373,6 +384,43 @@ class QuotationFileDetailView(_Sales):
         return Response(_detail(Quotation.objects.get(pk=quotation.pk), request.user))
 
 
+class QuotationImageListView(_Sales):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, pk):
+        quotation = _get(request.user, pk)
+        uploaded = request.FILES.get("file")
+        if uploaded is None:
+            return _error("Choose a picture to add.")
+        try:
+            services.add_image(request.user, quotation, uploaded)
+        except SalesError as error:
+            return _error(error)
+        body = _detail(Quotation.objects.get(pk=quotation.pk), request.user)
+        return Response(body, status=status.HTTP_201_CREATED)
+
+
+class QuotationImageDetailView(_Sales):
+    def get(self, request, pk, image_pk):
+        quotation = _get(request.user, pk)
+        record = get_object_or_404(QuotationImage, pk=image_pk, quotation=quotation)
+        return FileResponse(
+            record.file.open("rb"),
+            content_type=record.content_type,
+            filename=record.file_name,
+            as_attachment=request.query_params.get("download") in ("1", "true"),
+        )
+
+    def delete(self, request, pk, image_pk):
+        quotation = _get(request.user, pk)
+        record = get_object_or_404(QuotationImage, pk=image_pk, quotation=quotation)
+        try:
+            services.remove_image(request.user, record)
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(Quotation.objects.get(pk=quotation.pk), request.user))
+
+
 # --- Costing (P15-04): internal only, for those who may see it --------------------------
 
 
@@ -623,6 +671,7 @@ class EmailInput(serializers.Serializer):
     )
     subject = serializers.CharField(max_length=200)
     body = serializers.CharField(max_length=20000)
+    include_images = serializers.BooleanField(required=False, default=True)
 
 
 class QuotationEmailView(_Sales):
@@ -649,6 +698,7 @@ class QuotationEmailView(_Sales):
                 cc=values.get("cc", []),
                 subject=values["subject"],
                 body=values["body"],
+                include_images=values.get("include_images", True),
             )
         except SalesError as error:
             return _error(error)

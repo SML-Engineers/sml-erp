@@ -214,6 +214,36 @@ class QuotationFile(models.Model):
         return self.file_name
 
 
+class QuotationImage(models.Model):
+    """A picture of the product for the customer (owner's request, 4 Nov 2026): at most three
+    per quotation, JPG or PNG of at most 1 MB each. Added by the person who makes the
+    quotation while it is a draft, seen by the approver and emailed with the quotation. It
+    changes only while the quotation is a draft (database guard)."""
+
+    quotation = models.ForeignKey(Quotation, on_delete=models.CASCADE, related_name="images")
+    file = models.FileField(upload_to="quotation-images/%Y/%m/")
+    file_name = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    uploaded_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["uploaded_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(size__gt=0) & models.Q(size__lte=1024 * 1024),
+                name="sales_quotationimage_size",
+            ),
+        ]
+
+    def __str__(self):
+        return self.file_name
+
+
 # --- Costing (P15-04, spec 5.1): internal only, never on the customer's copy -------------
 
 

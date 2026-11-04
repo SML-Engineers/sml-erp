@@ -732,6 +732,8 @@ Delivery notes and tax invoices are completed in Phase 2; job and work orders in
 
 Quantity breaks show unit prices for several quantities (e.g. 10, 50, 100) on one quotation. Each line carries the customer's drawing, with its revision number.
 
+**Product pictures (owner, 4 Nov 2026).** The person making the quotation may add up to three pictures of the product (JPG or PNG, at most 1 MB each) while it is a draft. The approver sees them on the quotation when approving, and they are attached to the email to the customer with the quotation PDF (the sender can leave them out). They change only while the quotation is a draft (database), and a revision keeps them.
+
 **Moulding costing (per line, internal only)**
 
 | Cost element | How it is calculated |
@@ -1445,6 +1447,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Tax reports (P2-20) | VAT return by month (standard, zero-rated exports apart, exempt, outside VAT; output VAT checked against the ledger; input VAT as claimed in the books), SSCL with its base, WHT with certificates; each line traced to its document; Excel and PDF | 6 |
 | Month-end revaluation (P2-21) | Open foreign-currency customer and supplier invoices revalued at the month-end rate, posted to Unrealised exchange gain or loss and reversed on the 1st; foreign-currency bank and cash balances (from the statement or typed) revalued to Exchange gain or loss and kept; checked by the Accountant then posted | 5.5, 6 |
 | Budgets (P2-22) | A financial year's budget by account, division and month, typed or imported from Excel, approved by the Director; revisions are new versions; the profit and loss shows budget, difference and % beside the actual | 6 |
+| Quotation pictures (owner, 4 Nov 2026) | Up to 3 product pictures (JPG/PNG, 1 MB each) added to a draft quotation, shown to the approver and emailed with the quotation | 5.1 |
 
 **Still needed for initial setup**
 

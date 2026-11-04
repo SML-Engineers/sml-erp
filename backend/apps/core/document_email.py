@@ -313,6 +313,7 @@ def send(
     cc=(),
     document_id: int | None = None,
     attachment: tuple[str, bytes, str] | None = None,
+    others: list[tuple[str, bytes, str]] | tuple = (),
 ) -> SentEmail:
     """Send the email exactly as given and record it. A failure is recorded too, and the
     record returned has status "failed" with the server's answer. The caller checks that
@@ -367,6 +368,15 @@ def send(
         record.attachment_name = name[:200]
         record.attachment_sha256 = hashlib.sha256(content).hexdigest()
         record.attachment = ContentFile(content, name=name)
+    if others:
+        total = sum(len(c) for _, c, _ in ([attachment] if attachment else []) + list(others))
+        if total > MAX_ATTACHMENT:
+            raise EmailError("The attachments together are larger than 15 MB.")
+        listed = []
+        for name, content, mimetype in others:
+            message.attach(name, content, mimetype)
+            listed.append(f"{name[:200]} {hashlib.sha256(content).hexdigest()}")
+        record.other_attachments = "\n".join(listed)
     try:
         message.send()
         record.status = SentEmail.Status.SENT

@@ -30,7 +30,7 @@ from apps.masters import currencies, customers
 from apps.masters.models import Currency, Customer, CustomerContact
 from apps.masters.services import MastersError
 
-from .models import Quotation, QuotationFile, QuotationLine, QuotationQtyBreak
+from .models import Quotation, QuotationFile, QuotationImage, QuotationLine, QuotationQtyBreak
 
 CENT = Decimal("0.01")
 QTY = Decimal("0.001")
@@ -44,6 +44,12 @@ FILE_TYPES = {  # what the file really is, read from its first bytes
     b"\xff\xd8\xff": ("image/jpeg", ".jpg"),
     b"\x89PNG\r\n\x1a\n": ("image/png", ".png"),
 }
+
+
+# Product pictures emailed to the customer (owner's request, 4 Nov 2026).
+MAX_IMAGES = 3
+MAX_IMAGE_BYTES = 1024 * 1024
+IMAGE_TYPES = {k: v for k, v in FILE_TYPES.items() if v[0].startswith("image/")}
 
 
 class SalesError(Exception):
@@ -446,6 +452,50 @@ def remove_file(user: User, record: QuotationFile) -> None:
         quotation = Quotation.objects.select_for_update().get(pk=record.quotation_id)
         if not can_edit(user, quotation):
             raise SalesError("Files are removed from a draft, by the person who made it.")
+        record.delete()
+
+
+def add_image(user: User, quotation: Quotation, uploaded) -> QuotationImage:
+    """A picture of the product for the customer: JPG or PNG (checked from the file itself),
+    at most 1 MB, at most three per quotation, added to a draft by the person who made it."""
+    with audit_context("quotation_image_added"), transaction.atomic():
+        quotation = Quotation.objects.select_for_update().get(pk=quotation.pk)
+        if not can_edit(user, quotation):
+            raise SalesError("Pictures are added to a draft, by the person who made it.")
+        if quotation.images.count() >= MAX_IMAGES:
+            raise SalesError(f"A quotation can have at most {MAX_IMAGES} pictures.")
+        if uploaded.size > MAX_IMAGE_BYTES:
+            raise SalesError("The picture is larger than 1 MB. Make it smaller and try again.")
+        content = uploaded.read()
+        if not content:
+            raise SalesError("The file is empty.")
+        kind = next((v for magic, v in IMAGE_TYPES.items() if content.startswith(magic)), None)
+        if kind is None:
+            raise SalesError("Only JPG and PNG pictures can be added.")
+        content_type, extension = kind
+        digest = hashlib.sha256(content).hexdigest()
+        if quotation.images.filter(sha256=digest).exists():
+            raise SalesError("This picture is already on the quotation.")
+        name = (uploaded.name or f"picture{extension}").replace("/", "_").replace("\\", "_")
+        uploaded.seek(0)
+        record = QuotationImage(
+            quotation=quotation,
+            file_name=name[-200:],
+            content_type=content_type,
+            size=len(content),
+            sha256=digest,
+            uploaded_by=user,
+        )
+        record.file.save(f"{quotation.number}-{digest[:12]}{extension}", uploaded, save=False)
+        record.save()
+        return record
+
+
+def remove_image(user: User, record: QuotationImage) -> None:
+    with audit_context("quotation_image_removed"), transaction.atomic():
+        quotation = Quotation.objects.select_for_update().get(pk=record.quotation_id)
+        if not can_edit(user, quotation):
+            raise SalesError("Pictures are removed from a draft, by the person who made it.")
         record.delete()
 
 

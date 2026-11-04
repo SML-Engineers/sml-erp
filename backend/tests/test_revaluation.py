@@ -87,7 +87,7 @@ def test_a_dollar_bank_balance_is_revalued_and_kept(invoice, cashier, accountant
     receipts.approve(
         accountant, pay(cashier, usd_bank, invoice, "1000.00", receipt_date=TODAY - timedelta(15))
     )
-    with pytest.raises(RevaluationError, match="Give the balance .* of: com-usd"):
+    with pytest.raises(RevaluationError, match="Give the balance .* of: COM-USD"):
         revaluation.prepare(accountant, END)
 
     run = revaluation.prepare(accountant, END, {usd_bank.pk: "1000.00"})
@@ -175,7 +175,7 @@ def test_the_screens_api(invoice, accountant, cashier, usd_bank):
     api = as_user(accountant)
     got = api.get("/api/v1/revaluations/", {"month_end": END.isoformat()})
     assert got.status_code == 200, got.data
-    assert [a["code"] for a in got.data["accounts"]] == ["com-usd"]
+    assert [a["code"] for a in got.data["accounts"]] == ["COM-USD"]
     made = api.post(
         "/api/v1/revaluations/",
         {"month_end": END.isoformat(), "balances": {str(usd_bank.pk): "0.00"}},

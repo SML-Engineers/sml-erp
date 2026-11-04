@@ -485,10 +485,22 @@ Status: `[ ]` to do · `[x]` done
     division), what customers owe us and what we owe suppliers with the overdue part; for the
     company or a division; each tile opens its report.
 
-- [ ] **P2-25 Cash flow planner** (spec 7A)
+- [x] **P2-25 Cash flow planner** (spec 7A)
   Bank balances projected day by day for 13 weeks from approved unpaid vouchers, invoices due
   (by each customer's payment history) and recurring payments; "what-if" items change the
   projection but are never posted.
+  - Done: Accounts → Cash flow planner (Financial reports: View; company only). Starts from
+    today's balance of the bank, cash and petty cash accounts and projects it day by day for
+    13 weeks (by week on the page, with a chart, the lowest point and a warning if it goes
+    below nil). Money in: what customers owe on issued invoices, on the due date moved by the
+    customer's average days late over the last year (weighted by amount, never early), or
+    today if that has passed; post-dated cheques on their date and cheques not yet banked
+    today (their invoices not counted twice). Money out: what we owe suppliers (supplier
+    invoices and unpaid voucher lines, as in the payables aging) on the due date or today if
+    overdue; recurring journals that move money in or out of a bank or cash account, on each
+    date of their schedule. "What-if" items (description, date, amount in or out) are added
+    and removed by the Accountant, can be switched off on the page, and are never posted.
+    Each week opens its items, each linked to its document. Payroll is added in Phase 2b.
 
 - [ ] **P2-26 Custom report builder** (spec 7A)
   From a standard report or a data source: columns, filters, grouping, subtotals and period

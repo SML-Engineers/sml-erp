@@ -3482,5 +3482,39 @@
     "reopenReason": "Reason for reopening",
     "historyLine": "Closed by {{by}}: entry {{entry}} on {{date}}, profit LKR {{profit}}.",
     "reopenedLine": "Reopened by {{by}} ({{reason}}), entry {{entry}}."
+  },
+  "planner": {
+    "title": "Cash flow planner",
+    "help": "The company's bank and cash balance, projected day by day for the next 13 weeks: what customers owe (on the due date, moved by how late each customer usually pays), cheques received, what we owe suppliers (on the due date, or today if overdue) and recurring payments. Add \"what-if\" items to see their effect; they are never posted. Payroll will be added with the payroll module.",
+    "summary": "Summary",
+    "today": "Today ({{date}})",
+    "lowest": "Lowest point",
+    "end": "In 13 weeks ({{date}})",
+    "shortfall": "The balance goes below nil on {{day}}. Plan a receipt, delay a payment or arrange an overdraft.",
+    "chart": "Projected balance, day by day",
+    "byWeek": "By week",
+    "week": "Week",
+    "in": "Money in",
+    "out": "Money out",
+    "balance": "Balance at the end",
+    "lowestInWeek": "Lowest in the week",
+    "nothing": "Nothing expected this week.",
+    "kinds": {
+      "receivable": "Customer",
+      "cheque": "Cheque received",
+      "payable": "Supplier",
+      "recurring": "Recurring",
+      "what_if": "What-if"
+    },
+    "whatIfs": "What-if items",
+    "whatIfsHelp": "Untick an item to see the projection without it. Items are never posted.",
+    "remove": "Remove",
+    "description": "What it is",
+    "date": "Date",
+    "amount": "Amount",
+    "direction": "Money in or out",
+    "moneyOut": "Money out",
+    "moneyIn": "Money in",
+    "add": "Add"
   }
 }

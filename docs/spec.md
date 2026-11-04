@@ -1441,6 +1441,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Bank reconciliation (P2-16) | Statement lines matched to journal entries (amount, direction, date window, reference on the line); charges and interest posted from the line by rule or earlier coding; nothing without the Accountant's click; a month finished only with every line in the books and nil difference, then locked and its cheques marked cleared | 6, 7A |
 | Petty cash (P2-17) | Imprest: the custodian records expenses with slips (never more than the float); the Clerk tops up with a Petty Cash voucher listing them, through the three approvals; paying it posts the expenses | 4.1, 6 |
 | Stock issues, adjustments and counts (P2-18) | Issues and returns at weighted average cost, oldest lot first, posted at once; adjustments, write-offs and count differences posted only on the Director's approval; WIP and finished goods accounts ready for Phase 3 | 6, 5A |
+| Fixed assets (P2-19) | Classes with dated methods and rates entered as the auditors agree (none depreciated until then; land never); monthly depreciation checked then posted in order; disposals post the gain or loss; mould shot count kept for Phase 3 | 6 |
 
 **Still needed for initial setup**
 

@@ -3239,5 +3239,68 @@
     "saveCounts": "Save the counts",
     "submitCount": "Submit the count",
     "cancelCount": "Cancel the count"
+  },
+  "fa": {
+    "title": "Fixed assets",
+    "help": "The register of the company's assets, monthly depreciation worked out for the Accountant to check and then posted, and disposals with their gain or loss. Each class's method and rate are agreed with the auditors and entered under Classes; until then that class is not depreciated.",
+    "tabs": {
+      "register": "Register",
+      "depreciation": "Monthly depreciation",
+      "classes": "Classes and rates"
+    },
+    "register": "Asset register",
+    "code": "Code",
+    "name": "Name",
+    "class": "Class",
+    "division": "Division",
+    "cost": "Cost (LKR)",
+    "accumulated": "Depreciation to date",
+    "bookValue": "Book value",
+    "status": "Status",
+    "statuses": {
+      "active": "In use",
+      "disposed": "Disposed"
+    },
+    "none": "No assets registered yet.",
+    "add": "Register an asset",
+    "acquired": "Bought on",
+    "from": "Depreciate from (empty: the month bought)",
+    "residual": "Residual value",
+    "openingAccumulated": "Depreciation already charged (go-live)",
+    "serial": "Serial number",
+    "supplier": "Supplier",
+    "save": "Register",
+    "dispose": "Sell or scrap",
+    "disposedOn": "Date",
+    "proceeds": "Amount received",
+    "into": "Received into",
+    "reason": "Reason",
+    "disposeButton": "Record the disposal",
+    "nextMonth": "Next month to depreciate",
+    "prepare": "Work out {{month}}",
+    "nothingYet": "No assets to depreciate yet.",
+    "runStatuses": {
+      "draft": "To check",
+      "posted": "Posted"
+    },
+    "linesOf": "Depreciation {{month}}",
+    "rate": "Rate",
+    "amount": "Depreciation",
+    "methods": {
+      "straight_line": "straight line",
+      "reducing_balance": "reducing balance",
+      "none": "not depreciated"
+    },
+    "post": "Checked: post it",
+    "again": "Work it out again",
+    "discard": "Discard",
+    "classesHelp": "Enter each class's method and yearly rate as the auditors agree. A new rate applies from the month given; months already posted keep the rate they used.",
+    "since": "since {{date}}",
+    "noRate": "No method and rate yet: not depreciated",
+    "rateFrom": "From",
+    "method": "Method",
+    "ratePercent": "Rate % a year",
+    "agreedWith": "Agreed with the auditors on…",
+    "addRate": "Add the rate"
   }
 }

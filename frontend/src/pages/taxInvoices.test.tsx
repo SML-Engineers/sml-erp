@@ -74,3 +74,32 @@ test("the Accountant issues the draft and it gets its number", async () => {
   expect(screen.getByRole("link", { name: "JV26110040" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Tax invoice PDF" })).toHaveAttribute("href", "/api/v1/tax-invoices/4/pdf/");
 });
+
+test("the invoice's history shows the customer viewed it, and a OnePay link is recorded", async () => {
+  const issued: InvoiceDetail = {
+    ...draft, number: "26NOV_W1_01", status: "issued", can_edit: false, can_issue: false, can_email: true,
+    tracking: {
+      state: "overdue", open: "139487.43", viewed: true,
+      events: [
+        { at: "2026-11-03T10:00:00", kind: "emailed", text: "Emailed to ap@lankatiles.lk", url: "" },
+        { at: "2026-11-04T09:00:00", kind: "viewed", text: "Viewed by the customer (1 time)", url: "" },
+      ],
+    },
+  };
+  const calls = mockApi({
+    "GET /api/v1/tax-invoices/4/": { body: issued },
+    "POST /api/v1/tax-invoices/4/card-links/": { body: issued },
+  });
+  renderAt("/tax-invoices/4", <TaxInvoicePage />, "/tax-invoices/:id");
+  const history = await screen.findByRole("list", { name: "What happened" });
+  expect(history).toHaveTextContent("Viewed by the customer (1 time)");
+  expect(screen.getByRole("heading", { name: /Tracking · Overdue/ })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Record a OnePay link sent" }));
+  const form = screen.getByRole("form", { name: "Record a OnePay link sent" });
+  fireEvent.change(within(form).getByLabelText("OnePay link"), { target: { value: "https://onepay.lk/p/AB12" } });
+  fireEvent.change(within(form).getByLabelText(/^Amount/), { target: { value: "139487.43" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/tax-invoices/4/card-links/", expect.objectContaining({ method: "POST" })),
+  );
+});

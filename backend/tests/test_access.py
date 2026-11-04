@@ -193,6 +193,10 @@ def test_every_endpoint_declares_its_access():
         "PettyExpenseListView",
         "PettyExpenseDetailView",
         "PettySlipView",
+        # The customer's page of an emailed invoice (P2-27): reached only by its secret link,
+        # shows that one invoice, its PDF and the company's bank details.
+        "PublicInvoiceView",
+        "PublicInvoicePdfView",
     }
 
     def walk(patterns):

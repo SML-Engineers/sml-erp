@@ -66,6 +66,13 @@ export interface InvoiceDetail extends InvoiceSummary {
   can_issue: boolean;
   can_email: boolean;
   emails: { to: string; subject: string; status: "sent" | "failed"; error: string; sent_at: string; by: string }[];
+  /** Where an issued invoice stands and its history (P2-27). */
+  tracking?: {
+    state: "open" | "overdue" | "partly_paid" | "paid";
+    open: string;
+    viewed: boolean;
+    events: { at: string; kind: string; text: string; url: string }[];
+  };
 }
 
 export interface OrderToInvoice {
@@ -108,6 +115,8 @@ export const updateInvoice = (id: number, header: InvoiceHeader) => apiSend<Invo
 export const deleteInvoice = (id: number) => apiSend<null>("DELETE", `/tax-invoices/${id}/`);
 export const issueInvoice = (id: number) => apiSend<InvoiceDetail>("POST", `/tax-invoices/${id}/issue/`, {});
 export const invoicePdfUrl = (id: number) => `${API_BASE}/tax-invoices/${id}/pdf/`;
+export const addCardLink = (id: number, input: { url: string; amount: string; sent_on: string; note: string }) =>
+  apiSend<InvoiceDetail>("POST", `/tax-invoices/${id}/card-links/`, input);
 export const getInvoiceEmail = (id: number) => apiGet<EmailDraft>(`/tax-invoices/${id}/email/`);
 export const sendInvoiceEmail = (id: number, email: EmailToSend) => apiSend<InvoiceDetail>("POST", `/tax-invoices/${id}/email/`, email);
 export const listSalesAccounts = () => apiGet<SalesAccountRow[]>("/sales-accounts/");

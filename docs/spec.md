@@ -1452,6 +1452,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Cash flow and finance tiles (P2-24) | Cash flow statement (indirect method) for the company, adding up to the change in cash; home page tiles for profit (month, year with budget), cash, receivables and payables, per division or company, each opening its report | 6, 7A |
 | Cash flow planner (P2-25) | Bank and cash balance projected day by day for 13 weeks from receivables (by each customer's payment history), cheques held, payables and recurring payments, with what-if items that are never posted | 7A |
 | Report builder (P2-26) | Own reports from journal lines, vouchers, sales and supplier invoices or stock movements: columns by drag-and-drop, filters, grouping with subtotals, sort, period columns by month or division; saved, shared with a role, Excel, PDF and email; each person sees only what their access allows | 7A |
+| Invoice tracking (P2-27) | The emailed invoice carries a secret link to a customer page (invoice, PDF, bank transfer details); views are recorded; OnePay card links sent are recorded; the invoice shows open/overdue/partly paid/paid and its full history. No Pay Now button (owner, 3 Nov 2026) | 7A |
 
 **Still needed for initial setup**
 

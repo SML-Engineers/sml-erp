@@ -519,10 +519,21 @@ Status: `[ ]` to do · `[x]` done
     emailed with the "report" message of Settings → Document email and the Excel attached.
     Production data is added as a source in Phase 3.
 
-- [ ] **P2-27 Pay Now and invoice tracking** (spec 7A)
+- [x] **P2-27 Pay Now and invoice tracking** (spec 7A)
   The emailed invoice links to a customer page with the PDF, a Pay Now button through a Sri
   Lankan gateway (e.g. PayHere) and the bank transfer details; the invoice history shows sent,
   viewed, paid and deposited. Needs the company's gateway account (question 9).
+  - Done, as the owner decided on 3 Nov 2026 (question 9: no gateway, OnePay links sent by
+    hand, no Pay Now button). The email of an issued tax invoice now ends with a secret link
+    (made once per invoice, 32 random bytes) to a customer page with no sign-in: the invoice's
+    number, dates, amount and what is still to pay, its PDF, and the company's bank accounts
+    in the invoice's currency (its division's first) with the invoice number as the
+    reference; "to pay by card, reply and we will send a payment link". Opening the page or
+    the PDF is recorded as viewed (insert-only). Sales or the Accountant record a OnePay link
+    sent (https link, amount, date, note; insert-only). The invoice page shows where it
+    stands (open, overdue, partly paid, paid) and its history: issued, emailed, viewed, OnePay
+    links, each payment (with its status), cheques deposited, credit notes. The card payment
+    itself is recorded as a card receipt as before (P2-07).
 
 ## H. Migration and go-live
 

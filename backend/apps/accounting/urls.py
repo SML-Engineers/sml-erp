@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import budget_views as bv
+from . import close_views as cv
 from . import journal_views as j
 from . import manual_views as mj
 from . import rate_views as rv
@@ -12,6 +13,19 @@ from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
+    path("month-end/<str:month>/", cv.ChecklistView.as_view(), name="month-end"),
+    path("month-end/<str:month>/tick/", cv.TickView.as_view(), name="month-end-tick"),
+    path("year-end/", cv.YearView.as_view(), name="year-end"),
+    path(
+        "year-end/<int:year>/close/",
+        cv.YearActionView.as_view(action="close"),
+        name="year-end-close",
+    ),
+    path(
+        "year-end/<int:year>/reopen/",
+        cv.YearActionView.as_view(action="reopen"),
+        name="year-end-reopen",
+    ),
     path("budgets/", bv.BudgetListView.as_view(), name="budget-list"),
     path("budgets/<int:pk>/", bv.BudgetDetailView.as_view(), name="budget-detail"),
     path("budgets/<int:pk>/export/", bv.BudgetExportView.as_view(), name="budget-export"),

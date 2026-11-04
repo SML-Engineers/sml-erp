@@ -447,10 +447,24 @@ Status: `[ ]` to do · `[x]` done
     less budget, positive is better: more income or lower costs) and the difference as a % of
     the budget, also in Excel and PDF. Overhead allocation (spec 3.4) is not in the budget.
 
-- [ ] **P2-23 Month-end and year-end close**
+- [x] **P2-23 Month-end and year-end close**
   A month-end checklist (reconciliations, depreciation, revaluation, accruals) before the
   Director closes the month; the year-end close carries the year's profit to retained earnings
   and opens the next year. Reopening needs the Director and a reason.
+  - Done: Accounts → Month-end and year-end close. The month's checklist: every active bank
+    account reconciled to the month end; depreciation posted (when an asset is depreciated in
+    the month); the revaluation posted (when anything is held in a foreign currency); no manual
+    journal of the month left as a draft or waiting; accruals and prepayments entered. The
+    system checks the first four itself; the Accountant marks any item done with a note (the
+    accruals always, the others when done another way or not needed that month); notes are
+    never changed (database). The Director's Close button (here and on Accounting periods) is
+    refused until every item is done. Year end: once all twelve months of a financial year are
+    closed, the Director closes the year: one entry on the first day of the next year moves
+    every income and cost account's balance, per division, to Retained earnings, so the new
+    year starts from nil; the profit and loss report leaves that entry (and any reversal) out,
+    so the closed year's report does not change. Reopening the year (Director, reason)
+    reverses the entry and is recorded; a month of a closed year can be reopened only after
+    the year is. A year-end close is never deleted or changed otherwise (database).
 
 ## G. Reports and dashboards
 

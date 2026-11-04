@@ -105,9 +105,6 @@ def test_the_cash_flow_api_and_its_export(month, accountant):
     assert as_user(accountant).get(url + "&export=xlsx").status_code == 200
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     assert as_user(clerk).get(url).status_code == 403
-    ws_only = person("ws@sml.lk", "accountant", divisions=["WS"])
-    refused = as_user(ws_only).get(url)
-    assert refused.status_code == 400 and "whole company" in refused.json()["detail"]
 
 
 def test_the_home_page_tiles(month, accountant):

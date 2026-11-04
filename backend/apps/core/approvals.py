@@ -126,6 +126,8 @@ DOCUMENT_TYPES = {
     # A financial year's budget, prepared by the Accountant: the Director approves it, and
     # each revision (P2-22).
     "budget": DocumentType("Budget", min_approvals=1, final_role="director"),
+    # The balances brought over from QuickBooks at go-live: the Director approves (P2-28).
+    "opening_balances": DocumentType("Opening balances", min_approvals=1, final_role="director"),
     "customer_receipt": DocumentType(
         "Customer receipt",
         min_approvals=1,

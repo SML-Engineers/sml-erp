@@ -5,6 +5,7 @@ from . import close_views as cv
 from . import journal_views as j
 from . import manual_views as mj
 from . import planner_views as pv
+from . import quickbooks_views as qbv
 from . import rate_views as rv
 from . import recurring_views as rj
 from . import report_builder_views as rbv
@@ -15,6 +16,20 @@ from . import tax_views as t
 from . import views as v
 
 urlpatterns = [
+    path("migration/", qbv.MigrationView.as_view(), name="migration"),
+    path(
+        "migration/<int:pk>/",
+        qbv.MigrationActionView.as_view(action="delete"),
+        name="migration-one",
+    ),
+    *[
+        path(
+            f"migration/<int:pk>/{name}/",
+            qbv.MigrationActionView.as_view(action=name),
+            name=f"migration-{name}",
+        )
+        for name in ("submit", "approve", "return", "reject")
+    ],
     path("report-builder/", rbv.BuilderView.as_view(), name="report-builder"),
     path("report-builder/run/", rbv.RunView.as_view(), name="report-builder-run"),
     path("report-builder/email/", rbv.EmailView.as_view(), name="report-builder-email"),

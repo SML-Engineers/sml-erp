@@ -815,3 +815,63 @@ class SavedReport(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# --- Opening balances from QuickBooks (backlog P2-28) ------------------------------------------
+
+
+class OpeningBalance(models.Model):
+    """The balances brought over from QuickBooks at go-live: one entry, read from QuickBooks'
+    trial balance (with customers and suppliers from its aging reports), checked, and posted
+    once the Director approves. Posted, it never changes (database guard)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING_APPROVAL = "awaiting_approval", "Waiting for the Director"
+        POSTED = "posted", "Approved and posted"
+        REJECTED = "rejected", "Rejected"
+
+    as_at = models.DateField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    report = models.JSONField(default=dict)  # what the check found, as shown on the page
+    journal_entry = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["status"],
+                condition=models.Q(status="posted"),
+                name="accounting_opening_posted_once",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Opening balances at {self.as_at}"
+
+
+class OpeningBalanceLine(models.Model):
+    opening = models.ForeignKey(OpeningBalance, on_delete=models.CASCADE, related_name="lines")
+    line_no = models.PositiveIntegerField()
+    account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="+")
+    customer = models.ForeignKey(
+        "masters.Customer", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    description = models.CharField(max_length=300, blank=True)
+    debit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    credit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["opening", "line_no"]
+
+    def __str__(self):
+        return f"{self.opening_id}/{self.line_no}"

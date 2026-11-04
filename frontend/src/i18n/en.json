@@ -3591,5 +3591,50 @@
     "emailBody": "Message",
     "send": "Send with the Excel file",
     "sent": "Sent."
+  },
+  "mig": {
+    "title": "Opening balances from QuickBooks",
+    "help": "At go-live, upload QuickBooks' own Excel exports as they come out of QuickBooks. They are checked first: the trial balance must balance, every account, customer and supplier must be found, and the open invoices and bills must add up to the debtors and creditors. When all is in order, one opening entry is made for the Director to approve. Stock is loaded on Stores → Opening stock, and fixed assets on Fixed assets.",
+    "files": "QuickBooks files",
+    "file": {
+      "trial_balance": "Trial balance (required)",
+      "receivables": "A/R ageing detail (open invoices)",
+      "payables": "A/P ageing detail (open bills)",
+      "items": "Item list (to compare the stock value)"
+    },
+    "check": "Check the files",
+    "make": "Make the opening balances",
+    "result": "What the check found",
+    "asAt": "As at",
+    "accounts": "Accounts in the trial balance",
+    "totals": "Debits / credits",
+    "debtors": "Debtors",
+    "creditors": "Creditors",
+    "withParties": "{{amount}} ({{count}} with a balance)",
+    "stock": "Stock in the trial balance",
+    "itemList": "item list: {{amount}}",
+    "allGood": "Everything agrees. You can make the opening balances.",
+    "problems": "To correct first",
+    "document": "Opening balances at {{date}}",
+    "statuses": {
+      "draft": "Draft",
+      "awaiting_approval": "Waiting for the Director",
+      "posted": "Approved and posted",
+      "rejected": "Rejected"
+    },
+    "linesTotal": "{{count}} lines, debits {{debit}}, credits {{credit}}",
+    "showLines": "Show the lines",
+    "hideLines": "Hide the lines",
+    "lines": "Opening entry lines",
+    "account": "Account",
+    "party": "Customer or supplier",
+    "debit": "Debit",
+    "credit": "Credit",
+    "comment": "Comment, or the reason for returning or rejecting",
+    "send": "Send to the Director",
+    "delete": "Delete the draft",
+    "approve": "Approve and post",
+    "return": "Return for changes",
+    "reject": "Reject"
   }
 }

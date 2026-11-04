@@ -13,7 +13,7 @@ from apps.core import exports
 from apps.core.exports import Column
 from apps.core.permissions import AreaAccess
 
-from . import budgets, journal, sources
+from . import budgets, close, journal, sources
 from .catalogue import TYPES
 from .models import Account, JournalEntry, JournalLine
 from .report_views import division_of
@@ -154,12 +154,12 @@ class PeriodChangeView(_Journal):
             return Response(status=status.HTTP_404_NOT_FOUND)
         try:
             first = _date(f"{month}-01", "month")
-            journal.set_closed(
-                request.user,
-                first,
-                closed=action == "close",
-                reason=str(request.data.get("reason", "")),
-            )
+            # Closing needs the month-end checklist complete; reopening a month of a closed
+            # year needs the year reopened first (P2-23).
+            if action == "close":
+                close.close_month(request.user, first)
+            else:
+                close.reopen_month(request.user, first, str(request.data.get("reason", "")))
         except AccountingError as error:
             return _error(error)
         return Response({"year": first.year, "months": journal.periods(first.year)})

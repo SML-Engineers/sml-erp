@@ -706,3 +706,62 @@ class BudgetLine(models.Model):
 
     def __str__(self):
         return f"{self.account_id}/{self.division_id} {self.month:%Y-%m} {self.amount}"
+
+
+# --- Month-end and year-end close (backlog P2-23) -------------------------------------------
+
+
+class MonthEndTick(models.Model):
+    """An item of a month's close checklist marked done by the Accountant, with a note: one
+    the system cannot see (accruals entered), or one done another way or not needed this
+    month. Insert-only (database): a tick is never changed or taken back."""
+
+    month = models.DateField()  # the first day of the month
+    item = models.CharField(max_length=30)
+    note = models.CharField(max_length=300)
+    ticked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    ticked_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["month", "item", "-ticked_at"]
+
+    def __str__(self):
+        return f"{self.month:%Y-%m} {self.item}"
+
+
+class YearEndClose(models.Model):
+    """A financial year closed by the Director: its profit carried to retained earnings by an
+    entry on the first day of the next year, which zeroes the income and cost accounts. Never
+    deleted; reopening (the Director, with a reason) reverses that entry and is recorded here."""
+
+    year_start = models.DateField()
+    profit = models.DecimalField(max_digits=18, decimal_places=2)
+    journal_entry = models.OneToOneField(JournalEntry, on_delete=models.PROTECT, related_name="+")
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    closed_at = models.DateTimeField(default=timezone.now)
+    reopened = models.BooleanField(default=False)
+    reopen_reason = models.CharField(max_length=300, blank=True)
+    reopen_entry = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    reopened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    reopened_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-year_start", "-closed_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["year_start"],
+                condition=models.Q(reopened=False),
+                name="accounting_yearend_once",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Year from {self.year_start} closed"

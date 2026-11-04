@@ -19,7 +19,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.db import IntegrityError, transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from apps.core.access import effective_access
@@ -315,6 +315,10 @@ def profit_and_loss(
         entry__entry_date__gte=date_from,
         entry__entry_date__lte=date_to,
         account__account_type__in=pnl_types,
+    ).exclude(
+        # The year-end close carries the year's result to retained earnings (P2-23); the
+        # report leaves it and its reversal out, so a closed year reads as before.
+        Q(entry__source_type="year_end_close") | Q(entry__reversal_of__source_type="year_end_close")
     )
     if division is not None:
         lines = lines.filter(division=division)

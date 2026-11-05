@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import attendance_views as av
 from . import leave_views as lv
 from . import views as v
 
@@ -18,6 +19,24 @@ urlpatterns = [
         "employees/<int:pk>/pay/<int:rate_pk>/",
         v.EmployeePayRateView.as_view(),
         name="employee-pay-rate",
+    ),
+    path("attendance/", av.AttendanceView.as_view(), name="attendance"),
+    path("attendance/template/", av.AttendanceTemplateView.as_view(), name="attendance-template"),
+    path("attendance/import/", av.AttendanceImportView.as_view(), name="attendance-import"),
+    path(
+        "attendance/confirm/",
+        av.AttendanceMonthActionView.as_view(action="confirm"),
+        name="attendance-confirm",
+    ),
+    path(
+        "attendance/reopen/",
+        av.AttendanceMonthActionView.as_view(action="reopen"),
+        name="attendance-reopen",
+    ),
+    path(
+        "employees/<int:pk>/attendance/",
+        av.AttendanceDaysView.as_view(),
+        name="employee-attendance",
     ),
     path("holidays/", lv.HolidayListView.as_view(), name="holidays"),
     path("holidays/<int:pk>/", lv.HolidayDetailView.as_view(), name="holiday"),

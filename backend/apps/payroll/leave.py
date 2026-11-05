@@ -343,8 +343,6 @@ def record(
         raise LeaveError("Employees apply for their own leave only.")
     if source != Leave.Source.APPLIED:
         employee = _visible(user, employee)
-    if not employee.is_active:
-        raise LeaveError("This employee has left.")
     if not kind.is_active:
         raise LeaveError(f"{kind.name} is no longer used.")
     start = day_of(start, "first day")
@@ -359,6 +357,10 @@ def record(
         raise LeaveError("Half a day is for one day only.")
     if start < employee.join_date:
         raise LeaveError("The leave starts before the employee joined.")
+    if employee.leaving_date and end > employee.leaving_date:
+        raise LeaveError("The leave ends after the employee left.")
+    if not employee.is_active and employee.leaving_date is None:
+        raise LeaveError("This employee has left.")
     count = working_days(start, end)
     if count == 0:
         raise LeaveError("Those days are Sundays or holidays; no leave is needed.")

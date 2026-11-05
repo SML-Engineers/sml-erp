@@ -70,6 +70,7 @@ import EmployeesPage from "./pages/EmployeesPage";
 import EmployeePage from "./pages/EmployeePage";
 import PayComponentsPage from "./pages/PayComponentsPage";
 import LeavePage from "./pages/LeavePage";
+import AttendancePage from "./pages/AttendancePage";
 import HolidaysPage from "./pages/HolidaysPage";
 import PurchaseRequestsPage from "./pages/PurchaseRequestsPage";
 import ReorderPage from "./pages/ReorderPage";
@@ -195,6 +196,7 @@ export default function App() {
         <Route path="employees/:id" element={<EmployeePage />} />
         <Route path="pay-components" element={<PayComponentsPage />} />
         <Route path="leave" element={<LeavePage />} />
+        <Route path="attendance" element={<AttendancePage />} />
         <Route path="holidays" element={<HolidaysPage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />
         <Route path="goods-receipts/:id" element={<GoodsReceiptPage />} />

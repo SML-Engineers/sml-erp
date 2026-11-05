@@ -85,11 +85,23 @@ Status: `[ ]` to do · `[x]` done
   person who applied or entered it; leave is cancelled with a reason, never deleted or
   changed (database). Attendance leave codes use the same service (P2B-04).
 
-- [ ] **P2B-04 Attendance from Excel**
+- [x] **P2B-04 Attendance from Excel**
   The template of the owner's decision (employee number, date, time in, time out, shift,
   leave code, remarks); checked first, every refused row listed; HR confirms the month
   before payroll uses it. Late arrivals, short leave and no-pay days worked out by the
   rules of P2B-05.
+  Done: Attendance page. The template's sheet is checked first, all or nothing, every
+  refused row listed (unknown employee or shift or leave code, bad dates and times, only one
+  of the times, duplicates, future dates, dates outside employment, confirmed months); a
+  later sheet replaces the same days while the month is open; the file's fingerprint is
+  kept. Each day keeps the minutes worked (less the shift's break; night shifts past
+  midnight), late and left early against the shift. A leave code without times is a day of
+  leave, with times half a day. The month per division shows working days, days and hours
+  worked, late, leave and absent days. HR confirms a division's month after it ends: the
+  leave codes are recorded as leave (balances checked, all or nothing, a sheet that
+  disagrees with recorded leave is refused) and the days never change (database).
+  Reopening needs a reason and cancels the leave taken from the sheet. Grace periods, short
+  leave, overtime and no-pay are worked out from these minutes in P2B-05.
 
 - [ ] **P2B-05 Overtime and attendance rules**
   Normal hours per shift and day; overtime at the rates in force (e.g. 1.5 times on normal

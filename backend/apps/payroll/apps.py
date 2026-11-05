@@ -17,12 +17,23 @@ class PayrollConfig(AppConfig):
             Leave,
             LeaveGrant,
             LeaveType,
+            OvertimeCheck,
             PayComponent,
             PayRate,
+            WorkRule,
         )
 
         register(Employee)
         register(PayComponent)
         register(PayRate)
-        for model in (Holiday, LeaveType, LeaveGrant, Leave, AttendanceMonth, AttendanceImport):
+        for model in (
+            Holiday,
+            LeaveType,
+            LeaveGrant,
+            Leave,
+            AttendanceMonth,
+            AttendanceImport,
+            WorkRule,
+            OvertimeCheck,
+        ):
             register(model)

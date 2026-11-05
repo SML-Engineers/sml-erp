@@ -1,5 +1,7 @@
 """Payroll and people (Phase 2b, docs/backlog/phase-2b.md)."""
 
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -386,3 +388,83 @@ class AttendanceMonth(models.Model):
 
     def __str__(self):
         return f"{self.division_id} {self.month:%Y-%m}"
+
+
+class WorkRule(models.Model):
+    """A division's working-time and overtime rules from a month on (P2B-05; rule 11: a new
+    rule is a new row, earlier months keep theirs). Defaults (backlog question 5): 8 hours a
+    day; overtime 1.5 times on working days, 2 times on Sundays and holidays."""
+
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    effective_from = models.DateField()  # the 1st of a month
+    normal_day_minutes = models.PositiveSmallIntegerField(default=480)
+    grace_minutes = models.PositiveSmallIntegerField(default=10)
+    short_leaves_per_month = models.PositiveSmallIntegerField(default=2)
+    short_leave_minutes = models.PositiveSmallIntegerField(default=90)
+    ot_min_minutes = models.PositiveSmallIntegerField(default=30)
+    ot_step_minutes = models.PositiveSmallIntegerField(default=15)
+    rate_working_day = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal("1.50"))
+    rate_sunday = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal("2.00"))
+    rate_holiday = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal("2.00"))
+    hourly_divisor = models.PositiveSmallIntegerField(default=240)
+    reason = models.CharField(max_length=200)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["division", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["division", "effective_from"], name="payroll_workrule_once"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    normal_day_minutes__gt=0,
+                    ot_step_minutes__gt=0,
+                    hourly_divisor__gt=0,
+                    rate_working_day__gte=1,
+                    rate_sunday__gte=1,
+                    rate_holiday__gte=1,
+                ),
+                name="payroll_workrule_values",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.division_id} from {self.effective_from}"
+
+
+class OvertimeCheck(models.Model):
+    """An employee's month of overtime, short time and no-pay as checked by the section's
+    supervisor or the Director (P2B-05), kept as checked: payroll (P2B-06) pays these figures.
+    Never changed; reopening the attendance month voids it."""
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="+")
+    month = models.DateField()
+    rule = models.ForeignKey(WorkRule, on_delete=models.PROTECT, related_name="+")
+    ot_working_minutes = models.PositiveIntegerField()
+    ot_sunday_minutes = models.PositiveIntegerField()
+    ot_holiday_minutes = models.PositiveIntegerField()
+    short_minutes = models.PositiveIntegerField()
+    nopay_minutes = models.PositiveIntegerField()
+    nopay_days = models.DecimalField(max_digits=4, decimal_places=1)
+    checked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    checked_at = models.DateTimeField(default=timezone.now)
+    voided = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-month", "employee"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["employee", "month"],
+                condition=models.Q(voided=False),
+                name="payroll_otcheck_once",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.number} {self.month:%Y-%m}"

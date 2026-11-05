@@ -32,7 +32,15 @@ from apps.masters.models import Shift
 
 from . import employees, leave
 from .leave import LeaveError
-from .models import AttendanceDay, AttendanceImport, AttendanceMonth, Employee, Leave, LeaveType
+from .models import (
+    AttendanceDay,
+    AttendanceImport,
+    AttendanceMonth,
+    Employee,
+    Leave,
+    LeaveType,
+    OvertimeCheck,
+)
 
 MAX_BYTES = 5 * 1024 * 1024
 MAX_ROWS = 20000
@@ -317,11 +325,15 @@ class Summary:
 def month_summary(user: User, division: Division, month: date) -> list[Summary]:
     """Per employee of the division: days and minutes worked, late, leave and days absent
     (working days, Monday to Saturday without holidays, with neither attendance nor leave)."""
+    return month_summary_for(employees.visible(user), division, month)
+
+
+def month_summary_for(people, division: Division, month: date) -> list[Summary]:
     month = first_of(month)
     end = min(month_end(month), timezone.localdate())
     off = leave.holidays_between(month, month_end(month))
-    people = employees.visible(user).filter(division=division, join_date__lte=month_end(month))
-    people = people.exclude(leaving_date__lt=month)
+    people = people.filter(division=division, join_date__lte=month_end(month))
+    people = people.exclude(leaving_date__lt=month).select_related("division")
     days = {}
     for d in AttendanceDay.objects.filter(
         employee__in=people, date__range=(month, month_end(month))
@@ -462,6 +474,10 @@ def reopen(user: User, division_code, month, reason: str) -> AttendanceMonth:
         )
         for x in taken:
             leave.cancel(user, x, f"Attendance reopened: {reason}")
+        # Overtime checked on the month no longer stands (P2B-05).
+        OvertimeCheck.objects.filter(employee__division=division, month=month, voided=False).update(
+            voided=True
+        )
         record.confirmed, record.confirmed_by, record.confirmed_at = False, None, None
         record.save()
         return record

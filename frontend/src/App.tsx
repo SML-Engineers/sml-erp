@@ -66,6 +66,8 @@ import CashPlannerPage from "./pages/CashPlannerPage";
 import ReportBuilderPage from "./pages/ReportBuilderPage";
 import MigrationPage from "./pages/MigrationPage";
 import ParallelRunPage from "./pages/ParallelRunPage";
+import EmployeesPage from "./pages/EmployeesPage";
+import EmployeePage from "./pages/EmployeePage";
 import PurchaseRequestsPage from "./pages/PurchaseRequestsPage";
 import ReorderPage from "./pages/ReorderPage";
 import StoresPage from "./pages/settings/StoresPage";
@@ -186,6 +188,8 @@ export default function App() {
         <Route path="report-builder" element={<ReportBuilderPage />} />
         <Route path="migration" element={<MigrationPage />} />
         <Route path="parallel-run" element={<ParallelRunPage />} />
+        <Route path="employees" element={<WithMe page={(me) => <EmployeesPage me={me} />} />} />
+        <Route path="employees/:id" element={<EmployeePage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />
         <Route path="goods-receipts/:id" element={<GoodsReceiptPage />} />
         <Route path="inspections" element={<InspectionsPage />} />

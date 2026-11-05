@@ -33,13 +33,21 @@ Status: `[ ]` to do · `[x]` done
 
 ## A. People
 
-- [ ] **P2B-01 Employee master**
+- [x] **P2B-01 Employee master**
   Employee number, name, NIC, date of birth, address, phone, email; EPF and ETF numbers;
   division, section, designation, grade; employment type (permanent, probation, contract,
   casual, trainee) with join, confirmation and leaving dates; the bank account for salary
   (changing it needs the same second check as a supplier's bank details, spec 4.6); linked
   to a user for self-service. Imported from Excel (checked first, all or nothing). History
   kept: an employee with payroll is deactivated, never deleted.
+  Done: Employees page (People and payroll menu). HR (Enter) adds and changes employees and
+  imports them from Excel; the Director (Approve) sees them and checks every new or changed
+  salary bank account (the person who entered it never can); the Accountant's "totals only"
+  view sees no personal details. Old (9 digits and V/X) and new (12 digit) NICs are checked
+  and unique. A database trigger stops deleting an employee or changing the number; leavers
+  get a leaving date and reason. Exporting everyone's details needs "Export personal data".
+  The HR and Payroll Officer role is switched on. The link to a user is kept by the API and
+  appears on the page with self-service (P2B-11).
 
 - [ ] **P2B-02 Pay structure**
   Earnings and deductions as components (basic, budgetary relief allowance, fixed and
@@ -124,12 +132,19 @@ italics is used and recorded, and can be changed.
 
 1. **Who and how many.** About how many employees, and how many in each division? Who will
    be the HR and Payroll Officer(s)? (P2B-01)
+   - Owner, 5 Nov 2026: 30 to 50 employees now, growing to about 200 by the end of next
+     year. Built for a few hundred; nothing assumes a small number.
 2. **Current payroll.** How is payroll done today (an Excel sheet, a payroll program, the
    bank)? Can its employee list and this year's totals be exported to Excel? (P2B-14)
+   - Owner, 5 Nov 2026: Excel. P2B-14 reads the payroll sheet (a sample with names and
+     amounts masked is needed then; business data stays out of the repository).
 3. **Pay frequency.** Is everyone paid monthly, or are some (casual or daily paid) paid
    weekly or daily? *Default: monthly for all.* (P2B-06)
 4. **Law that applies.** Are factory staff under a Wages Board, and office staff under the
    Shop and Office Employees Act? The overtime and leave rules follow from this. (P2B-03,
+   - Owner, 5 Nov 2026: factory staff are under a Wages Board. The Wages Board's rates and
+     rules are dated master data (rule 11); which trade's Wages Board (and its current
+     decision) is confirmed with the Accountant before P2B-05.
    P2B-05)
 5. **Overtime.** Normal hours per day and week, and the overtime rates (normal day,
    Saturday, Sunday, holiday, night)? *Default: 8 hours a day, 45 a week; 1.5 times on
@@ -148,6 +163,9 @@ italics is used and recorded, and can be changed.
    approved payroll be enough for the payment? *Default: both, as rule 4 requires.* (P2B-07)
 10. **Bank.** Which bank pays the salaries, and does it take a bulk transfer file (please ask
     the bank for its file format)? (P2B-07)
+    - Owner, 5 Nov 2026: Commercial Bank of Ceylon PLC. The bulk transfer file is built to
+      the format Commercial Bank gives for its corporate bulk payments (asked from the bank
+      before P2B-07), kept as a column mapping like the statement templates.
 11. **Payslips.** Emailed, printed, or only on the self-service page? *Default: on the
     self-service page and emailed to those with an email address; printed on request.*
     (P2B-08)

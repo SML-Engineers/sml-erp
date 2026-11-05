@@ -10,10 +10,13 @@ export interface MenuItem {
   level?: Level;
   /** A second area that also opens the page (e.g. delivery notes: Sales or the stores). */
   alsoArea?: string;
+  /** Any one of these levels opens the page (e.g. employees: HR's Enter or the Director's Approve). */
+  anyLevel?: Level[];
 }
 
 function allowed(access: Access | undefined, item: MenuItem): boolean {
   if (item.area === null) return true;
+  if (item.anyLevel) return item.anyLevel.some((level) => can(access, item.area!, level));
   const level = item.level ?? "view";
   return can(access, item.area, level) || (item.alsoArea !== undefined && can(access, item.alsoArea, level));
 }
@@ -109,6 +112,13 @@ export const MENU: MenuSection[] = [
       { label: "tax.title", path: "/tax-reports", area: "accounting", alsoArea: "financial_reports" },
       { label: "fr.title", path: "/reports/financial", area: "financial_reports" },
       { label: "periods.title", path: "/accounting-periods", area: "accounting" },
+    ],
+  },
+  {
+    label: "menu.people",
+    items: [
+      // Personal details: HR (Enter) and the Director (Approve), not the Accountant's totals view.
+      { label: "emp.title", path: "/employees", area: "hr_payroll", anyLevel: ["enter", "approve"] },
     ],
   },
   {

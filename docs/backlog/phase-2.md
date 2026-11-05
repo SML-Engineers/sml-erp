@@ -593,6 +593,12 @@ Status: `[ ]` to do · `[x]` done
   One month entered in both systems; the trial balance, receivables, payables and bank
   balances compared and differences explained; test scripts per role; the auditors and the
   owner sign off; the current system stops.
+  - Tools done (the task stays open until the sign-off): test scripts per role, the
+    parallel-run steps and the sign-off sheets in docs/uat-scripts.md; Accounts → Parallel
+    run: compare with QuickBooks (Financial reports: View), which reads QuickBooks' trial
+    balance and A/R and A/P ageing as at a date and lists every account, customer and
+    supplier whose balance differs from the ERP's at that date (differences first, nothing
+    posted). Remaining: the parallel month, the auditors' and owner's sign-off, go-live.
 
 ---
 

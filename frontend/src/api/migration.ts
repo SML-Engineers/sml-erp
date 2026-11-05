@@ -70,3 +70,27 @@ export function checkFiles(files: Partial<Record<MigrationFile, File>>, make: bo
 export const migrationAction = (id: number, action: "submit" | "approve" | "return" | "reject", text = "") =>
   apiSend<OpeningDoc>("POST", `/migration/${id}/${action}/`, { comment: text, reason: text });
 export const deleteMigration = (id: number) => apiSend<null>("DELETE", `/migration/${id}/`);
+
+/** Parallel run (P2-29): the ERP against QuickBooks for the same date. */
+export interface CompareRow {
+  label: string;
+  quickbooks: string;
+  erp: string;
+  difference: string;
+  agrees: boolean;
+}
+
+export interface Comparison {
+  as_at: string;
+  accounts: CompareRow[];
+  unknown_accounts: string[];
+  customers: { rows: CompareRow[]; unknown: string[] } | null;
+  suppliers: { rows: CompareRow[]; unknown: string[] } | null;
+  differences: { accounts: number; customers: number | null; suppliers: number | null };
+}
+
+export function compareWithQuickBooks(files: { trial_balance?: File; receivables?: File; payables?: File }) {
+  const form = new FormData();
+  for (const [key, file] of Object.entries(files)) if (file) form.append(key, file);
+  return apiUpload<Comparison>("/parallel-run/", form, "POST");
+}

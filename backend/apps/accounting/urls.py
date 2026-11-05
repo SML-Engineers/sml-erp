@@ -17,6 +17,7 @@ from . import views as v
 
 urlpatterns = [
     path("migration/", qbv.MigrationView.as_view(), name="migration"),
+    path("parallel-run/", qbv.ParallelRunView.as_view(), name="parallel-run"),
     path("migration/open-items/", qbv.OpenItemsView.as_view(), name="migration-open-items"),
     path(
         "migration/<int:pk>/",

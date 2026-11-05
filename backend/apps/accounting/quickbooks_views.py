@@ -166,3 +166,27 @@ class OpenItemsView(_Migration):
         if not out:
             return _error("Choose the A/R aging, the A/P aging, or both.")
         return Response(out)
+
+
+class ParallelRunView(APIView):
+    """The ERP against QuickBooks for the same date (P2-29): a comparison only."""
+
+    permission_classes = [AreaAccess]
+    access_area = "financial_reports"
+    access_write_level = "view"  # posts nothing: the files are read and compared
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        from . import parallel
+
+        if "trial_balance" not in request.FILES:
+            return _error("Choose QuickBooks' trial balance (Excel).")
+        files = {
+            k: request.FILES[k].read()
+            for k in ("trial_balance", "receivables", "payables")
+            if k in request.FILES
+        }
+        try:
+            return Response(parallel.compare(**files))
+        except MigrationError as error:
+            return _error(error)

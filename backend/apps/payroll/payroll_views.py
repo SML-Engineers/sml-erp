@@ -27,7 +27,7 @@ def _error(error):
 
 
 def _name(user):
-    return (user.get_full_name() or user.email) if user else None
+    return (user.full_name or user.email) if user else None
 
 
 class _Payroll(APIView):

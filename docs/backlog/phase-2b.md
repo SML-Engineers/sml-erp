@@ -49,11 +49,22 @@ Status: `[ ]` to do · `[x]` done
   The HR and Payroll Officer role is switched on. The link to a user is kept by the API and
   appears on the page with self-service (P2B-11).
 
-- [ ] **P2B-02 Pay structure**
+- [x] **P2B-02 Pay structure**
   Earnings and deductions as components (basic, budgetary relief allowance, fixed and
   variable allowances, incentives; loans, advances, welfare, union), each marked
   EPF-liable or not and taxable for APIT or not. Each employee's amounts are dated (a
   raise starts on a date; earlier months keep the old amount).
+  Done: Pay components page (HR keeps the list; code and kind never change; deductions
+  never count for EPF or APIT, also in the database) and a Pay panel on each employee's
+  page. An amount applies from the 1st of a month; it is never changed (database), a raise
+  is a new amount from its month, 0 ends a component, and an amount whose month has not
+  come can be withdrawn with a reason. Starting list: basic salary, fixed, attendance and
+  travelling allowances, incentive; welfare, union, loan and advance recoveries; HR and the
+  Accountant confirm the EPF and APIT marks (question 6). The budgetary relief allowance is
+  not on the list: it stopped as a separate payment on 31 March 2025 and is part of the
+  basic wage (Budgetary Relief Allowance of Workers (Amendment) Acts No. 9 and 10 of 2025).
+  Defaults recorded: amounts start on the 1st of a month (no part-month raises); a raise
+  needs no separate approval, the Director sees it in the payroll he approves (P2B-07).
 
 ## B. Time
 
@@ -152,6 +163,9 @@ italics is used and recorded, and can be changed.
 6. **Allowances and deductions.** The list of allowances (budgetary relief allowance,
    attendance, travelling, meal, shift…) and deductions (welfare, union, insurance…), and
    which count for EPF. (P2B-02)
+   - Not answered by P2B-02: a starting list is loaded (see P2B-02) and HR changes it on
+     the Pay components page with the Accountant. The budgetary relief allowance ended on
+     31 March 2025 (now in the basic wage), so it is not a separate component.
 7. **APIT.** Confirm with the tax advisor that APIT is deducted from the tax tables issued by
    the Inland Revenue for 2026/27, and whether any employee has a different tax
    arrangement. *Default: the IRD tables, entered as dated master data.* (P2B-06)

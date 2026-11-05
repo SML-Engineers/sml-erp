@@ -83,3 +83,72 @@ class Employee(models.Model):
         return bool(self.bank_changed_at) and (
             self.bank_checked_at is None or self.bank_checked_at < self.bank_changed_at
         )
+
+
+class PayComponent(models.Model):
+    """An earning or a deduction on the payslip (P2B-02), e.g. basic salary, budgetary relief
+    allowance, welfare. Each says whether it counts for EPF and ETF and for APIT. Its code
+    never changes; one no longer used is deactivated. A payroll keeps the flags it was run
+    with (P2B-06), so changing a flag never changes a past payroll (rule 11)."""
+
+    class Kind(models.TextChoices):
+        EARNING = "earning", "Earning"
+        DEDUCTION = "deduction", "Deduction"
+
+    class Basis(models.TextChoices):
+        FIXED = "fixed", "Fixed each month"
+        VARIABLE = "variable", "Entered each month"
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    basis = models.CharField(max_length=10, choices=Basis.choices, default=Basis.FIXED)
+    epf_liable = models.BooleanField("counts for EPF and ETF", default=False)
+    apit_taxable = models.BooleanField("taxable for APIT", default=False)
+    sort_order = models.PositiveSmallIntegerField(default=100)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["kind", "sort_order", "code"]
+        constraints = [
+            # A deduction is taken from pay; it is neither EPF earnings nor taxable pay.
+            models.CheckConstraint(
+                condition=models.Q(kind="earning") | models.Q(epf_liable=False, apit_taxable=False),
+                name="payroll_component_deduction_flags",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
+class PayRate(models.Model):
+    """An employee's monthly amount of one component from a month on (P2B-02). Never changed:
+    a raise is a new row from its month, and earlier months keep the old amount (rule 11). An
+    amount of 0 ends the component. A row that has not yet taken effect may be withdrawn."""
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="pay_rates")
+    component = models.ForeignKey(PayComponent, on_delete=models.PROTECT, related_name="+")
+    effective_from = models.DateField()  # always the 1st of a month
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    reason = models.CharField(max_length=200)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["employee", "component", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["employee", "component", "effective_from"], name="payroll_rate_once"
+            ),
+            models.CheckConstraint(condition=models.Q(amount__gte=0), name="payroll_rate_amount"),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.number} {self.component.code} {self.effective_from}"

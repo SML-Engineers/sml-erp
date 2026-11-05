@@ -9,6 +9,8 @@ class PayrollConfig(AppConfig):
     def ready(self):
         from apps.core.audit import register
 
-        from .models import Employee
+        from .models import Employee, PayComponent, PayRate
 
         register(Employee)
+        register(PayComponent)
+        register(PayRate)

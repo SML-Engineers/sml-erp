@@ -33,13 +33,21 @@ Status: `[ ]` to do · `[x]` done
 
 ## A. People
 
-- [ ] **P2B-01 Employee master**
+- [x] **P2B-01 Employee master**
   Employee number, name, NIC, date of birth, address, phone, email; EPF and ETF numbers;
   division, section, designation, grade; employment type (permanent, probation, contract,
   casual, trainee) with join, confirmation and leaving dates; the bank account for salary
   (changing it needs the same second check as a supplier's bank details, spec 4.6); linked
   to a user for self-service. Imported from Excel (checked first, all or nothing). History
   kept: an employee with payroll is deactivated, never deleted.
+  Done: Employees page (People and payroll menu). HR (Enter) adds and changes employees and
+  imports them from Excel; the Director (Approve) sees them and checks every new or changed
+  salary bank account (the person who entered it never can); the Accountant's "totals only"
+  view sees no personal details. Old (9 digits and V/X) and new (12 digit) NICs are checked
+  and unique. A database trigger stops deleting an employee or changing the number; leavers
+  get a leaving date and reason. Exporting everyone's details needs "Export personal data".
+  The HR and Payroll Officer role is switched on. The link to a user is kept by the API and
+  appears on the page with self-service (P2B-11).
 
 - [ ] **P2B-02 Pay structure**
   Earnings and deductions as components (basic, budgetary relief allowance, fixed and

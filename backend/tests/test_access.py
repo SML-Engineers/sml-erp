@@ -51,7 +51,8 @@ def test_standard_roles_are_loaded_with_phase_one_and_sales_roles_active():
         "purchasing_officer",
         "store_supervisor",
         "qc_inspector",
-    }  # Phase 1.5 (P15-01) and Phase 1.6 (P16-02)
+        "hr_payroll_officer",
+    }  # Phase 1.5 (P15-01), Phase 1.6 (P16-02) and Phase 2b (P2B-01)
     assert Role.objects.filter(is_standard=True).count() == len(STANDARD_ROLES_V1)
 
 

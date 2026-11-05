@@ -1,4 +1,5 @@
 import { apiGet, apiSend } from "./client";
+import type { PayPeriod } from "./periods";
 
 /** Overtime and attendance rules (P2B-05). */
 
@@ -43,6 +44,7 @@ export interface OvertimeRow {
 
 export interface OvertimeMonth {
   month: string;
+  period: PayPeriod;
   division: string;
   divisions: string[];
   confirmed: boolean;

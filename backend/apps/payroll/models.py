@@ -390,6 +390,32 @@ class AttendanceMonth(models.Model):
         return f"{self.division_id} {self.month:%Y-%m}"
 
 
+class PayPeriodRule(models.Model):
+    """The day a pay period starts, from a pay month on (P2B-15; rule 11). Owner, 5 Nov 2026:
+    the 21st to the 20th. Pay month M starts on `start_day` of the month before M (1 = the
+    calendar month); it ends the day before pay month M+1 starts (apps.payroll.periods)."""
+
+    effective_from = models.DateField(unique=True)  # the 1st of a pay month
+    start_day = models.PositiveSmallIntegerField(default=21)
+    reason = models.CharField(max_length=200)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-effective_from"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(start_day__gte=1, start_day__lte=28),
+                name="payroll_payperiod_day",
+            ),
+        ]
+
+    def __str__(self):
+        return f"day {self.start_day} from {self.effective_from}"
+
+
 class WorkRule(models.Model):
     """A division's working-time and overtime rules from a month on (P2B-05; rule 11: a new
     rule is a new row, earlier months keep theirs). Defaults (backlog question 5): 8 hours a

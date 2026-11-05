@@ -40,7 +40,7 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.5 Sales documents | phase-1-5.md | Built. Only **P15-12 UAT and go-live** open. |
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | **P2-00 to P2-28 merged.** **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137: `docs/uat-scripts.md` and the QuickBooks comparison page) but stays **unticked until the owner's sign-off**. |
-| **2b Payroll and people** | **phase-2b.md** | **P2B-01 to P2B-05 merged** (#139–#143). The owner's answers of 5 Nov 2026 are recorded (#144, `docs/phase-2b-answers`) with new tasks P2B-15, P2B-16, P2B-17 before P2B-06. **Next: P2B-15** once #144 is merged. |
+| **2b Payroll and people** | **phase-2b.md** | **P2B-01 to P2B-05 merged** (#139–#143). The owner's answers of 5 Nov 2026 are recorded (#144, `docs/phase-2b-answers`) with new tasks P2B-15, P2B-16, P2B-17 before P2B-06. #144 merged. **P2B-15** (pay period) in PR #145. Next: P2B-16. |
 
 Pull requests merged in this session: #126 (CI fix after making the repo public), #127 P2-21
 revaluation, #128 P2-22 budgets, #129 P2-23 month/year-end close, #130 quotation pictures

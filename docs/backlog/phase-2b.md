@@ -126,7 +126,7 @@ The owner's answers of 5 Nov 2026 (questions below) came after P2B-01 to P2B-05 
 and change some of them. P2B-15, P2B-16 and P2B-17 make those changes and come **before
 P2B-06**, in this order.
 
-- [ ] **P2B-15 Pay period 21st to 20th**
+- [x] **P2B-15 Pay period 21st to 20th**
   Salaries are for the 21st of one month to the 20th of the next and are paid on the last
   day of the month (owner, question 3): pay month November 2026 = 21 October to 20 November,
   paid 30 November. Attendance confirmation, the month summary, overtime, short-leave counts,
@@ -138,6 +138,22 @@ P2B-06**, in this order.
   the calendar year. The database rule that freezes
   confirmed days follows the period (a new migration replaces the calendar-month rule).
   Nothing is live yet, so no data is moved.
+  Done: a pay month is named by the month it ends in and holds the 1st of that month
+  (pay month November 2026 = 21 October to 20 November). The day it starts is a dated
+  setting, "Pay period" on the Work rules page (HR keeps it; seeded: the 21st from January
+  2024). A rule from pay month M says on which day of the month before M the period starts
+  (1 = the calendar month); M ends the day before M+1 starts, so periods never overlap or
+  leave a gap when the rule changes. A new rule is refused when its pay month or the one
+  before it is confirmed in any division (that month's end would move); a rule never changes
+  and is withdrawn only on the same condition (also in the database). The Attendance page
+  (summary, confirmation, reopening, an employee's days, the upload's months) and the
+  Overtime page (overtime, short leaves a month, no-pay, checks) work per pay month and show
+  "Pay month Nov 2026: 21 Oct – 20 Nov"; the default is the last pay month that has ended. A
+  pay month is confirmed after its last day. The database freezes confirmed days by the same
+  pay months (a function `payroll_pay_month(date)` replaces the calendar month in the
+  trigger). A work rule "from November 2026" is in force from 21 October and can be
+  withdrawn until then. The leave year stays the calendar year. The template's example row
+  is the first day of a pay month.
 
 - [ ] **P2B-16 Labour categories and leave per category**
   Each employee is **Shop and Office** or **Wages Board** (owner, questions 4 and 8). Leave

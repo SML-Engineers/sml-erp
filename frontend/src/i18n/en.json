@@ -3866,8 +3866,8 @@
   },
   "att": {
     "title": "Attendance",
-    "help": "Attendance comes from the Excel sheet HR fills in: one row per employee and day, with times in and out, the shift, a leave code for a day of leave, and remarks. A later sheet replaces the same days until HR confirms the month. Payroll uses confirmed months only.",
-    "month": "Month",
+    "help": "Attendance comes from the Excel sheet HR fills in: one row per employee and day, with times in and out, the shift, a leave code for a day of leave, and remarks. A later sheet replaces the same days until HR confirms the pay month. Payroll uses confirmed pay months only.",
+    "month": "Pay month",
     "division": "Division",
     "upload": "Upload the attendance sheet",
     "uploadHelp": "The file is checked first; if any row is wrong nothing is saved and every wrong row is listed. A leave code with no times is a day of leave; with times, half a day.",
@@ -3881,11 +3881,11 @@
     "confirmed": "confirmed",
     "open": "not confirmed yet",
     "confirmedBy": "Confirmed by {{name}} on {{at}}. The days are fixed; the leave codes are recorded as leave.",
-    "confirmHelp": "When the month has ended and the sheet is complete, confirm it. The leave codes are then recorded as leave (balances are checked) and the days can no longer change.",
+    "confirmHelp": "When the pay month has ended and the sheet is complete, confirm it. The leave codes are then recorded as leave (balances are checked) and the days can no longer change.",
     "confirm": "Confirm the month",
     "reopenReason": "Reason for reopening",
     "reopen": "Reopen the month",
-    "summary": "Attendance for the month",
+    "summary": "Attendance for the pay month",
     "employee": "Employee",
     "workingDays": "Working days",
     "worked": "Days worked",
@@ -3906,8 +3906,8 @@
   },
   "ot": {
     "title": "Overtime",
-    "help": "Each employee's month from the confirmed attendance, worked out by the division's work rules: overtime on working days (beyond the shift or normal day), on Sundays and on holidays; short time (late beyond the grace period, or left early), covered by short leave up to the number allowed; the rest is no-pay time. Days absent and unpaid leave are no-pay days. The section's supervisor or the Director checks each month; payroll pays the checked figures.",
-    "notConfirmed": "HR has not confirmed this month's attendance yet; the figures may still change and cannot be checked.",
+    "help": "Each employee's pay month from the confirmed attendance, worked out by the division's work rules: overtime on working days (beyond the shift or normal day), on Sundays and on holidays; short time (late beyond the grace period, or left early), covered by short leave up to the number allowed; the rest is no-pay time. Days absent and unpaid leave are no-pay days. The section's supervisor or the Director checks each month; payroll pays the checked figures.",
+    "notConfirmed": "HR has not confirmed this pay month's attendance yet; the figures may still change and cannot be checked.",
     "ruleLine": "Rules: {{day}} hours a day; overtime {{working}} times on working days, {{sunday}} on Sundays, {{holiday}} on holidays; {{grace}} minutes' grace.",
     "chooseAll": "Choose all",
     "choose": "Choose",
@@ -3949,5 +3949,20 @@
       "rate_holiday": "OT rate, holiday",
       "hourly_divisor": "Hourly divisor"
     }
+  },
+  "pp": {
+    "line": "Pay month {{month}}: {{start}} – {{end}}",
+    "title": "Pay period",
+    "help": "Salaries are paid for a pay month: by default the 21st of one month to the 20th of the next (pay month November = 21 October to 20 November), paid on the last day of the month. Attendance, overtime, short leave and no-pay are worked out per pay month.",
+    "from": "First pay month",
+    "startDay": "Starts on day",
+    "startDayHelp": "The day of the month before the pay month on which it starts (1 = the calendar month).",
+    "reason": "Reason for the pay period",
+    "add": "New pay period",
+    "addHelp": "A new pay period starts from a pay month whose previous pay month is not confirmed in any division, and never changes earlier months.",
+    "save": "Save pay period",
+    "withdraw": "Withdraw",
+    "withdrawReason": "Reason for withdrawing",
+    "confirmWithdraw": "Withdraw the rule"
   }
 }

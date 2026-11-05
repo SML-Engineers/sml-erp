@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router";
 
 import { ApiError } from "../api/client";
 import { checkOvertime, getOvertime, overtimeKey } from "../api/overtime";
+import PayPeriodLine from "../components/PayPeriodLine";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -63,6 +64,7 @@ export default function OvertimePage() {
           </label>
         )}
       </div>
+      {d && <PayPeriodLine period={d.period} />}
       <ErrorLine error={found.error} />
       {d && !d.confirmed && <p className="notice">{t("ot.notConfirmed")}</p>}
       {d?.rule && (

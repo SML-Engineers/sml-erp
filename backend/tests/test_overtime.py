@@ -68,8 +68,9 @@ def test_the_month_is_worked_out_by_the_division_rule(october):
     m = overtime.work_out(october, OCT, s.absent_days)
     assert (m.ot_working, m.ot_sunday, m.ot_holiday) == (180, 240, 135)
     assert (m.short_minutes, m.short_leaves, m.nopay_minutes) == (185, 2, 135)
-    # 26 working days: 7 worked, 2 of no-pay leave, 17 absent.
-    assert (m.absent_days, m.unpaid_leave_days, m.nopay_days) == (17, Decimal(2), Decimal(19))
+    # Pay month October (21 Sep - 20 Oct), 25 working days: 7 worked, 2 of no-pay leave, 16
+    # absent.
+    assert (m.absent_days, m.unpaid_leave_days, m.nopay_days) == (16, Decimal(2), Decimal(18))
     assert m.rule.rate_working_day == Decimal("1.50")
 
 
@@ -125,7 +126,7 @@ def test_the_director_checks_the_month_and_the_figures_are_kept(hr, director, oc
     body = as_user(director).get("/api/v1/overtime/?division=WS&month=2026-10").json()
     [line] = body["rows"]
     assert (line["ot_working"], line["ot_sunday"], line["ot_holiday"]) == ("3:00", "4:00", "2:15")
-    assert (line["nopay_time"], line["nopay_days"], line["can_check"]) == ("2:15", "19.0", True)
+    assert (line["nopay_time"], line["nopay_days"], line["can_check"]) == ("2:15", "18.0", True)
     response = as_user(director).post(
         "/api/v1/overtime/check/",
         {"division": "WS", "month": "2026-10", "employees": [october.pk]},
@@ -135,7 +136,7 @@ def test_the_director_checks_the_month_and_the_figures_are_kept(hr, director, oc
     kept = OvertimeCheck.objects.get()
     assert (kept.ot_working_minutes, kept.nopay_days, kept.checked_by) == (
         180,
-        Decimal("19.0"),
+        Decimal("18.0"),
         director,
     )
     with pytest.raises(OvertimeError, match="already checked"):

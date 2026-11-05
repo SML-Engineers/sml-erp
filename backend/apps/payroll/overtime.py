@@ -5,12 +5,14 @@
   for working days, Sundays and holidays, and the hourly divisor payroll uses (P2B-06).
   Defaults (backlog question 5): 8 hours a day; 1.5 times on working days, 2 times on Sundays
   and holidays; HR enters new rules from a month, with a reason.
-- From a confirmed attendance month (P2B-04), each day gives:
+- Everything is per pay month (P2B-15, periods.py): a rule "from November 2026" applies from
+  the first day of pay month November (21 October by default).
+- From a confirmed attendance pay month (P2B-04), each day gives:
   - working day: overtime = minutes worked beyond the shift's working minutes (or the normal
     day); short time = minutes late beyond the grace period plus minutes left early;
   - Sunday or holiday: all minutes worked are overtime at that day's rate.
   Overtime below the minimum is not counted, and is rounded down to the step.
-- A month's short time is covered by short leave (up to the number allowed, each up to its
+- A pay month's short time is covered by short leave (up to the number allowed, each up to its
   length); the rest is no-pay time. Days absent and days of unpaid leave are no-pay days.
 - The section's supervisor, or the Director, checks each employee's month; never the person
   who confirmed the attendance, nor the employee (rule 5). Checked figures are kept as
@@ -28,7 +30,7 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.models import Division, User
 
-from . import attendance, employees, leave
+from . import attendance, employees, leave, periods
 from .models import AttendanceDay, AttendanceMonth, Employee, Leave, OvertimeCheck, WorkRule
 
 MINUTE_FIELDS = (
@@ -75,7 +77,7 @@ def add_rule(user: User, division_code, values: dict) -> WorkRule:
         raise OvertimeError(str(error)) from None
     if AttendanceMonth.objects.filter(division=division, month__gte=start, confirmed=True).exists():
         raise OvertimeError(
-            "Attendance from that month is already confirmed; a new rule starts after it."
+            "Attendance from that pay month is already confirmed; a new rule starts after it."
         )
     reason = " ".join(str(values.get("reason") or "").split())
     if not reason:
@@ -114,10 +116,15 @@ def add_rule(user: User, division_code, values: dict) -> WorkRule:
     return rule
 
 
+def in_force(rule: WorkRule) -> bool:
+    """A rule is in force from the first day of its pay month."""
+    return periods.pay_period(rule.effective_from)[0] <= timezone.localdate()
+
+
 def withdraw_rule(user: User, rule: WorkRule, reason: str) -> None:
     if not effective_access(user).has("hr_payroll", "manage"):
         raise OvertimeError("Only HR keeps the work rules.")
-    if rule.effective_from <= timezone.localdate():
+    if in_force(rule):
         raise OvertimeError("A rule in force is never withdrawn; enter a new one.")
     reason = " ".join((reason or "").split())
     if not reason:
@@ -156,14 +163,14 @@ class Month:
 
 def work_out(employee: Employee, month: date, absent_days: int) -> Month:
     month = attendance.first_of(month)
-    end = attendance.month_end(month)
+    first, end = periods.pay_period(month)
     rule = rule_for(employee.division_id, month)
     if rule is None:
         raise OvertimeError(f"{employee.division.code} has no work rule for {month:%B %Y}.")
-    off = leave.holidays_between(month, end)
+    off = leave.holidays_between(first, end)
     out = Month(employee, rule, absent_days=absent_days)
     shorts = []
-    days = AttendanceDay.objects.filter(employee=employee, date__range=(month, end))
+    days = AttendanceDay.objects.filter(employee=employee, date__range=(first, end))
     for d in days.select_related("shift").order_by("date"):
         if d.time_in is None:
             continue
@@ -191,13 +198,13 @@ def work_out(employee: Employee, month: date, absent_days: int) -> Month:
         status=Leave.Status.APPROVED,
         leave_type__paid=False,
         start__lte=end,
-        end__gte=month,
+        end__gte=first,
     )
     for x in unpaid:
         if x.half_day:
             out.unpaid_leave_days += x.days
         else:
-            out.unpaid_leave_days += leave.working_days(max(x.start, month), min(x.end, end))
+            out.unpaid_leave_days += leave.working_days(max(x.start, first), min(x.end, end))
     return out
 
 
@@ -253,7 +260,9 @@ def check(user: User, division_code, month, employee_ids) -> int:
     division, month = _division(user, division_code), attendance.first_of(month)
     record = AttendanceMonth.objects.filter(division=division, month=month, confirmed=True).first()
     if record is None:
-        raise OvertimeError(f"HR has not confirmed {month:%B %Y} attendance for {division.code}.")
+        raise OvertimeError(
+            f"HR has not confirmed attendance for pay month {month:%B %Y} in {division.code}."
+        )
     if record.confirmed_by_id == user.pk:
         raise OvertimeError("The person who confirmed the attendance does not check the overtime.")
     wanted = {int(x) for x in employee_ids or []}

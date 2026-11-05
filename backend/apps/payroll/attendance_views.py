@@ -1,7 +1,5 @@
 """Attendance API (P2B-04). Rules live in attendance.py."""
 
-from datetime import timedelta
-
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -11,7 +9,7 @@ from rest_framework.response import Response
 
 from apps.core.access import division_scope
 
-from . import attendance, employees
+from . import attendance, employees, periods
 from .attendance import AttendanceError
 from .models import AttendanceDay, AttendanceMonth
 from .views import XLSX, _Employees, _name
@@ -28,8 +26,7 @@ def _hm(minutes: int) -> str:
 def _month(request):
     value = request.query_params.get("month")
     if not value:
-        today = timezone.localdate()
-        return (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+        return periods.last_pay_month()
     return attendance.first_of(value)
 
 
@@ -49,16 +46,18 @@ class AttendanceView(_Employees):
         record = AttendanceMonth.objects.filter(division=division, month=month).first()
         rows = attendance.month_summary(request.user, division, month)
         confirmed = bool(record and record.confirmed)
+        period = periods.label(month)
         return Response(
             {
                 "month": month.isoformat()[:7],
+                "period": period,
                 "division": division.code,
                 "divisions": [d.code for d in divisions],
                 "confirmed": confirmed,
                 "confirmed_by": _name(record.confirmed_by) if confirmed else None,
                 "confirmed_at": record.confirmed_at if confirmed else None,
                 "can_edit": employees.can_edit(request.user),
-                "month_ended": attendance.month_end(month) < timezone.localdate(),
+                "month_ended": period["end"] < timezone.localdate().isoformat(),
                 "rows": [
                     {
                         "employee": {
@@ -89,11 +88,12 @@ class AttendanceDaysView(_Employees):
         except AttendanceError as error:
             return _error(error)
         days = AttendanceDay.objects.filter(
-            employee=person, date__range=(month, attendance.month_end(month))
+            employee=person, date__range=periods.pay_period(month)
         ).select_related("shift", "leave_type")
         return Response(
             {
                 "month": month.isoformat()[:7],
+                "period": periods.label(month),
                 "days": [
                     {
                         "date": d.date,

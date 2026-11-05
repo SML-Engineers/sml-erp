@@ -41,6 +41,8 @@ urlpatterns = [
     ),
     path("work-rules/", ov.WorkRuleListView.as_view(), name="work-rules"),
     path("work-rules/<int:pk>/", ov.WorkRuleDetailView.as_view(), name="work-rule"),
+    path("pay-periods/", ov.PayPeriodListView.as_view(), name="pay-periods"),
+    path("pay-periods/<int:pk>/", ov.PayPeriodDetailView.as_view(), name="pay-period"),
     path("overtime/", ov.OvertimeView.as_view(), name="overtime"),
     path("overtime/check/", ov.OvertimeCheckView.as_view(), name="overtime-check"),
     path("holidays/", lv.HolidayListView.as_view(), name="holidays"),

@@ -12,7 +12,7 @@ from openpyxl import Workbook
 
 from apps.core.models import AuditEvent
 from apps.masters.models import Shift
-from apps.payroll import attendance, employees, leave
+from apps.payroll import attendance, employees, leave, periods
 from apps.payroll.attendance import COLUMNS, AttendanceError
 from apps.payroll.models import AttendanceDay, Leave, LeaveType
 
@@ -136,8 +136,9 @@ def test_the_month_summary_counts_days_worked_leave_and_absent(hr, kamal):
     leave.add_holiday(hr, {"date": "2026-10-06", "name": "Vap Poya", "kind": "poya"})
     upload(hr, [row(1), row(2), row(3, time_in=None, time_out=None, leave="CASUAL")])
     [s] = attendance.month_summary(hr, kamal.division, OCT)
-    # October 2026: 31 days, 4 Sundays and one Poya day leave 26 working days.
-    assert (s.working_days, s.days_worked, s.leave_days, s.absent_days) == (26, 2, 1, 23)
+    # Pay month October 2026 (21 Sep - 20 Oct): 30 days, 4 Sundays and one Poya day leave 25
+    # working days.
+    assert (s.working_days, s.days_worked, s.leave_days, s.absent_days) == (25, 2, 1, 22)
     assert s.minutes_worked == 18 * 60
 
 
@@ -194,8 +195,9 @@ def test_a_sheet_that_disagrees_with_recorded_leave_is_not_confirmed(hr, kamal):
 
 
 def test_the_current_month_is_confirmed_only_after_it_ends(hr, kamal):
+    current = periods.pay_month_of(timezone.localdate())
     with pytest.raises(AttendanceError, match="after it has ended"):
-        attendance.confirm(hr, "WS", timezone.localdate().isoformat()[:7])
+        attendance.confirm(hr, "WS", current.isoformat()[:7])
 
 
 def test_who_sees_and_uploads_attendance(hr, kamal):

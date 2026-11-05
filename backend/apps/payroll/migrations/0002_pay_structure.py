@@ -156,7 +156,7 @@ class Migration(migrations.Migration):
                 "constraints": [
                     models.CheckConstraint(
                         condition=models.Q(("kind", "earning"))
-                        | models.Q(("epf_liable", False), ("apit_taxable", False)),
+                        | models.Q(("apit_taxable", False), ("epf_liable", False)),
                         name="payroll_component_deduction_flags",
                     )
                 ],

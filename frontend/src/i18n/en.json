@@ -3648,5 +3648,20 @@
     "documents": "{{count}} documents, LKR {{total}}",
     "loaded": "Brought over.",
     "postFirst": "Post the opening balances first."
+  },
+  "par": {
+    "title": "Parallel run: compare with QuickBooks",
+    "help": "During the parallel month, enter the same transactions in both systems. At the month end, upload QuickBooks' trial balance (and its A/R and A/P ageing) as at that date. Every account, customer and supplier is compared with the ERP at the same date, and each difference is listed to explain. Nothing is posted; compare as often as you like.",
+    "files": "QuickBooks files",
+    "compare": "Compare",
+    "showAll": "Show the lines that agree too",
+    "asAt": "Compared at {{date}}",
+    "accounts": "Accounts",
+    "customers": "Customers",
+    "suppliers": "Suppliers",
+    "difference": "Difference (ERP − QuickBooks)",
+    "allAgree": "Everything agrees",
+    "differences": "{{count}} differences to explain",
+    "unknown": "Not found in the ERP: {{names}}"
   }
 }

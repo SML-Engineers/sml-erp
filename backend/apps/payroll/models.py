@@ -13,6 +13,13 @@ class Employee(models.Model):
     salary bank account, like a supplier's, is checked by a second person whenever it changes:
     until then it is not paid to (spec 4.6, 7A)."""
 
+    class Category(models.TextChoices):
+        """The labour law that applies (P2B-16; owner, 5 Nov 2026): office staff under the
+        Shop and Office Employees Act, factory staff under a Wages Board."""
+
+        SHOP_OFFICE = "shop_office", "Shop and Office"
+        WAGES_BOARD = "wages_board", "Wages Board"
+
     class Type(models.TextChoices):
         PERMANENT = "permanent", "Permanent"
         PROBATION = "probation", "On probation"
@@ -37,6 +44,9 @@ class Employee(models.Model):
     designation = models.CharField(max_length=100, blank=True)
     grade = models.CharField(max_length=30, blank=True)
     employment_type = models.CharField(max_length=12, choices=Type.choices)
+    category = models.CharField(
+        max_length=12, choices=Category.choices, default=Category.SHOP_OFFICE
+    )
     join_date = models.DateField()
     confirmation_date = models.DateField(null=True, blank=True)
     leaving_date = models.DateField(null=True, blank=True)
@@ -189,20 +199,29 @@ class LeaveType(models.Model):
       quarter of joining; then the full days (Shop and Office Employees Act, section 6).
     - casual_soe: half a day for each completed month in the year of joining; then the full
       days.
+    - after_joining: none in the year of joining, then the full days (Wages Board annual
+      leave, owner 5 Nov 2026).
     - fixed: the full days every year.
     - unlimited: no balance kept (no-pay leave, maternity leave, which follow their own rules).
+
+    Wages Board employees (P2B-16) follow `wb_rule` and `wb_days` where they are set, otherwise
+    the same rule and days. `max_days` limits one leave (maternity: 84 working days).
     """
 
     class Rule(models.TextChoices):
         ANNUAL = "annual_soe", "Annual leave rule (by quarter of joining)"
         CASUAL = "casual_soe", "Casual leave rule (half a day a month in the first year)"
+        AFTER_JOINING = "after_joining", "None in the year of joining, then the full days"
         FIXED = "fixed", "Same days every year"
         UNLIMITED = "unlimited", "No balance kept"
 
     code = models.CharField(max_length=12, unique=True)
     name = models.CharField(max_length=100)
-    rule = models.CharField(max_length=12, choices=Rule.choices)
+    rule = models.CharField(max_length=13, choices=Rule.choices)
     days = models.DecimalField(max_digits=5, decimal_places=1, default=0)
+    wb_rule = models.CharField(max_length=13, choices=Rule.choices, blank=True)
+    wb_days = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
+    max_days = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
     paid = models.BooleanField(default=True)
     carry_forward_max = models.DecimalField(max_digits=5, decimal_places=1, default=0)
     is_active = models.BooleanField(default=True)
@@ -223,6 +242,12 @@ class LeaveType(models.Model):
     @property
     def keeps_balance(self) -> bool:
         return self.rule != self.Rule.UNLIMITED
+
+    def rule_for(self, category: str) -> tuple[str, Decimal]:
+        """The rule and days for an employee of `category` (P2B-16)."""
+        if category == Employee.Category.WAGES_BOARD:
+            return self.wb_rule or self.rule, (self.days if self.wb_days is None else self.wb_days)
+        return self.rule, self.days
 
 
 class LeaveGrant(models.Model):
@@ -427,6 +452,9 @@ class WorkRule(models.Model):
     grace_minutes = models.PositiveSmallIntegerField(default=10)
     short_leaves_per_month = models.PositiveSmallIntegerField(default=2)
     short_leave_minutes = models.PositiveSmallIntegerField(default=90)
+    # Owner, 5 Nov 2026: short leave is paid for Shop and Office staff; for Wages Board staff
+    # each one costs a quarter of a day's pay (P2B-16).
+    short_leave_paid_wb = models.BooleanField(default=False)
     ot_min_minutes = models.PositiveSmallIntegerField(default=30)
     ot_step_minutes = models.PositiveSmallIntegerField(default=15)
     rate_working_day = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal("1.50"))
@@ -476,6 +504,8 @@ class OvertimeCheck(models.Model):
     short_minutes = models.PositiveIntegerField()
     nopay_minutes = models.PositiveIntegerField()
     nopay_days = models.DecimalField(max_digits=4, decimal_places=1)
+    # Wages Board short leaves that cost a quarter of a day's pay each (P2B-16).
+    unpaid_short_leaves = models.PositiveSmallIntegerField(default=0)
     checked_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )

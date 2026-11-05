@@ -128,12 +128,14 @@ export default function OvertimePage() {
                   <td>
                     {r.employee.number} {r.employee.name}
                     {r.employee.section && <span className="muted"> {r.employee.section}</span>}
+                    {r.category === "wages_board" && <span className="tag"> {t("ot.wagesBoard")}</span>}
                   </td>
                   <td className="num">{r.ot_working}</td>
                   <td className="num">{r.ot_sunday}</td>
                   <td className="num">{r.ot_holiday}</td>
                   <td className="num">
-                    {r.short} ({t("ot.shortLeaves", { count: r.short_leaves })})
+                    {r.short} ({t("ot.shortLeaves", { count: r.short_leaves })}
+                    {r.unpaid_short_leaves > 0 && `, ${t("ot.unpaid", { count: r.unpaid_short_leaves })}`})
                   </td>
                   <td className="num">{r.nopay_time}</td>
                   <td className="num">{r.nopay_days}</td>

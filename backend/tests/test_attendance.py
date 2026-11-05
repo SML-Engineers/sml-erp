@@ -144,7 +144,9 @@ def test_the_month_summary_counts_days_worked_leave_and_absent(hr, kamal):
 
 def test_confirming_records_the_leave_and_fixes_the_days(hr, kamal):
     upload(hr, [row(1), row(2, time_in=None, time_out=None, leave="CASUAL")])
-    with pytest.raises(AttendanceError, match="Not confirmed.*0.0 days of casual leave left"):
+    with pytest.raises(
+        AttendanceError, match="Not confirmed.*0.0 days of casual and sick leave left"
+    ):
         attendance.confirm(hr, "WS", "2026-10")
     leave.grant_year(hr, 2026)
     response = as_user(hr).post(

@@ -18,7 +18,7 @@ export interface HolidayList {
   can_manage: boolean;
 }
 
-export type LeaveRule = "annual_soe" | "casual_soe" | "fixed" | "unlimited";
+export type LeaveRule = "annual_soe" | "casual_soe" | "after_joining" | "fixed" | "unlimited";
 
 export interface LeaveType {
   id: number;
@@ -27,6 +27,11 @@ export interface LeaveType {
   rule: LeaveRule;
   rule_label: string;
   days: string;
+  /** Wages Board staff (P2B-16): "" and null mean the same as Shop and Office. */
+  wb_rule: LeaveRule | "";
+  wb_days: string | null;
+  /** The most working days one leave may take (maternity: 84). */
+  max_days: string | null;
   paid: boolean;
   carry_forward_max: string;
   is_active: boolean;

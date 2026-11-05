@@ -57,6 +57,7 @@ COLUMNS = [
     ("designation", "Designation"),
     ("grade", "Grade"),
     ("employment_type", "Employment type"),
+    ("category", "Category"),
     ("join_date", "Join date"),
     ("confirmation_date", "Confirmation date"),
     ("epf_no", "EPF no"),
@@ -189,6 +190,16 @@ def clean(user: User, values: dict, current: Employee | None = None) -> dict:
                 + "."
             )
         out["employment_type"] = kind
+    category = _text(values.get("category")).lower()
+    if current is None or category:
+        # P2B-16: Shop and Office or Wages Board. Blank: Shop and Office for a new employee,
+        # unchanged for an existing one (an older sheet without the column changes nothing).
+        category = category or Employee.Category.SHOP_OFFICE
+        labels = {label.lower(): code for code, label in Employee.Category.choices}
+        category = labels.get(category, category)
+        if category not in Employee.Category.values:
+            raise EmployeeError("The category is Shop and Office or Wages Board.")
+        out["category"] = category
     if current is None or "division" in values:
         code = _text(values.get("division")).upper()
         division = division_scope(user).filter(code=code, is_active=True).first()
@@ -350,6 +361,7 @@ def export_workbook(rows) -> bytes:
                 e.designation,
                 e.grade,
                 e.get_employment_type_display(),
+                e.get_category_display(),
                 e.join_date,
                 e.confirmation_date,
                 e.epf_no,

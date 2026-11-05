@@ -13,8 +13,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core import approvals
-from apps.core.access import AreaAccess, division_scope
+from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
+from apps.core.permissions import AreaAccess
 
 from . import employees, payroll, periods
 from .models import PayComponent, PayrollRun, StatutoryRate, TaxBand, TaxTable
@@ -33,6 +34,13 @@ class _Payroll(APIView):
     permission_classes = [AreaAccess]
     access_area = "hr_payroll"
     access_write_level = "view"  # the service decides who prepares and who approves
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        user = request.user
+        # HR and the Director; the Accountant sees the totals only. Not section supervisors.
+        if not (employees.can_view(user) or effective_access(user).has("accounting", "view")):
+            self.permission_denied(request, message="Only HR, the Director and the Accountant.")
 
 
 def _runs(user):

@@ -19,6 +19,7 @@ class PayrollConfig(AppConfig):
             LeaveType,
             OvertimeCheck,
             PayComponent,
+            PayPeriodRule,
             PayRate,
             WorkRule,
         )
@@ -35,5 +36,6 @@ class PayrollConfig(AppConfig):
             AttendanceImport,
             WorkRule,
             OvertimeCheck,
+            PayPeriodRule,
         ):
             register(model)

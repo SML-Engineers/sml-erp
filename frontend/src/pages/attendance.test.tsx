@@ -5,7 +5,7 @@ import { mockApi, renderAt } from "../test-utils";
 import AttendancePage from "./AttendancePage";
 
 const month: AttendanceMonth = {
-  month: "2026-10", division: "WS", divisions: ["HO", "IM", "WS"], confirmed: false, confirmed_by: null,
+  month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" }, division: "WS", divisions: ["HO", "IM", "WS"], confirmed: false, confirmed_by: null,
   confirmed_at: null, can_edit: true, month_ended: true,
   rows: [
     {
@@ -19,13 +19,14 @@ test("HR opens an employee's days and confirms the month", async () => {
   const calls = mockApi({
     "GET /api/v1/attendance/": { body: month },
     "GET /api/v1/employees/7/attendance/?month=2026-10": {
-      body: { month: "2026-10", days: [{ date: "2026-10-01", shift: "D", time_in: "08:10", time_out: "17:00", leave: "", worked: "8:50", late: 10, early: 0, remarks: "" }] },
+      body: { month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" }, days: [{ date: "2026-10-01", shift: "D", time_in: "08:10", time_out: "17:00", leave: "", worked: "8:50", late: 10, early: 0, remarks: "" }] },
     },
     "POST /api/v1/attendance/confirm/": { body: { ok: true } },
   });
   renderAt("/attendance", <AttendancePage />);
   fireEvent.click(await screen.findByRole("button", { name: "E001 Kamal Perera" }));
   expect(await screen.findByText("8:50")).toBeInTheDocument();
+  expect(screen.getByText("Pay month Oct 2026: 21 Sep – 20 Oct")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Confirm the month" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(

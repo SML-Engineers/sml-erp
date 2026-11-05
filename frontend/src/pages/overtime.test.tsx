@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 
 import type { OvertimeMonth, WorkRuleList } from "../api/overtime";
+import type { PayPeriodRuleList } from "../api/periods";
 import { mockApi, renderAt } from "../test-utils";
 import OvertimePage from "./OvertimePage";
 import WorkRulesPage from "./WorkRulesPage";
@@ -12,7 +13,8 @@ const rule = {
 };
 
 const month: OvertimeMonth = {
-  month: "2026-10", division: "WS", divisions: ["WS"], confirmed: true, rule,
+  month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" }, division: "WS",
+  divisions: ["WS"], confirmed: true, rule,
   rows: [
     {
       employee: { id: 7, number: "E001", name: "Kamal Perera", section: "" }, ot_working: "3:00", ot_sunday: "4:00",
@@ -29,6 +31,7 @@ test("the Director chooses employees and checks their overtime", async () => {
   });
   renderAt("/overtime", <OvertimePage />);
   fireEvent.click(await screen.findByLabelText("Choose E001"));
+  expect(screen.getByText("Pay month Oct 2026: 21 Sep – 20 Oct")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Check 1 employee" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
@@ -38,11 +41,41 @@ test("the Director chooses employees and checks their overtime", async () => {
   );
 });
 
+const periods: PayPeriodRuleList = {
+  results: [{ id: 1, effective_from: "2024-01", start_day: 21, reason: "Owner", created_by: null, can_withdraw: false }],
+  current: { month: "2026-11", start: "2026-10-21", end: "2026-11-20" },
+  last: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
+  can_manage: true,
+};
+
+test("HR sees the pay period and enters a new one", async () => {
+  const calls = mockApi({
+    "GET /api/v1/work-rules/": { body: { results: [], divisions: ["WS"], can_manage: false } },
+    "GET /api/v1/pay-periods/": { body: periods },
+    "POST /api/v1/pay-periods/": { body: periods.results[0] },
+  });
+  renderAt("/work-rules", <WorkRulesPage />);
+  expect(await screen.findByText("Pay month Nov 2026: 21 Oct – 20 Nov")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("First pay month"), { target: { value: "2027-01" } });
+  fireEvent.change(screen.getByLabelText("Starts on day"), { target: { value: "1" } });
+  fireEvent.change(screen.getByLabelText("Reason for the pay period"), { target: { value: "Calendar months" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save pay period" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/pay-periods/",
+      expect.objectContaining({
+        body: JSON.stringify({ effective_from: "2027-01", start_day: "1", reason: "Calendar months" }),
+      }),
+    ),
+  );
+});
+
 test("HR enters a new rule from a month, keeping the other values", async () => {
   const list: WorkRuleList = { results: [rule], divisions: ["WS"], can_manage: true };
   const calls = mockApi({
     "GET /api/v1/work-rules/": { body: list },
     "POST /api/v1/work-rules/": { body: rule },
+    "GET /api/v1/pay-periods/": { body: { ...periods, can_manage: false } },
   });
   renderAt("/work-rules", <WorkRulesPage />);
   fireEvent.change(await screen.findByLabelText("Division"), { target: { value: "WS" } });

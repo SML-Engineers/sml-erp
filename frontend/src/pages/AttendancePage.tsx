@@ -15,6 +15,7 @@ import {
   type AttendanceMonth,
 } from "../api/attendance";
 import { ApiError } from "../api/client";
+import PayPeriodLine from "../components/PayPeriodLine";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -61,6 +62,7 @@ export default function AttendancePage() {
           </label>
         )}
       </div>
+      {d && <PayPeriodLine period={d.period} />}
       {d?.can_edit && <Upload />}
       <ErrorLine error={found.error} />
       {d && <MonthStatus data={d} />}

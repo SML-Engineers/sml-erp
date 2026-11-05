@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 
 import { ApiError } from "../api/client";
 import { addWorkRule, listWorkRules, withdrawWorkRule, workRulesKey } from "../api/overtime";
+import PayPeriodLine from "../components/PayPeriodLine";
+import { addPayPeriod, listPayPeriods, payPeriodsKey, withdrawPayPeriod } from "../api/periods";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -61,6 +63,7 @@ export default function WorkRulesPage() {
     <main className="page">
       <h1>{t("wr.title")}</h1>
       <p className="muted">{t("wr.help")}</p>
+      <PayPeriodPanel />
       <ErrorLine error={list.error} />
       {d && (
         <div className="table-wrap">
@@ -165,5 +168,126 @@ export default function WorkRulesPage() {
         </form>
       )}
     </main>
+  );
+}
+
+/** The pay period (P2B-15): the day each pay month starts, dated, kept by HR. */
+function PayPeriodPanel() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const list = useQuery({ queryKey: payPeriodsKey, queryFn: listPayPeriods });
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [withdrawing, setWithdrawing] = useState<number | null>(null);
+  const [why, setWhy] = useState("");
+  const refresh = () => void queryClient.invalidateQueries({ queryKey: payPeriodsKey });
+  const add = useMutation({
+    mutationFn: () => addPayPeriod(values),
+    onSuccess: () => {
+      setValues({});
+      refresh();
+    },
+  });
+  const withdraw = useMutation({
+    mutationFn: () => withdrawPayPeriod(withdrawing!, why),
+    onSuccess: () => {
+      setWithdrawing(null);
+      setWhy("");
+      refresh();
+    },
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    add.mutate();
+  };
+  const d = list.data;
+  return (
+    <section className="panel" aria-label={t("pp.title")}>
+      <h2>{t("pp.title")}</h2>
+      <p className="muted">{t("pp.help")}</p>
+      <ErrorLine error={list.error} />
+      {d && (
+        <>
+          <PayPeriodLine period={d.current} />
+          <div className="table-wrap">
+            <table aria-label={t("pp.title")}>
+              <thead>
+                <tr>
+                  <th>{t("pp.from")}</th>
+                  <th className="num">{t("pp.startDay")}</th>
+                  <th>{t("pp.reason")}</th>
+                  {d.can_manage && <th />}
+                </tr>
+              </thead>
+              <tbody>
+                {d.results.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.effective_from}</td>
+                    <td className="num">{r.start_day}</td>
+                    <td>{r.reason}</td>
+                    {d.can_manage && (
+                      <td>
+                        {r.can_withdraw && (
+                          <button type="button" className="small secondary" onClick={() => setWithdrawing(r.id)}>
+                            {t("pp.withdraw")}
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+      {withdrawing !== null && (
+        <div className="inline-form">
+          <label>
+            {t("pp.withdrawReason")}
+            <input value={why} onChange={(e) => setWhy(e.target.value)} />
+          </label>
+          <button type="button" disabled={withdraw.isPending} onClick={() => withdraw.mutate()}>
+            {t("pp.confirmWithdraw")}
+          </button>
+          <ErrorLine error={withdraw.error} />
+        </div>
+      )}
+      {d?.can_manage && (
+        <form className="form-grid" aria-label={t("pp.add")} onSubmit={submit}>
+          <h3 className="wide">{t("pp.add")}</h3>
+          <label>
+            {t("pp.from")}
+            <input
+              type="month"
+              value={values.effective_from ?? ""}
+              onChange={(e) => setValues({ ...values, effective_from: e.target.value })}
+            />
+          </label>
+          <label>
+            {t("pp.startDay")}
+            <input
+              inputMode="numeric"
+              value={values.start_day ?? ""}
+              onChange={(e) => setValues({ ...values, start_day: e.target.value })}
+            />
+          </label>
+          <label className="wide">
+            {t("pp.reason")}
+            <input value={values.reason ?? ""} onChange={(e) => setValues({ ...values, reason: e.target.value })} />
+          </label>
+          <p className="muted wide">
+            {t("pp.startDayHelp")} {t("pp.addHelp")}
+          </p>
+          <div className="wide row-actions">
+            <button type="submit" disabled={add.isPending}>
+              {t("pp.save")}
+            </button>
+          </div>
+          <div className="wide">
+            <ErrorLine error={add.error} />
+          </div>
+        </form>
+      )}
+    </section>
   );
 }

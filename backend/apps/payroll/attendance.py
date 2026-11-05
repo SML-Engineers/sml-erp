@@ -7,7 +7,9 @@
 - Each day keeps the minutes worked (less the shift's break), and the minutes late and left
   early against the shift; overtime, grace periods, short leave and no-pay are worked out
   from these by the rules of P2B-05.
-- HR confirms a division's month when it is complete. Leave codes then become leave records
+- Everything is per **pay month** (P2B-15, periods.py): pay month November 2026 is 21 October
+  to 20 November by default. `month` below always means the 1st of a pay month.
+- HR confirms a division's pay month when it is complete. Leave codes then become leave records
   (P2B-03: balances checked, every problem listed, nothing saved if one fails), and the days
   never change (database). Payroll (P2B-06) uses confirmed months only. Reopening needs a
   reason and cancels the leave taken from the sheet.
@@ -30,7 +32,7 @@ from apps.core.audit import audit_context
 from apps.core.models import Division, User
 from apps.masters.models import Shift
 
-from . import employees, leave
+from . import employees, leave, periods
 from .leave import LeaveError
 from .models import (
     AttendanceDay,
@@ -67,10 +69,6 @@ def first_of(value) -> date:
         return date.fromisoformat(f"{str(value).strip()[:7]}-01")
     except ValueError:
         raise AttendanceError("Give the month, for example 2026-11.") from None
-
-
-def month_end(month: date) -> date:
-    return (month.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
 
 
 def is_confirmed(division_id: int, month: date) -> bool:
@@ -196,6 +194,7 @@ def check(user: User, content: bytes) -> Plan:
     confirmed = set(
         AttendanceMonth.objects.filter(confirmed=True).values_list("division_id", "month")
     )
+    calendar = periods.calendar()
     plan, seen = Plan(), set()
     for line, raw in enumerate(rows[1:], start=2):
         values = {key: (raw[i] if i < len(raw) else None) for key, i in index.items()}
@@ -214,8 +213,11 @@ def check(user: User, content: bytes) -> Plan:
                 raise AttendanceError("the employee was not employed on that date")
             if day > timezone.localdate():
                 raise AttendanceError("the date is in the future")
-            if (person.division_id, day.replace(day=1)) in confirmed:
-                raise AttendanceError(f"{day:%B %Y} is confirmed for {person.division.code}")
+            pay_month = calendar.month_of(day)
+            if (person.division_id, pay_month) in confirmed:
+                raise AttendanceError(
+                    f"pay month {pay_month:%B %Y} is confirmed for {person.division.code}"
+                )
             code = _text(values.get("shift")).upper()
             shift = None
             if code:
@@ -254,7 +256,8 @@ def check(user: User, content: bytes) -> Plan:
 
 def import_sheet(user: User, content: bytes, file_name: str, *, dry_run: bool) -> dict:
     plan = check(user, content)
-    months = sorted({r.day.replace(day=1).isoformat()[:7] for r in plan.rows})
+    calendar = periods.calendar()
+    months = sorted({calendar.month_of(r.day).isoformat()[:7] for r in plan.rows})
     summary = {
         "rows": len(plan.rows),
         "employees": len({r.employee.pk for r in plan.rows}),
@@ -298,7 +301,18 @@ def template() -> bytes:
     sheet = book.active
     sheet.title = "Attendance"
     sheet.append([label for _, label in COLUMNS])
-    sheet.append(["E001", date(2026, 11, 2), "08:00", "17:00", "", "", "Example row: delete it"])
+    start, end = periods.pay_period(periods.pay_month_of(date(2026, 11, 2)))
+    sheet.append(
+        [
+            "E001",
+            start,
+            "08:00",
+            "17:00",
+            "",
+            "",
+            f"Example row: delete it. A pay month runs from {start:%d %b} to {end:%d %b}.",
+        ]
+    )
     for column in "ABCDEFG":
         sheet.column_dimensions[column].width = 16
     out = io.BytesIO()
@@ -306,7 +320,7 @@ def template() -> bytes:
     return out.getvalue()
 
 
-# --- The month -------------------------------------------------------------------------------
+# --- The pay month -------------------------------------------------------------------------------
 
 
 @dataclass
@@ -329,25 +343,23 @@ def month_summary(user: User, division: Division, month: date) -> list[Summary]:
 
 
 def month_summary_for(people, division: Division, month: date) -> list[Summary]:
-    month = first_of(month)
-    end = min(month_end(month), timezone.localdate())
-    off = leave.holidays_between(month, month_end(month))
-    people = people.filter(division=division, join_date__lte=month_end(month))
-    people = people.exclude(leaving_date__lt=month).select_related("division")
+    first, last_day = periods.pay_period(first_of(month))
+    end = min(last_day, timezone.localdate())
+    off = leave.holidays_between(first, last_day)
+    people = people.filter(division=division, join_date__lte=last_day)
+    people = people.exclude(leaving_date__lt=first).select_related("division")
     days = {}
-    for d in AttendanceDay.objects.filter(
-        employee__in=people, date__range=(month, month_end(month))
-    ):
+    for d in AttendanceDay.objects.filter(employee__in=people, date__range=(first, last_day)):
         days.setdefault(d.employee_id, {})[d.date] = d
     leaves = {}
     for x in Leave.objects.filter(
         employee__in=people,
         status=Leave.Status.APPROVED,
-        start__lte=month_end(month),
-        end__gte=month,
+        start__lte=last_day,
+        end__gte=first,
     ):
-        current = max(x.start, month)
-        while current <= min(x.end, month_end(month)):
+        current = max(x.start, first)
+        while current <= min(x.end, last_day):
             leaves.setdefault(x.employee_id, {})[current] = x.days if x.half_day else Decimal(1)
             current += timedelta(days=1)
     out = []
@@ -355,7 +367,7 @@ def month_summary_for(people, division: Division, month: date) -> list[Summary]:
         mine, away = days.get(p.pk, {}), leaves.get(p.pk, {})
         working = absent = 0
         leave_days = Decimal(0)
-        current = max(month, p.join_date)
+        current = max(first, p.join_date)
         last = min(end, p.leaving_date or end)
         while current <= last:
             if current.weekday() != 6 and current not in off:
@@ -393,13 +405,16 @@ def _division(user: User, code) -> Division:
 
 
 def confirm(user: User, division_code, month) -> AttendanceMonth:
-    """HR confirms the month: the sheet's leave codes become leave records, then the days are
+    """HR confirms the pay month: the sheet's leave codes become leave records, then the days are
     fixed. All or nothing: every problem is listed and nothing is saved if one fails."""
     if not employees.can_edit(user):
         raise AttendanceError("Only HR confirms attendance.")
     division, month = _division(user, division_code), first_of(month)
-    if month_end(month) >= timezone.localdate():
-        raise AttendanceError("A month is confirmed after it has ended.")
+    first, last_day = periods.pay_period(month)
+    if last_day >= timezone.localdate():
+        raise AttendanceError(
+            f"Pay month {month:%B %Y} runs to {last_day:%d %B}; it is confirmed after it has ended."
+        )
     with (
         audit_context("attendance_confirmed", f"{division.code} {month:%Y-%m}"),
         transaction.atomic(),
@@ -408,11 +423,13 @@ def confirm(user: User, division_code, month) -> AttendanceMonth:
             division=division, month=month
         )
         if record.confirmed:
-            raise AttendanceError(f"{month:%B %Y} is already confirmed for {division.code}.")
+            raise AttendanceError(
+                f"Pay month {month:%B %Y} is already confirmed for {division.code}."
+            )
         problems = []
         sheet = AttendanceDay.objects.filter(
             employee__division=division,
-            date__range=(month, month_end(month)),
+            date__range=(first, last_day),
             leave_type__isnull=False,
         ).select_related("employee", "leave_type")
         for d in sheet.order_by("employee__number", "date"):
@@ -457,6 +474,7 @@ def reopen(user: User, division_code, month, reason: str) -> AttendanceMonth:
     if not reason:
         raise AttendanceError("Give the reason for reopening the month.")
     division, month = _division(user, division_code), first_of(month)
+    first, last_day = periods.pay_period(month)
     with audit_context("attendance_reopened", reason), transaction.atomic():
         record = (
             AttendanceMonth.objects.select_for_update()
@@ -464,13 +482,13 @@ def reopen(user: User, division_code, month, reason: str) -> AttendanceMonth:
             .first()
         )
         if record is None:
-            raise AttendanceError(f"{month:%B %Y} is not confirmed for {division.code}.")
+            raise AttendanceError(f"Pay month {month:%B %Y} is not confirmed for {division.code}.")
         # P2B-06: refused once a payroll for the month is approved.
         taken = Leave.objects.filter(
             employee__division=division,
             source=Leave.Source.ATTENDANCE,
             status=Leave.Status.APPROVED,
-            start__range=(month, month_end(month)),
+            start__range=(first, last_day),
         )
         for x in taken:
             leave.cancel(user, x, f"Attendance reopened: {reason}")

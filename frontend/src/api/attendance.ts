@@ -1,4 +1,5 @@
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
+import type { PayPeriod } from "./periods";
 
 /** Attendance from the Excel sheet (P2B-04). */
 
@@ -16,6 +17,7 @@ export interface AttendanceRow {
 
 export interface AttendanceMonth {
   month: string;
+  period: PayPeriod;
   division: string;
   divisions: string[];
   confirmed: boolean;
@@ -28,6 +30,7 @@ export interface AttendanceMonth {
 
 export interface AttendanceDays {
   month: string;
+  period: PayPeriod;
   days: {
     date: string;
     shift: string;

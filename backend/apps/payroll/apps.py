@@ -10,6 +10,8 @@ class PayrollConfig(AppConfig):
         from apps.core.audit import register
 
         from .models import (
+            AttendanceImport,
+            AttendanceMonth,
             Employee,
             Holiday,
             Leave,
@@ -22,5 +24,5 @@ class PayrollConfig(AppConfig):
         register(Employee)
         register(PayComponent)
         register(PayRate)
-        for model in (Holiday, LeaveType, LeaveGrant, Leave):
+        for model in (Holiday, LeaveType, LeaveGrant, Leave, AttendanceMonth, AttendanceImport):
             register(model)

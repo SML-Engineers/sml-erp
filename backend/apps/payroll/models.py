@@ -310,3 +310,79 @@ class Leave(models.Model):
 
     def __str__(self):
         return f"{self.employee.number} {self.leave_type.code} {self.start}"
+
+
+class AttendanceImport(models.Model):
+    """One attendance sheet uploaded (P2B-04): who, when, and the file's fingerprint."""
+
+    file_name = models.CharField(max_length=200)
+    sha256 = models.CharField(max_length=64)
+    rows = models.PositiveIntegerField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.file_name} {self.created_at:%Y-%m-%d}"
+
+
+class AttendanceDay(models.Model):
+    """An employee's attendance on a date, from the attendance sheet (P2B-04). A later sheet
+    replaces the day while its month is open; once HR confirms the month for the division,
+    its days never change (database)."""
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="attendance")
+    date = models.DateField()
+    shift = models.ForeignKey(
+        "masters.Shift", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    time_in = models.TimeField(null=True, blank=True)
+    time_out = models.TimeField(null=True, blank=True)
+    leave_type = models.ForeignKey(
+        LeaveType, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    remarks = models.CharField(max_length=200, blank=True)
+    worked_minutes = models.PositiveIntegerField(default=0)
+    late_minutes = models.PositiveIntegerField(default=0)
+    early_minutes = models.PositiveIntegerField(default=0)
+    source = models.ForeignKey(AttendanceImport, on_delete=models.PROTECT, related_name="days")
+
+    class Meta:
+        ordering = ["employee", "date"]
+        constraints = [
+            models.UniqueConstraint(fields=["employee", "date"], name="payroll_attendance_once"),
+            models.CheckConstraint(
+                condition=models.Q(time_in__isnull=True, time_out__isnull=True)
+                | models.Q(time_in__isnull=False, time_out__isnull=False),
+                name="payroll_attendance_times",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.number} {self.date}"
+
+
+class AttendanceMonth(models.Model):
+    """HR's confirmation of a division's attendance for a month (P2B-04): payroll (P2B-06)
+    uses only confirmed months. Reopening needs a reason."""
+
+    month = models.DateField()  # the 1st
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    confirmed = models.BooleanField(default=False)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-month", "division"]
+        constraints = [
+            models.UniqueConstraint(fields=["month", "division"], name="payroll_attmonth_once"),
+        ]
+
+    def __str__(self):
+        return f"{self.division_id} {self.month:%Y-%m}"

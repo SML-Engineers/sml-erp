@@ -120,6 +120,7 @@ export const MENU: MenuSection[] = [
       // Personal details: HR (Enter) and the Director (Approve), not the Accountant's totals view.
       { label: "emp.title", path: "/employees", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "pc.title", path: "/pay-components", area: "hr_payroll", anyLevel: ["enter", "approve"] },
+      { label: "att.title", path: "/attendance", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "leave.title", path: "/leave", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "hol.title", path: "/holidays", area: "hr_payroll", anyLevel: ["enter", "approve"] },
     ],

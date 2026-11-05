@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import django.db.models.deletion
@@ -79,7 +80,11 @@ def seed(apps, schema_editor):
         WorkRule.objects.get_or_create(
             division=division,
             effective_from="2024-01-01",
-            defaults={"reason": "Default (backlog question 5); confirm with the Accountant"},
+            defaults={
+                "reason": "Default (backlog question 5); confirm with the Accountant",
+                # A whole-second time: test databases reload this row and must find it equal.
+                "created_at": datetime(2024, 1, 1, tzinfo=UTC),
+            },
         )
 
 

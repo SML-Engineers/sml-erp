@@ -15,6 +15,7 @@ import {
   type Employee,
   type EmployeeValues,
 } from "../api/employees";
+import EmployeePay from "./EmployeePay";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -83,6 +84,7 @@ export default function EmployeePage() {
             </section>
           )}
           <Details key={`${e.id}-${e.bank_changed_at}-${e.leaving_date}`} employee={e} onSaved={done} />
+          <EmployeePay employeeId={e.id} />
           {e.can_edit && <Leaving employee={e} onSaved={done} />}
           <p className="muted">
             {t("emp.created", { name: e.created_by, at: e.created_at.slice(0, 10) })}

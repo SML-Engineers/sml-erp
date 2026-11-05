@@ -7,6 +7,7 @@ returns nothing for them.
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
@@ -15,9 +16,10 @@ from rest_framework.views import APIView
 
 from apps.core.permissions import AreaAccess
 
-from . import employees
+from . import employees, pay
 from .employees import EmployeeError
-from .models import Employee
+from .models import Employee, PayComponent, PayRate
+from .pay import PayError
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -198,3 +200,141 @@ class EmployeeExcelView(_Employees):
         except EmployeeError as error:
             return _error(error)
         return Response(result)
+
+
+# --- Pay structure (P2B-02) ------------------------------------------------------------------
+
+
+def _component(c: PayComponent) -> dict:
+    return {
+        "id": c.pk,
+        "code": c.code,
+        "name": c.name,
+        "kind": c.kind,
+        "basis": c.basis,
+        "epf_liable": c.epf_liable,
+        "apit_taxable": c.apit_taxable,
+        "sort_order": c.sort_order,
+        "is_active": c.is_active,
+    }
+
+
+def _rate(r: PayRate) -> dict:
+    return {
+        "id": r.pk,
+        "component": r.component.code,
+        "component_name": r.component.name,
+        "kind": r.component.kind,
+        "effective_from": r.effective_from.isoformat()[:7],
+        "amount": f"{r.amount:.2f}",
+        "reason": r.reason,
+        "created_by": _name(r.created_by),
+        "created_at": r.created_at,
+        "can_withdraw": r.effective_from > timezone.localdate(),
+    }
+
+
+class PayComponentListView(_Employees):
+    access_write_level = "manage"
+
+    def get(self, request):
+        return Response(
+            {
+                "results": [_component(c) for c in PayComponent.objects.all()],
+                "can_manage": pay.can_manage_components(request.user),
+            }
+        )
+
+    def post(self, request):
+        try:
+            component = pay.save_component(request.user, request.data)
+        except PayError as error:
+            return _error(error)
+        return Response(_component(component), status=status.HTTP_201_CREATED)
+
+
+class PayComponentDetailView(_Employees):
+    access_write_level = "manage"
+
+    def patch(self, request, pk):
+        component = get_object_or_404(PayComponent, pk=pk)
+        values = {k: v for k, v in request.data.items() if k != "reason"}
+        try:
+            component = pay.save_component(
+                request.user, values, component, request.data.get("reason", "")
+            )
+        except PayError as error:
+            return _error(error)
+        return Response(_component(component))
+
+
+def _pay(e: Employee, user) -> dict:
+    today = timezone.localdate()
+    lines = pay.amounts_on(e, today)
+    upcoming = (
+        PayRate.objects.filter(employee=e, effective_from__gt=today)
+        .select_related("component", "created_by")
+        .order_by("effective_from", "component__sort_order")
+    )
+    history = (
+        PayRate.objects.filter(employee=e)
+        .select_related("component", "created_by")
+        .order_by("-effective_from", "component__kind", "component__sort_order")
+    )
+    return {
+        "on": today,
+        "current": [
+            {
+                "component": x.component.code,
+                "component_name": x.component.name,
+                "kind": x.component.kind,
+                "epf_liable": x.component.epf_liable,
+                "apit_taxable": x.component.apit_taxable,
+                "amount": f"{x.amount:.2f}",
+                "since": x.rate.effective_from.isoformat()[:7],
+            }
+            for x in lines
+        ],
+        "totals": {k: f"{v:.2f}" for k, v in pay.totals(lines).items()},
+        "upcoming": [_rate(r) for r in upcoming],
+        "history": [_rate(r) for r in history],
+        "components": [_component(c) for c in PayComponent.objects.filter(is_active=True)],
+        "can_edit": e.is_active and employees.can_edit(user),
+    }
+
+
+class EmployeePayView(_Employees):
+    def get(self, request, pk):
+        e = get_object_or_404(employees.visible(request.user), pk=pk)
+        return Response(_pay(e, request.user))
+
+    def post(self, request, pk):
+        e = get_object_or_404(employees.visible(request.user), pk=pk)
+        component = PayComponent.objects.filter(
+            code=str(request.data.get("component") or "").upper()
+        ).first()
+        if component is None:
+            return _error("Choose a pay component.")
+        try:
+            pay.add_rate(
+                request.user,
+                e,
+                component,
+                request.data.get("month"),
+                request.data.get("amount"),
+                request.data.get("reason", ""),
+            )
+        except PayError as error:
+            return _error(error)
+        return Response(_pay(e, request.user), status=status.HTTP_201_CREATED)
+
+
+class EmployeePayRateView(_Employees):
+    def delete(self, request, pk, rate_pk):
+        e = get_object_or_404(employees.visible(request.user), pk=pk)
+        rate = get_object_or_404(PayRate, pk=rate_pk, employee=e)
+        try:
+            pay.withdraw_rate(request.user, rate, request.data.get("reason", ""))
+        except PayError as error:
+            return _error(error)
+        return Response(_pay(e, request.user))

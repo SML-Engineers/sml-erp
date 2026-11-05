@@ -1457,6 +1457,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Open invoices and bills from QuickBooks (P2-28, part 2) | Each open invoice and bill in the QuickBooks ageing brought over for what is still open, agreeing per customer and supplier with the opening balances; paid by receipts and vouchers like any other | 6.1 |
 | Parallel run tools (P2-29) | Test scripts per role and sign-off sheets (docs/uat-scripts.md); a page comparing QuickBooks' trial balance and ageing with the ERP at the same date, every difference listed | 8.2 |
 | Employee master (P2B-01) | Employees kept by HR, seen by HR and the Director only; salary bank account checked by a second person; NIC checked and unique; never deleted, number never changes; Excel import checked first, all or nothing | 2.1, 6, 7A |
+| Pay structure (P2B-02) | Pay components kept by HR, each marked for EPF/ETF and APIT (a deduction never is); each employee's amounts dated from the 1st of a month and never changed, a raise is a new amount, 0 ends a component, a future amount can be withdrawn; budgetary relief allowance not separate since 31 March 2025 | 2.1, 6, 7A |
 
 **Still needed for initial setup**
 

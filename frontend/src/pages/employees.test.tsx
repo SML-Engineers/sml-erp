@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 
 import type { CurrentUser } from "../api/auth";
 import type { Employee, EmployeeList } from "../api/employees";
+import type { EmployeePay } from "../api/pay";
 import { visibleMenu } from "../layout/menu";
 import { mockApi, renderAt, sampleUser } from "../test-utils";
 import EmployeePage from "./EmployeePage";
@@ -42,6 +43,23 @@ const employee: Employee = {
   can_edit: false, can_check_bank: true,
 };
 
+const pay: EmployeePay = {
+  on: "2026-11-05",
+  current: [
+    { component: "BASIC", component_name: "Basic salary", kind: "earning", epf_liable: true, apit_taxable: true, amount: "60000.00", since: "2024-01" },
+    { component: "WELFARE", component_name: "Welfare society", kind: "deduction", epf_liable: false, apit_taxable: false, amount: "250.00", since: "2024-01" },
+  ],
+  totals: { earnings: "60000.00", deductions: "250.00", net: "59750.00", epf_earnings: "60000.00", apit_earnings: "60000.00" },
+  upcoming: [],
+  history: [
+    { id: 3, component: "BASIC", component_name: "Basic salary", kind: "earning", effective_from: "2026-12", amount: "66000.00", reason: "Increment", created_by: "HR", created_at: "2026-11-05T09:00:00Z", can_withdraw: true },
+  ],
+  components: [
+    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, sort_order: 10, is_active: true },
+  ],
+  can_edit: true,
+};
+
 test("only HR and the Director have the Employees menu", () => {
   const labels = (me: CurrentUser) => visibleMenu(me.access).flatMap((s) => s.items.map((i) => i.label));
   expect(labels(hr)).toContain("emp.title");
@@ -66,6 +84,7 @@ test("the Director confirms a new bank account", async () => {
   };
   const calls = mockApi({
     "GET /api/v1/employees/7/": () => ({ body: current }),
+    "GET /api/v1/employees/7/pay/": { body: { ...pay, can_edit: false } },
     "POST /api/v1/employees/7/check-bank/": () => {
       current = checked;
       return { body: checked };
@@ -83,6 +102,7 @@ test("HR changing the bank account is asked for a reason and sends only what cha
   const editable = { ...employee, bank_check_pending: false, can_edit: true, can_check_bank: false };
   const calls = mockApi({
     "GET /api/v1/employees/7/": { body: editable },
+    "GET /api/v1/employees/7/pay/": { body: pay },
     "PATCH /api/v1/employees/7/": { body: editable },
   });
   renderAt("/employees/7", <EmployeePage />, "/employees/:id");
@@ -96,6 +116,48 @@ test("HR changing the bank account is asked for a reason and sends only what cha
         method: "PATCH",
         body: JSON.stringify({ account_number: "8009999999", reason: "New account" }),
       }),
+    ),
+  );
+});
+
+test("HR enters a raise from a month and sees the pay after deductions", async () => {
+  const calls = mockApi({
+    "GET /api/v1/employees/7/": { body: { ...employee, can_edit: true, bank_check_pending: false } },
+    "GET /api/v1/employees/7/pay/": { body: pay },
+    "POST /api/v1/employees/7/pay/": { body: pay },
+  });
+  renderAt("/employees/7", <EmployeePage />, "/employees/:id");
+  expect(await screen.findByText("59,750.00")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Component"), { target: { value: "BASIC" } });
+  fireEvent.change(screen.getByLabelText("From month"), { target: { value: "2026-12" } });
+  fireEvent.change(screen.getByLabelText("Amount (LKR)"), { target: { value: "66000" } });
+  fireEvent.change(screen.getByLabelText("Reason (for example: annual increment)"), { target: { value: "Increment" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save amount" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/employees/7/pay/",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ component: "BASIC", month: "2026-12", amount: "66000", reason: "Increment" }),
+      }),
+    ),
+  );
+});
+
+test("HR withdraws an amount whose month has not come, with a reason", async () => {
+  const calls = mockApi({
+    "GET /api/v1/employees/7/": { body: { ...employee, can_edit: true, bank_check_pending: false } },
+    "GET /api/v1/employees/7/pay/": { body: pay },
+    "DELETE /api/v1/employees/7/pay/3/": { body: { ...pay, history: [] } },
+  });
+  renderAt("/employees/7", <EmployeePage />, "/employees/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Withdraw" }));
+  fireEvent.change(screen.getByLabelText("Reason for withdrawing"), { target: { value: "Not approved" } });
+  fireEvent.click(screen.getByRole("button", { name: "Withdraw the amount" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/employees/7/pay/3/",
+      expect.objectContaining({ method: "DELETE", body: JSON.stringify({ reason: "Not approved" }) }),
     ),
   );
 });

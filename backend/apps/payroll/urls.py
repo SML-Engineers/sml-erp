@@ -17,9 +17,15 @@ urlpatterns = [
     path("employees/<int:pk>/leave/", v.EmployeeLeaveView.as_view(), name="employee-leave"),
     path("employees/<int:pk>/pay/", v.EmployeePayView.as_view(), name="employee-pay"),
     path(
-        "employees/<int:pk>/pay/<int:rate_pk>/",
-        v.EmployeePayRateView.as_view(),
-        name="employee-pay-rate",
+        "employees/<int:pk>/pay-changes/",
+        v.PayChangeListView.as_view(),
+        name="employee-pay-changes",
+    ),
+    path("pay-changes/<int:pk>/", v.PayChangeDetailView.as_view(), name="pay-change"),
+    path(
+        "pay-changes/<int:pk>/<str:action>/",
+        v.PayChangeActionView.as_view(),
+        name="pay-change-action",
     ),
     path("attendance/", av.AttendanceView.as_view(), name="attendance"),
     path("attendance/template/", av.AttendanceTemplateView.as_view(), name="attendance-template"),

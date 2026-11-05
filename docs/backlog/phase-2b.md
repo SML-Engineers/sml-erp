@@ -183,7 +183,7 @@ P2B-06**, in this order.
   beyond the 2 short leaves stays no-pay time unless leave is recorded. Per-employee leave
   and short-leave settings come with P2B-17.
 
-- [ ] **P2B-17 Employee pay settings approved by the Director**
+- [x] **P2B-17 Employee pay settings approved by the Director**
   Every employee's pay settings are entered by HR and take effect only when the Director
   approves them, for a new employee and for every change (owner, questions 5 to 8). One
   "pay settings change" per employee, approved through the approval engine (the Director,
@@ -202,6 +202,28 @@ P2B-06**, in this order.
   "The Admin" in the owner's answers: the System Admin has no payroll access by design
   (segregation of duties), so the **HR and Payroll Officer** prepares and the Director
   approves (follow-up question 3; default).
+  Done: on each employee's Pay panel HR prepares a **pay change**: the pay month it starts
+  from, the reason, new amounts (blank = unchanged, 0 ends a component) with the employee's
+  own EPF/ETF and APIT marks where they differ from the component's, and, if ticked, the
+  employee's own settings (normal day, grace, the three overtime rates, annual and casual and
+  sick leave days, APIT table primary or secondary; blank = the division's work rule or the
+  category's leave, shown beside each box). The first change is marked "New employee" and its
+  form starts the attendance bonus (ATTEND, renamed "Attendance bonus") at LKR 1,500.
+  Components can be marked "Allowance" (seeded: FIXED, TRAVEL, INCENTIVE); a change that would
+  leave more than four allowances is refused. Draft → sent to the Director (approval type
+  "pay_change", reminder after 1 day; it also shows in his approvals) → approved, returned
+  (back to a draft for HR to correct) or rejected; HR may withdraw it until it is decided;
+  one open change per employee. Only on approval do the amounts and settings take effect:
+  **decision recorded: `pay.add_rate` stays as the internal step the approval uses and HR
+  can no longer enter or withdraw amounts directly** (the API for it is removed); amounts
+  entered before keep their place. An approved amount or setting for a pay month that has
+  not yet come is replaced by a later approved change for that month; one in force is
+  refused (choose a later month). The database refuses any change to a decided pay change,
+  to its amounts once it is sent, and to approved settings. The settings are used at once:
+  normal day and grace in the overtime figures, leave days in the year's grant, EPF/APIT
+  marks in the pay totals, overtime rates and the APIT table kept for the payroll run
+  (P2B-06). Gratuity settings (entered by the Accountant, follow-up 9) come with the
+  gratuity itself in P2B-07, where they are used.
 
 - [ ] **P2B-06 Monthly payroll run**
   HR prepares the **pay month** (P2B-15) from the approved pay settings (P2B-17): earnings;

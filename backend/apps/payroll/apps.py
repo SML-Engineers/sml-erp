@@ -13,11 +13,14 @@ class PayrollConfig(AppConfig):
             AttendanceImport,
             AttendanceMonth,
             Employee,
+            EmployeeSetting,
             Holiday,
             Leave,
             LeaveGrant,
             LeaveType,
             OvertimeCheck,
+            PayChange,
+            PayChangeLine,
             PayComponent,
             PayPeriodRule,
             PayRate,
@@ -37,5 +40,8 @@ class PayrollConfig(AppConfig):
             WorkRule,
             OvertimeCheck,
             PayPeriodRule,
+            PayChange,
+            PayChangeLine,
+            EmployeeSetting,
         ):
             register(model)

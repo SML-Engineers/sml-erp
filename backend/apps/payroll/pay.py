@@ -9,6 +9,9 @@
   withdrawn (the database refuses anything else).
 - Amounts are seen by HR and the Director, like the rest of the employee (P2B-01). The
   payroll (P2B-06) reads `amounts_on` for the month it pays, and refuses months already paid.
+- Since P2B-17 (owner, 5 Nov 2026) amounts take effect only through a pay change the Director
+  approves (changes.py); `add_rate` below is no longer offered to HR directly. An amount may
+  carry the employee's own EPF/APIT marks, which then replace the component's.
 """
 
 import re
@@ -84,7 +87,7 @@ def save_component(
         if basis not in PayComponent.Basis.values:
             raise PayError("Choose fixed each month or entered each month.")
         component.basis = basis
-    for field in ("epf_liable", "apit_taxable", "is_active"):
+    for field in ("epf_liable", "apit_taxable", "is_allowance", "is_active"):
         if field in values:
             setattr(component, field, _flag(values[field]))
     if "sort_order" in values:
@@ -205,6 +208,17 @@ class Line:
     amount: Decimal
     rate: PayRate
 
+    @property
+    def epf_liable(self) -> bool:
+        """The employee's own mark if set (P2B-17), otherwise the component's."""
+        own = self.rate.epf_liable
+        return self.component.epf_liable if own is None else own
+
+    @property
+    def apit_taxable(self) -> bool:
+        own = self.rate.apit_taxable
+        return self.component.apit_taxable if own is None else own
+
 
 def amounts_on(employee: Employee, day: date) -> list[Line]:
     """The amounts in force on `day`, one per component (components ended with 0 left out)."""
@@ -229,8 +243,8 @@ def totals(lines: list[Line]) -> dict[str, Decimal]:
     zero = Decimal("0.00")
     earnings = sum((x.amount for x in lines if x.component.kind == "earning"), zero)
     deductions = sum((x.amount for x in lines if x.component.kind == "deduction"), zero)
-    epf = sum((x.amount for x in lines if x.component.epf_liable), zero)
-    taxable = sum((x.amount for x in lines if x.component.apit_taxable), zero)
+    epf = sum((x.amount for x in lines if x.epf_liable), zero)
+    taxable = sum((x.amount for x in lines if x.apit_taxable), zero)
     return {
         "earnings": earnings,
         "deductions": deductions,

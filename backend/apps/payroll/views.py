@@ -14,11 +14,14 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import approvals
 from apps.core.permissions import AreaAccess
 
-from . import employees, pay
+from . import changes, employees, overtime, pay, periods
+from .changes import ChangeError
 from .employees import EmployeeError
-from .models import Employee, PayComponent, PayRate
+from .models import SETTING_FIELDS, Employee, LeaveType, PayChange, PayComponent, PayRate
+from .models import setting_on as _setting_on
 from .pay import PayError
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -219,6 +222,7 @@ def _component(c: PayComponent) -> dict:
         "basis": c.basis,
         "epf_liable": c.epf_liable,
         "apit_taxable": c.apit_taxable,
+        "is_allowance": c.is_allowance,
         "sort_order": c.sort_order,
         "is_active": c.is_active,
     }
@@ -232,10 +236,11 @@ def _rate(r: PayRate) -> dict:
         "kind": r.component.kind,
         "effective_from": r.effective_from.isoformat()[:7],
         "amount": f"{r.amount:.2f}",
+        "epf_liable": r.epf_liable,
+        "apit_taxable": r.apit_taxable,
         "reason": r.reason,
         "created_by": _name(r.created_by),
         "created_at": r.created_at,
-        "can_withdraw": r.effective_from > timezone.localdate(),
     }
 
 
@@ -273,6 +278,78 @@ class PayComponentDetailView(_Employees):
         return Response(_component(component))
 
 
+def _value(v):
+    return None if v is None else str(v)
+
+
+def _settings(x) -> dict:
+    return {field: _value(getattr(x, field)) for field in SETTING_FIELDS}
+
+
+def _defaults(e: Employee) -> dict:
+    """What applies when the employee has no setting of their own: the division's work rule and
+    the category's leave (P2B-16)."""
+    rule = overtime.rule_for(e.division_id, periods.pay_month_of(timezone.localdate()))
+    out = {
+        field: _value(getattr(rule, field, None)) if rule else None
+        for field in (
+            "normal_day_minutes",
+            "grace_minutes",
+            "rate_working_day",
+            "rate_sunday",
+            "rate_holiday",
+        )
+    }
+    for code, field in (("ANNUAL", "annual_leave_days"), ("CASUAL", "casual_leave_days")):
+        kind = LeaveType.objects.filter(code=code).first()
+        out[field] = _value(kind.rule_for(e.category)[1]) if kind else None
+    out["apit"] = "primary"
+    return out
+
+
+def _change(c: PayChange, user) -> dict:
+    state = approvals.state_of(changes.DOC, c.pk)
+    mine = c.created_by_id == user.pk
+    open_ = c.status in changes.OPEN
+    return {
+        "id": c.pk,
+        "effective_from": c.effective_from.isoformat()[:7],
+        "is_new_employee": c.is_new_employee,
+        "reason": c.reason,
+        "status": c.status,
+        "status_label": c.get_status_display(),
+        "returned": bool(state and state.status == state.Status.RETURNED),
+        "lines": [
+            {
+                "component": x.component.code,
+                "component_name": x.component.name,
+                "kind": x.component.kind,
+                "amount": f"{x.amount:.2f}",
+                "epf_liable": x.epf_liable,
+                "apit_taxable": x.apit_taxable,
+            }
+            for x in c.lines.select_related("component")
+        ],
+        "settings": _settings(c) if c.has_settings else None,
+        "created_by": _name(c.created_by),
+        "created_at": c.created_at,
+        "approved_at": c.approved_at,
+        "history": [
+            {
+                "action": h.get_action_display(),
+                "user": _name(h.user),
+                "reason": h.reason,
+                "at": h.acted_at,
+            }
+            for h in (approvals.history(changes.DOC, c.pk) if state else [])
+        ],
+        "can_edit": c.status == PayChange.Status.DRAFT and mine,
+        "can_submit": c.status == PayChange.Status.DRAFT and mine,
+        "can_withdraw": open_ and changes.can_prepare(user),
+        "can_approve": changes.can_approve(user, c),
+    }
+
+
 def _pay(e: Employee, user) -> dict:
     today = timezone.localdate()
     lines = pay.amounts_on(e, today)
@@ -286,6 +363,7 @@ def _pay(e: Employee, user) -> dict:
         .select_related("component", "created_by")
         .order_by("-effective_from", "component__kind", "component__sort_order")
     )
+    own = _setting_on(e, today)
     return {
         "on": today,
         "current": [
@@ -293,8 +371,9 @@ def _pay(e: Employee, user) -> dict:
                 "component": x.component.code,
                 "component_name": x.component.name,
                 "kind": x.component.kind,
-                "epf_liable": x.component.epf_liable,
-                "apit_taxable": x.component.apit_taxable,
+                "epf_liable": x.epf_liable,
+                "apit_taxable": x.apit_taxable,
+                "own_marks": x.rate.epf_liable is not None or x.rate.apit_taxable is not None,
                 "amount": f"{x.amount:.2f}",
                 "since": x.rate.effective_from.isoformat()[:7],
             }
@@ -304,7 +383,17 @@ def _pay(e: Employee, user) -> dict:
         "upcoming": [_rate(r) for r in upcoming],
         "history": [_rate(r) for r in history],
         "components": [_component(c) for c in PayComponent.objects.filter(is_active=True)],
-        "can_edit": e.is_active and employees.can_edit(user),
+        "settings": _settings(own) if own else None,
+        "settings_since": own.effective_from.isoformat()[:7] if own else None,
+        "defaults": _defaults(e),
+        "changes": [
+            _change(c, user)
+            for c in e.pay_changes.select_related("created_by").order_by("-created_at", "-id")
+        ],
+        "next_month": periods.next_month(periods.pay_month_of(today)).isoformat()[:7],
+        "can_prepare": e.is_active
+        and changes.can_prepare(user)
+        and not e.pay_changes.filter(status__in=changes.OPEN).exists(),
     }
 
 
@@ -313,33 +402,51 @@ class EmployeePayView(_Employees):
         e = get_object_or_404(employees.visible(request.user), pk=pk)
         return Response(_pay(e, request.user))
 
+
+class PayChangeListView(_Employees):
+    """HR prepares a pay change for an employee (P2B-17)."""
+
     def post(self, request, pk):
         e = get_object_or_404(employees.visible(request.user), pk=pk)
-        component = PayComponent.objects.filter(
-            code=str(request.data.get("component") or "").upper()
-        ).first()
-        if component is None:
-            return _error("Choose a pay component.")
         try:
-            pay.add_rate(
-                request.user,
-                e,
-                component,
-                request.data.get("month"),
-                request.data.get("amount"),
-                request.data.get("reason", ""),
-            )
-        except PayError as error:
+            changes.prepare(request.user, e, request.data)
+        except ChangeError as error:
             return _error(error)
         return Response(_pay(e, request.user), status=status.HTTP_201_CREATED)
 
 
-class EmployeePayRateView(_Employees):
-    def delete(self, request, pk, rate_pk):
-        e = get_object_or_404(employees.visible(request.user), pk=pk)
-        rate = get_object_or_404(PayRate, pk=rate_pk, employee=e)
+class PayChangeDetailView(_Employees):
+    def put(self, request, pk):
+        change = get_object_or_404(PayChange, pk=pk, employee__in=employees.visible(request.user))
         try:
-            pay.withdraw_rate(request.user, rate, request.data.get("reason", ""))
-        except PayError as error:
+            changes.edit(request.user, change, request.data)
+        except ChangeError as error:
             return _error(error)
-        return Response(_pay(e, request.user))
+        return Response(_pay(change.employee, request.user))
+
+
+ACTIONS = {
+    "submit": lambda user, c, text: changes.submit(user, c, text),
+    "approve": lambda user, c, text: changes.approve(user, c, text),
+    "return": lambda user, c, text: changes.send_back(user, c, text),
+    "reject": lambda user, c, text: changes.reject(user, c, text),
+    "withdraw": lambda user, c, text: changes.withdraw(user, c, text),
+}
+
+
+class PayChangeActionView(_Employees):
+    """Submit or withdraw (HR), approve, return or reject (the Director): the service decides
+    who may (rule 5: never the person who prepared it)."""
+
+    access_write_level = "view"
+
+    def post(self, request, pk, action):
+        change = get_object_or_404(PayChange, pk=pk, employee__in=employees.visible(request.user))
+        act = ACTIONS.get(action)
+        if act is None:
+            return _error("Unknown action.")
+        try:
+            act(request.user, change, request.data.get("reason", ""))
+        except ChangeError as error:
+            return _error(error)
+        return Response(_pay(change.employee, request.user))

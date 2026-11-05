@@ -100,7 +100,7 @@ def test_returned_rejected_and_withdrawn_changes_change_nothing(hr, director, ka
     with pytest.raises(ChangeError, match="already has a pay change waiting"):
         changes.prepare(hr, kamal, joining())
     changes.submit(hr, change)
-    with pytest.raises(ChangeError, match="draft"):
+    with pytest.raises(ChangeError, match="waiting for the director"):
         changes.edit(hr, change, joining())
     changes.send_back(director, change, "Basic is 58,000")
     change.refresh_from_db()

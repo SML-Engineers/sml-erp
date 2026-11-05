@@ -143,7 +143,8 @@ def add_rate(
 ) -> PayRate:
     if not employees.can_edit(user):
         raise PayError("Only HR enters pay amounts.")
-    if not employees.visible(user).filter(pk=employee.pk).exists():
+    employee = employees.visible(user).filter(pk=employee.pk).first()  # as saved now
+    if employee is None:
         raise PayError("This employee is not in one of your divisions.")
     if not employee.is_active:
         raise PayError("This employee has left; their pay is kept as it was.")

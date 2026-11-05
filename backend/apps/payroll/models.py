@@ -152,3 +152,161 @@ class PayRate(models.Model):
 
     def __str__(self):
         return f"{self.employee.number} {self.component.code} {self.effective_from}"
+
+
+class Holiday(models.Model):
+    """A public, bank, mercantile or company holiday (P2B-03). A holiday that has passed is
+    never removed or moved (the database refuses), as pay may already depend on it."""
+
+    class Kind(models.TextChoices):
+        PUBLIC = "public", "Public holiday"
+        BANK = "bank", "Bank holiday"
+        MERCANTILE = "mercantile", "Mercantile holiday"
+        POYA = "poya", "Full moon Poya day"
+        COMPANY = "company", "Company holiday"
+
+    date = models.DateField(unique=True)
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["date"]
+
+    def __str__(self):
+        return f"{self.date} {self.name}"
+
+
+class LeaveType(models.Model):
+    """A kind of leave (P2B-03) and how much is granted each calendar year.
+
+    - annual_soe: none in the year of joining; the next year 14, 10, 7 or 4 days by the
+      quarter of joining; then the full days (Shop and Office Employees Act, section 6).
+    - casual_soe: half a day for each completed month in the year of joining; then the full
+      days.
+    - fixed: the full days every year.
+    - unlimited: no balance kept (no-pay leave, maternity leave, which follow their own rules).
+    """
+
+    class Rule(models.TextChoices):
+        ANNUAL = "annual_soe", "Annual leave rule (by quarter of joining)"
+        CASUAL = "casual_soe", "Casual leave rule (half a day a month in the first year)"
+        FIXED = "fixed", "Same days every year"
+        UNLIMITED = "unlimited", "No balance kept"
+
+    code = models.CharField(max_length=12, unique=True)
+    name = models.CharField(max_length=100)
+    rule = models.CharField(max_length=12, choices=Rule.choices)
+    days = models.DecimalField(max_digits=5, decimal_places=1, default=0)
+    paid = models.BooleanField(default=True)
+    carry_forward_max = models.DecimalField(max_digits=5, decimal_places=1, default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["code"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(days__gte=0, carry_forward_max__gte=0),
+                name="payroll_leavetype_days",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def keeps_balance(self) -> bool:
+        return self.rule != self.Rule.UNLIMITED
+
+
+class LeaveGrant(models.Model):
+    """Days of leave given to an employee for a calendar year (P2B-03): the year's
+    entitlement, days carried forward, or an adjustment with a reason (+ or -). Never changed
+    or removed: a correction is another adjustment."""
+
+    class Kind(models.TextChoices):
+        ENTITLEMENT = "entitlement", "Entitlement"
+        CARRIED = "carried", "Carried forward"
+        ADJUSTMENT = "adjustment", "Adjustment"
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="leave_grants")
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.PROTECT, related_name="+")
+    year = models.PositiveSmallIntegerField()
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    days = models.DecimalField(max_digits=5, decimal_places=1)
+    reason = models.CharField(max_length=200)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["employee", "year", "leave_type", "created_at"]
+        constraints = [
+            # One entitlement and one carry-forward per employee, type and year.
+            models.UniqueConstraint(
+                fields=["employee", "leave_type", "year", "kind"],
+                condition=~models.Q(kind="adjustment"),
+                name="payroll_leavegrant_once",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.number} {self.leave_type.code} {self.year} {self.days}"
+
+
+class Leave(models.Model):
+    """Leave taken or applied for (P2B-03). HR records leave approved on the leave form; leave
+    applied for on the self-service page (P2B-11) waits for HR's approval; leave codes in the
+    attendance sheet (P2B-04) are recorded from it. Days count working days (Monday to
+    Saturday, not holidays); a single day can be half a day."""
+
+    class Status(models.TextChoices):
+        APPLIED = "applied", "Applied for"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Source(models.TextChoices):
+        HR = "hr", "Recorded by HR"
+        APPLIED = "applied", "Applied for by the employee"
+        ATTENDANCE = "attendance", "From attendance"
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="leaves")
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.PROTECT, related_name="+")
+    start = models.DateField()
+    end = models.DateField()
+    half_day = models.BooleanField(default=False)
+    days = models.DecimalField(max_digits=5, decimal_places=1)
+    reason = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices)
+    source = models.CharField(max_length=10, choices=Source.choices)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["-start", "employee"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end__gte=models.F("start")), name="payroll_leave_dates"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(half_day=False) | models.Q(end=models.F("start")),
+                name="payroll_leave_half_day",
+            ),
+            models.CheckConstraint(condition=models.Q(days__gt=0), name="payroll_leave_days"),
+        ]
+
+    def __str__(self):
+        return f"{self.employee.number} {self.leave_type.code} {self.start}"

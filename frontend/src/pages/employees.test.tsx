@@ -43,6 +43,10 @@ const employee: Employee = {
   can_edit: false, can_check_bank: true,
 };
 
+const thisYear = new Date().getFullYear();
+const noLeave = { year: thisYear, balances: [], grants: [], leave: [], can_adjust: false };
+const leaveRoute = { [`GET /api/v1/employees/7/leave/balances/?year=${thisYear}`]: { body: noLeave } };
+
 const pay: EmployeePay = {
   on: "2026-11-05",
   current: [
@@ -84,6 +88,7 @@ test("the Director confirms a new bank account", async () => {
   };
   const calls = mockApi({
     "GET /api/v1/employees/7/": () => ({ body: current }),
+    ...leaveRoute,
     "GET /api/v1/employees/7/pay/": { body: { ...pay, can_edit: false } },
     "POST /api/v1/employees/7/check-bank/": () => {
       current = checked;
@@ -102,6 +107,7 @@ test("HR changing the bank account is asked for a reason and sends only what cha
   const editable = { ...employee, bank_check_pending: false, can_edit: true, can_check_bank: false };
   const calls = mockApi({
     "GET /api/v1/employees/7/": { body: editable },
+    ...leaveRoute,
     "GET /api/v1/employees/7/pay/": { body: pay },
     "PATCH /api/v1/employees/7/": { body: editable },
   });
@@ -123,6 +129,7 @@ test("HR changing the bank account is asked for a reason and sends only what cha
 test("HR enters a raise from a month and sees the pay after deductions", async () => {
   const calls = mockApi({
     "GET /api/v1/employees/7/": { body: { ...employee, can_edit: true, bank_check_pending: false } },
+    ...leaveRoute,
     "GET /api/v1/employees/7/pay/": { body: pay },
     "POST /api/v1/employees/7/pay/": { body: pay },
   });
@@ -147,6 +154,7 @@ test("HR enters a raise from a month and sees the pay after deductions", async (
 test("HR withdraws an amount whose month has not come, with a reason", async () => {
   const calls = mockApi({
     "GET /api/v1/employees/7/": { body: { ...employee, can_edit: true, bank_check_pending: false } },
+    ...leaveRoute,
     "GET /api/v1/employees/7/pay/": { body: pay },
     "DELETE /api/v1/employees/7/pay/3/": { body: { ...pay, history: [] } },
   });

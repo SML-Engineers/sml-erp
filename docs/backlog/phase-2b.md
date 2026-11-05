@@ -68,10 +68,22 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Time
 
-- [ ] **P2B-03 Holidays and leave**
+- [x] **P2B-03 Holidays and leave**
   The year's public and mercantile holidays; leave types with yearly entitlements and
   carry-forward rules; leave balances per employee; leave taken from attendance or applied
   for and approved.
+  Done: Holidays and leave types page, Leave page and a leave panel on each employee's page.
+  Holidays entered by HR; a past one is kept (database). Leave types with the Shop and
+  Office Employees Act rules (annual: none in the joining year, then 14/10/7/4 by the
+  quarter of joining, then 14; casual: half a day per completed month in the joining year,
+  then 7), maternity and no-pay leave without a balance; carry-forward only up to a
+  maximum set per type (default none). "Grant the year's leave" gives each year's days
+  (again only adds what is missing); adjustments need a reason; grants never change
+  (database). Leave days are Monday to Saturday, not holidays; half days; never across the
+  new year; no overlaps; never more than the balance. HR records leave from the approved
+  leave form; leave applied for (self-service, P2B-11) is approved by HR, never by the
+  person who applied or entered it; leave is cancelled with a reason, never deleted or
+  changed (database). Attendance leave codes use the same service (P2B-04).
 
 - [ ] **P2B-04 Attendance from Excel**
   The template of the owner's decision (employee number, date, time in, time out, shift,
@@ -172,6 +184,9 @@ italics is used and recorded, and can be changed.
 8. **Leave.** Leave types and days a year (annual, casual, sick, maternity…), and whether
    unused leave carries forward. *Default: as the law that applies, no carry-forward.*
    (P2B-03)
+   - Not answered by P2B-03: the default is used (Shop and Office Employees Act rules, no
+     carry-forward, Saturday a working day). The Wages Board's leave days for factory staff
+     are entered as their own leave types once confirmed with the Accountant.
 9. **Approval.** The Director approves the payroll, and the salary payment then goes through
    the normal voucher approval (Clerk, Accountant, Director). Is that right, or should the
    approved payroll be enough for the payment? *Default: both, as rule 4 requires.* (P2B-07)

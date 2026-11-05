@@ -36,7 +36,31 @@ export interface OpeningDoc {
 
 export const migrationKey = ["migration"] as const;
 
-export const getMigration = () => apiGet<{ can_enter: boolean; documents: OpeningDoc[] }>("/migration/");
+export interface ItemsReport {
+  documents: number;
+  total: string;
+  errors: string[];
+  warnings: string[];
+  loaded?: boolean;
+}
+
+export interface MigrationState {
+  can_enter: boolean;
+  documents: OpeningDoc[];
+  posted: boolean;
+  open_invoices: { count: number; total: string };
+  open_bills: { count: number; total: string };
+}
+
+export const getMigration = () => apiGet<MigrationState>("/migration/");
+export function openItems(files: { receivables?: File; payables?: File }, division: string, load: boolean) {
+  const form = new FormData();
+  if (files.receivables) form.append("receivables", files.receivables);
+  if (files.payables) form.append("payables", files.payables);
+  form.append("division", division);
+  if (load) form.append("load", "yes");
+  return apiUpload<{ receivables?: ItemsReport; payables?: ItemsReport }>("/migration/open-items/", form, "POST");
+}
 export function checkFiles(files: Partial<Record<MigrationFile, File>>, make: boolean) {
   const form = new FormData();
   for (const [key, file] of Object.entries(files)) if (file) form.append(key, file);

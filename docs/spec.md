@@ -1454,6 +1454,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Report builder (P2-26) | Own reports from journal lines, vouchers, sales and supplier invoices or stock movements: columns by drag-and-drop, filters, grouping with subtotals, sort, period columns by month or division; saved, shared with a role, Excel, PDF and email; each person sees only what their access allows | 7A |
 | Invoice tracking (P2-27) | The emailed invoice carries a secret link to a customer page (invoice, PDF, bank transfer details); views are recorded; OnePay card links sent are recorded; the invoice shows open/overdue/partly paid/paid and its full history. No Pay Now button (owner, 3 Nov 2026) | 7A |
 | Opening balances from QuickBooks (P2-28, part 1) | QuickBooks' trial balance, A/R and A/P ageing and item list read as exported and checked (balance, accounts, customers, suppliers, totals); one opening entry approved by the Director | 6.1 |
+| Open invoices and bills from QuickBooks (P2-28, part 2) | Each open invoice and bill in the QuickBooks ageing brought over for what is still open, agreeing per customer and supplier with the opening balances; paid by receipts and vouchers like any other | 6.1 |
 
 **Still needed for initial setup**
 

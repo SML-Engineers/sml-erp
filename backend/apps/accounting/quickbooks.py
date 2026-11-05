@@ -37,6 +37,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 
@@ -576,3 +577,266 @@ def can_approve(user: User, doc: OpeningBalance) -> bool:
         return False
     state = approvals.state_of(DOC, doc.pk)
     return state is not None and approvals.why_not(user, state) is None
+
+
+# --- Part 2: the open invoices and bills themselves --------------------------------------------
+#
+# After the opening balances are posted, the A/R and A/P ageing detail are read again, line by
+# line. Each open invoice becomes a tax invoice marked "opening" (no order, no lines, no entry:
+# the opening balances carry it) for what is still open on it; each open bill a supplier
+# invoice marked "opening". Receipts, vouchers, payments, the agings and statements then treat
+# them like any other. Payments and credits not yet applied in QuickBooks are applied to the
+# party's oldest invoices or bills. Every party's total must agree with its opening balance.
+
+
+def _day(value, where: str) -> date | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = _text(value)
+    for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%d-%m-%Y", "%d-%b-%Y", "%d %b %Y"):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    raise MigrationError(f"{where}: {text!r} is not a date.")
+
+
+def read_receivable_items(content: bytes) -> list[dict]:
+    rows = _rows(content, "A/R aging")
+    at, names = _header(rows, {"type", "date", "num", "open balance"}, "A/R aging")
+    cols = {k: names.get(k) for k in ("type", "date", "num", "due date", "class", "open balance")}
+    items, current = [], None
+    for n, row in enumerate(rows[at + 1 :], start=at + 2):
+        cells = list(row) + [None] * (max(v for v in cols.values() if v is not None) + 1)
+        kind = _text(cells[cols["type"]])
+        first = next((_text(c) for c in cells[: cols["type"]] if _text(c)), "")
+        if not kind:
+            if first and first.upper() != "TOTAL" and not first.startswith("Total "):
+                current = first
+            continue
+        where = f"A/R aging row {n}"
+        items.append(
+            {
+                "party": current,
+                "type": kind,
+                "date": _day(cells[cols["date"]], where),
+                "num": _text(cells[cols["num"]]),
+                "due": _day(cells[cols["due date"]], where)
+                if cols["due date"] is not None
+                else None,
+                "class": _text(cells[cols["class"]]) if cols["class"] is not None else "",
+                "amount": _money(cells[cols["open balance"]], f"{where}: "),
+                "row": n,
+            }
+        )
+    return items
+
+
+def read_payable_items(content: bytes) -> list[dict]:
+    rows = _rows(content, "A/P aging")
+    at, names = _header(rows, {"type", "date", "num", "name", "open balance"}, "A/P aging")
+    cols = {k: names.get(k) for k in ("type", "date", "num", "name", "due date", "open balance")}
+    items = []
+    for n, row in enumerate(rows[at + 1 :], start=at + 2):
+        cells = list(row) + [None] * (max(v for v in cols.values() if v is not None) + 1)
+        kind = _text(cells[cols["type"]])
+        if not kind:
+            continue
+        where = f"A/P aging row {n}"
+        items.append(
+            {
+                "party": _text(cells[cols["name"]]),
+                "type": kind,
+                "date": _day(cells[cols["date"]], where),
+                "num": _text(cells[cols["num"]]),
+                "due": _day(cells[cols["due date"]], where)
+                if cols["due date"] is not None
+                else None,
+                "class": "",
+                "amount": _money(cells[cols["open balance"]], f"{where}: "),
+                "row": n,
+            }
+        )
+    return items
+
+
+def _apply_credits(items: list[dict]) -> tuple[list[dict], Decimal, int]:
+    """Take the party's unapplied payments and credits off its oldest documents. Returns the
+    documents left open, any credit left over, and how many credits were applied."""
+    docs = sorted((dict(i) for i in items if i["amount"] > 0), key=lambda i: (i["date"], i["row"]))
+    credit = -sum((i["amount"] for i in items if i["amount"] < 0), ZERO)
+    applied = sum(1 for i in items if i["amount"] < 0)
+    for d in docs:
+        if not credit:
+            break
+        take = min(credit, d["amount"])
+        d["amount"] -= take
+        credit -= take
+    return [d for d in docs if d["amount"] > 0], credit, applied
+
+
+def _posted_balances(kind: str) -> dict[int, Decimal]:
+    """Per customer (debtors) or supplier (creditors), the balance the posted opening entry
+    gave them."""
+    doc = OpeningBalance.objects.filter(status=St.POSTED).first()
+    out: dict[int, Decimal] = defaultdict(Decimal)
+    if doc is None:
+        return out
+    for x in doc.lines.all():
+        if kind == "receivables" and x.customer_id:
+            out[x.customer_id] += x.debit - x.credit
+        if kind == "payables" and x.supplier_id:
+            out[x.supplier_id] += x.credit - x.debit
+    return out
+
+
+def plan_open_items(kind: str, content: bytes, default_division) -> dict:
+    """Check one ageing file line by line against the posted opening balances."""
+    from apps.core.models import Division
+    from apps.masters.models import Customer, Supplier
+
+    errors, warnings, planned = [], [], []
+    if not OpeningBalance.objects.filter(status=St.POSTED).exists():
+        errors.append("Post the opening balances first (part 1 on this page).")
+    items = read_receivable_items(content) if kind == "receivables" else read_payable_items(content)
+    index = _by_name(Customer if kind == "receivables" else Supplier)
+    divisions = {
+        **{d.name.lower(): d for d in Division.objects.filter(is_active=True)},
+        **{d.code.lower(): d for d in Division.objects.filter(is_active=True)},
+    }
+    posted = _posted_balances(kind)
+    by_party: OrderedDict[str, list[dict]] = OrderedDict()
+    for i in items:
+        if not i["party"]:
+            errors.append(f"Row {i['row']}: no customer or supplier name.")
+            continue
+        by_party.setdefault(i["party"], []).append(i)
+    seen_parties = set()
+    for name, rows in by_party.items():
+        party = _party(name, index)
+        if party is None:
+            errors.append(
+                f"{name} is not in the {'customer' if kind == 'receivables' else 'supplier'} list."
+            )
+            continue
+        open_docs, left, applied = _apply_credits(rows)
+        if left:
+            errors.append(
+                f"{name}: payments or credits of {left:,.2f} are more than the open "
+                "documents; apply them in QuickBooks first."
+            )
+            continue
+        if applied:
+            warnings.append(
+                f"{name}: {applied} unapplied payment(s) or credit(s) taken off the oldest."
+            )
+        total = sum((d["amount"] for d in open_docs), ZERO)
+        if total != posted.get(party.pk, ZERO):
+            errors.append(
+                f"{name}: the open documents come to {total:,.2f} but the opening balances "
+                f"gave {posted.get(party.pk, ZERO):,.2f}."
+            )
+        seen_parties.add(party.pk)
+        for d in open_docs:
+            if not d["num"]:
+                errors.append(f"Row {d['row']} ({name}): no document number.")
+            if d["date"] is None:
+                errors.append(f"Row {d['row']} ({name}): no date.")
+            division = divisions.get(d["class"].lower()) if d["class"] else None
+            planned.append(d | {"party_obj": party, "division": division or default_division})
+    for pk, amount in posted.items():
+        if amount and pk not in seen_parties:
+            errors.append(
+                f"A {'customer' if kind == 'receivables' else 'supplier'} with an opening "
+                f"balance of {amount:,.2f} has no open documents in the file."
+            )
+    nums = [d["num"] for d in planned]
+    if kind == "receivables" and len(nums) != len(set(nums)):
+        errors.append("Some invoice numbers appear twice in the A/R aging.")
+    if kind == "payables":
+        keys = [(d["party_obj"].pk, d["num"].replace(" ", "").lower()) for d in planned]
+        if len(keys) != len(set(keys)):
+            errors.append("A supplier has the same bill number twice in the A/P aging.")
+    return {
+        "report": {
+            "documents": len(planned),
+            "total": f"{sum((d['amount'] for d in planned), ZERO):.2f}",
+            "errors": errors,
+            "warnings": warnings,
+        },
+        "planned": planned,
+    }
+
+
+def load_open_items(user: User, kind: str, content: bytes, division_code: str = "HO") -> dict:
+    from apps.core.models import Division
+    from apps.masters.models import Currency
+    from apps.purchasing.models import SupplierInvoice
+    from apps.sales.models import TaxInvoice
+
+    if not can_enter(user):
+        raise MigrationError("Only the Accountant brings over the open invoices and bills.")
+    model = TaxInvoice if kind == "receivables" else SupplierInvoice
+    if model.objects.filter(opening=True).exists():
+        raise MigrationError(
+            "The open invoices are brought over already."
+            if kind == "receivables"
+            else "The open bills are brought over already."
+        )
+    default = Division.objects.filter(code=division_code.upper(), is_active=True).first()
+    if default is None:
+        raise MigrationError("Choose the division for documents with no class.")
+    found = plan_open_items(kind, content, default)
+    if found["report"]["errors"]:
+        raise MigrationError("Correct what the check found first.")
+    lkr = Currency.objects.get(code="LKR")
+    now = timezone.now()
+    with audit_context(f"opening_{kind}_loaded"), transaction.atomic():
+        for n, d in enumerate(found["planned"], start=1):
+            due = d["due"] or d["date"]
+            if kind == "receivables":
+                TaxInvoice.objects.create(
+                    number=f"QB-{d['num']}"[:40],
+                    order=None,
+                    customer=d["party_obj"],
+                    customer_name=d["party_obj"].name,
+                    division=d["division"],
+                    status=TaxInvoice.Status.ISSUED,
+                    opening=True,
+                    invoice_date=d["date"],
+                    supply_date=d["date"],
+                    due_date=due,
+                    currency=lkr,
+                    exchange_rate=Decimal("1"),
+                    subtotal=d["amount"],
+                    total_amount=d["amount"],
+                    total_lkr=d["amount"],
+                    notes="Open in QuickBooks at go-live (what was still to be paid).",
+                    created_by=user,
+                    issued_by=user,
+                    issued_at=now,
+                )
+            else:
+                SupplierInvoice.objects.create(
+                    number=f"QB{n:05d}",
+                    supplier=d["party_obj"],
+                    division=d["division"],
+                    invoice_no=d["num"][:50],
+                    invoice_date=d["date"],
+                    due_date=due,
+                    currency=lkr,
+                    subtotal=d["amount"],
+                    total_amount=d["amount"],
+                    total_lkr=d["amount"],
+                    exchange_rate=Decimal("1"),
+                    status=SupplierInvoice.Status.POSTED,
+                    opening=True,
+                    notes="Open in QuickBooks at go-live (what was still to be paid).",
+                    created_by=user,
+                    posted_at=now,
+                )
+    return found["report"]

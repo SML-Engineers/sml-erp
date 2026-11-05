@@ -537,7 +537,7 @@ Status: `[ ]` to do · `[x]` done
 
 ## H. Migration and go-live
 
-- [ ] **P2-28 Migration** (spec 6.1, "Migration at go-live")
+- [x] **P2-28 Migration** (spec 6.1, "Migration at go-live")
   Excel templates, checked first and all or nothing: opening trial balance, open customer and
   supplier balances by invoice, open sales orders, the fixed asset register with accumulated
   depreciation, stock on hand with value. Totals must agree with the trial balance.
@@ -577,8 +577,17 @@ Status: `[ ]` to do · `[x]` done
     and costs as one line to Retained earnings. Posted once, never changed (database).
     Stock on hand: Stores → Opening stock (P16-15); fixed asset register with depreciation
     charged: Fixed assets (P2-19).
-  - Part 2 (next): the open invoices and bills themselves, so receipts and payments after
-    go-live are matched to them in the agings.
+  - Part 2 done (open invoices and bills): on the same page, once the opening balances are
+    posted, the A/R and A/P ageing are read line by line. Each open invoice becomes a tax
+    invoice marked "opening" (number QB-<QuickBooks number>, no sales order, no lines, no
+    entry of its own, in LKR, for what is still open; division from its Class, otherwise the
+    one chosen, HO by default); each open bill a posted supplier invoice marked "opening"
+    (number QB00001..., the supplier's number kept, duplicates refused as for any invoice).
+    Unapplied payments and credits are taken off the party's oldest documents (listed as a
+    warning); a party with more credit than documents, a missing number or date, an unknown
+    party, or a total that differs from that party's opening balance stops it; each side is
+    brought over once. They then appear in the agings, are paid by receipts and vouchers like
+    any other, and are not printed or emailed (their copy is in QuickBooks).
 
 - [ ] **P2-29 Parallel run, user acceptance testing and go-live** (spec 8.2)
   One month entered in both systems; the trial balance, receivables, payables and bank

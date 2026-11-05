@@ -580,6 +580,16 @@ def advances_for(invoice: TaxInvoice) -> QuerySet[CustomerAdvance]:
     paid over the invoices of a receipt; owner, 3 Nov 2026: set off against the next or any
     future invoice). Oldest first in each group."""
     order = invoice.order
+    if order is None:  # brought over from QuickBooks (P2-28): only money on account
+        return CustomerAdvance.objects.filter(
+            customer_id=invoice.customer_id,
+            currency_id=invoice.currency_id,
+            status=CustomerAdvance.Status.APPROVED,
+            set_off_lkr__lt=F("amount_lkr"),
+            sales_order__isnull=True,
+            proforma__isnull=True,
+            quotation__isnull=True,
+        ).order_by("receipt_date", "pk")
     match = Q(sales_order=order)
     if order.proforma_id:
         match |= Q(sales_order__isnull=True, proforma_id=order.proforma_id)

@@ -18,7 +18,9 @@ const waiting: OpeningDoc = {
 
 test("the check lists what to correct, and the Director approves the opening balances", async () => {
   const calls = mockApi({
-    "GET /api/v1/migration/": { body: { can_enter: true, documents: [waiting] } },
+    "GET /api/v1/migration/": {
+      body: { can_enter: true, documents: [waiting], posted: false, open_invoices: { count: 0, total: "0.00" }, open_bills: { count: 0, total: "0.00" } },
+    },
     "POST /api/v1/migration/": { body: { report, document: null } },
     "POST /api/v1/migration/2/approve/": { body: { ...waiting, status: "posted", can_approve: false } },
   });
@@ -30,4 +32,23 @@ test("the check lists what to correct, and the Director approves the opening bal
   expect(screen.getByRole("button", { name: "Make the opening balances" })).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Approve and post" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/migration/2/approve/", expect.objectContaining({ method: "POST" })));
+});
+
+test("once posted, the open invoices are checked and brought over", async () => {
+  const calls = mockApi({
+    "GET /api/v1/migration/": {
+      body: { can_enter: true, documents: [], posted: true, open_invoices: { count: 0, total: "0.00" }, open_bills: { count: 0, total: "0.00" } },
+    },
+    "POST /api/v1/migration/open-items/": { body: { receivables: { documents: 2, total: "150000.00", errors: [], warnings: [] } } },
+  });
+  renderAt("/migration", <MigrationPage />);
+  const section = await screen.findByRole("region", { name: "Open invoices and bills" });
+  const inputs = section.querySelectorAll("input[type=file]");
+  fireEvent.change(inputs[0], { target: { files: [new File(["x"], "ar.xlsx")] } });
+  fireEvent.click(screen.getByRole("button", { name: "Check the open invoices and bills" }));
+  expect(await screen.findByText("2 documents, LKR 150,000.00")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Bring them over" }));
+  await waitFor(() =>
+    expect(calls.mock.calls.filter(([url, init]) => url === "/api/v1/migration/open-items/" && init?.method === "POST")).toHaveLength(2),
+  );
 });

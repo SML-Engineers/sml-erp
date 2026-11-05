@@ -148,8 +148,9 @@ P2B-06**, in this order.
   the work rules: at most 2 a month of up to 1.5 hours; **paid** for Shop and Office;
   **unpaid** for Wages Board, each one deducting **a quarter of a day's pay**. Beyond 2 a
   month the time is not covered by short leave: the employee applies for casual and sick or
-  annual leave, otherwise it is no-pay time. The Wages Board first-year annual leave and the
-  day rate follow the owner's answers to follow-up questions 1 and 6 (defaults there).
+  annual leave, otherwise it is no-pay time. Wages Board annual leave: none in the year of
+  joining, 7 a year from the first full year. Day rate = monthly pay ÷ 30 (follow-up
+  questions 1 and 6).
 
 - [ ] **P2B-17 Employee pay settings approved by the Director**
   Every employee's pay settings are entered by HR and take effect only when the Director
@@ -157,10 +158,12 @@ P2B-06**, in this order.
   "pay settings change" per employee, approved through the approval engine (the Director,
   with a reminder); the person who prepared it never approves it (rule 5). It carries:
   pay amounts (P2B-02); the **attendance bonus** (default LKR 1,500, lost for the pay period
-  when the employee is absent four half days in it, as follow-up question 2 settles); **up
-  to four allowances** per employee; overtime settings that differ from the division's work
-  rule (rates, normal hours, grace); leave entitlements that differ from the category's;
-  the APIT setting (IRD tables by default). A rejected or withdrawn change never takes
+  when the employee is absent four half days in it, approved leave included, follow-up
+  question 2); **up to four allowances** per employee; overtime settings that differ from
+  the division's work rule (rates, normal hours, grace); leave entitlements that differ from
+  the category's; which earnings count for EPF/ETF and APIT (component marks by default,
+  follow-up question 7); the APIT setting (IRD tables by default); the gratuity settings,
+  entered by the Accountant (follow-up question 9). A rejected or withdrawn change never takes
   effect; approved settings are dated and never changed (a change is a new approved
   setting). This replaces P2B-02's default that a raise needs no separate approval: pay
   amounts entered on the employee's Pay panel become effective only through an approved
@@ -173,7 +176,8 @@ P2B-06**, in this order.
   HR prepares the **pay month** (P2B-15) from the approved pay settings (P2B-17): earnings;
   the attendance bonus unless forfeited; overtime from the checked figures × the hourly rate
   (pay ÷ the divisor); no-pay days and Wages Board short-leave quarter days × the day rate
-  (follow-up question 1); a joiner's or leaver's part period (follow-up question 8); advances
+  (monthly pay ÷ 30); a joiner's or leaver's part period (calendar days employed × monthly
+  pay ÷ 30, never more than the month's pay); advances
   and loan instalments (P2B-10); EPF employee 8% and employer 12%, ETF 3% (dated rates) on
   the EPF-liable earnings; APIT from the dated IRD tables (the current 2026/27 tables,
   looked up, not from memory) and the employee's APIT setting; net pay. Each figure traces
@@ -187,8 +191,9 @@ P2B-06**, in this order.
   the Director, rule 4; owner, question 9); the Cashier pays it on the last day of the month
   and the bank transfer file is produced in Commercial Bank's bulk transfer format (needed
   from the bank first, follow-up question 10). Gratuity: the Payment of Gratuity Act applies;
-  the provision in the accounts (monthly or at year end) follows the auditors' advice
-  (follow-up question 9).
+  each employee's gratuity settings are entered by the Accountant and approved by the
+  Director (never less than the Act gives); provided for monthly by default (follow-up
+  question 9).
 
 - [ ] **P2B-08 Payslips**
   A payslip per employee (PDF), emailed or printed, in English first (Sinhala and Tamil with
@@ -205,7 +210,10 @@ P2B-06**, in this order.
   period and deducted from that period's salary (owner, question 3; limits and approval in
   follow-up question 4). **Loans**: recovered in equal monthly instalments over the loan
   period, e.g. LKR 240,000 over 24 months = LKR 10,000 a month (owner, question 12); interest,
-  limits and a leaver's balance as follow-up question 5 settles.
+  limits and a leaver's balance as follow-up question 5 settles. Every advance and loan is
+  approved by the Director; a loan carries the interest agreed when it is given. **The
+  employee always receives more than 40% of the basic salary at month end**: an advance or
+  loan that would leave less is refused, and the payroll run checks it again.
 
 ## D. Self-service and links
 
@@ -333,24 +341,50 @@ Where no answer comes, the default in italics is used and recorded, and can be c
 1. **Day rate** for a no-pay day and the Wages Board quarter-day deduction: monthly pay ÷ 30,
    ÷ 26, or ÷ the working days in the period? Which parts of pay? *Default: (basic + fixed
    allowances) ÷ 30.* (P2B-16, P2B-06)
+   - Owner, 5 Nov 2026: monthly pay ÷ 30. Which parts of pay was not answered: *default
+     basic + fixed allowances*.
 2. **Attendance bonus**: does approved leave count as absence? Late arrivals or short leave?
    All or nothing? *Default: only absence without approved leave counts; four half days (two
    full days) in the pay period → no bonus for that period.* (P2B-17, P2B-06)
+   - Owner, 5 Nov 2026: yes, approved leave counts as absence too. Not answered: late
+     arrivals and short leave do not count; all or nothing (defaults). Recommended and used
+     as the default unless the owner says otherwise: maternity leave and holidays do not
+     count (taking the leave the law gives should not cost a bonus).
 3. **"The Admin"**: the HR and Payroll Officer enters pay settings and the Director approves
    (the System Admin has no payroll access by design). *Default: yes.* (P2B-17)
+   - Owner, 5 Nov 2026: yes, the HR and Payroll Officer enters pay settings.
 4. **Advances**: paid during the pay period and deducted in full from that period's salary?
    A limit? Who approves? *Default: deducted in full in the same period; paid through a
    payment voucher (all three levels).* (P2B-10)
+   - Owner, 5 Nov 2026: every advance is approved by the Director. **The employee must
+     receive more than 40% of the basic salary at month end**: an advance or loan that would
+     leave less is refused. Not answered: deducted in full in the same period; paid through
+     a payment voucher, all three levels (defaults).
 5. **Loans**: interest-free? A maximum or approval rule? A leaver's balance? *Default:
    interest-free; the Director approves; the balance is deducted from the final salary as
    far as it goes.* (P2B-10)
+   - Owner, 5 Nov 2026: the interest is agreed when the loan is given (recorded on each
+     loan, 0 for none); every loan is approved by the Director. Not answered: a leaver's
+     balance is deducted from the final salary as far as it goes (default).
 6. **Wages Board annual leave 7 days**: the same first-year rule as Shop and Office (by the
    quarter of joining), or 7 days from the first full year? Which Wages Board (trade)?
    (P2B-16)
+   - Owner, 5 Nov 2026: 7 days from the first full year by default (none in the year of
+     joining); settable per employee, the Director approves. The trade's Wages Board was not
+     named.
 7. **EPF and APIT**: which allowances count for EPF/ETF and which are taxable? (the
    Accountant; today basic, fixed and attendance allowances count for EPF) (P2B-06)
+   - Owner, 5 Nov 2026: set per employee, the Director approves. Each component keeps its
+     EPF/APIT marks as the default; an employee's setting overrides them. The law decides
+     what counts for EPF and APIT, so the Accountant confirms the defaults and any override.
 8. **Joiners and leavers in the middle of a period**: *Default: pay × days employed in the
    period ÷ days in the period.* (P2B-06)
+   - Owner, 5 Nov 2026: day rate = monthly salary ÷ 30. A part period pays calendar days
+     employed × monthly pay ÷ 30, never more than the monthly pay.
 9. **Gratuity in the accounts**: a monthly provision (LKAS 19) or at year end? (the
    auditors) (P2B-07)
+   - Owner, 5 Nov 2026: gratuity settings per employee, entered by the Accountant, the
+     Director approves. Never less than the Payment of Gratuity Act gives. Default (not
+     answered): a monthly provision.
 10. **Commercial Bank bulk transfer file**: the format, from the bank. (P2B-07)
+    - Owner, 5 Nov 2026: requested from the bank.

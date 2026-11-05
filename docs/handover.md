@@ -218,7 +218,7 @@ leave; assign section supervisors.
 - Failure logs: run id from `actions/runs?head_sha=<sha>`, job id from `.../runs/<id>/jobs`,
   then `gh api repos/SML-Engineers/sml-erp/actions/jobs/<job>/logs | grep -E "FAILED|E  |Migrations for"`.
 - A small script that waits for the draft checks, marks the PR ready and waits for all five
-  (e.g. `watch-checks.sh <PR> <SHA>`, kept outside the repository) helps; for draft checks, marks ready, waits for all five.
+  helps (`watch-checks.sh <PR> <SHA>`, kept outside the repository).
   Foreground commands time out at 10 minutes: loop in chunks of ≤ 9 minutes; the full stack
   takes 10–15 minutes after marking ready.
 

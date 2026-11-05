@@ -166,10 +166,7 @@ def test_a_future_amount_can_be_withdrawn_with_a_reason(hr, kamal):
     rate = pay.add_rate(hr, kamal, c("BASIC"), first_of_next_month(), "70000", "Promotion")
     with pytest.raises(PayError, match="reason"):
         pay.withdraw_rate(hr, rate, "")
-    response = as_user(hr).delete(
-        f"/api/v1/employees/{kamal.pk}/pay/{rate.pk}/", {"reason": "Not approved"}, format="json"
-    )
-    assert response.status_code == 200, response.json()
+    pay.withdraw_rate(hr, rate, "Not approved")
     assert not PayRate.objects.filter(pk=rate.pk).exists()
     assert AuditEvent.objects.filter(event="pay_amount_withdrawn", reason="Not approved").exists()
 
@@ -183,18 +180,17 @@ def test_a_leaver_or_an_unused_component_gets_no_new_amount(hr, kamal):
         pay.add_rate(hr, kamal, c("BASIC"), "2024-01", "100", "x")
 
 
-def test_hr_and_the_director_see_the_pay_and_only_hr_enters_it(hr, director, kamal):
+def test_hr_and_the_director_see_the_pay_and_nobody_enters_it_directly(hr, director, kamal):
     url = f"/api/v1/employees/{kamal.pk}/pay/"
     entry = {"component": "basic", "month": "2024-01", "amount": "60000", "reason": "Joined"}
-    response = as_user(hr).post(url, entry, format="json")
-    assert response.status_code == 201, response.json()
+    # Since P2B-17 amounts come only through a pay change the Director approves.
+    assert as_user(hr).post(url, entry, format="json").status_code == 405
+    pay.add_rate(hr, kamal, c("BASIC"), "2024-01", "60000", "Joined")
     body = as_user(director).get(url).json()
     assert body["current"][0]["amount"] == "60000.00"
     assert body["totals"]["net"] == "60000.00"
-    assert body["can_edit"] is False
-    assert (
-        as_user(director).post(url, entry | {"month": "2025-01"}, format="json").status_code == 403
-    )
+    assert body["can_prepare"] is False
+    assert as_user(hr).get(url).json()["can_prepare"] is True
     accountant = person("acc@sml.lk", "accountant", all_divisions=True)
     assert as_user(accountant).get(url).status_code == 403
 

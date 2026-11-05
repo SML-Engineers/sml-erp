@@ -3742,7 +3742,7 @@
   },
   "pc": {
     "title": "Pay components",
-    "help": "The earnings and deductions on payslips. Each earning says whether it counts for EPF and ETF and whether it is taxable for APIT; check these with the Accountant. Fixed components have a monthly amount on each employee's page; those entered each month are typed in with the payroll. A component's code and kind never change; one no longer used is marked so, never deleted. A payroll keeps the settings it was run with.",
+    "help": "The earnings and deductions on payslips. Each earning says whether it counts for EPF and ETF and whether it is taxable for APIT; check these with the Accountant. Fixed components have a monthly amount on each employee's page; those entered each month are typed in with the payroll. A component's code and kind never change; one no longer used is marked so, never deleted. A payroll keeps the settings it was run with. An employee has at most four allowances.",
     "add": "Add a component",
     "change": "Change",
     "changeTitle": "Change component",
@@ -3768,7 +3768,8 @@
     "bases": {
       "fixed": "Fixed each month",
       "variable": "Entered each month"
-    }
+    },
+    "allowance": "Allowance"
   },
   "pay": {
     "title": "Pay",
@@ -3779,17 +3780,55 @@
     "none": "No pay entered yet.",
     "net": "Fixed pay after deductions, each month",
     "totalsHelp": "Of this, LKR {{epf}} counts for EPF and ETF and LKR {{apit}} for APIT. Overtime, amounts entered each month, EPF and APIT are added by the payroll.",
-    "history": "Changes",
+    "history": "Amounts in force, by month",
     "from": "From month",
     "reason": "Reason (for example: annual increment)",
     "by": "Entered by",
+    "reasonCol": "Reason",
+    "ownMarks": "own EPF/APIT marks",
+    "settings": "Settings",
+    "newSettings": "New settings",
+    "default": "default",
+    "no": "No",
+    "defaultMark": "Default ({{value}})",
+    "changes": "Pay changes",
+    "changesHelp": "Every new employee's pay and every change is prepared by HR and takes effect only when the Director approves it. The person who prepared it never approves it.",
+    "noChanges": "No pay changes yet.",
+    "prepare": "Prepare a pay change",
+    "prepareNew": "Pay for a new employee",
+    "newEmployee": "New employee",
+    "change": "Pay change",
+    "fromMonth": "from pay month {{month}}",
+    "returned": "Returned for correction",
+    "amounts": "Amounts",
+    "now": "Now",
+    "newAmount": "New amount",
+    "amountsHelp": "Leave an amount blank to keep it as it is; 0 stops a component. An employee has at most four allowances. The attendance bonus (default LKR 1,500) is lost for a pay month with four half days absent.",
+    "withSettings": "Also set this employee's own overtime, leave and APIT settings",
+    "settingsHelp": "Leave a box blank to use the default: the division's work rule, or the leave of the employee's category.",
+    "saveDraft": "Save as draft",
+    "edit": "Edit",
+    "submit": "Send to the Director",
+    "approve": "Approve",
+    "return": "Return for correction",
+    "reject": "Reject",
     "withdraw": "Withdraw",
     "withdrawReason": "Reason for withdrawing",
-    "confirmWithdraw": "Withdraw the amount",
-    "add": "Enter an amount",
-    "addHelp": "A new amount applies from the 1st of its month; earlier months keep the old amount. Enter 0 to stop a component. An amount can be withdrawn only until its month starts.",
-    "save": "Save amount",
-    "reasonCol": "Reason"
+    "comment": "Comment (the reason when returning or rejecting)",
+    "s": {
+      "normal_day_minutes": "Normal day (minutes)",
+      "grace_minutes": "Grace for lateness (minutes)",
+      "rate_working_day": "Overtime rate, working day",
+      "rate_sunday": "Overtime rate, Sunday",
+      "rate_holiday": "Overtime rate, holiday",
+      "annual_leave_days": "Annual leave (days a year)",
+      "casual_leave_days": "Casual and sick leave (days a year)",
+      "apit": "APIT table"
+    },
+    "apit": {
+      "primary": "Primary employment",
+      "secondary": "Secondary employment"
+    }
   },
   "hol": {
     "title": "Holidays and leave types",

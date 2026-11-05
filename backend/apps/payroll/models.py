@@ -117,6 +117,8 @@ class PayComponent(models.Model):
     basis = models.CharField(max_length=10, choices=Basis.choices, default=Basis.FIXED)
     epf_liable = models.BooleanField("counts for EPF and ETF", default=False)
     apit_taxable = models.BooleanField("taxable for APIT", default=False)
+    # An allowance: an employee has at most four at a time (owner, 5 Nov 2026; P2B-17).
+    is_allowance = models.BooleanField(default=False)
     sort_order = models.PositiveSmallIntegerField(default=100)
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(
@@ -147,6 +149,14 @@ class PayRate(models.Model):
     component = models.ForeignKey(PayComponent, on_delete=models.PROTECT, related_name="+")
     effective_from = models.DateField()  # always the 1st of a month
     amount = models.DecimalField(max_digits=18, decimal_places=2)
+    # The employee's own EPF/ETF and APIT marks for this component (P2B-17; owner, 5 Nov 2026,
+    # follow-up 7); empty = the component's marks.
+    epf_liable = models.BooleanField(null=True, blank=True)
+    apit_taxable = models.BooleanField(null=True, blank=True)
+    # The approved pay change that brought it (P2B-17); empty for amounts entered before.
+    change = models.ForeignKey(
+        "PayChange", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
     reason = models.CharField(max_length=200)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
@@ -524,3 +534,122 @@ class OvertimeCheck(models.Model):
 
     def __str__(self):
         return f"{self.employee.number} {self.month:%Y-%m}"
+
+
+class SettingFields(models.Model):
+    """An employee's own settings (P2B-17; owner, 5 Nov 2026): empty means the default (the
+    division's work rule, the category's leave)."""
+
+    class Apit(models.TextChoices):
+        PRIMARY = "primary", "Primary employment (IRD tables)"
+        SECONDARY = "secondary", "Secondary employment (IRD tables)"
+
+    normal_day_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    grace_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    rate_working_day = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    rate_sunday = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    rate_holiday = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    annual_leave_days = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
+    casual_leave_days = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True)
+    apit = models.CharField(max_length=10, choices=Apit.choices, default=Apit.PRIMARY)
+
+    class Meta:
+        abstract = True
+
+
+SETTING_FIELDS = (
+    "normal_day_minutes",
+    "grace_minutes",
+    "rate_working_day",
+    "rate_sunday",
+    "rate_holiday",
+    "annual_leave_days",
+    "casual_leave_days",
+    "apit",
+)
+
+
+class PayChange(SettingFields):
+    """A new employee's pay settings, or a change to them (P2B-17; owner, 5 Nov 2026): HR
+    prepares it, the Director approves it (approval engine, "pay_change"), and only then do
+    its amounts and settings take effect, from the pay month `effective_from`. The person who
+    prepared it never approves it (rule 5). Rejected or withdrawn, it changes nothing."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING = "awaiting", "Waiting for the Director"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="pay_changes")
+    effective_from = models.DateField()  # the 1st of a pay month
+    is_new_employee = models.BooleanField(default=False)
+    # Whether the change sets the employee's settings (otherwise only amounts).
+    has_settings = models.BooleanField(default=False)
+    reason = models.CharField(max_length=200)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.employee.number} pay change from {self.effective_from}"
+
+
+class PayChangeLine(models.Model):
+    """One amount in a pay change: the new monthly amount of a component (0 ends it), with the
+    employee's own EPF/APIT marks if they differ from the component's."""
+
+    change = models.ForeignKey(PayChange, on_delete=models.CASCADE, related_name="lines")
+    component = models.ForeignKey(PayComponent, on_delete=models.PROTECT, related_name="+")
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    epf_liable = models.BooleanField(null=True, blank=True)
+    apit_taxable = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["component__kind", "component__sort_order", "component__code"]
+        constraints = [
+            models.UniqueConstraint(fields=["change", "component"], name="payroll_change_line"),
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0), name="payroll_change_line_amount"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.change_id} {self.component_id} {self.amount}"
+
+
+def setting_on(employee, day):
+    """The employee's approved settings in force on `day` (P2B-17), or None (all defaults)."""
+    return (
+        EmployeeSetting.objects.filter(employee=employee, effective_from__lte=day)
+        .order_by("-effective_from")
+        .first()
+    )
+
+
+class EmployeeSetting(SettingFields):
+    """An employee's approved settings from a pay month on (P2B-17). Never changed; one that
+    has not yet taken effect is replaced by a later approved change for the same month."""
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="settings")
+    effective_from = models.DateField()
+    change = models.ForeignKey(PayChange, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["employee", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["employee", "effective_from"], name="payroll_setting_once"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.employee_id} settings from {self.effective_from}"

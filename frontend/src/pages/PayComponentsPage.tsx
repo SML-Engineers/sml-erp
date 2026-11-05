@@ -59,6 +59,7 @@ export default function PayComponentsPage() {
                 <th>{t("pc.basis")}</th>
                 <th>{t("pc.epf")}</th>
                 <th>{t("pc.apit")}</th>
+                <th>{t("pc.allowance")}</th>
                 <th>{t("pc.status")}</th>
                 {data.can_manage && <th />}
               </tr>
@@ -72,6 +73,7 @@ export default function PayComponentsPage() {
                   <td>{t(`pc.bases.${c.basis}`)}</td>
                   <td>{yes(c.epf_liable)}</td>
                   <td>{yes(c.apit_taxable)}</td>
+                  <td>{yes(c.is_allowance)}</td>
                   <td>{c.is_active ? t("pc.inUse") : t("pc.notUsed")}</td>
                   {data.can_manage && (
                     <td>
@@ -100,6 +102,7 @@ function ComponentForm({ current, onDone }: { current: PayComponent | null; onDo
     basis: "fixed",
     epf_liable: false,
     apit_taxable: false,
+    is_allowance: false,
     sort_order: 100,
     is_active: true,
   };
@@ -143,7 +146,7 @@ function ComponentForm({ current, onDone }: { current: PayComponent | null; onDo
           onChange={(e) =>
             set(
               e.target.value === "deduction"
-                ? { kind: "deduction", epf_liable: false, apit_taxable: false }
+                ? { kind: "deduction", epf_liable: false, apit_taxable: false, is_allowance: false }
                 : { kind: "earning" },
             )
           }
@@ -176,6 +179,15 @@ function ComponentForm({ current, onDone }: { current: PayComponent | null; onDo
           onChange={(e) => set({ apit_taxable: e.target.checked })}
         />{" "}
         {t("pc.apit")}
+      </label>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={!!values.is_allowance}
+          disabled={deduction}
+          onChange={(e) => set({ is_allowance: e.target.checked })}
+        />{" "}
+        {t("pc.allowance")}
       </label>
       <label>
         {t("pc.order")}

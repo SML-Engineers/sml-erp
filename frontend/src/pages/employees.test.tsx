@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 
 import type { CurrentUser } from "../api/auth";
 import type { Employee, EmployeeList } from "../api/employees";
-import type { EmployeePay } from "../api/pay";
+import type { EmployeePay, PayChange } from "../api/pay";
 import { visibleMenu } from "../layout/menu";
 import { mockApi, renderAt, sampleUser } from "../test-utils";
 import EmployeePage from "./EmployeePage";
@@ -51,21 +51,41 @@ const thisYear = new Date().getFullYear();
 const noLeave = { year: thisYear, balances: [], grants: [], leave: [], can_adjust: false };
 const leaveRoute = { [`GET /api/v1/employees/7/leave/balances/?year=${thisYear}`]: { body: noLeave } };
 
+const settings = {
+  normal_day_minutes: null, grace_minutes: null, rate_working_day: null, rate_sunday: null, rate_holiday: null,
+  annual_leave_days: null, casual_leave_days: null, apit: null,
+};
+
 const pay: EmployeePay = {
   on: "2026-11-05",
   current: [
-    { component: "BASIC", component_name: "Basic salary", kind: "earning", epf_liable: true, apit_taxable: true, amount: "60000.00", since: "2024-01" },
-    { component: "WELFARE", component_name: "Welfare society", kind: "deduction", epf_liable: false, apit_taxable: false, amount: "250.00", since: "2024-01" },
+    { component: "BASIC", component_name: "Basic salary", kind: "earning", epf_liable: true, apit_taxable: true, own_marks: false, amount: "60000.00", since: "2024-01" },
+    { component: "WELFARE", component_name: "Welfare society", kind: "deduction", epf_liable: false, apit_taxable: false, own_marks: false, amount: "250.00", since: "2024-01" },
   ],
   totals: { earnings: "60000.00", deductions: "250.00", net: "59750.00", epf_earnings: "60000.00", apit_earnings: "60000.00" },
   upcoming: [],
   history: [
-    { id: 3, component: "BASIC", component_name: "Basic salary", kind: "earning", effective_from: "2026-12", amount: "66000.00", reason: "Increment", created_by: "HR", created_at: "2026-11-05T09:00:00Z", can_withdraw: true },
+    { id: 3, component: "BASIC", component_name: "Basic salary", kind: "earning", effective_from: "2024-01", amount: "60000.00", epf_liable: null, apit_taxable: null, reason: "Joined", created_by: "HR", created_at: "2026-11-05T09:00:00Z" },
   ],
   components: [
-    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, sort_order: 10, is_active: true },
+    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, is_allowance: false, sort_order: 10, is_active: true },
+    { id: 3, code: "ATTEND", name: "Attendance bonus", kind: "earning", basis: "variable", epf_liable: true, apit_taxable: true, is_allowance: false, sort_order: 30, is_active: true },
   ],
-  can_edit: true,
+  settings: null,
+  settings_since: null,
+  defaults: { ...settings, normal_day_minutes: "480", grace_minutes: "10", annual_leave_days: "14.0", casual_leave_days: "7.0", apit: "primary" },
+  changes: [],
+  next_month: "2026-12",
+  can_prepare: true,
+};
+
+const waiting: PayChange = {
+  id: 9, effective_from: "2026-12", is_new_employee: false, reason: "Increment", status: "awaiting",
+  status_label: "Waiting for the Director", returned: false,
+  lines: [{ component: "BASIC", component_name: "Basic salary", kind: "earning", amount: "66000.00", epf_liable: null, apit_taxable: null }],
+  settings: null, created_by: "HR Officer", created_at: "2026-11-05T09:00:00Z", approved_at: null,
+  history: [{ action: "Submitted", user: "HR Officer", reason: "", at: "2026-11-05T09:00:00Z" }],
+  can_edit: false, can_submit: false, can_withdraw: false, can_approve: true,
 };
 
 test("only HR and the Director have the Employees menu", () => {
@@ -132,46 +152,55 @@ test("HR changing the bank account is asked for a reason and sends only what cha
   );
 });
 
-test("HR enters a raise from a month and sees the pay after deductions", async () => {
+test("HR prepares a new employee's pay; the attendance bonus starts at 1,500", async () => {
   const calls = mockApi({
     "GET /api/v1/employees/7/": { body: { ...employee, can_edit: true, bank_check_pending: false } },
     ...leaveRoute,
     "GET /api/v1/employees/7/pay/": { body: pay },
-    "POST /api/v1/employees/7/pay/": { body: pay },
+    "POST /api/v1/employees/7/pay-changes/": { body: { ...pay, can_prepare: false } },
   });
   renderAt("/employees/7", <EmployeePage />, "/employees/:id");
   expect(await screen.findByText("59,750.00")).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText("Component"), { target: { value: "BASIC" } });
-  fireEvent.change(screen.getByLabelText("From month"), { target: { value: "2026-12" } });
-  fireEvent.change(screen.getByLabelText("Amount (LKR)"), { target: { value: "66000" } });
-  fireEvent.change(screen.getByLabelText("Reason (for example: annual increment)"), { target: { value: "Increment" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save amount" }));
+  fireEvent.click(screen.getByRole("button", { name: "Prepare a pay change" }));
+  expect(screen.getByRole("heading", { name: "Pay for a new employee" })).toBeInTheDocument();
+  expect(screen.getByLabelText("New amount Attendance bonus")).toHaveValue("1500");
+  fireEvent.change(screen.getByLabelText("New amount Basic salary"), { target: { value: "60000" } });
+  fireEvent.change(screen.getByLabelText("Reason (for example: annual increment)"), { target: { value: "Joined" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save as draft" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
-      "/api/v1/employees/7/pay/",
+      "/api/v1/employees/7/pay-changes/",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ component: "BASIC", month: "2026-12", amount: "66000", reason: "Increment" }),
+        body: JSON.stringify({
+          effective_from: "2026-12",
+          reason: "Joined",
+          lines: [
+            { component: "BASIC", amount: "60000", epf_liable: null, apit_taxable: null },
+            { component: "ATTEND", amount: "1500", epf_liable: null, apit_taxable: null },
+          ],
+          settings: null,
+        }),
       }),
     ),
   );
 });
 
-test("HR withdraws an amount whose month has not come, with a reason", async () => {
+test("the Director approves a pay change waiting for him", async () => {
   const calls = mockApi({
-    "GET /api/v1/employees/7/": { body: { ...employee, can_edit: true, bank_check_pending: false } },
+    "GET /api/v1/employees/7/": { body: employee },
     ...leaveRoute,
-    "GET /api/v1/employees/7/pay/": { body: pay },
-    "DELETE /api/v1/employees/7/pay/3/": { body: { ...pay, history: [] } },
+    "GET /api/v1/employees/7/pay/": { body: { ...pay, can_prepare: false, changes: [waiting] } },
+    "POST /api/v1/pay-changes/9/approve/": { body: pay },
   });
   renderAt("/employees/7", <EmployeePage />, "/employees/:id");
-  fireEvent.click(await screen.findByRole("button", { name: "Withdraw" }));
-  fireEvent.change(screen.getByLabelText("Reason for withdrawing"), { target: { value: "Not approved" } });
-  fireEvent.click(screen.getByRole("button", { name: "Withdraw the amount" }));
+  expect(await screen.findByText("Waiting for the Director")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Prepare a pay change" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
-      "/api/v1/employees/7/pay/3/",
-      expect.objectContaining({ method: "DELETE", body: JSON.stringify({ reason: "Not approved" }) }),
+      "/api/v1/pay-changes/9/approve/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "" }) }),
     ),
   );
 });

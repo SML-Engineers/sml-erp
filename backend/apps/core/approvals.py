@@ -134,6 +134,9 @@ DOCUMENT_TYPES = {
         final_role="accountant",
         approver_action="approve_customer_receipts",
     ),
+    # An employee's pay settings, new or changed: HR prepares, the Director approves every one
+    # (owner, 5 Nov 2026; P2B-17).
+    "pay_change": DocumentType("Pay change", min_approvals=1, final_role="director"),
 }
 
 

@@ -34,7 +34,16 @@ from apps.core.audit import audit_context
 from apps.core.models import Division, User
 
 from . import attendance, employees, leave, periods
-from .models import AttendanceDay, AttendanceMonth, Employee, Leave, OvertimeCheck, WorkRule
+from .models import (
+    AttendanceDay,
+    AttendanceMonth,
+    Employee,
+    EmployeeSetting,
+    Leave,
+    OvertimeCheck,
+    WorkRule,
+    setting_on,
+)
 
 FLAG_FIELDS = ("short_leave_paid_wb",)
 MINUTE_FIELDS = (
@@ -165,6 +174,13 @@ class Month:
     unpaid_leave_days: Decimal = Decimal(0)
     unpaid_short_leaves: int = 0
     check: OvertimeCheck | None = None
+    # The employee's own approved settings (P2B-17), which replace the rule's where set.
+    own: EmployeeSetting | None = None
+
+    def rate(self, field: str) -> Decimal:
+        """An overtime rate for the payroll: the employee's own, else the work rule's."""
+        own = getattr(self.own, field, None) if self.own else None
+        return getattr(self.rule, field) if own is None else own
 
     @property
     def nopay_days(self) -> Decimal:
@@ -178,7 +194,13 @@ def work_out(employee: Employee, month: date, absent_days: int) -> Month:
     if rule is None:
         raise OvertimeError(f"{employee.division.code} has no work rule for {month:%B %Y}.")
     off = leave.holidays_between(first, end)
-    out = Month(employee, rule, absent_days=absent_days)
+    own = setting_on(employee, month)
+    out = Month(employee, rule, absent_days=absent_days, own=own)
+    normal_day = rule.normal_day_minutes
+    grace = rule.grace_minutes
+    if own is not None:
+        normal_day = own.normal_day_minutes or normal_day
+        grace = grace if own.grace_minutes is None else own.grace_minutes
     shorts = []
     days = AttendanceDay.objects.filter(employee=employee, date__range=(first, end))
     for d in days.select_related("shift").order_by("date"):
@@ -189,11 +211,11 @@ def work_out(employee: Employee, month: date, absent_days: int) -> Month:
         elif d.date.weekday() == 6:
             out.ot_sunday += _counted(d.worked_minutes, rule)
         else:
-            normal = d.shift.working_minutes if d.shift else rule.normal_day_minutes
+            normal = d.shift.working_minutes if d.shift else normal_day
             if d.leave_type_id:  # half a day of leave
                 normal //= 2
             else:
-                late = d.late_minutes if d.late_minutes > rule.grace_minutes else 0
+                late = d.late_minutes if d.late_minutes > grace else 0
                 if late + d.early_minutes:
                     shorts.append(late + d.early_minutes)
             out.ot_working += _counted(max(d.worked_minutes - normal, 0), rule)

@@ -32,7 +32,7 @@ from apps.core.audit import audit_context
 from apps.core.models import User
 
 from . import employees
-from .models import Employee, Holiday, Leave, LeaveGrant, LeaveType
+from .models import Employee, Holiday, Leave, LeaveGrant, LeaveType, setting_on
 
 ZERO = Decimal("0.0")
 HALF = Decimal("0.5")
@@ -202,7 +202,14 @@ def entitlement(employee: Employee, kind: LeaveType, year: int) -> Decimal | Non
     if joined.year > year or (employee.leaving_date and employee.leaving_date.year < year):
         return ZERO
     rule, days = kind.rule_for(employee.category)
-    full = Decimal(days)
+    # The employee's own approved days (P2B-17), in force when the year's leave is granted.
+    own = setting_on(employee, max(date(year, 1, 1), joined))
+    own_days = None
+    if own is not None and kind.code == "ANNUAL":
+        own_days = own.annual_leave_days
+    elif own is not None and kind.code == "CASUAL":
+        own_days = own.casual_leave_days
+    full = Decimal(days if own_days is None else own_days)
     if rule == LeaveType.Rule.AFTER_JOINING:
         return ZERO if joined.year == year else full
     if rule == LeaveType.Rule.ANNUAL:

@@ -41,6 +41,7 @@ from .models import (
     PayChangeLine,
     PayComponent,
     PayRate,
+    PayrollRun,
 )
 
 DOC = "pay_change"
@@ -271,6 +272,18 @@ def _allowances_after(change: PayChange) -> int:
 
 
 def _check(change: PayChange) -> None:
+    paid = (
+        PayrollRun.objects.filter(
+            division_id=change.employee.division_id, status=PayrollRun.Status.APPROVED
+        )
+        .order_by("-month")
+        .first()
+    )
+    if paid and change.effective_from <= paid.month:
+        raise ChangeError(
+            f"Pay month {paid.month:%B %Y} is already paid (approved payroll); a change starts "
+            "from a later pay month."
+        )
     if _allowances_after(change) > MAX_ALLOWANCES:
         raise ChangeError(
             f"An employee has at most {MAX_ALLOWANCES} allowances; end one before adding another."

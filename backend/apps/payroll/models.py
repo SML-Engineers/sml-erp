@@ -119,6 +119,9 @@ class PayComponent(models.Model):
     apit_taxable = models.BooleanField("taxable for APIT", default=False)
     # An allowance: an employee has at most four at a time (owner, 5 Nov 2026; P2B-17).
     is_allowance = models.BooleanField(default=False)
+    # Part of the "monthly pay" the day rate (÷ 30) and the hourly rate (÷ the work rule's
+    # divisor) are worked out from (P2B-06; owner, follow-up 1: basic + fixed allowances).
+    in_day_rate = models.BooleanField(default=False)
     sort_order = models.PositiveSmallIntegerField(default=100)
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(
@@ -653,3 +656,174 @@ class EmployeeSetting(SettingFields):
 
     def __str__(self):
         return f"{self.employee_id} settings from {self.effective_from}"
+
+
+# --- The payroll (P2B-06) -----------------------------------------------------------------------
+
+
+class StatutoryRate(models.Model):
+    """EPF and ETF rates from a date (rule 11): employee EPF 8%, employer EPF 12%, ETF 3%."""
+
+    effective_from = models.DateField(unique=True)
+    epf_employee = models.DecimalField(max_digits=5, decimal_places=2)
+    epf_employer = models.DecimalField(max_digits=5, decimal_places=2)
+    etf = models.DecimalField(max_digits=5, decimal_places=2)
+    reason = models.CharField(max_length=200)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-effective_from"]
+
+    def __str__(self):
+        return f"EPF and ETF rates from {self.effective_from}"
+
+
+class TaxTable(models.Model):
+    """An IRD APIT table from a date (rule 11): the monthly bands of Table 01 (primary
+    employment) or Table 07 (secondary employment). Tax = earnings x rate - constant, in the
+    first band whose upper limit the month's taxable earnings do not pass."""
+
+    class Kind(models.TextChoices):
+        PRIMARY = "primary", "Table 01: primary employment"
+        SECONDARY = "secondary", "Table 07: secondary employment"
+
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    effective_from = models.DateField()
+    reason = models.CharField(max_length=200)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["kind", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(fields=["kind", "effective_from"], name="payroll_tax_once"),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} from {self.effective_from}"
+
+
+class TaxBand(models.Model):
+    table = models.ForeignKey(TaxTable, on_delete=models.CASCADE, related_name="bands")
+    up_to = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    rate = models.DecimalField(max_digits=5, decimal_places=2)  # percent
+    constant = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["table", "up_to"]  # PostgreSQL puts the open top band last
+
+    def __str__(self):
+        return f"up to {self.up_to}: {self.rate}% - {self.constant}"
+
+
+class PayrollRun(models.Model):
+    """A division's payroll for a pay month (P2B-06): HR prepares it from confirmed attendance,
+    checked overtime and approved pay settings; the Director approves it (never the person who
+    prepared it, rule 5); then it is locked (database)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING = "awaiting", "Waiting for the Director"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    month = models.DateField()  # the 1st of the pay month
+    period_start = models.DateField()
+    period_end = models.DateField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    statutory = models.ForeignKey(StatutoryRate, on_delete=models.PROTECT, related_name="+")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    worked_out_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-month", "division"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["division", "month"],
+                condition=~models.Q(status="rejected"),
+                name="payroll_run_once",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.division} payroll {self.month:%Y-%m}"
+
+
+class PayrollLine(models.Model):
+    """One employee in a payroll: the totals; the figures behind them are its items."""
+
+    run = models.ForeignKey(PayrollRun, on_delete=models.CASCADE, related_name="lines")
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="+")
+    days_employed = models.PositiveSmallIntegerField()
+    days_in_period = models.PositiveSmallIntegerField()
+    day_rate = models.DecimalField(max_digits=18, decimal_places=2)
+    hourly_rate = models.DecimalField(max_digits=18, decimal_places=2)
+    gross = models.DecimalField(max_digits=18, decimal_places=2)
+    epf_earnings = models.DecimalField(max_digits=18, decimal_places=2)
+    apit_earnings = models.DecimalField(max_digits=18, decimal_places=2)
+    epf_employee = models.DecimalField(max_digits=18, decimal_places=2)
+    epf_employer = models.DecimalField(max_digits=18, decimal_places=2)
+    etf = models.DecimalField(max_digits=18, decimal_places=2)
+    apit = models.DecimalField(max_digits=18, decimal_places=2)
+    deductions = models.DecimalField(max_digits=18, decimal_places=2)
+    net = models.DecimalField(max_digits=18, decimal_places=2)
+    basic = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["run", "employee__number"]
+        constraints = [
+            models.UniqueConstraint(fields=["run", "employee"], name="payroll_line_once"),
+        ]
+
+    def __str__(self):
+        return f"{self.run} {self.employee.number}"
+
+
+class PayrollItem(models.Model):
+    """One figure on a payroll line, with where it came from ("basis")."""
+
+    class Kind(models.TextChoices):
+        EARNING = "earning", "Earning"
+        DEDUCTION = "deduction", "Deduction"
+        EMPLOYER = "employer", "Paid by the employer"
+
+    line = models.ForeignKey(PayrollLine, on_delete=models.CASCADE, related_name="items")
+    code = models.CharField(max_length=20)
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    basis = models.CharField(max_length=300, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["line", "sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.code} {self.amount}"
+
+
+class PayrollEntry(models.Model):
+    """An amount HR types in for one pay month (a component "entered each month", e.g. an
+    incentive or an advance recovery), used when the payroll is worked out."""
+
+    run = models.ForeignKey(PayrollRun, on_delete=models.CASCADE, related_name="entries")
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="+")
+    component = models.ForeignKey(PayComponent, on_delete=models.PROTECT, related_name="+")
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    note = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["run", "employee__number", "component__sort_order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["run", "employee", "component"], name="payroll_entry_once"
+            ),
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="payroll_entry_amount"),
+        ]
+
+    def __str__(self):
+        return f"{self.run} {self.employee_id} {self.component_id} {self.amount}"

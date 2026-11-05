@@ -3,6 +3,7 @@ from django.urls import path
 from . import attendance_views as av
 from . import leave_views as lv
 from . import overtime_views as ov
+from . import payroll_views as pr
 from . import views as v
 
 urlpatterns = [
@@ -47,6 +48,10 @@ urlpatterns = [
     ),
     path("work-rules/", ov.WorkRuleListView.as_view(), name="work-rules"),
     path("work-rules/<int:pk>/", ov.WorkRuleDetailView.as_view(), name="work-rule"),
+    path("payroll/", pr.PayrollListView.as_view(), name="payroll"),
+    path("payroll/<int:pk>/", pr.PayrollDetailView.as_view(), name="payroll-run"),
+    path("payroll/<int:pk>/<str:action>/", pr.PayrollActionView.as_view(), name="payroll-action"),
+    path("payroll-tax-tables/", pr.TaxTableView.as_view(), name="payroll-tax-tables"),
     path("pay-periods/", ov.PayPeriodListView.as_view(), name="pay-periods"),
     path("pay-periods/<int:pk>/", ov.PayPeriodDetailView.as_view(), name="pay-period"),
     path("overtime/", ov.OvertimeView.as_view(), name="overtime"),

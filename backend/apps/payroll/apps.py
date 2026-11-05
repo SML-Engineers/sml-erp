@@ -24,6 +24,10 @@ class PayrollConfig(AppConfig):
             PayComponent,
             PayPeriodRule,
             PayRate,
+            PayrollEntry,
+            PayrollRun,
+            StatutoryRate,
+            TaxTable,
             WorkRule,
         )
 
@@ -43,5 +47,9 @@ class PayrollConfig(AppConfig):
             PayChange,
             PayChangeLine,
             EmployeeSetting,
+            PayrollRun,
+            PayrollEntry,
+            StatutoryRate,
+            TaxTable,
         ):
             register(model)

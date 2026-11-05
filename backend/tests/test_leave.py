@@ -199,7 +199,7 @@ def test_hr_records_leave_and_the_balance_goes_down(hr):
         ("CASUAL", "2025-06-10", "2025-06-11", {"half_day": True}, "one day only"),
         ("CASUAL", "2025-06-08", "2025-06-08", {}, "Sundays or holidays"),
         ("CASUAL", "2023-01-02", "2023-01-02", {}, "before the employee joined"),
-        ("CASUAL", "2025-06-02", "2025-06-12", {}, "7.0 days of casual leave left"),
+        ("CASUAL", "2025-06-02", "2025-06-12", {}, "7.0 days of casual and sick leave left"),
     ],
 )
 def test_wrong_leave_is_refused(hr, kind, start, end, extra, message):

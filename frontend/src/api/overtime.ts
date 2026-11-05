@@ -11,6 +11,8 @@ export interface WorkRule {
   grace_minutes: number;
   short_leaves_per_month: number;
   short_leave_minutes: number;
+  /** Wages Board short leave paid (P2B-16; default no: a quarter day's pay each). */
+  short_leave_paid_wb: boolean;
   ot_min_minutes: number;
   ot_step_minutes: number;
   hourly_divisor: number;
@@ -35,6 +37,8 @@ export interface OvertimeRow {
   ot_holiday: string;
   short: string;
   short_leaves: number;
+  unpaid_short_leaves: number;
+  category: "shop_office" | "wages_board";
   nopay_time: string;
   nopay_days: string;
   checked_by: string | null;

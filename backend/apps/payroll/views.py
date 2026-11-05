@@ -53,6 +53,8 @@ def _row(e: Employee) -> dict:
         "section": e.section.code if e.section else "",
         "employment_type": e.employment_type,
         "employment_type_label": e.get_employment_type_display(),
+        "category": e.category,
+        "category_label": e.get_category_display(),
         "join_date": e.join_date,
         "is_active": e.is_active,
         "bank_check_pending": e.bank_check_pending,
@@ -108,6 +110,9 @@ class EmployeeListView(_Employees):
                 "results": [_row(e) for e in rows],
                 "can_add": employees.can_edit(request.user),
                 "types": [{"value": v, "label": label} for v, label in Employee.Type.choices],
+                "categories": [
+                    {"value": v, "label": label} for v, label in Employee.Category.choices
+                ],
             }
         )
 

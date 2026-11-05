@@ -13,7 +13,10 @@
   - Sunday or holiday: all minutes worked are overtime at that day's rate.
   Overtime below the minimum is not counted, and is rounded down to the step.
 - A pay month's short time is covered by short leave (up to the number allowed, each up to its
-  length); the rest is no-pay time. Days absent and days of unpaid leave are no-pay days.
+  length); the rest is no-pay time. Short leave is paid for Shop and Office staff; for Wages
+  Board staff each one costs a quarter of a day's pay unless the rule says it is paid
+  (P2B-16; owner, 5 Nov 2026). Payroll (P2B-06) deducts them. Days absent and days of
+  unpaid leave are no-pay days.
 - The section's supervisor, or the Director, checks each employee's month; never the person
   who confirmed the attendance, nor the employee (rule 5). Checked figures are kept as
   checked and are what payroll pays; reopening the attendance month voids them.
@@ -33,6 +36,7 @@ from apps.core.models import Division, User
 from . import attendance, employees, leave, periods
 from .models import AttendanceDay, AttendanceMonth, Employee, Leave, OvertimeCheck, WorkRule
 
+FLAG_FIELDS = ("short_leave_paid_wb",)
 MINUTE_FIELDS = (
     "normal_day_minutes",
     "grace_minutes",
@@ -106,6 +110,11 @@ def add_rule(user: User, division_code, values: dict) -> WorkRule:
         if not Decimal(1) <= rate <= Decimal(5):
             raise OvertimeError("An overtime rate is between 1 and 5 times.")
         setattr(rule, name, rate)
+    for name in FLAG_FIELDS:
+        value = values.get(name, getattr(current, name) if current else None)
+        if value in (None, ""):
+            continue
+        setattr(rule, name, value in (True, "true", "1", 1, "yes"))
     if rule.normal_day_minutes == 0 or rule.ot_step_minutes == 0 or rule.hourly_divisor == 0:
         raise OvertimeError("The normal day, the overtime step and the divisor are above 0.")
     try:
@@ -154,6 +163,7 @@ class Month:
     nopay_minutes: int = 0
     absent_days: int = 0
     unpaid_leave_days: Decimal = Decimal(0)
+    unpaid_short_leaves: int = 0
     check: OvertimeCheck | None = None
 
     @property
@@ -193,6 +203,9 @@ def work_out(employee: Employee, month: date, absent_days: int) -> Month:
             out.short_leaves += 1
         else:
             out.nopay_minutes += minutes
+    wages_board = employee.category == Employee.Category.WAGES_BOARD
+    if wages_board and not rule.short_leave_paid_wb:
+        out.unpaid_short_leaves = out.short_leaves
     unpaid = Leave.objects.filter(
         employee=employee,
         status=Leave.Status.APPROVED,
@@ -294,6 +307,7 @@ def check(user: User, division_code, month, employee_ids) -> int:
                         short_minutes=figures.short_minutes,
                         nopay_minutes=figures.nopay_minutes,
                         nopay_days=figures.nopay_days,
+                        unpaid_short_leaves=figures.unpaid_short_leaves,
                         checked_by=user,
                     )
             except IntegrityError:

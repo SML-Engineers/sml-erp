@@ -8,7 +8,7 @@ import WorkRulesPage from "./WorkRulesPage";
 
 const rule = {
   id: 1, division: "WS", effective_from: "2024-01", normal_day_minutes: 480, grace_minutes: 10, short_leaves_per_month: 2,
-  short_leave_minutes: 90, ot_min_minutes: 30, ot_step_minutes: 15, hourly_divisor: 240, rate_working_day: "1.50",
+  short_leave_minutes: 90, short_leave_paid_wb: false, ot_min_minutes: 30, ot_step_minutes: 15, hourly_divisor: 240, rate_working_day: "1.50",
   rate_sunday: "2.00", rate_holiday: "2.00", reason: "Default", created_by: null, can_withdraw: false,
 };
 
@@ -18,7 +18,7 @@ const month: OvertimeMonth = {
   rows: [
     {
       employee: { id: 7, number: "E001", name: "Kamal Perera", section: "" }, ot_working: "3:00", ot_sunday: "4:00",
-      ot_holiday: "2:15", short: "3:05", short_leaves: 2, nopay_time: "2:15", nopay_days: "19.0", checked_by: null,
+      ot_holiday: "2:15", short: "3:05", short_leaves: 2, unpaid_short_leaves: 2, category: "wages_board", nopay_time: "2:15", nopay_days: "19.0", checked_by: null,
       checked_at: null, can_check: true,
     },
   ],
@@ -32,6 +32,7 @@ test("the Director chooses employees and checks their overtime", async () => {
   renderAt("/overtime", <OvertimePage />);
   fireEvent.click(await screen.findByLabelText("Choose E001"));
   expect(screen.getByText("Pay month Oct 2026: 21 Sep – 20 Oct")).toBeInTheDocument();
+  expect(screen.getByText(/2 short leaves, 2 unpaid/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Check 1 employee" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(

@@ -77,6 +77,7 @@ export default function WorkRulesPage() {
                     {t(`wr.f.${f}`)}
                   </th>
                 ))}
+                <th>{t("wr.f.short_leave_paid_wb")}</th>
                 <th>{t("wr.reason")}</th>
                 {d.can_manage && <th />}
               </tr>
@@ -91,6 +92,7 @@ export default function WorkRulesPage() {
                       {r[f]}
                     </td>
                   ))}
+                  <td>{r.short_leave_paid_wb ? t("wr.yes") : t("wr.no")}</td>
                   <td>{r.reason}</td>
                   {d.can_manage && (
                     <td>
@@ -152,6 +154,17 @@ export default function WorkRulesPage() {
               />
             </label>
           ))}
+          <label>
+            {t("wr.f.short_leave_paid_wb")}
+            <select
+              value={values.short_leave_paid_wb ?? ""}
+              onChange={(e) => setValues({ ...values, short_leave_paid_wb: e.target.value })}
+            >
+              <option value="">{t("wr.same")}</option>
+              <option value="true">{t("wr.yes")}</option>
+              <option value="false">{t("wr.no")}</option>
+            </select>
+          </label>
           <label className="wide">
             {t("wr.reason")}
             <input value={values.reason ?? ""} onChange={(e) => setValues({ ...values, reason: e.target.value })} />

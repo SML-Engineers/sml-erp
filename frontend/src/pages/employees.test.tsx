@@ -24,10 +24,14 @@ const accountant: CurrentUser = {
 const list: EmployeeList = {
   can_add: true,
   types: [{ value: "permanent", label: "Permanent" }],
+  categories: [
+    { value: "shop_office", label: "Shop and Office" },
+    { value: "wages_board", label: "Wages Board" },
+  ],
   results: [
     {
       id: 7, number: "E001", full_name: "Kamal Perera", designation: "Machinist", division: "WS", section: "",
-      employment_type: "permanent", employment_type_label: "Permanent", join_date: "2024-01-15", is_active: true,
+      employment_type: "permanent", employment_type_label: "Permanent", category: "shop_office", category_label: "Shop and Office", join_date: "2024-01-15", is_active: true,
       bank_check_pending: true,
     },
   ],
@@ -76,6 +80,8 @@ test("HR sees the list with the bank check waiting, and can export", async () =>
   renderAt("/employees", <EmployeesPage me={hr} />);
   expect(await screen.findByText("Kamal Perera")).toBeInTheDocument();
   expect(screen.getByText("Waiting for the Director's check")).toBeInTheDocument();
+  expect(screen.getByRole("columnheader", { name: "Category" })).toBeInTheDocument();
+  expect(screen.getByRole("cell", { name: "Shop and Office" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Download all (Excel)" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Import from Excel" })).toBeInTheDocument();
 });

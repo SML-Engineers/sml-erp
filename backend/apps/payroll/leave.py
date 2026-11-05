@@ -5,7 +5,11 @@
 - Leave types say how many days are granted each calendar year. The defaults follow the Shop
   and Office Employees Act (backlog question 8): annual leave by the quarter of joining,
   casual leave half a day a month in the first year; no carry-forward. HR adds types and
-  changes days (for the Wages Board's rules) with a reason.
+  changes days with a reason.
+- Wages Board employees (P2B-16; owner, 5 Nov 2026) may have their own rule and days per
+  leave type: annual leave none in the year of joining, then 7; casual and sick leave 7 like
+  Shop and Office staff. Maternity leave: at most 84 working days at a time (the law as
+  amended in 2018: 84 working days for each live birth, 42 for a still birth).
 - Each year's leave is granted to employees by HR ("Grant the year's leave"), with any days
   carried forward; corrections are adjustments with a reason. Grants are never changed.
 - Leave is recorded by HR from the approved leave form, applied for on the self-service page
@@ -148,14 +152,32 @@ def save_leave_type(
             if days < 0:
                 raise LeaveError("Days are 0 or more.")
             setattr(kind, field, days)
+    if "wb_rule" in values:
+        wb_rule = values.get("wb_rule") or ""
+        if wb_rule and wb_rule not in LeaveType.Rule.values:
+            raise LeaveError("Choose how the days are granted to Wages Board staff.")
+        kind.wb_rule = wb_rule
+    for field in ("wb_days", "max_days"):
+        if field in values:
+            raw = values.get(field)
+            if raw in (None, ""):
+                setattr(kind, field, None)
+                continue
+            days = _days(raw, "number of days")
+            if days <= 0:
+                raise LeaveError("Days are above 0, or blank.")
+            setattr(kind, field, days)
     for field in ("paid", "is_active"):
         if field in values:
             value = values[field]
             setattr(kind, field, value in (True, "true", "1", 1, "yes"))
     if kind.rule == LeaveType.Rule.UNLIMITED:
         kind.days, kind.carry_forward_max = ZERO, ZERO
+        kind.wb_rule, kind.wb_days = "", None
     elif kind.days <= 0:
         raise LeaveError("Give the days granted each year.")
+    if kind.wb_rule == LeaveType.Rule.UNLIMITED:
+        raise LeaveError("Wages Board staff keep a balance when the leave type does.")
     event = "leave_type_added" if current is None else "leave_type_changed"
     try:
         with audit_context(event, reason), transaction.atomic():
@@ -179,15 +201,18 @@ def entitlement(employee: Employee, kind: LeaveType, year: int) -> Decimal | Non
     joined = employee.join_date
     if joined.year > year or (employee.leaving_date and employee.leaving_date.year < year):
         return ZERO
-    full = Decimal(kind.days)
-    if kind.rule == LeaveType.Rule.ANNUAL:
+    rule, days = kind.rule_for(employee.category)
+    full = Decimal(days)
+    if rule == LeaveType.Rule.AFTER_JOINING:
+        return ZERO if joined.year == year else full
+    if rule == LeaveType.Rule.ANNUAL:
         if joined.year == year:
             return ZERO
         if joined.year == year - 1:
             quarter = (joined.month - 1) // 3 + 1
             return _half_floor(full * FIRST_ANNUAL[quarter] / 14)
         return full
-    if kind.rule == LeaveType.Rule.CASUAL and joined.year == year:
+    if rule == LeaveType.Rule.CASUAL and joined.year == year:
         months = 12 - joined.month + (1 if joined.day == 1 else 0)
         return min(full, HALF * months)
     return full
@@ -365,6 +390,8 @@ def record(
     if count == 0:
         raise LeaveError("Those days are Sundays or holidays; no leave is needed.")
     days = HALF if half_day else Decimal(count)
+    if kind.max_days is not None and days > kind.max_days:
+        raise LeaveError(f"{kind.name} is at most {kind.max_days} working days at a time.")
     status = Leave.Status.APPLIED if source == Leave.Source.APPLIED else Leave.Status.APPROVED
     with audit_context("leave_recorded", reason), transaction.atomic():
         Employee.objects.select_for_update().get(pk=employee.pk)

@@ -3732,7 +3732,12 @@
       "bank_name": "Bank",
       "bank_branch": "Branch",
       "account_name": "Account name",
-      "account_number": "Account number"
+      "account_number": "Account number",
+      "category": "Category"
+    },
+    "categories": {
+      "shop_office": "Shop and Office",
+      "wages_board": "Wages Board"
     }
   },
   "pc": {
@@ -3816,7 +3821,13 @@
     "change": "Change",
     "add": "Add a leave type",
     "reason": "Reason for the change",
-    "save": "Save"
+    "save": "Save",
+    "wb": "Wages Board",
+    "wbRule": "Wages Board: how the days are granted",
+    "wbDays": "Wages Board: days a year",
+    "same": "Same as Shop and Office",
+    "maxDays": "Most days at a time",
+    "noLimit": "No limit"
   },
   "leave": {
     "title": "Leave",
@@ -3906,7 +3917,7 @@
   },
   "ot": {
     "title": "Overtime",
-    "help": "Each employee's pay month from the confirmed attendance, worked out by the division's work rules: overtime on working days (beyond the shift or normal day), on Sundays and on holidays; short time (late beyond the grace period, or left early), covered by short leave up to the number allowed; the rest is no-pay time. Days absent and unpaid leave are no-pay days. The section's supervisor or the Director checks each month; payroll pays the checked figures.",
+    "help": "Each employee's pay month from the confirmed attendance, worked out by the division's work rules: overtime on working days (beyond the shift or normal day), on Sundays and on holidays; short time (late beyond the grace period, or left early), covered by short leave up to the number allowed; the rest is no-pay time. Days absent and unpaid leave are no-pay days. The section's supervisor or the Director checks each month; payroll pays the checked figures. Short leave is paid for Shop and Office staff; for Wages Board staff each one costs a quarter of a day's pay.",
     "notConfirmed": "HR has not confirmed this pay month's attendance yet; the figures may still change and cannot be checked.",
     "ruleLine": "Rules: {{day}} hours a day; overtime {{working}} times on working days, {{sunday}} on Sundays, {{holiday}} on holidays; {{grace}} minutes' grace.",
     "chooseAll": "Choose all",
@@ -3923,7 +3934,10 @@
     "checkedBy": "By {{name}}",
     "none": "No employees for you to check in this division.",
     "check_one": "Check {{count}} employee",
-    "check_other": "Check {{count}} employees"
+    "check_other": "Check {{count}} employees",
+    "unpaid_one": "{{count}} unpaid",
+    "unpaid_other": "{{count}} unpaid",
+    "wagesBoard": "Wages Board"
   },
   "wr": {
     "title": "Work rules",
@@ -3947,8 +3961,11 @@
       "rate_working_day": "OT rate, working day",
       "rate_sunday": "OT rate, Sunday",
       "rate_holiday": "OT rate, holiday",
-      "hourly_divisor": "Hourly divisor"
-    }
+      "hourly_divisor": "Hourly divisor",
+      "short_leave_paid_wb": "Wages Board short leave paid"
+    },
+    "yes": "Yes",
+    "no": "No (a quarter day's pay each)"
   },
   "pp": {
     "line": "Pay month {{month}}: {{start}} – {{end}}",

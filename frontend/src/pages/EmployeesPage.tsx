@@ -92,6 +92,7 @@ export default function EmployeesPage({ me }: { me: CurrentUser }) {
                 <th>{t("emp.f.designation")}</th>
                 <th>{t("emp.f.division")}</th>
                 <th>{t("emp.f.employment_type")}</th>
+                <th>{t("emp.f.category")}</th>
                 <th>{t("emp.f.join_date")}</th>
                 <th>{t("emp.bank")}</th>
               </tr>
@@ -99,7 +100,7 @@ export default function EmployeesPage({ me }: { me: CurrentUser }) {
             <tbody>
               {data.results.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="muted">
+                  <td colSpan={8} className="muted">
                     {t("emp.none")}
                   </td>
                 </tr>
@@ -121,6 +122,7 @@ export default function EmployeesPage({ me }: { me: CurrentUser }) {
                     {e.section && ` / ${e.section}`}
                   </td>
                   <td>{e.employment_type_label}</td>
+                  <td>{e.category_label}</td>
                   <td>{e.join_date}</td>
                   <td>{e.bank_check_pending ? t("emp.bankPending") : ""}</td>
                 </tr>
@@ -138,7 +140,7 @@ function AddEmployee({ data }: { data: EmployeeList }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const divisions = useQuery({ queryKey: ["divisions", "mine"], queryFn: listDivisions });
-  const [values, setValues] = useState<EmployeeValues>({ employment_type: "permanent" });
+  const [values, setValues] = useState<EmployeeValues>({ employment_type: "permanent", category: "shop_office" });
   const save = useMutation({
     mutationFn: () => addEmployee(values),
     onSuccess: (made) => {
@@ -182,6 +184,16 @@ function AddEmployee({ data }: { data: EmployeeList }) {
         {t("emp.f.employment_type")}
         <select value={values.employment_type ?? ""} onChange={(e) => set("employment_type", e.target.value)}>
           {data.types.map((k) => (
+            <option key={k.value} value={k.value}>
+              {k.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t("emp.f.category")}
+        <select value={values.category ?? ""} onChange={(e) => set("category", e.target.value)}>
+          {data.categories.map((k) => (
             <option key={k.value} value={k.value}>
               {k.label}
             </option>

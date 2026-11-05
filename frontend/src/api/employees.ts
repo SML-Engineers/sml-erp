@@ -3,6 +3,8 @@ import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 /** Employee master (P2B-01): kept by HR, seen by HR and the Director. */
 
 export type EmploymentType = "permanent" | "probation" | "contract" | "casual" | "trainee";
+/** The labour law that applies (P2B-16). */
+export type LabourCategory = "shop_office" | "wages_board";
 
 export interface EmployeeRow {
   id: number;
@@ -13,6 +15,8 @@ export interface EmployeeRow {
   section: string;
   employment_type: EmploymentType;
   employment_type_label: string;
+  category: LabourCategory;
+  category_label: string;
   join_date: string;
   is_active: boolean;
   bank_check_pending: boolean;
@@ -50,6 +54,7 @@ export interface EmployeeList {
   results: EmployeeRow[];
   can_add: boolean;
   types: { value: EmploymentType; label: string }[];
+  categories: { value: LabourCategory; label: string }[];
 }
 
 export interface EmployeeImportResult {
@@ -71,6 +76,7 @@ export const EMPLOYEE_FIELDS = [
   "designation",
   "grade",
   "employment_type",
+  "category",
   "join_date",
   "confirmation_date",
   "epf_no",

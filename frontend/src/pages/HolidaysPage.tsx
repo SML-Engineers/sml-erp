@@ -185,6 +185,8 @@ function LeaveTypes() {
                 <th>{t("lt.name")}</th>
                 <th>{t("lt.rule")}</th>
                 <th className="num">{t("lt.days")}</th>
+                <th>{t("lt.wb")}</th>
+                <th className="num">{t("lt.maxDays")}</th>
                 <th>{t("lt.paid")}</th>
                 <th className="num">{t("lt.carry")}</th>
                 {data.can_manage && <th />}
@@ -200,6 +202,12 @@ function LeaveTypes() {
                   </td>
                   <td>{k.rule_label}</td>
                   <td className="num">{k.rule === "unlimited" ? "—" : k.days}</td>
+                  <td>
+                    {k.rule === "unlimited" || (!k.wb_rule && k.wb_days === null)
+                      ? t("lt.same")
+                      : `${data.rules.find((r) => r.value === (k.wb_rule || k.rule))?.label ?? ""}, ${k.wb_days ?? k.days}`}
+                  </td>
+                  <td className="num">{k.max_days ?? "—"}</td>
                   <td>{k.paid ? t("lt.yes") : t("lt.no")}</td>
                   <td className="num">{k.carry_forward_max}</td>
                   {data.can_manage && (
@@ -248,6 +256,9 @@ function LeaveTypeForm({
     name: "",
     rule: "fixed",
     days: "",
+    wb_rule: "",
+    wb_days: null,
+    max_days: null,
     paid: true,
     carry_forward_max: "0",
   };
@@ -256,7 +267,7 @@ function LeaveTypeForm({
   const save = useMutation({
     mutationFn: () => {
       if (!current) return addLeaveType(values);
-      const keys = ["name", "rule", "days", "paid", "carry_forward_max", "is_active"] as const;
+      const keys = ["name", "rule", "days", "wb_rule", "wb_days", "max_days", "paid", "carry_forward_max", "is_active"] as const;
       const changed: Partial<LeaveType> = {};
       for (const k of keys) if (values[k] !== current[k]) Object.assign(changed, { [k]: values[k] });
       return changeLeaveType(current.id, changed, reason);
@@ -308,6 +319,41 @@ function LeaveTypeForm({
           </label>
         </>
       )}
+      {values.rule !== "unlimited" && (
+        <>
+          <label>
+            {t("lt.wbRule")}
+            <select value={values.wb_rule ?? ""} onChange={(e) => set({ wb_rule: e.target.value as LeaveType["wb_rule"] })}>
+              <option value="">{t("lt.same")}</option>
+              {rules
+                .filter((r) => r.value !== "unlimited")
+                .map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            {t("lt.wbDays")}
+            <input
+              inputMode="decimal"
+              placeholder={t("lt.same")}
+              value={values.wb_days ?? ""}
+              onChange={(e) => set({ wb_days: e.target.value || null })}
+            />
+          </label>
+        </>
+      )}
+      <label>
+        {t("lt.maxDays")}
+        <input
+          inputMode="decimal"
+          placeholder={t("lt.noLimit")}
+          value={values.max_days ?? ""}
+          onChange={(e) => set({ max_days: e.target.value || null })}
+        />
+      </label>
       <label className="check">
         <input type="checkbox" checked={!!values.paid} onChange={(e) => set({ paid: e.target.checked })} /> {t("lt.paid")}
       </label>

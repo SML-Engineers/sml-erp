@@ -15,7 +15,7 @@ const types: LeaveTypeList = {
     { value: "unlimited", label: "No balance kept" },
   ],
   results: [
-    { id: 1, code: "ANNUAL", name: "Annual leave", rule: "annual_soe", rule_label: "Annual leave rule (by quarter of joining)", days: "14.0", paid: true, carry_forward_max: "0.0", is_active: true },
+    { id: 1, code: "ANNUAL", name: "Annual leave", rule: "annual_soe", rule_label: "Annual leave rule (by quarter of joining)", days: "14.0", paid: true, wb_rule: "", wb_days: null, max_days: null, carry_forward_max: "0.0", is_active: true },
   ],
 };
 const holidays: HolidayList = {
@@ -23,8 +23,8 @@ const holidays: HolidayList = {
   results: [{ id: 3, date: `${year}-12-25`, name: "Christmas Day", kind: "public", kind_label: "Public holiday", can_remove: true }],
 };
 const people: EmployeeList = {
-  can_add: true, types: [],
-  results: [{ id: 7, number: "E001", full_name: "Kamal Perera", designation: "", division: "WS", section: "", employment_type: "permanent", employment_type_label: "Permanent", join_date: "2024-01-15", is_active: true, bank_check_pending: false }],
+  can_add: true, types: [], categories: [],
+  results: [{ id: 7, number: "E001", full_name: "Kamal Perera", designation: "", division: "WS", section: "", employment_type: "permanent", employment_type_label: "Permanent", category: "shop_office", category_label: "Shop and Office", join_date: "2024-01-15", is_active: true, bank_check_pending: false }],
 };
 const leave: LeaveList = {
   year, can_record: true, types: types.results,

@@ -133,7 +133,7 @@ function Details({ employee, onSaved }: { employee: Employee; onSaved: (e: Emplo
   return (
     <form className="panel form-grid" aria-label={t("emp.details")} onSubmit={submit}>
       <h2 className="wide">{t("emp.details")}</h2>
-      {EMPLOYEE_FIELDS.filter((k) => k !== "employment_type").map(field)}
+      {EMPLOYEE_FIELDS.filter((k) => k !== "employment_type" && k !== "category").map(field)}
       <label>
         {t("emp.f.employment_type")}
         <select
@@ -144,6 +144,20 @@ function Details({ employee, onSaved }: { employee: Employee; onSaved: (e: Emplo
           {(["permanent", "probation", "contract", "casual", "trainee"] as const).map((k) => (
             <option key={k} value={k}>
               {t(`emp.types.${k}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        {t("emp.f.category")}
+        <select
+          value={values.category ?? ""}
+          disabled={!editable}
+          onChange={(e) => setValues((v) => ({ ...v, category: e.target.value }))}
+        >
+          {(["shop_office", "wages_board"] as const).map((k) => (
+            <option key={k} value={k}>
+              {t(`emp.categories.${k}`)}
             </option>
           ))}
         </select>

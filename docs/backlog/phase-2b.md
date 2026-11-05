@@ -155,7 +155,7 @@ P2B-06**, in this order.
   withdrawn until then. The leave year stays the calendar year. The template's example row
   is the first day of a pay month.
 
-- [ ] **P2B-16 Labour categories and leave per category**
+- [x] **P2B-16 Labour categories and leave per category**
   Each employee is **Shop and Office** or **Wages Board** (owner, questions 4 and 8). Leave
   entitlements by category: annual 14 (Shop and Office) or 7 (Wages Board); **casual and
   sick leave together 7** for both (CASUAL becomes "Casual and sick leave"); maternity as the
@@ -167,6 +167,21 @@ P2B-06**, in this order.
   annual leave, otherwise it is no-pay time. Wages Board annual leave: none in the year of
   joining, 7 a year from the first full year. Day rate = monthly pay ÷ 30 (follow-up
   questions 1 and 6).
+  Done: each employee has a category, Shop and Office or Wages Board (Employees page, the
+  employee's details and the Excel sheet's "Category" column; blank = Shop and Office for a
+  new employee, unchanged for an existing one). Leave types may give Wages Board staff their
+  own rule and days (blank = the same): ANNUAL is 14 by the quarter-of-joining rule for Shop
+  and Office and, for Wages Board, a new rule "none in the year of joining, then the full
+  days" with 7. CASUAL is renamed "Casual and sick leave", 7 for both (the first-year half
+  day a month applies to both). Maternity leave, by the Shop and Office Employees Act and the
+  Maternity Benefits Ordinance as amended by Acts No. 14 and 15 of 2018: 84 working days for
+  each live birth (42 for a still birth), paid; a new "most days at a time" setting refuses
+  more than 84 working days in one leave (HR records 42 for a still birth). Short leave: the
+  work rules gain "Wages Board short leave paid" (default no); the Overtime page shows each
+  Wages Board employee's unpaid short leaves, and the checked month keeps them (database) for
+  payroll to deduct a quarter day each (P2B-06, day rate = monthly pay ÷ 30). Short time
+  beyond the 2 short leaves stays no-pay time unless leave is recorded. Per-employee leave
+  and short-leave settings come with P2B-17.
 
 - [ ] **P2B-17 Employee pay settings approved by the Director**
   Every employee's pay settings are entered by HR and take effect only when the Director

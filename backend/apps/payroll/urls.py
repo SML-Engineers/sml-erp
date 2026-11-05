@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import attendance_views as av
 from . import leave_views as lv
+from . import overtime_views as ov
 from . import views as v
 
 urlpatterns = [
@@ -38,6 +39,10 @@ urlpatterns = [
         av.AttendanceDaysView.as_view(),
         name="employee-attendance",
     ),
+    path("work-rules/", ov.WorkRuleListView.as_view(), name="work-rules"),
+    path("work-rules/<int:pk>/", ov.WorkRuleDetailView.as_view(), name="work-rule"),
+    path("overtime/", ov.OvertimeView.as_view(), name="overtime"),
+    path("overtime/check/", ov.OvertimeCheckView.as_view(), name="overtime-check"),
     path("holidays/", lv.HolidayListView.as_view(), name="holidays"),
     path("holidays/<int:pk>/", lv.HolidayDetailView.as_view(), name="holiday"),
     path("leave-types/", lv.LeaveTypeListView.as_view(), name="leave-types"),

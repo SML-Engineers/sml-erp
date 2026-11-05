@@ -103,10 +103,22 @@ Status: `[ ]` to do · `[x]` done
   Reopening needs a reason and cancels the leave taken from the sheet. Grace periods, short
   leave, overtime and no-pay are worked out from these minutes in P2B-05.
 
-- [ ] **P2B-05 Overtime and attendance rules**
+- [x] **P2B-05 Overtime and attendance rules**
   Normal hours per shift and day; overtime at the rates in force (e.g. 1.5 times on normal
   days, 2 times on holidays, as the owner confirms); night-shift and holiday rules; the
   monthly overtime hours per employee, checked by the supervisor's division.
+  Done: Work rules and Overtime pages. Each division has dated work rules (normal day,
+  grace for late arrival, short leaves a month and their length, overtime minimum and step,
+  rates for working days, Sundays and holidays, hourly divisor for payroll); a new rule
+  starts from a month whose attendance is not yet confirmed and never changes (database);
+  a future rule can be withdrawn. From confirmed attendance: overtime beyond the shift's
+  working minutes (or the normal day; half for a half day of leave), all minutes on
+  Sundays and holidays at their rates (night shifts count on the day they start); short
+  time = late beyond grace + left early, covered by short leave, the rest no-pay time;
+  days absent and unpaid leave are no-pay days. The section's supervisor or the Director
+  checks each employee's month (never the person who confirmed the attendance, nor the
+  employee); the checked figures are kept as checked (database) and are what payroll pays;
+  reopening attendance voids them.
 
 ## C. Payroll
 
@@ -184,6 +196,11 @@ italics is used and recorded, and can be changed.
 5. **Overtime.** Normal hours per day and week, and the overtime rates (normal day,
    Saturday, Sunday, holiday, night)? *Default: 8 hours a day, 45 a week; 1.5 times on
    normal days, 2 times on Sundays and holidays.* (P2B-05)
+   - Not answered by P2B-05: the default is used for every division from January 2024,
+     with 10 minutes' grace, 2 short leaves of up to 90 minutes a month, overtime from 30
+     minutes in 15-minute steps, and an hourly rate of monthly pay ÷ 240. Overtime is
+     counted per day (no separate 45-hour weekly test). HR enters the Wages Board's rules
+     as a new rule from a month on the Work rules page.
 6. **Allowances and deductions.** The list of allowances (budgetary relief allowance,
    attendance, travelling, meal, shift…) and deductions (welfare, union, insurance…), and
    which count for EPF. (P2B-02)

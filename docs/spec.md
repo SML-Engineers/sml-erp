@@ -1460,6 +1460,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Pay structure (P2B-02) | Pay components kept by HR, each marked for EPF/ETF and APIT (a deduction never is); each employee's amounts dated from the 1st of a month and never changed, a raise is a new amount, 0 ends a component, a future amount can be withdrawn; budgetary relief allowance not separate since 31 March 2025 | 2.1, 6, 7A |
 | Holidays and leave (P2B-03) | Holidays kept by HR (past ones kept); leave types with the Shop and Office Employees Act rules by default, no carry-forward; the year's leave granted once, adjustments with a reason; leave counted Monday to Saturday without holidays, never beyond the balance; applied-for leave approved by HR, never one's own; leave cancelled, never deleted | 2.1, 6, 7A |
 | Attendance from Excel (P2B-04) | The template sheet checked first, all or nothing, every refused row listed; minutes worked, late and early against the shift; leave codes become leave when HR confirms a division's month after it ends; confirmed days never change (database); reopening needs a reason | 7A |
+| Overtime and attendance rules (P2B-05) | Dated work rules per division (default 8 hours a day, 1.5 / 2 / 2 times); overtime, short time, short leave and no-pay worked out from confirmed attendance; each month checked by the section's supervisor or the Director, never the person who confirmed the attendance; checked figures kept for payroll, voided if attendance is reopened | 7A |
 
 **Still needed for initial setup**
 

@@ -121,6 +121,9 @@ export const MENU: MenuSection[] = [
       { label: "emp.title", path: "/employees", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "pc.title", path: "/pay-components", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "att.title", path: "/attendance", area: "hr_payroll", anyLevel: ["enter", "approve"] },
+      // Section supervisors check their people's overtime (they hold HR and payroll: View).
+      { label: "ot.title", path: "/overtime", area: "hr_payroll" },
+      { label: "wr.title", path: "/work-rules", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "leave.title", path: "/leave", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "hol.title", path: "/holidays", area: "hr_payroll", anyLevel: ["enter", "approve"] },
     ],

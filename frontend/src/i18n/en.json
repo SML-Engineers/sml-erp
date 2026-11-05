@@ -3903,5 +3903,51 @@
     "leaveCode": "Leave",
     "lateMin": "Late (min)",
     "remarks": "Remarks"
+  },
+  "ot": {
+    "title": "Overtime",
+    "help": "Each employee's month from the confirmed attendance, worked out by the division's work rules: overtime on working days (beyond the shift or normal day), on Sundays and on holidays; short time (late beyond the grace period, or left early), covered by short leave up to the number allowed; the rest is no-pay time. Days absent and unpaid leave are no-pay days. The section's supervisor or the Director checks each month; payroll pays the checked figures.",
+    "notConfirmed": "HR has not confirmed this month's attendance yet; the figures may still change and cannot be checked.",
+    "ruleLine": "Rules: {{day}} hours a day; overtime {{working}} times on working days, {{sunday}} on Sundays, {{holiday}} on holidays; {{grace}} minutes' grace.",
+    "chooseAll": "Choose all",
+    "choose": "Choose",
+    "working": "OT working days",
+    "sunday": "OT Sundays",
+    "holiday": "OT holidays",
+    "short": "Short time",
+    "shortLeaves_one": "{{count}} short leave",
+    "shortLeaves_other": "{{count}} short leaves",
+    "nopayTime": "No-pay time",
+    "nopayDays": "No-pay days",
+    "checked": "Checked",
+    "checkedBy": "By {{name}}",
+    "none": "No employees for you to check in this division.",
+    "check_one": "Check {{count}} employee",
+    "check_other": "Check {{count}} employees"
+  },
+  "wr": {
+    "title": "Work rules",
+    "help": "Each division's working-time and overtime rules from a month on. A new rule never changes earlier months; a rule whose month has not come can be withdrawn. Until the owner confirms them (backlog question 5): 8 hours a day; overtime 1.5 times on working days and 2 times on Sundays and holidays; 10 minutes' grace; 2 short leaves of up to 90 minutes a month; overtime from 30 minutes in 15-minute steps; hourly rate = monthly pay ÷ 240.",
+    "from": "From",
+    "reason": "Reason",
+    "withdraw": "Withdraw",
+    "withdrawReason": "Reason for withdrawing",
+    "confirmWithdraw": "Withdraw the rule",
+    "add": "New rule from a month",
+    "addHelp": "Fields left empty keep the values of the rule in force.",
+    "same": "same",
+    "save": "Save rule",
+    "f": {
+      "normal_day_minutes": "Normal day (min)",
+      "grace_minutes": "Grace (min)",
+      "short_leaves_per_month": "Short leaves a month",
+      "short_leave_minutes": "Short leave (min)",
+      "ot_min_minutes": "OT minimum (min)",
+      "ot_step_minutes": "OT step (min)",
+      "rate_working_day": "OT rate, working day",
+      "rate_sunday": "OT rate, Sunday",
+      "rate_holiday": "OT rate, holiday",
+      "hourly_divisor": "Hourly divisor"
+    }
   }
 }

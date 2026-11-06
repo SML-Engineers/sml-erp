@@ -82,7 +82,8 @@ def _site_values(values: dict, current: PunchSite | None) -> dict:
         if not 20 <= out["radius_m"] <= 5000:
             raise PunchError("The radius is 20 to 5,000 metres.")
     if "is_active" in values:
-        out["is_active"] = bool(values["is_active"])
+        # JSON gives a boolean; a form gives "true" or "false".
+        out["is_active"] = str(values["is_active"]).strip().lower() in ("true", "1", "yes")
     return out
 
 

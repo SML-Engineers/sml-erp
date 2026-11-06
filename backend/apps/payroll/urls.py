@@ -58,6 +58,7 @@ urlpatterns = [
     ),
     path("payroll/<int:pk>/<str:action>/", pr.PayrollActionView.as_view(), name="payroll-action"),
     path("payroll-tax-tables/", pr.TaxTableView.as_view(), name="payroll-tax-tables"),
+    path("payroll-returns/<str:kind>/", pr.ReturnView.as_view(), name="payroll-return"),
     path("pay-periods/", ov.PayPeriodListView.as_view(), name="pay-periods"),
     path("pay-periods/<int:pk>/", ov.PayPeriodDetailView.as_view(), name="pay-period"),
     path("overtime/", ov.OvertimeView.as_view(), name="overtime"),

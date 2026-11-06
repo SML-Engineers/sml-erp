@@ -164,6 +164,9 @@ class Company(models.Model):
     registration_no = models.CharField("Business registration no.", max_length=50, blank=True)
     tin = models.CharField("Taxpayer identification no. (TIN)", max_length=50, blank=True)
     vat_no = models.CharField("VAT registration no.", max_length=50, blank=True)
+    # On the EPF and ETF returns (P2B-09).
+    epf_employer_no = models.CharField("EPF employer no.", max_length=30, blank=True)
+    etf_employer_no = models.CharField("ETF employer no.", max_length=30, blank=True)
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
     email = models.EmailField(blank=True)

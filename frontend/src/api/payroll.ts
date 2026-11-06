@@ -116,3 +116,19 @@ export interface EmailedPayslips {
   no_email: string[];
 }
 export const emailPayslips = (id: number) => apiSend<EmailedPayslips>("POST", `/payroll/${id}/email-payslips/`, {});
+
+/** Statutory returns (P2B-09): a table, and the same as Excel or PDF. */
+export interface StatutoryReturn {
+  title: string;
+  lines: string[];
+  columns: string[];
+  rows: (string | number)[][];
+  totals: (string | number)[];
+  notes: string[];
+  money_from: number;
+}
+export type ReturnKind = "epf" | "etf" | "apit" | "etf-half" | "apit-year";
+export const returnUrl = (kind: ReturnKind | "apit-certificates", query: string, format?: "xlsx" | "pdf") =>
+  `${API_BASE}/payroll-returns/${kind}/?${query}${format ? `&download=${format}` : ""}`;
+export const getReturn = (kind: ReturnKind, query: string) =>
+  apiGet<StatutoryReturn>(`/payroll-returns/${kind}/?${query}`);

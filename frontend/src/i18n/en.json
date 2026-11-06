@@ -326,7 +326,9 @@
       "email": "Email",
       "website": "Website",
       "base_currency": "Base currency",
-      "financial_year_start_month": "Financial year starts in"
+      "financial_year_start_month": "Financial year starts in",
+      "epf_employer_no": "EPF employer no.",
+      "etf_employer_no": "ETF employer no."
     },
     "baseCurrencyFixed": "Every amount in the books is in this currency, so it cannot be changed.",
     "save": "Save company profile",
@@ -4097,5 +4099,27 @@
     "addBand": "Add a band",
     "save": "Save the table",
     "addHelp": "Tax = monthly earnings × rate − the amount in 'less', in the first band the earnings do not pass. The last band has no upper limit."
+  },
+  "returns": {
+    "title": "Statutory returns",
+    "help": "EPF, ETF and APIT returns from the approved payrolls, for the paper or online forms: view, download as Excel or PDF. A division whose payroll is not approved yet is named under the return.",
+    "kind": "Return",
+    "kinds": {
+      "epf": "EPF monthly return (C form)",
+      "etf": "ETF monthly contributions",
+      "apit": "APIT monthly schedule",
+      "etf-half": "ETF half-year return",
+      "apit-year": "APIT for the year (certificates)"
+    },
+    "month": "Pay month",
+    "year": "Year",
+    "yearOfAssessment": "Year of assessment from April",
+    "half": "Half",
+    "half1": "January – June",
+    "half2": "July – December",
+    "excel": "Download Excel",
+    "pdf": "PDF",
+    "certificates": "APIT certificates (PDF)",
+    "none": "Nobody in an approved payroll for this period."
   }
 }

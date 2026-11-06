@@ -5,6 +5,8 @@ export interface Company {
   registration_no: string;
   tin: string;
   vat_no: string;
+  epf_employer_no: string;
+  etf_employer_no: string;
   address: string;
   phone: string;
   email: string;

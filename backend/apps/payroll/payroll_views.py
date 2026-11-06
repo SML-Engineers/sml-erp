@@ -18,7 +18,7 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.permissions import AreaAccess
 
-from . import employees, payroll, payslips, periods
+from . import employees, payroll, payslips, periods, returns
 from .models import PayComponent, PayrollRun, StatutoryRate, TaxBand, TaxTable
 from .payroll import PayrollError
 
@@ -364,3 +364,49 @@ class PayslipEmailView(_Payroll):
         except payslips.PayslipError as error:
             return _error(error)
         return Response(result)
+
+
+# --- Statutory returns (P2B-09) ------------------------------------------------------------------
+
+
+class ReturnView(_Payroll):
+    """GET /payroll-returns/<kind>/ with ?month= (epf, etf, apit), ?year=&half= (etf-half) or
+    ?year= (apit-year, apit-certificates); &download=xlsx or pdf."""
+
+    def get(self, request, kind):
+        q = request.query_params
+        try:
+            if kind == "apit-certificates":
+                content = returns.certificates(request.user, q.get("year"), q.get("employee"))
+                with audit_context("apit_certificates_printed", f"{q.get('year')}"):
+                    response = HttpResponse(content, content_type="application/pdf")
+                response["Content-Disposition"] = (
+                    f'inline; filename="apit-certificates-{q.get("year")}.pdf"'
+                )
+                return response
+            if kind in returns.KINDS:
+                report = getattr(returns, kind)(request.user, q.get("month"))
+                stem = f"{kind}-{q.get('month')}"
+            elif kind == "etf-half":
+                report = returns.etf_half_year(request.user, q.get("year"), q.get("half"))
+                stem = f"etf-{q.get('year')}-h{q.get('half')}"
+            elif kind == "apit-year":
+                report = returns.apit_year(request.user, q.get("year"))
+                stem = f"apit-{q.get('year')}"
+            else:
+                return _error("Unknown return.")
+        except returns.ReturnError as error:
+            return _error(error)
+        wanted = q.get("download")
+        if wanted == "xlsx":
+            response = HttpResponse(
+                returns.xlsx(report),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            response["Content-Disposition"] = f'attachment; filename="{stem}.xlsx"'
+            return response
+        if wanted == "pdf":
+            response = HttpResponse(returns.pdf(report), content_type="application/pdf")
+            response["Content-Disposition"] = f'inline; filename="{stem}.pdf"'
+            return response
+        return Response(report.as_dict())

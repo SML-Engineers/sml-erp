@@ -1,6 +1,6 @@
 """Payroll and people (Phase 2b, docs/backlog/phase-2b.md)."""
 
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 from django.db import models
@@ -798,6 +798,10 @@ class PayrollItem(models.Model):
         EMPLOYER = "employer", "Paid by the employer"
 
     line = models.ForeignKey(PayrollLine, on_delete=models.CASCADE, related_name="items")
+    # The advance or loan this deduction recovers (P2B-10).
+    credit = models.ForeignKey(
+        "StaffCredit", null=True, blank=True, on_delete=models.PROTECT, related_name="recoveries"
+    )
     code = models.CharField(max_length=20)
     name = models.CharField(max_length=100)
     kind = models.CharField(max_length=10, choices=Kind.choices)
@@ -833,3 +837,58 @@ class PayrollEntry(models.Model):
 
     def __str__(self):
         return f"{self.run} {self.employee_id} {self.component_id} {self.amount}"
+
+
+class StaffCredit(models.Model):
+    """A salary advance or a staff loan (P2B-10; owner, 5 Nov 2026). HR records it, the
+    Director approves it (never the person who recorded it), the Clerk pays it by a voucher
+    coded to Staff loans and advances, and the payroll recovers it: an advance in full in its
+    pay month, a loan in equal monthly instalments of (amount + interest) / months from its
+    first pay month. The employee always keeps more than 40% of the basic salary: a recovery
+    that would take more waits for the next month."""
+
+    class Kind(models.TextChoices):
+        ADVANCE = "advance", "Salary advance"
+        LOAN = "loan", "Loan"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING = "awaiting", "Waiting for the Director"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="credits")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    number = models.CharField(max_length=30, blank=True)  # given on approval (rule 10)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    interest = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    months = models.PositiveSmallIntegerField(default=1)
+    first_month = models.DateField()  # the 1st of the pay month recovery starts
+    reason = models.CharField(max_length=200)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0, interest__gte=0, months__gte=1),
+                name="payroll_credit_amounts",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.number or self.pk} {self.employee_id}"
+
+    @property
+    def total(self):
+        return self.amount + self.interest
+
+    @property
+    def instalment(self):
+        return (self.total / self.months).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)

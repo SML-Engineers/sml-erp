@@ -132,3 +132,49 @@ export const returnUrl = (kind: ReturnKind | "apit-certificates", query: string,
   `${API_BASE}/payroll-returns/${kind}/?${query}${format ? `&download=${format}` : ""}`;
 export const getReturn = (kind: ReturnKind, query: string) =>
   apiGet<StatutoryReturn>(`/payroll-returns/${kind}/?${query}`);
+
+/** Salary advances and staff loans (P2B-10). */
+export interface StaffCredit {
+  id: number;
+  number: string;
+  employee: { id: number; number: string; name: string };
+  kind: "advance" | "loan";
+  kind_label: string;
+  amount: string;
+  interest: string;
+  months: number;
+  instalment: string;
+  first_month: string;
+  reason: string;
+  status: "draft" | "awaiting" | "approved" | "rejected" | "withdrawn";
+  status_label: string;
+  returned: boolean;
+  recovered: string;
+  balance: string;
+  created_by: string | null;
+  can_edit: boolean;
+  can_submit: boolean;
+  can_withdraw: boolean;
+  can_approve: boolean;
+}
+export interface StaffCreditList {
+  results: StaffCredit[];
+  employees: { id: number; number: string; name: string }[];
+  first_month: string;
+  can_record: boolean;
+}
+export type CreditValues = {
+  employee: string;
+  kind: string;
+  amount: string;
+  interest: string;
+  months: string;
+  first_month: string;
+  reason: string;
+};
+export const staffCreditsKey = ["staff-credits"] as const;
+export const listStaffCredits = () => apiGet<StaffCreditList>("/staff-credits/");
+export const recordStaffCredit = (values: CreditValues) => apiSend<StaffCredit>("POST", "/staff-credits/", values);
+export type CreditAction = "submit" | "approve" | "return" | "reject" | "withdraw";
+export const actOnStaffCredit = (id: number, action: CreditAction, reason = "") =>
+  apiSend<StaffCredit>("POST", `/staff-credits/${id}/${action}/`, { reason });

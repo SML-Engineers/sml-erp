@@ -18,8 +18,8 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.permissions import AreaAccess
 
-from . import employees, payroll, payslips, periods, returns
-from .models import PayComponent, PayrollRun, StatutoryRate, TaxBand, TaxTable
+from . import credits, employees, payroll, payslips, periods, returns
+from .models import PayComponent, PayrollRun, StaffCredit, StatutoryRate, TaxBand, TaxTable
 from .payroll import PayrollError
 
 
@@ -410,3 +410,108 @@ class ReturnView(_Payroll):
             response["Content-Disposition"] = f'inline; filename="{stem}.pdf"'
             return response
         return Response(report.as_dict())
+
+
+# --- Advances and loans (P2B-10) -----------------------------------------------------------------
+
+
+def _who(e) -> dict:
+    return {"id": e.pk, "number": e.number, "name": e.full_name}
+
+
+def _credit(c: StaffCredit, user) -> dict:
+    state = approvals.state_of(credits.DOC, c.pk)
+    got = credits.recovered(c)
+    mine = c.created_by_id == user.pk
+    hr = employees.can_edit(user)
+    return {
+        "id": c.pk,
+        "number": c.number,
+        "employee": _who(c.employee),
+        "kind": c.kind,
+        "kind_label": c.get_kind_display(),
+        "amount": f"{c.amount:.2f}",
+        "interest": f"{c.interest:.2f}",
+        "months": c.months,
+        "instalment": f"{c.instalment:.2f}",
+        "first_month": c.first_month.isoformat()[:7],
+        "reason": c.reason,
+        "status": c.status,
+        "status_label": c.get_status_display(),
+        "returned": bool(state and state.status == state.Status.RETURNED),
+        "recovered": f"{got:.2f}",
+        "balance": f"{(c.total - got) if c.status == c.Status.APPROVED else 0:.2f}",
+        "created_by": _name(c.created_by),
+        "can_edit": c.status == c.Status.DRAFT and mine,
+        "can_submit": c.status == c.Status.DRAFT and mine,
+        "can_withdraw": c.status in (c.Status.DRAFT, c.Status.AWAITING) and hr,
+        "can_approve": credits.can_approve(user, c),
+    }
+
+
+class _Credits(_Payroll):
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        if not employees.can_view(request.user):
+            self.permission_denied(request, message="Only HR and the Director.")
+
+
+def _credits_for(user):
+    return StaffCredit.objects.filter(employee__in=employees.visible(user)).select_related(
+        "employee", "created_by"
+    )
+
+
+class StaffCreditListView(_Credits):
+    def get(self, request):
+        user = request.user
+        people = employees.visible(user).filter(is_active=True).order_by("number")
+        return Response(
+            {
+                "results": [_credit(c, user) for c in _credits_for(user)],
+                "employees": [_who(e) for e in people],
+                "first_month": periods.pay_month_of(timezone.localdate()).isoformat()[:7],
+                "can_record": employees.can_edit(user),
+            }
+        )
+
+    def post(self, request):
+        e = get_object_or_404(employees.visible(request.user), pk=request.data.get("employee"))
+        try:
+            c = credits.record(request.user, e, request.data)
+        except credits.CreditError as error:
+            return _error(error)
+        return Response(_credit(c, request.user), status=status.HTTP_201_CREATED)
+
+
+CREDIT_ACTIONS = {
+    "submit": credits.submit,
+    "approve": credits.approve,
+    "return": credits.send_back,
+    "reject": credits.reject,
+    "withdraw": credits.withdraw,
+}
+
+
+class StaffCreditDetailView(_Credits):
+    def put(self, request, pk):
+        c = get_object_or_404(_credits_for(request.user), pk=pk)
+        try:
+            c = credits.edit(request.user, c, request.data)
+        except credits.CreditError as error:
+            return _error(error)
+        return Response(_credit(c, request.user))
+
+
+class StaffCreditActionView(_Credits):
+    def post(self, request, pk, action):
+        c = get_object_or_404(_credits_for(request.user), pk=pk)
+        act = CREDIT_ACTIONS.get(action)
+        if act is None:
+            return _error("Unknown action.")
+        try:
+            act(request.user, c, request.data.get("reason", ""))
+        except credits.CreditError as error:
+            return _error(error)
+        c = _credits_for(request.user).get(pk=pk)
+        return Response(_credit(c, request.user))

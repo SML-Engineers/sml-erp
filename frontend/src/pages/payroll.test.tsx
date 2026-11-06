@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 
 import type { PayrollList, PayrollRun, TaxTables } from "../api/payroll";
 import { mockApi, renderAt } from "../test-utils";
+import AdvancesLoansPage from "./AdvancesLoansPage";
 import PayrollPage from "./PayrollPage";
 import StatutoryReturnsPage from "./StatutoryReturnsPage";
 import TaxTablesPage from "./TaxTablesPage";
@@ -190,3 +191,38 @@ function lastMonthForTest() {
   const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
+
+test("HR records a loan and the Director approves one waiting for him", async () => {
+  const waiting = {
+    id: 3, number: "", employee: { id: 7, number: "E001", name: "Kamal Perera" }, kind: "loan" as const,
+    kind_label: "Loan", amount: "240000.00", interest: "0.00", months: 24, instalment: "10000.00",
+    first_month: "2026-11", reason: "Housing", status: "awaiting" as const, status_label: "Waiting for the Director",
+    returned: false, recovered: "0.00", balance: "0.00", created_by: "HR", can_edit: false, can_submit: false,
+    can_withdraw: false, can_approve: true,
+  };
+  const calls = mockApi({
+    "GET /api/v1/staff-credits/": { body: { results: [waiting], employees: [{ id: 7, number: "E001", name: "Kamal Perera" }], first_month: "2026-11", can_record: true } },
+    "POST /api/v1/staff-credits/": { body: waiting },
+    "POST /api/v1/staff-credits/3/approve/": { body: { ...waiting, status: "approved", can_approve: false } },
+  });
+  renderAt("/advances-loans", <AdvancesLoansPage />);
+  expect(await screen.findByText("10,000.00")).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Kind"), { target: { value: "loan" } });
+  fireEvent.change(screen.getByLabelText("Amount (LKR)"), { target: { value: "120000" } });
+  fireEvent.change(screen.getByLabelText("Months to repay"), { target: { value: "12" } });
+  fireEvent.change(screen.getAllByLabelText("Reason")[0], { target: { value: "Medical" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save as draft" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/staff-credits/",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ employee: "7", kind: "loan", amount: "120000", interest: "0", months: "12", first_month: "2026-11", reason: "Medical" }),
+      }),
+    ),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/staff-credits/3/approve/", expect.objectContaining({ method: "POST" })),
+  );
+});

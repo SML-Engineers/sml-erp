@@ -338,7 +338,7 @@ P2B-06**, in this order.
   employees; SML has 30–50). Figures are to the cent, as in the payroll; if the EPF
   Department wants whole rupees per member, that is a change to the payroll's rounding.
 
-- [ ] **P2B-10 Salary advances and loans**
+- [x] **P2B-10 Salary advances and loans**
   An advance or loan recorded and approved (by the Director), paid through a voucher, and
   recovered from payroll; balance per employee. **Advances**: one or more paid during the pay
   period and deducted from that period's salary (owner, question 3; limits and approval in
@@ -348,6 +348,25 @@ P2B-06**, in this order.
   approved by the Director; a loan carries the interest agreed when it is given. **The
   employee always receives more than 40% of the basic salary at month end**: an advance or
   loan that would leave less is refused, and the payroll run checks it again.
+  Done: People and payroll → **Advances and loans**. HR records an advance (recovered in
+  full in its pay month) or a loan (amount, interest agreed, months; instalment = (amount +
+  interest) ÷ months; the last one takes what is left), from the current pay month or later,
+  with a reason; draft → sent to the Director (approval type "staff_credit", reminder after
+  1 day) → approved and numbered (SLyymmNN), returned or rejected; HR may withdraw it until
+  decided; never approved by the person who recorded it; a decided one never changes and
+  none is deleted (database). Refused when sent or approved if the first recovery would leave
+  the month's net pay (pay in force less EPF 8%, monthly deductions and recoveries already
+  due; before overtime and APIT) at 40% of the basic or less. The **payroll** recovers each
+  approved advance and loan with a balance as a deduction linked to it ("Salary advance",
+  "Loan instalment", with the balance after); a recovery that would take the net to 40% of
+  the basic or below is reduced and the rest waits for the next month (so the payroll is
+  never blocked by it); a leaver repays the whole balance as far as that allows. **Posting**:
+  the recoveries credit Staff loans and advances (1330) and, for a loan with interest, the
+  interest share (interest ÷ (amount + interest) of each instalment) credits Interest earned
+  (7000) in the division; both accounts get system roles (accounting 0023). **Paying out**:
+  the Clerk enters a voucher coded to Staff loans and advances (three approvals as usual).
+  Balances count recoveries in approved payrolls only. The seeded ADVANCE and LOAN pay
+  components stay for amounts typed in by hand but are no longer needed for this.
 
 ## D. Self-service and links
 

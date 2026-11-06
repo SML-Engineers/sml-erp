@@ -13,7 +13,7 @@ const totals = {
 const run: PayrollRun = {
   id: 4, division: "WS", month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
   status: "draft", status_label: "Draft", created_by: "HR Officer", worked_out_at: "2026-11-06T09:00:00Z",
-  approved_at: null, totals, statutory: { epf_employee: "8.00", epf_employer: "12.00", etf: "3.00" },
+  approved_at: null, number: "", journal: "", totals, statutory: { epf_employee: "8.00", epf_employer: "12.00", etf: "3.00" },
   returned: false, history: [], can_work_out: true, can_submit: true, can_approve: false, sees_people: true,
   lines: [
     {
@@ -85,10 +85,13 @@ test("the Director approves a payroll waiting for him", async () => {
   const waiting = { ...run, status: "awaiting" as const, status_label: "Waiting for the Director", can_work_out: false, can_submit: false, can_approve: true };
   const calls = mockApi({
     "GET /api/v1/payroll/4/": { body: waiting },
-    "POST /api/v1/payroll/4/approve/": { body: { ...waiting, status: "approved", can_approve: false } },
+    "POST /api/v1/payroll/4/approve/": {
+      body: { ...waiting, status: "approved", status_label: "Approved", can_approve: false, number: "PR261001", journal: "JE261020001" },
+    },
   });
   renderAt("/payroll/4", <PayrollPage />, "/payroll/:id");
   fireEvent.click(await screen.findByRole("button", { name: "Approve" }));
+  expect(await screen.findByText(/Approved as PR261001 and posted to the accounts \(journal JE261020001\)/)).toBeInTheDocument();
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
       "/api/v1/payroll/4/approve/",

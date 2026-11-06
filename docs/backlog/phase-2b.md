@@ -263,7 +263,7 @@ P2B-06**, in this order.
   payroll. The Accountant sees the totals only. Advances and loans themselves (P2B-10),
   posting and the bank file (P2B-07) and payslips (P2B-08) follow.
 
-- [ ] **P2B-07 Posting and paying**
+- [x] **P2B-07 Posting and paying**
   Approval posts: Dr salaries and wages per division and section, Dr employer EPF and ETF;
   Cr EPF payable, ETF payable, APIT payable, deductions payable, net salaries payable. A
   salary voucher for the net pay goes through the usual three approvals (no payment without
@@ -273,6 +273,31 @@ P2B-06**, in this order.
   each employee's gratuity settings are entered by the Accountant and approved by the
   Director (never less than the Act gives); provided for monthly by default (follow-up
   question 9).
+  Done: when the Director approves a payroll it gets a number (series "payroll", PRyymmNN)
+  and posts one journal entry dated the last day of the pay period: Dr Salaries and wages
+  (6000, earnings after no-pay) and Dr EPF and ETF contributions (6010, 12% + 3%) in the
+  payroll's division; Cr EPF payable (2140, 8% + 12%), ETF payable (2150), APIT payable
+  (2130), Payroll deductions payable (2190, new) and Salaries payable (2160, the net). These
+  accounts carry new system roles (migration accounting 0022). If an account is missing the
+  approval is refused and nothing changes. The journal and reports open the payroll from the
+  entry. **Paying**: the Clerk enters a salary voucher for the net, coded to Salaries
+  payable; it goes through the Accountant and the Director like any voucher (rule 4, rule 6)
+  and the Cashier pays it; the payroll page says so after approval. Split out of this task,
+  as the owner's material is not here yet: the Commercial Bank file (P2B-18) and gratuity
+  (P2B-19). Divisions only on the journal lines (journal lines carry no section).
+
+- [ ] **P2B-18 Commercial Bank bulk transfer file**
+  From an approved payroll, the bank's bulk transfer file of each employee's net pay to the
+  salary account the Director checked (P2B-01), in Commercial Bank of Ceylon's format. Waits
+  for the format from the bank (owner, follow-up 10: requested).
+
+- [ ] **P2B-19 Gratuity settings and monthly provision**
+  Each employee's gratuity settings (service counted from, months' pay per year of service,
+  never less than the Payment of Gratuity Act No. 12 of 1983: half a month's wage per
+  completed year after 5 years) entered by the Accountant and approved by the Director
+  (owner, follow-up 9). Each approved payroll provides for gratuity monthly (Dr gratuity
+  expense, Cr provision for gratuity), by default as the change in the liability worked out
+  per employee; the method is confirmed with the auditors (LKAS 19). Paid on leaving.
 
 - [ ] **P2B-08 Payslips**
   A payslip per employee (PDF), emailed or printed, in English first (Sinhala and Tamil with

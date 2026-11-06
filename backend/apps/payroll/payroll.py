@@ -44,11 +44,16 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from apps.accounting import journal
+from apps.accounting.catalogue import SYSTEM_ROLE_CHOICES
+from apps.accounting.journal import AccountingError
+from apps.accounting.models import Account
 from apps.core import approvals
 from apps.core.access import division_scope, effective_access
 from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, Division, User
+from apps.core.numbering import NumberSeriesError, allocate
 
 from . import attendance, leave, pay, periods
 from .models import (
@@ -574,10 +579,78 @@ def approve(user: User, run: PayrollRun, comment: str = "") -> PayrollRun:
             raise PayrollError(str(error)) from None
         if state.status == ApprovalState.Status.APPROVED:
             with audit_context("payroll_approved", comment):
+                try:
+                    run.number = allocate("payroll", on_date=run.period_end)
+                except NumberSeriesError as error:
+                    raise PayrollError(str(error)) from None
+                run.journal_entry = post(user, run)
                 run.status = St.APPROVED
                 run.approved_at = timezone.now()
-                run.save(update_fields=["status", "approved_at"])
+                run.save(update_fields=["status", "approved_at", "number", "journal_entry"])
         return run
+
+
+# --- Posting (P2B-07) ---------------------------------------------------------------------------
+
+
+def _account(role: str) -> Account:
+    account = Account.objects.filter(system_role=role, is_active=True).first()
+    if account is None:
+        name = dict(SYSTEM_ROLE_CHOICES).get(role, role)
+        raise PayrollError(f"The chart of accounts has no {name} account; ask the Accountant.")
+    return account
+
+
+def journal_lines(run: PayrollRun) -> list[journal.Line]:
+    """Dr salaries and wages (earnings after no-pay) and the company's EPF and ETF, in the
+    payroll's division; Cr EPF payable (8% + 12%), ETF payable, APIT payable, other
+    deductions payable and salaries payable (the net pay, paid by a salary voucher)."""
+    t = totals(run)
+    division = run.division
+    what = f"Payroll {run.division.code} {run.month:%B %Y}"
+    lines = [
+        (
+            "salaries_expense",
+            t["gross"],
+            ZERO,
+            division,
+            f"{what}: earnings after no-pay",
+        ),
+        (
+            "epf_etf_expense",
+            t["epf_employer"] + t["etf"],
+            ZERO,
+            division,
+            f"{what}: EPF 12% and ETF 3%",
+        ),
+        ("epf_payable", ZERO, t["epf_employee"] + t["epf_employer"], None, f"{what}: EPF"),
+        ("etf_payable", ZERO, t["etf"], None, f"{what}: ETF"),
+        ("apit_payable", ZERO, t["apit"], None, f"{what}: APIT"),
+        ("payroll_deductions", ZERO, t["deductions"], None, f"{what}: other deductions"),
+        ("salaries_payable", ZERO, t["net"], None, f"{what}: net pay"),
+    ]
+    return [
+        journal.Line(
+            account=_account(role), debit=debit, credit=credit, division=div, description=text
+        )
+        for role, debit, credit, div, text in lines
+        if debit or credit
+    ]
+
+
+def post(user: User, run: PayrollRun):
+    try:
+        return journal.post(
+            user,
+            entry_date=run.period_end,
+            narration=f"Payroll {run.number}: {run.division.code}, pay month "
+            f"{run.month:%B %Y} ({run.period_start:%d %b} to {run.period_end:%d %b %Y})",
+            lines=journal_lines(run),
+            source_type="payroll",
+            source_id=run.number,
+        )
+    except AccountingError as error:
+        raise PayrollError(str(error)) from None
 
 
 def send_back(user: User, run: PayrollRun, reason: str) -> PayrollRun:

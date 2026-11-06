@@ -43,7 +43,26 @@ export interface MySummary {
   leave_types?: { code: string; name: string }[];
   attendance?: { from: string; days: { date: string; time_in: string; time_out: string; leave: string; late: number }[] };
   clock?: MyClock | null;
+  details?: MyDetails;
+  detail_requests?: DetailRequest[];
   to_approve: LeaveApplication[];
+}
+
+/** P2B-20: the details an employee may ask HR to change. */
+export const DETAIL_FIELDS = ["phone", "address", "email", "bank_name", "bank_branch", "account_name", "account_number"] as const;
+export type MyDetails = Record<(typeof DETAIL_FIELDS)[number], string>;
+
+export interface DetailRequest {
+  id: number;
+  employee: string;
+  employee_id: number;
+  changes: { field: string; before: string; after: string }[];
+  bank: boolean;
+  note: string;
+  status: "waiting" | "approved" | "rejected" | "withdrawn";
+  status_label: string;
+  created_at: string;
+  decision_note: string;
 }
 
 /** The phone punch clock (P2B-12), when HR has switched it on for the employee. */
@@ -71,5 +90,8 @@ export const clockInOut = (
   where: { latitude?: number; longitude?: number; accuracy?: number } = {},
 ) => apiSend<MySummary>("POST", "/my/clock/", { kind, ...where });
 export const giveLocationConsent = (consent: boolean) => apiSend<MySummary>("POST", "/my/location-consent/", { consent });
+export const askDetailChange = (values: Partial<MyDetails> & { note: string }) =>
+  apiSend<MySummary>("POST", "/my/details/", values);
+export const withdrawDetailChange = (id: number) => apiSend<MySummary>("POST", `/my/details/${id}/withdraw/`, {});
 export const decideLeave = (id: number, action: "approve" | "reject", reason: string) =>
   apiSend<MySummary>("POST", `/my/team-leave/${id}/${action}/`, { reason });

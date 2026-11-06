@@ -444,6 +444,40 @@ class AttendanceMonth(models.Model):
         return f"{self.division_id} {self.month:%Y-%m}"
 
 
+class DetailChange(models.Model):
+    """An employee's request to change their own contact or salary account details (P2B-20),
+    made on the self-service page. HR approves or rejects it (never the employee themselves);
+    a new salary account then still waits for the Director's check (P2B-01). Decided requests
+    never change, and none is ever deleted (database)."""
+
+    class Status(models.TextChoices):
+        WAITING = "waiting", "Waiting for HR"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="detail_changes")
+    wanted = models.JSONField()  # the new values asked for
+    before = models.JSONField()  # the values when asked
+    note = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default="waiting")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.employee.number} {self.created_at:%Y-%m-%d}"
+
+
 class PunchSite(models.Model):
     """A place where staff may clock in from the phone when HR limits them to sites (P2B-12):
     a point and a radius. Never deleted (rule 9); deactivated instead."""

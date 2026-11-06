@@ -96,7 +96,7 @@ test("only HR and the Director have the Employees menu", () => {
 });
 
 test("HR sees the list with the bank check waiting, and can export", async () => {
-  mockApi({ "GET /api/v1/employees/": { body: list } });
+  mockApi({ "GET /api/v1/employees/": { body: list }, "GET /api/v1/detail-changes/": { body: { results: [], can_decide: true } } });
   renderAt("/employees", <EmployeesPage me={hr} />);
   expect(await screen.findByText("Kamal Perera")).toBeInTheDocument();
   expect(screen.getByText("Waiting for the Director's check")).toBeInTheDocument();
@@ -203,4 +203,23 @@ test("the Director approves a pay change waiting for him", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "" }) }),
     ),
   );
+});
+
+test("HR approves an employee's request to change their salary account", async () => {
+  const request = {
+    id: 3, employee: "E001 Kamal Perera", employee_id: 7, bank: true, note: "Moved my account", status: "waiting" as const,
+    status_label: "Waiting for HR", created_at: "2026-11-06T10:00:00Z", decision_note: "",
+    changes: [{ field: "account_number", before: "1234567890", after: "8001234567" }],
+  };
+  const calls = mockApi({
+    "GET /api/v1/employees/": { body: list },
+    "GET /api/v1/detail-changes/": { body: { results: [request], can_decide: true } },
+    "POST /api/v1/detail-changes/3/approve/": { body: { results: [], can_decide: true } },
+  });
+  renderAt("/employees", <EmployeesPage me={hr} />);
+  expect(await screen.findByText("Account number: 1234567890 → 8001234567")).toBeInTheDocument();
+  expect(screen.getByText(/waits for the Director's check/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  await waitFor(() => expect(screen.queryByText(/1234567890 → 8001234567/)).not.toBeInTheDocument());
+  expect(calls).toHaveBeenCalledWith("/api/v1/detail-changes/3/approve/", expect.objectContaining({ method: "POST" }));
 });

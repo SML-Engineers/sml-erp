@@ -328,6 +328,8 @@ def check_bank(user: User, employee: Employee) -> Employee:
             raise EmployeeError("There is no bank account change to check.")
         if employee.bank_changed_by_id == user.pk:
             raise EmployeeError("The person who changed the bank account cannot check it.")
+        if employee.user_id == user.pk:
+            raise EmployeeError("Nobody checks their own salary account.")
         employee.bank_checked_at = timezone.now()
         employee.bank_checked_by = user
         employee.save(update_fields=["bank_checked_at", "bank_checked_by"])

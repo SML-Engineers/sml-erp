@@ -3749,7 +3749,9 @@
       "sites": "Only at a site"
     },
     "consentGiven": "Location check agreed on {{at}}.",
-    "consentMissing": "The employee has not agreed to the location check yet, so cannot clock in."
+    "consentMissing": "The employee has not agreed to the location check yet, so cannot clock in.",
+    "requests": "Requests to change details",
+    "requestBank": "A new salary account: after approval it waits for the Director's check."
   },
   "pc": {
     "title": "Pay components",
@@ -4186,7 +4188,11 @@
     "toApprove": "Leave to approve",
     "rejectReason": "Reason (needed to reject)",
     "approve": "Approve",
-    "reject": "Reject"
+    "reject": "Reject",
+    "details": "My details",
+    "detailsHelp": "Change what is wrong and ask HR to update it. A new salary account is used only after the Director's check.",
+    "detailsNote": "Note for HR",
+    "askChange": "Ask HR to change"
   },
   "clock": {
     "title": "Clock in and out",

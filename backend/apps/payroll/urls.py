@@ -9,6 +9,12 @@ from . import views as v
 
 urlpatterns = [
     path("employees/", v.EmployeeListView.as_view(), name="employees"),
+    path("detail-changes/", v.DetailChangesView.as_view(), name="detail-changes"),
+    path(
+        "detail-changes/<int:pk>/<str:action>/",
+        v.DetailChangeDecideView.as_view(),
+        name="detail-change-decide",
+    ),
     path("employees/excel/", v.EmployeeExcelView.as_view(), name="employees-excel"),
     path("employees/<int:pk>/", v.EmployeeDetailView.as_view(), name="employee"),
     path(
@@ -68,6 +74,12 @@ urlpatterns = [
     path("my/apit-certificate/", me.MyCertificateView.as_view(), name="my-certificate"),
     path("my/leave/", me.MyLeaveView.as_view(), name="my-leave"),
     path("my/clock/", me.MyPunchView.as_view(), name="my-clock"),
+    path("my/details/", me.MyDetailsView.as_view(), name="my-details"),
+    path(
+        "my/details/<int:pk>/withdraw/",
+        me.MyDetailsWithdrawView.as_view(),
+        name="my-details-withdraw",
+    ),
     path("my/location-consent/", me.MyLocationConsentView.as_view(), name="my-location-consent"),
     path("my/leave/<int:pk>/withdraw/", me.MyLeaveWithdrawView.as_view(), name="my-leave-withdraw"),
     path(

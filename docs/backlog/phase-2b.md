@@ -387,10 +387,20 @@ P2B-06**, in this order.
   applications on the same page, even if their own sign-in is not linked to an employee.
   Asking to change personal or bank details moved to P2B-20.
 
-- [ ] **P2B-20 Employees ask to change their details**
+- [x] **P2B-20 Employees ask to change their details**
   On the self-service page an employee asks to change their phone, address, email or salary
   account; HR approves the change (never the employee themselves), and a new salary account
   still needs the Director's check (P2B-01) before any payment uses it.
+  Done: "My details" on the self-service page shows the five contact and salary account
+  fields; the employee changes what is wrong, adds a note and asks; the values get HR's own
+  checks (email, account number); one request waits at a time and can be withdrawn. HR sees
+  the waiting requests on the Employees page (old and new value of each field) and approves
+  or rejects with a reason; never their own request. Approving changes the record as HR's
+  own change would (audit log, the request as the reason); a new salary account then waits
+  for the Director's check, and **nobody checks their own salary account** (new rule). A
+  request whose fields HR changed after it was made is refused at approval, so an old request
+  never overwrites newer details. Requests are never deleted and, once decided, never change
+  (database).
 
 - [x] **P2B-12 Phone punch clock**
   For staff working away: clock in and out from the phone, optionally limited to an area

@@ -5,16 +5,21 @@ import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client";
 import {
   applyForLeave,
+  askDetailChange,
   clockInOut,
+  DETAIL_FIELDS,
   decideLeave,
   giveLocationConsent,
   getMy,
   myCertificateUrl,
   myKey,
   myPayslipUrl,
+  withdrawDetailChange,
   withdrawLeave,
   type LeaveApplication,
   type MyClock,
+  type MyDetails,
+  type DetailRequest,
   type MySummary,
 } from "../api/my";
 import { formatDecimal } from "../lib/decimal";
@@ -106,6 +111,8 @@ export default function MyPage() {
               ))}
             </ul>
           </section>
+
+          {d.details && <Details details={d.details} requests={d.detail_requests ?? []} onDone={done} />}
 
           <section className="panel" aria-label={t("my.attendance")}>
             <h2>{t("my.attendance")}</h2>
@@ -317,6 +324,67 @@ function Clock({ clock, onDone }: { clock: MyClock; onDone: (d: MySummary) => vo
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** P2B-20: ask HR to change contact or salary account details. */
+function Details({ details, requests, onDone }: { details: MyDetails; requests: DetailRequest[]; onDone: (d: MySummary) => void }) {
+  const { t } = useTranslation();
+  const [values, setValues] = useState<MyDetails>(details);
+  const [note, setNote] = useState("");
+  const waiting = requests.some((r) => r.status === "waiting");
+  const changed = Object.fromEntries(DETAIL_FIELDS.filter((f) => values[f] !== details[f]).map((f) => [f, values[f]]));
+  const ask = useMutation({
+    mutationFn: () => askDetailChange({ ...changed, note }),
+    onSuccess: (d) => {
+      setNote("");
+      onDone(d);
+    },
+  });
+  const withdraw = useMutation({ mutationFn: (id: number) => withdrawDetailChange(id), onSuccess: onDone });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    ask.mutate();
+  };
+  return (
+    <section className="panel" aria-label={t("my.details")}>
+      <h2>{t("my.details")}</h2>
+      <p className="muted">{t("my.detailsHelp")}</p>
+      <form className="form-grid" aria-label={t("my.details")} onSubmit={submit}>
+        {DETAIL_FIELDS.map((f) => (
+          <label key={f} className={f === "address" ? "wide" : undefined}>
+            {t(`emp.f.${f}`)}
+            <input value={values[f]} readOnly={waiting} onChange={(e) => setValues({ ...values, [f]: e.target.value })} />
+          </label>
+        ))}
+        <label className="wide">
+          {t("my.detailsNote")}
+          <input value={note} readOnly={waiting} onChange={(e) => setNote(e.target.value)} />
+        </label>
+        <div className="wide row-actions">
+          <button type="submit" disabled={waiting || Object.keys(changed).length === 0 || ask.isPending}>
+            {t("my.askChange")}
+          </button>
+        </div>
+        <div className="wide">
+          <ErrorLine error={ask.error ?? withdraw.error} />
+        </div>
+      </form>
+      <ul className="plain">
+        {requests.map((r) => (
+          <li key={r.id}>
+            {r.created_at.slice(0, 10)}: {r.changes.map((c) => `${t(`emp.f.${c.field}`)} → ${c.after || "-"}`).join("; ")} —{" "}
+            {r.status_label}
+            {r.decision_note && <span className="muted"> ({r.decision_note})</span>}{" "}
+            {r.status === "waiting" && (
+              <button type="button" className="small secondary" onClick={() => withdraw.mutate(r.id)}>
+                {t("my.withdraw")}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

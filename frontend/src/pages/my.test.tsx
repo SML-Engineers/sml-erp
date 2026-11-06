@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { vi } from "vitest";
 
 import type { MySummary } from "../api/my";
@@ -122,4 +122,33 @@ test("from anywhere, no location is asked", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Clock in" }));
   expect(await screen.findByText("Clocked in since 08:00.")).toBeInTheDocument();
   expect(calls).toHaveBeenCalledWith("/api/v1/my/clock/", expect.objectContaining({ body: JSON.stringify({ kind: "in" }) }));
+});
+
+test("an employee asks HR to change their phone and may withdraw it", async () => {
+  const details = { phone: "0771234567", address: "", email: "", bank_name: "", bank_branch: "", account_name: "", account_number: "" };
+  const waiting = {
+    id: 9, employee: "E001 Kamal Perera", employee_id: 7, bank: false, note: "New SIM", status: "waiting" as const,
+    status_label: "Waiting for HR", created_at: "2026-11-06T10:00:00Z", decision_note: "",
+    changes: [{ field: "phone", before: "0771234567", after: "0719998887" }],
+  };
+  const calls = mockApi({
+    "GET /api/v1/my/": { body: { ...mine, details, detail_requests: [] } },
+    "POST /api/v1/my/details/": { body: { ...mine, details, detail_requests: [waiting] }, status: 201 },
+    "POST /api/v1/my/details/9/withdraw/": { body: { ...mine, details, detail_requests: [{ ...waiting, status: "withdrawn", status_label: "Withdrawn" }] } },
+  });
+  renderAt("/my", <MyPage />, "/my");
+  const ask = await screen.findByRole("button", { name: "Ask HR to change" });
+  expect(ask).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "0719998887" } });
+  fireEvent.change(screen.getByLabelText("Note for HR"), { target: { value: "New SIM" } });
+  fireEvent.click(ask);
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/my/details/",
+      expect.objectContaining({ body: JSON.stringify({ phone: "0719998887", note: "New SIM" }) }),
+    ),
+  );
+  expect(await screen.findByText(/Phone → 0719998887/)).toBeInTheDocument();
+  fireEvent.click(within(screen.getByRole("region", { name: "My details" })).getByRole("button", { name: "Withdraw" }));
+  expect(await screen.findByText(/— Withdrawn/)).toBeInTheDocument();
 });

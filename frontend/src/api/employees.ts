@@ -1,3 +1,4 @@
+import type { DetailRequest } from "./my";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 /** Employee master (P2B-01): kept by HR, seen by HR and the Director. */
@@ -112,3 +113,13 @@ export function importEmployees(file: File, dryRun: boolean, reason = "") {
   form.append("reason", reason);
   return apiUpload<EmployeeImportResult>("/employees/excel/", form, "POST");
 }
+
+/** P2B-20: employees' requests to change their details, waiting for HR. */
+export interface DetailChanges {
+  results: DetailRequest[];
+  can_decide: boolean;
+}
+export const detailChangesKey = ["detail-changes"] as const;
+export const getDetailChanges = () => apiGet<DetailChanges>("/detail-changes/");
+export const decideDetailChange = (id: number, action: "approve" | "reject", reason: string) =>
+  apiSend<DetailChanges>("POST", `/detail-changes/${id}/${action}/`, { reason });

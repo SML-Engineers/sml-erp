@@ -21,6 +21,8 @@ const TEXT_FIELDS = [
   "registration_no",
   "tin",
   "vat_no",
+  "epf_employer_no",
+  "etf_employer_no",
   "phone",
   "email",
   "website",

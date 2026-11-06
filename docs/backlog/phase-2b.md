@@ -316,10 +316,27 @@ P2B-06**, in this order.
   the Admin can edit. Printing is recorded in the audit log. The self-service page comes with
   P2B-11.
 
-- [ ] **P2B-09 Statutory returns**
+- [x] **P2B-09 Statutory returns**
   EPF monthly return (C form) and its contribution file, ETF return, the APIT monthly
   schedule and the year-end certificates (T-10); each from the approved payrolls, with
   Excel and PDF.
+  Done: People and payroll → **Statutory returns** (HR and the Director; only the
+  employees of one's divisions). From the approved payrolls only, for the whole company: the
+  **EPF C form** per pay month (name, NIC, EPF member number, total earnings, 8%, 12%, total;
+  a member without an EPF number is listed); **ETF monthly contributions** (earnings, 3%);
+  the **ETF half-year return** (each member's ETF for each of the six months and the total);
+  the **APIT monthly schedule** (taxable earnings, APIT deducted, the IRD table used); **APIT
+  for the year of assessment** (April to March by pay month) and the **year-end
+  certificates** as one PDF, a page per employee (to be checked against the IRD's current
+  certificate form before issuing). Each shown on the page and downloaded as Excel or PDF;
+  a division whose payroll for the month is not approved is named under the return. The
+  company's **EPF and ETF employer numbers** are new fields on Settings → Company and print on
+  the returns. Payment deadlines are noted (EPF/ETF by the last working day of the next
+  month, APIT by the 15th). **Not built: the electronic upload files** (EPF e-return text
+  file, ETF file): their official layouts could not be found published; they follow when
+  the owner or the Accountant brings the layouts (the EPF e-return is required from 50
+  employees; SML has 30–50). Figures are to the cent, as in the payroll; if the EPF
+  Department wants whole rupees per member, that is a change to the payroll's rounding.
 
 - [ ] **P2B-10 Salary advances and loans**
   An advance or loan recorded and approved (by the Director), paid through a voucher, and

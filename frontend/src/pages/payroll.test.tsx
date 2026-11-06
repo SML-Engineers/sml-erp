@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import type { PayrollList, PayrollRun, TaxTables } from "../api/payroll";
 import { mockApi, renderAt } from "../test-utils";
 import PayrollPage from "./PayrollPage";
+import StatutoryReturnsPage from "./StatutoryReturnsPage";
 import TaxTablesPage from "./TaxTablesPage";
 
 const totals = {
@@ -163,3 +164,29 @@ test("HR prints and emails the payslips of an approved payroll", async () => {
   expect(await screen.findByText("Emailed 1 payslip. No email address (print theirs): E002.")).toBeInTheDocument();
   expect(calls).toHaveBeenCalledWith("/api/v1/payroll/4/email-payslips/", expect.objectContaining({ method: "POST" }));
 });
+
+test("HR sees the EPF return and downloads it", async () => {
+  const epfReturn = {
+    title: "EPF monthly return (C form) – October 2026",
+    lines: ["SML Engineers", "EPF employer no.: A/12345"],
+    columns: ["Employee no.", "Name", "NIC", "EPF member no.", "Total earnings", "Employee 8%", "Employer 12%", "Total"],
+    rows: [["E001", "K. Perera", "199012345678", "1234", "67500.00", "5400.00", "8100.00", "13500.00"]],
+    totals: ["", "1 members", "", "", "67500.00", "5400.00", "8100.00", "13500.00"],
+    notes: ["Pay the total by the last working day of the following month."],
+    money_from: 4,
+  };
+  mockApi({ [`GET /api/v1/payroll-returns/epf/?month=${lastMonthForTest()}`]: { body: epfReturn } });
+  renderAt("/payroll-returns", <StatutoryReturnsPage />);
+  expect(await screen.findByRole("heading", { name: "EPF monthly return (C form) – October 2026" })).toBeInTheDocument();
+  expect(screen.getAllByText("13,500.00")).toHaveLength(2);
+  expect(screen.getByRole("link", { name: "Download Excel" })).toHaveAttribute(
+    "href",
+    `/api/v1/payroll-returns/epf/?month=${lastMonthForTest()}&format=xlsx`,
+  );
+});
+
+function lastMonthForTest() {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}

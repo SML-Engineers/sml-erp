@@ -23,6 +23,8 @@ const company: Company = {
   registration_no: "",
   tin: "",
   vat_no: "",
+  epf_employer_no: "",
+  etf_employer_no: "",
   address: "",
   phone: "",
   email: "",

@@ -7,8 +7,8 @@ import PayComponentsPage from "./PayComponentsPage";
 const list: PayComponentList = {
   can_manage: true,
   results: [
-    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, is_allowance: false, sort_order: 10, is_active: true },
-    { id: 6, code: "WELFARE", name: "Welfare society", kind: "deduction", basis: "fixed", epf_liable: false, apit_taxable: false, is_allowance: false, sort_order: 10, is_active: true },
+    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, is_allowance: false, in_day_rate: true, sort_order: 10, is_active: true },
+    { id: 6, code: "WELFARE", name: "Welfare society", kind: "deduction", basis: "fixed", epf_liable: false, apit_taxable: false, is_allowance: false, in_day_rate: false, sort_order: 10, is_active: true },
   ],
 };
 
@@ -36,7 +36,7 @@ test("HR adds a component; a deduction cannot count for EPF", async () => {
         method: "POST",
         body: JSON.stringify({
           code: "MEAL", name: "Meal allowance", kind: "earning", basis: "fixed", epf_liable: false,
-          apit_taxable: true, is_allowance: true, sort_order: 100, is_active: true,
+          apit_taxable: true, is_allowance: true, in_day_rate: false, sort_order: 100, is_active: true,
         }),
       }),
     ),

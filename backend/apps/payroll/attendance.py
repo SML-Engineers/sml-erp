@@ -42,6 +42,7 @@ from .models import (
     Leave,
     LeaveType,
     OvertimeCheck,
+    PayrollRun,
 )
 
 MAX_BYTES = 5 * 1024 * 1024
@@ -483,7 +484,14 @@ def reopen(user: User, division_code, month, reason: str) -> AttendanceMonth:
         )
         if record is None:
             raise AttendanceError(f"Pay month {month:%B %Y} is not confirmed for {division.code}.")
-        # P2B-06: refused once a payroll for the month is approved.
+        # P2B-06: refused once a payroll for the month is sent or approved.
+        if PayrollRun.objects.filter(
+            division=division, month=month, status__in=["awaiting", "approved"]
+        ).exists():
+            raise AttendanceError(
+                f"The payroll for pay month {month:%B %Y} is sent or approved; its attendance "
+                "stays as it is."
+            )
         taken = Leave.objects.filter(
             employee__division=division,
             source=Leave.Source.ATTENDANCE,

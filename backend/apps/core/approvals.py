@@ -137,6 +137,8 @@ DOCUMENT_TYPES = {
     # An employee's pay settings, new or changed: HR prepares, the Director approves every one
     # (owner, 5 Nov 2026; P2B-17).
     "pay_change": DocumentType("Pay change", min_approvals=1, final_role="director"),
+    # The monthly payroll: HR prepares, the Director approves (owner, question 9; P2B-06).
+    "payroll": DocumentType("Payroll", min_approvals=1, final_role="director"),
 }
 
 

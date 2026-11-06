@@ -15,6 +15,8 @@ export interface PayComponent {
   apit_taxable: boolean;
   /** An allowance: at most four per employee (P2B-17). */
   is_allowance: boolean;
+  /** Part of the monthly pay the day and hourly rates come from (P2B-06). */
+  in_day_rate: boolean;
   sort_order: number;
   is_active: boolean;
 }

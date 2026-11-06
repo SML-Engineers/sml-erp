@@ -87,7 +87,7 @@ def save_component(
         if basis not in PayComponent.Basis.values:
             raise PayError("Choose fixed each month or entered each month.")
         component.basis = basis
-    for field in ("epf_liable", "apit_taxable", "is_allowance", "is_active"):
+    for field in ("epf_liable", "apit_taxable", "is_allowance", "in_day_rate", "is_active"):
         if field in values:
             setattr(component, field, _flag(values[field]))
     if "sort_order" in values:

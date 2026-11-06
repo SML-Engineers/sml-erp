@@ -68,8 +68,8 @@ const pay: EmployeePay = {
     { id: 3, component: "BASIC", component_name: "Basic salary", kind: "earning", effective_from: "2024-01", amount: "60000.00", epf_liable: null, apit_taxable: null, reason: "Joined", created_by: "HR", created_at: "2026-11-05T09:00:00Z" },
   ],
   components: [
-    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, is_allowance: false, sort_order: 10, is_active: true },
-    { id: 3, code: "ATTEND", name: "Attendance bonus", kind: "earning", basis: "variable", epf_liable: true, apit_taxable: true, is_allowance: false, sort_order: 30, is_active: true },
+    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, is_allowance: false, in_day_rate: false, sort_order: 10, is_active: true },
+    { id: 3, code: "ATTEND", name: "Attendance bonus", kind: "earning", basis: "variable", epf_liable: true, apit_taxable: true, is_allowance: false, in_day_rate: false, sort_order: 30, is_active: true },
   ],
   settings: null,
   settings_since: null,

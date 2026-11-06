@@ -223,6 +223,7 @@ def _component(c: PayComponent) -> dict:
         "epf_liable": c.epf_liable,
         "apit_taxable": c.apit_taxable,
         "is_allowance": c.is_allowance,
+        "in_day_rate": c.in_day_rate,
         "sort_order": c.sort_order,
         "is_active": c.is_active,
     }

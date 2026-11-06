@@ -225,7 +225,7 @@ P2B-06**, in this order.
   (P2B-06). Gratuity settings (entered by the Accountant, follow-up 9) come with the
   gratuity itself in P2B-07, where they are used.
 
-- [ ] **P2B-06 Monthly payroll run**
+- [x] **P2B-06 Monthly payroll run**
   HR prepares the **pay month** (P2B-15) from the approved pay settings (P2B-17): earnings;
   the attendance bonus unless forfeited; overtime from the checked figures × the hourly rate
   (pay ÷ the divisor); no-pay days and Wages Board short-leave quarter days × the day rate
@@ -236,6 +236,32 @@ P2B-06**, in this order.
   looked up, not from memory) and the employee's APIT setting; net pay. Each figure traces
   to its source (attendance, setting, rate). Draft → sent → Director approves (never the
   person who prepared it) → locked.
+  Done: People and payroll → **Payroll**. HR prepares a division's pay month once HR has
+  confirmed its attendance and every employee's overtime is checked (otherwise refused, with
+  the employee numbers). Per employee, each figure with where it came from: the approved
+  monthly amounts for the pay month (a joiner or leaver: days employed × amount ÷ 30, never
+  more); amounts HR types in for the month (incentive, advance recovery; the payroll is worked
+  out again); the **attendance bonus** lost when away four half days or more (absent days and
+  approved leave, maternity leave excepted); **day rate** = monthly pay ÷ 30 and **hourly
+  rate** = monthly pay ÷ the rule's divisor, monthly pay being the components marked "In the
+  day rate" (new mark; seeded BASIC and FIXED); **overtime** = hours × hourly rate × the
+  employee's own or the rule's rate; **no-pay** days × day rate, short time × hourly rate,
+  Wages Board unpaid short leaves × a quarter day; no-pay reduces EPF and APIT earnings;
+  **EPF** 8% / 12% and **ETF** 3% on EPF-liable earnings (dated rates, seeded from 2024);
+  **APIT** from the dated IRD table of the employee's setting on taxable earnings including
+  overtime; other deductions; **net**. APIT Table 01 is seeded from 1 April 2025 (relief
+  150,000 a month; 6% / 18% / 24% / 30% / 36%; the IRD's 2025/26 tables apply to later years
+  until new ones are issued; checked on the web on 6 Nov 2026). **Table 07 (secondary
+  employment) is not seeded**: its rates could not be read from the IRD; the Accountant
+  enters it on "APIT tables and EPF rates" (accounting area) before anyone is paid under it,
+  and the payroll refuses until then. A table or rate in force never changes (database).
+  Draft → sent to the Director (approval type "payroll", reminder after 1 day) → approved
+  (locked: the database refuses any change), returned (draft) or rejected (prepared again);
+  never approved by the person who prepared it. Sent only when every employee receives more
+  than 40% of the basic salary (owner, follow-up 4). Once sent or approved, the month's
+  attendance cannot be reopened; a pay change cannot start in a pay month with an approved
+  payroll. The Accountant sees the totals only. Advances and loans themselves (P2B-10),
+  posting and the bank file (P2B-07) and payslips (P2B-08) follow.
 
 - [ ] **P2B-07 Posting and paying**
   Approval posts: Dr salaries and wages per division and section, Dr employer EPF and ETF;

@@ -291,13 +291,29 @@ P2B-06**, in this order.
   salary account the Director checked (P2B-01), in Commercial Bank of Ceylon's format. Waits
   for the format from the bank (owner, follow-up 10: requested).
 
-- [ ] **P2B-19 Gratuity settings and monthly provision**
+- [x] **P2B-19 Gratuity settings and monthly provision**
   Each employee's gratuity settings (service counted from, months' pay per year of service,
   never less than the Payment of Gratuity Act No. 12 of 1983: half a month's wage per
   completed year after 5 years) entered by the Accountant and approved by the Director
   (owner, follow-up 9). Each approved payroll provides for gratuity monthly (Dr gratuity
   expense, Cr provision for gratuity), by default as the change in the liability worked out
   per employee; the method is confirmed with the auditors (LKAS 19). Paid on leaving.
+  Done: without settings the Act applies (half a month's wage per completed year once 5
+  years are completed, service from joining); the wage is the monthly pay of the components
+  "in the day rate" (basic + fixed allowance, as the day rate; the Accountant confirms).
+  **Settings** on the new Gratuity page (Accounting): from a pay month, service counted from
+  (joining or earlier), months' pay per completed year (0.5 to 3), years before it is earned
+  (0 to 5); the Accountant enters, the Director approves (approval engine,
+  "gratuity_setting"); never below the Act (service and database); decided settings never
+  change, none is deleted. **Monthly provision**: each payroll line keeps the employee's
+  completed years and liability at the end of the period (as if they left then) and provides
+  the change since their previous approved payroll; posted Dr Gratuity (6015, division) Cr
+  Provision for gratuity (2520), a fall released the other way. Before the first payroll the
+  provision is nil, so the first payroll provides the whole liability unless P2B-14 brings
+  an opening provision. The page lists each employee's terms, years, wage, liability today
+  and provision so far; the payroll page shows the month's provision. Paid on leaving by a
+  payment voucher coded to Provision for gratuity. The auditors confirm the method (LKAS 19
+  may expect an actuarial valuation once there are more employees).
 
 - [x] **P2B-08 Payslips**
   A payslip per employee (PDF), emailed or printed, in English first (Sinhala and Tamil with

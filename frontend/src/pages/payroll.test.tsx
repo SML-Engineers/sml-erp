@@ -16,6 +16,7 @@ const run: PayrollRun = {
   id: 4, division: "WS", month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
   status: "draft", status_label: "Draft", created_by: "HR Officer", worked_out_at: "2026-11-06T09:00:00Z",
   approved_at: null, number: "", journal: "", totals, statutory: { epf_employee: "8.00", epf_employer: "12.00", etf: "3.00" },
+  gratuity: { liability: "198000.00", provided: "198000.00" },
   labour: { cost: "83450.00", hours: "208.00", per_hour: "401.20", sections: [{ section: "Manual Milling", employees: 1, cost: "83450.00", hours: "208.00", per_hour: "401.20" }] },
   returned: false, history: [], can_work_out: true, can_submit: true, can_approve: false, sees_people: true, can_email_payslips: false,
   lines: [
@@ -233,4 +234,5 @@ test("the payroll shows what an hour of work cost", async () => {
   renderAt("/payroll/4", <PayrollPage />, "/payroll/:id");
   expect(await screen.findByText("Labour cost: LKR 401.20 an hour (208.00 hours worked)")).toBeInTheDocument();
   expect(screen.getByRole("cell", { name: "Manual Milling" })).toBeInTheDocument();
+  expect(screen.getByText(/Gratuity provided this month: LKR 198,000.00/)).toBeInTheDocument();
 });

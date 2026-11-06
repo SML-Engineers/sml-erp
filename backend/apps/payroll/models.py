@@ -893,6 +893,11 @@ class PayrollLine(models.Model):
     deductions = models.DecimalField(max_digits=18, decimal_places=2)
     net = models.DecimalField(max_digits=18, decimal_places=2)
     basic = models.DecimalField(max_digits=18, decimal_places=2)
+    # Gratuity (P2B-19): the liability at the end of the period and this month's provision
+    # (the change since the employee's previous approved payroll; negative releases it).
+    gratuity_years = models.PositiveSmallIntegerField(default=0)
+    gratuity_liability = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    gratuity_charge = models.DecimalField(max_digits=18, decimal_places=2, default=0)
 
     class Meta:
         ordering = ["run", "employee__number"]
@@ -1007,3 +1012,44 @@ class StaffCredit(models.Model):
     @property
     def instalment(self):
         return (self.total / self.months).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+class GratuitySetting(models.Model):
+    """An employee's gratuity settings from a pay month on (P2B-19; owner, follow-up 9): the
+    Accountant enters them, the Director approves (approval engine, "gratuity_setting"). Never
+    less than the Payment of Gratuity Act No. 12 of 1983 (half a month's wage per completed
+    year once 5 years are completed, service from joining). Without one, the Act applies.
+    Decided settings never change; none is deleted (database)."""
+
+    class Status(models.TextChoices):
+        AWAITING = "awaiting", "Waiting for the Director"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.PROTECT, related_name="gratuity_settings"
+    )
+    effective_from = models.DateField()  # the 1st of a pay month
+    service_from = models.DateField()
+    months_per_year = models.DecimalField(max_digits=4, decimal_places=2)
+    after_years = models.PositiveSmallIntegerField()
+    reason = models.CharField(max_length=200)
+    status = models.CharField(max_length=10, choices=Status.choices, default="awaiting")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["employee", "-effective_from", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(after_years__lte=5, months_per_year__gte=Decimal("0.5")),
+                name="payroll_gratuity_not_below_act",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.employee_id} gratuity from {self.effective_from}"

@@ -141,6 +141,8 @@ DOCUMENT_TYPES = {
     "payroll": DocumentType("Payroll", min_approvals=1, final_role="director"),
     # A salary advance or staff loan: HR records, the Director approves every one (P2B-10).
     "staff_credit": DocumentType("Advance or loan", min_approvals=1, final_role="director"),
+    # An employee's gratuity settings: the Accountant enters, the Director approves (P2B-19).
+    "gratuity_setting": DocumentType("Gratuity settings", min_approvals=1, final_role="director"),
 }
 
 

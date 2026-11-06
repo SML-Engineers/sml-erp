@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import attendance_views as av
+from . import gratuity_views as gv
 from . import leave_views as lv
 from . import overtime_views as ov
 from . import payroll_views as pr
@@ -73,6 +74,12 @@ urlpatterns = [
     path("my/payslips/<int:pk>/", me.MyPayslipView.as_view(), name="my-payslip"),
     path("my/apit-certificate/", me.MyCertificateView.as_view(), name="my-certificate"),
     path("my/leave/", me.MyLeaveView.as_view(), name="my-leave"),
+    path("gratuity/", gv.GratuityView.as_view(), name="gratuity"),
+    path(
+        "gratuity/settings/<int:pk>/<str:action>/",
+        gv.GratuitySettingView.as_view(),
+        name="gratuity-setting",
+    ),
     path("my/clock/", me.MyPunchView.as_view(), name="my-clock"),
     path("my/details/", me.MyDetailsView.as_view(), name="my-details"),
     path(

@@ -79,6 +79,9 @@ SYSTEM_ROLES = {
     # Advances and loans to staff (P2B-10): paid out by voucher, recovered by the payroll.
     "staff_loans": "Staff loans and advances",
     "staff_loan_interest": "Interest from staff loans",
+    # Gratuity (P2B-19): provided for by each approved payroll, paid on leaving by voucher.
+    "gratuity_expense": "Gratuity",
+    "gratuity_provision": "Provision for gratuity",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

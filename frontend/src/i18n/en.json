@@ -3527,7 +3527,9 @@
       "cheque": "Cheque received",
       "payable": "Supplier",
       "recurring": "Recurring",
-      "what_if": "What-if"
+      "what_if": "What-if",
+      "payroll": "Net pay",
+      "statutory": "EPF, ETF and APIT"
     },
     "whatIfs": "What-if items",
     "whatIfsHelp": "Untick an item to see the projection without it. Items are never posted.",
@@ -4086,7 +4088,15 @@
     "emailed_one": "Emailed {{count}} payslip.",
     "emailed_other": "Emailed {{count}} payslips.",
     "noEmail": "No email address (print theirs): {{list}}.",
-    "failed": "Not sent, try again: {{list}}."
+    "failed": "Not sent, try again: {{list}}.",
+    "labourPerHour": "Labour cost: LKR {{rate}} an hour ({{hours}} hours worked)",
+    "labourNoHours": "Labour cost per hour: no hours worked in attendance",
+    "labourHelp": "Gross pay plus the company's EPF 12% and ETF 3% (LKR {{cost}}), over the hours worked in attendance. Job costing uses it per section.",
+    "labourSections": "Labour cost by section",
+    "section": "Section",
+    "hours": "Hours",
+    "labourCost": "Cost",
+    "perHour": "Per hour"
   },
   "taxTables": {
     "title": "APIT tables and EPF rates",

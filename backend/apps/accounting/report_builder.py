@@ -1,11 +1,12 @@
 """Custom report builder (backlog P2-26, spec 7A).
 
 - A report starts from a data source (journal lines, vouchers, customer tax invoices,
-  supplier invoices, stock movements) or from a ready-made one built on them. The person
-  chooses the columns and their order, filters, a grouping with subtotals, the sort, and
+  supplier invoices, stock movements, payroll lines) or from a ready-made one built on them.
+  The person chooses the columns and their order, filters, a grouping with subtotals, the sort, and
   optionally period columns: one measure spread over months or divisions.
 - Every run goes through the same visibility as the module's own pages: a source needs its
-  area (e.g. Sales for invoices) and only the person's divisions are read. A report shared
+  area (e.g. Sales for invoices) and only the person's divisions are read. Payroll lines
+  (P2B-13) are only for HR and the Director, approved payrolls only. A report shared
   with a role shows each person only what their own access allows.
 - Reports are saved by name, kept private or shared with a role, exported to Excel or PDF and
   emailed (the "report" message of Settings → Document email) with the Excel file attached.
@@ -46,6 +47,9 @@ class Source:
     area: str
     date_field: str
     fields: tuple
+    division_field: str = "division__code"
+    # A further check beyond the area (payroll: HR and the Director only).
+    allowed: object = None
 
     def field(self, key: str) -> Field:
         for f in self.fields:
@@ -85,6 +89,21 @@ def _stock(user: User) -> QuerySet:
     from apps.inventory.models import StockMovement
 
     return StockMovement.objects.filter(division__in=division_scope(user))
+
+
+def _payroll_lines(user: User) -> QuerySet:
+    from apps.payroll import employees
+    from apps.payroll.models import PayrollLine, PayrollRun
+
+    return PayrollLine.objects.filter(
+        run__status=PayrollRun.Status.APPROVED, employee__in=employees.visible(user)
+    )
+
+
+def _sees_payroll(user: User) -> bool:
+    from apps.payroll import employees
+
+    return employees.can_view(user)
 
 
 SOURCES = {
@@ -179,6 +198,33 @@ SOURCES = {
             Field("value", "Value (LKR)", "value", "money"),
         ),
     ),
+    "payroll_lines": Source(
+        "payroll_lines",
+        "Payroll (approved, one line per employee and month)",
+        "hr_payroll",
+        "run__month",
+        (
+            Field("month", "Pay month", "run__month", "date"),
+            Field("payroll", "Payroll", "run__number"),
+            Field("division", "Division", "run__division__code"),
+            Field("section", "Section", "employee__section__name"),
+            Field("number", "Employee no", "employee__number"),
+            Field("employee", "Employee", "employee__full_name"),
+            Field("designation", "Designation", "employee__designation"),
+            Field("category", "Category", "employee__category"),
+            Field("days", "Days employed", "days_employed", "number"),
+            Field("basic", "Basic", "basic", "money"),
+            Field("gross", "Gross pay", "gross", "money"),
+            Field("epf_employee", "EPF 8%", "epf_employee", "money"),
+            Field("epf_employer", "EPF 12%", "epf_employer", "money"),
+            Field("etf", "ETF 3%", "etf", "money"),
+            Field("apit", "APIT", "apit", "money"),
+            Field("deductions", "Other deductions", "deductions", "money"),
+            Field("net", "Net pay", "net", "money"),
+        ),
+        division_field="run__division__code",
+        allowed=_sees_payroll,
+    ),
 }
 QUERIES = {
     "journal_lines": _journal_lines,
@@ -186,6 +232,7 @@ QUERIES = {
     "sales_invoices": _sales_invoices,
     "supplier_invoices": _supplier_invoices,
     "stock_movements": _stock,
+    "payroll_lines": _payroll_lines,
 }
 
 # Ready-made reports to start from.
@@ -238,6 +285,16 @@ PRESETS = [
             "group_by": "item",
         },
     },
+    {
+        "name": "Payroll cost by division, by month",
+        "definition": {
+            "source": "payroll_lines",
+            "columns": ["division", "gross"],
+            "group_by": "division",
+            "period": "month",
+            "measure": "gross",
+        },
+    },
 ]
 
 OPS = {
@@ -250,7 +307,11 @@ OPS = {
 
 def sources_for(user: User) -> list[Source]:
     access = effective_access(user)
-    return [s for s in SOURCES.values() if access.has(s.area, "view")]
+    return [
+        s
+        for s in SOURCES.values()
+        if access.has(s.area, "view") and (s.allowed is None or s.allowed(user))
+    ]
 
 
 # --- Checking a definition -------------------------------------------------------------------
@@ -413,7 +474,7 @@ def _pivot(user: User, d: Definition) -> dict:
     if d.period == "month":
         bucket = TruncMonth(d.source.date_field)
     else:
-        bucket = F("division__code")
+        bucket = F(d.source.division_field)
     group = d.group_by.path if d.group_by else None
     values = [group] if group else []
     found = (

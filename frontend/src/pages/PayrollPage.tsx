@@ -158,6 +158,11 @@ function RunPage({ id }: { id: number }) {
             <span className="tag">{r.returned && r.status === "draft" ? t("payroll.returned") : r.status_label}</span>
           </h1>
           <PayPeriodLine period={r.period} />
+          {r.status === "approved" && (
+            <p className="notice">
+              {t("payroll.posted", { number: r.number, journal: r.journal, net: formatDecimal(r.totals.net) })}
+            </p>
+          )}
           <dl className="details">
             <div>
               <dt>{t("payroll.employees")}</dt>

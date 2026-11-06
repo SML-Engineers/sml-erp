@@ -738,6 +738,12 @@ class PayrollRun(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     worked_out_at = models.DateTimeField(default=timezone.now)
     approved_at = models.DateTimeField(null=True, blank=True)
+    # Given on approval (P2B-07): the number (number series "payroll", rule 10) and the
+    # journal entry that posted it.
+    number = models.CharField(max_length=30, blank=True)
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
 
     class Meta:
         ordering = ["-month", "division"]

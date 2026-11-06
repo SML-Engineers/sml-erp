@@ -45,7 +45,7 @@ class _Payroll(APIView):
 
 def _runs(user):
     return PayrollRun.objects.filter(division__in=division_scope(user)).select_related(
-        "division", "created_by"
+        "division", "created_by", "journal_entry"
     )
 
 
@@ -64,6 +64,8 @@ def _run(run: PayrollRun, user, detail=False) -> dict:
         "created_by": _name(run.created_by),
         "worked_out_at": run.worked_out_at,
         "approved_at": run.approved_at,
+        "number": run.number,
+        "journal": run.journal_entry.number if run.journal_entry_id else "",
         "totals": _t(payroll.totals(run)),
     }
     if not detail:

@@ -68,6 +68,14 @@ SYSTEM_ROLES = {
     "stock_adjustment": "Stock adjustments and write-offs",
     "work_in_progress": "Work in progress",
     "finished_goods": "Finished goods",
+    # The monthly payroll (P2B-07): what an approved payroll posts to.
+    "salaries_expense": "Salaries and wages",
+    "epf_etf_expense": "EPF and ETF contributions",
+    "epf_payable": "EPF payable",
+    "etf_payable": "ETF payable",
+    "apit_payable": "APIT payable",
+    "salaries_payable": "Salaries payable",
+    "payroll_deductions": "Payroll deductions payable",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

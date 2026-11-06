@@ -26,6 +26,9 @@ export interface PayrollRunSummary {
   created_by: string | null;
   worked_out_at: string;
   approved_at: string | null;
+  /** Given on approval (P2B-07): the payroll's number and the journal entry that posted it. */
+  number: string;
+  journal: string;
   totals: PayrollTotals;
 }
 

@@ -4063,7 +4063,8 @@
     "comment": "Comment (the reason when returning or rejecting)",
     "approve": "Approve",
     "return": "Return for correction",
-    "reject": "Reject"
+    "reject": "Reject",
+    "posted": "Approved as {{number}} and posted to the accounts (journal {{journal}}): salaries and wages, the company's EPF and ETF, and EPF, ETF, APIT, deductions and net salaries payable. To pay the net LKR {{net}}, the Clerk enters a salary voucher coded to Salaries payable; it goes through the Accountant and the Director as usual."
   },
   "taxTables": {
     "title": "APIT tables and EPF rates",

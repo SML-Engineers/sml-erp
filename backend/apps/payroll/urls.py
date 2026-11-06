@@ -32,6 +32,9 @@ urlpatterns = [
     path("attendance/", av.AttendanceView.as_view(), name="attendance"),
     path("attendance/template/", av.AttendanceTemplateView.as_view(), name="attendance-template"),
     path("attendance/import/", av.AttendanceImportView.as_view(), name="attendance-import"),
+    path("attendance/punches/", av.PunchBringInView.as_view(), name="attendance-punches"),
+    path("punch-sites/", av.PunchSitesView.as_view(), name="punch-sites"),
+    path("punch-sites/<int:pk>/", av.PunchSiteView.as_view(), name="punch-site"),
     path(
         "attendance/confirm/",
         av.AttendanceMonthActionView.as_view(action="confirm"),
@@ -64,6 +67,8 @@ urlpatterns = [
     path("my/payslips/<int:pk>/", me.MyPayslipView.as_view(), name="my-payslip"),
     path("my/apit-certificate/", me.MyCertificateView.as_view(), name="my-certificate"),
     path("my/leave/", me.MyLeaveView.as_view(), name="my-leave"),
+    path("my/clock/", me.MyPunchView.as_view(), name="my-clock"),
+    path("my/location-consent/", me.MyLocationConsentView.as_view(), name="my-location-consent"),
     path("my/leave/<int:pk>/withdraw/", me.MyLeaveWithdrawView.as_view(), name="my-leave-withdraw"),
     path(
         "my/team-leave/<int:pk>/<str:action>/",

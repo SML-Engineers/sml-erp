@@ -1,5 +1,7 @@
 """Attendance API (P2B-04). Rules live in attendance.py."""
 
+from datetime import timedelta
+
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -9,9 +11,10 @@ from rest_framework.response import Response
 
 from apps.core.access import division_scope
 
-from . import attendance, employees, periods
+from . import attendance, employees, periods, punches
 from .attendance import AttendanceError
-from .models import AttendanceDay, AttendanceMonth
+from .models import AttendanceDay, AttendanceMonth, Punch, PunchSite
+from .punches import PunchError
 from .views import XLSX, _Employees, _name
 
 
@@ -87,9 +90,12 @@ class AttendanceDaysView(_Employees):
             month = _month(request)
         except AttendanceError as error:
             return _error(error)
-        days = AttendanceDay.objects.filter(
-            employee=person, date__range=periods.pay_period(month)
-        ).select_related("shift", "leave_type")
+        first, last = periods.pay_period(month)
+        days = AttendanceDay.objects.filter(employee=person, date__range=(first, last))
+        days = days.select_related("shift", "leave_type", "source")
+        clock = Punch.objects.filter(
+            employee=person, at__date__gte=first, at__date__lte=last + timedelta(days=1)
+        ).select_related("site")
         return Response(
             {
                 "month": month.isoformat()[:7],
@@ -105,8 +111,18 @@ class AttendanceDaysView(_Employees):
                         "late": d.late_minutes,
                         "early": d.early_minutes,
                         "remarks": d.remarks,
+                        "from_punches": d.source.kind == "punches",
                     }
                     for d in days
+                ],
+                "punches": [
+                    {
+                        "at": timezone.localtime(p.at).strftime("%Y-%m-%d %H:%M"),
+                        "kind": p.kind,
+                        "site": p.site.name if p.site_id else "",
+                        "distance_m": p.distance_m,
+                    }
+                    for p in clock
                 ],
             }
         )
@@ -157,3 +173,55 @@ class AttendanceMonthActionView(_Employees):
         except AttendanceError as error:
             return _error(error)
         return Response({"ok": True})
+
+
+# --- Phone punch clock (P2B-12) ------------------------------------------------------------------
+
+
+def _site(s: PunchSite) -> dict:
+    return {
+        "id": s.pk,
+        "name": s.name,
+        "latitude": f"{s.latitude}",
+        "longitude": f"{s.longitude}",
+        "radius_m": s.radius_m,
+        "is_active": s.is_active,
+    }
+
+
+class PunchSitesView(_Employees):
+    def get(self, request):
+        return Response(
+            {
+                "results": [_site(s) for s in PunchSite.objects.all()],
+                "can_edit": employees.can_edit(request.user),
+            }
+        )
+
+    def post(self, request):
+        try:
+            site = punches.add_site(request.user, request.data)
+        except PunchError as error:
+            return _error(error)
+        return Response(_site(site), status=status.HTTP_201_CREATED)
+
+
+class PunchSiteView(_Employees):
+    def patch(self, request, pk):
+        try:
+            site = punches.change_site(request.user, pk, request.data)
+        except PunchError as error:
+            return _error(error)
+        return Response(_site(site))
+
+
+class PunchBringInView(_Employees):
+    """Preview ({month, dry_run: true}) or bring in a pay month's phone punches."""
+
+    def post(self, request):
+        dry_run = str(request.data.get("dry_run", "true")).lower() != "false"
+        try:
+            result = punches.bring_in(request.user, request.data.get("month"), dry_run=dry_run)
+        except PunchError as error:
+            return _error(error)
+        return Response(result)

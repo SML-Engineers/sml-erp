@@ -7,7 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import selfservice
+from . import punches, selfservice
+from .punches import PunchError
 from .selfservice import SelfServiceError
 
 
@@ -90,3 +91,35 @@ class TeamLeaveDecideView(_Mine):
         except SelfServiceError as error:
             return _error(error)
         return MySummaryView().get(request)
+
+
+# --- Phone punch clock (P2B-12) ------------------------------------------------------------------
+
+
+class MyPunchView(_Mine):
+    """Clock in or out: {kind: in|out, latitude, longitude, accuracy}. The time is the server's."""
+
+    def post(self, request):
+        data = request.data
+        try:
+            punches.punch(
+                request.user,
+                str(data.get("kind") or ""),
+                data.get("latitude"),
+                data.get("longitude"),
+                data.get("accuracy"),
+            )
+        except PunchError as error:
+            return _error(error)
+        return Response(selfservice.summary(request.user) | {"linked": True}, status=201)
+
+
+class MyLocationConsentView(_Mine):
+    """Give ({consent: true}) or withdraw ({consent: false}) consent to the location check."""
+
+    def post(self, request):
+        try:
+            punches.consent(request.user, request.data.get("consent") is True)
+        except PunchError as error:
+            return _error(error)
+        return Response(selfservice.summary(request.user) | {"linked": True})

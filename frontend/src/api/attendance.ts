@@ -41,7 +41,9 @@ export interface AttendanceDays {
     late: number;
     early: number;
     remarks: string;
+    from_punches: boolean;
   }[];
+  punches: { at: string; kind: "in" | "out"; site: string; distance_m: number | null }[];
 }
 
 export interface AttendanceImportResult {
@@ -69,3 +71,34 @@ export const confirmAttendance = (division: string, month: string) =>
   apiSend<{ ok: boolean }>("POST", "/attendance/confirm/", { division, month });
 export const reopenAttendance = (division: string, month: string, reason: string) =>
   apiSend<{ ok: boolean }>("POST", "/attendance/reopen/", { division, month, reason });
+
+/** The phone punch clock (P2B-12): punch sites, and a pay month's punches into attendance. */
+
+export interface PunchSite {
+  id: number;
+  name: string;
+  latitude: string;
+  longitude: string;
+  radius_m: number;
+  is_active: boolean;
+}
+
+export interface PunchBringIn {
+  month: string;
+  period: PayPeriod;
+  punches: number;
+  days: number;
+  employees: number;
+  notes: string[];
+  rows: { number: string; name: string; date: string; time_in: string; time_out: string; shift: string }[];
+  saved: boolean;
+}
+
+export const punchSitesKey = ["punch-sites"] as const;
+export const getPunchSites = () => apiGet<{ results: PunchSite[]; can_edit: boolean }>("/punch-sites/");
+export const addPunchSite = (values: { name: string; latitude: string; longitude: string; radius_m: string }) =>
+  apiSend<PunchSite>("POST", "/punch-sites/", values);
+export const changePunchSite = (id: number, values: Partial<Omit<PunchSite, "id">>) =>
+  apiSend<PunchSite>("PATCH", `/punch-sites/${id}/`, values);
+export const bringInPunches = (month: string, dryRun: boolean) =>
+  apiSend<PunchBringIn>("POST", "/attendance/punches/", { month, dry_run: dryRun ? "true" : "false" });

@@ -200,6 +200,18 @@ def clean(user: User, values: dict, current: Employee | None = None) -> dict:
         if category not in Employee.Category.values:
             raise EmployeeError("The category is Shop and Office or Wages Board.")
         out["category"] = category
+    clock = _text(values.get("phone_clock")).lower()
+    if clock:
+        # P2B-12: whether and where the employee may clock in from the phone.
+        labels = {label.lower(): code for code, label in Employee.PhoneClock.choices}
+        clock = labels.get(clock, clock)
+        if clock not in Employee.PhoneClock.values:
+            raise EmployeeError(
+                "The phone clock is one of: "
+                + ", ".join(label for _, label in Employee.PhoneClock.choices)
+                + "."
+            )
+        out["phone_clock"] = clock
     if current is None or "division" in values:
         code = _text(values.get("division")).upper()
         division = division_scope(user).filter(code=code, is_active=True).first()

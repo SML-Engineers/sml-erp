@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { vi } from "vitest";
 
 import type { MySummary } from "../api/my";
 import { mockApi, renderAt } from "../test-utils";
@@ -73,4 +74,52 @@ test("an unlinked supervisor still approves their section's leave", async () => 
     expect(calls).toHaveBeenCalledWith("/api/v1/my/team-leave/8/approve/", expect.objectContaining({ method: "POST" })),
   );
   await waitFor(() => expect(screen.queryByText("E002 Nimal Silva")).not.toBeInTheDocument());
+});
+
+const clock = {
+  mode: "sites" as const, mode_label: "Only at a site", needs_location: true, consent: false, consent_at: null,
+  clocked_in: false, since: "", recent: [], sites: ["Colombo office"],
+};
+
+test("an employee limited to sites agrees to the location check and clocks in", async () => {
+  const position = { coords: { latitude: 6.9275, longitude: 79.861244, accuracy: 12.4 } };
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition: vi.fn((ok: (p: unknown) => void) => ok(position)) },
+  });
+  const agreed = { ...mine, clock: { ...clock, consent: true } };
+  const calls = mockApi({
+    "GET /api/v1/my/": { body: { ...mine, clock } },
+    "POST /api/v1/my/location-consent/": { body: agreed },
+    "POST /api/v1/my/clock/": {
+      body: { ...agreed, clock: { ...agreed.clock, clocked_in: true, since: "08:05", recent: [{ kind: "in", kind_label: "In", at: "2026-11-06 08:05", site: "Colombo office" }] } },
+      status: 201,
+    },
+  });
+  renderAt("/my", <MyPage />, "/my");
+  expect(await screen.findByText("Not clocked in.")).toBeInTheDocument();
+  expect(screen.getByText(/only at a site: Colombo office/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Clock in" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("checkbox", { name: /location is checked/ }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Clock in" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Clock in" }));
+  expect(await screen.findByText("Clocked in since 08:05.")).toBeInTheDocument();
+  expect(calls).toHaveBeenCalledWith(
+    "/api/v1/my/clock/",
+    expect.objectContaining({ body: JSON.stringify({ kind: "in", latitude: 6.9275, longitude: 79.861244, accuracy: 12 }) }),
+  );
+  expect(screen.getByRole("button", { name: "Clock out" })).toBeInTheDocument();
+});
+
+test("from anywhere, no location is asked", async () => {
+  const anywhere = { ...clock, mode: "anywhere" as const, needs_location: false, sites: [] };
+  const calls = mockApi({
+    "GET /api/v1/my/": { body: { ...mine, clock: anywhere } },
+    "POST /api/v1/my/clock/": { body: { ...mine, clock: { ...anywhere, clocked_in: true, since: "08:00" } }, status: 201 },
+  });
+  renderAt("/my", <MyPage />, "/my");
+  expect(screen.queryByRole("checkbox", { name: /location is checked/ })).not.toBeInTheDocument();
+  fireEvent.click(await screen.findByRole("button", { name: "Clock in" }));
+  expect(await screen.findByText("Clocked in since 08:00.")).toBeInTheDocument();
+  expect(calls).toHaveBeenCalledWith("/api/v1/my/clock/", expect.objectContaining({ body: JSON.stringify({ kind: "in" }) }));
 });

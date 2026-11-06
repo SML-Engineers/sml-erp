@@ -42,7 +42,21 @@ export interface MySummary {
   }[];
   leave_types?: { code: string; name: string }[];
   attendance?: { from: string; days: { date: string; time_in: string; time_out: string; leave: string; late: number }[] };
+  clock?: MyClock | null;
   to_approve: LeaveApplication[];
+}
+
+/** The phone punch clock (P2B-12), when HR has switched it on for the employee. */
+export interface MyClock {
+  mode: "anywhere" | "sites";
+  mode_label: string;
+  needs_location: boolean;
+  consent: boolean;
+  consent_at: string | null;
+  clocked_in: boolean;
+  since: string;
+  recent: { kind: "in" | "out"; kind_label: string; at: string; site: string }[];
+  sites: string[];
 }
 
 export const myKey = ["my"] as const;
@@ -52,5 +66,10 @@ export const myCertificateUrl = (year: number) => `${API_BASE}/my/apit-certifica
 export const applyForLeave = (values: { leave_type: string; start: string; end: string; half_day: boolean; reason: string }) =>
   apiSend<MySummary>("POST", "/my/leave/", values);
 export const withdrawLeave = (id: number) => apiSend<MySummary>("POST", `/my/leave/${id}/withdraw/`, {});
+export const clockInOut = (
+  kind: "in" | "out",
+  where: { latitude?: number; longitude?: number; accuracy?: number } = {},
+) => apiSend<MySummary>("POST", "/my/clock/", { kind, ...where });
+export const giveLocationConsent = (consent: boolean) => apiSend<MySummary>("POST", "/my/location-consent/", { consent });
 export const decideLeave = (id: number, action: "approve" | "reject", reason: string) =>
   apiSend<MySummary>("POST", `/my/team-leave/${id}/${action}/`, { reason });

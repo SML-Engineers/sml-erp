@@ -1,4 +1,4 @@
-import { apiGet, apiSend } from "./client";
+import { API_BASE, apiGet, apiSend } from "./client";
 import type { PayPeriod } from "./periods";
 
 /** The monthly payroll run (P2B-06). */
@@ -66,6 +66,7 @@ export interface PayrollRun extends PayrollRunSummary {
   can_submit: boolean;
   can_approve: boolean;
   sees_people: boolean;
+  can_email_payslips: boolean;
   lines: PayrollLine[];
   entries: { employee: number; component: string; amount: string; note: string }[];
   components: { code: string; name: string; kind: "earning" | "deduction" }[];
@@ -105,3 +106,13 @@ export const setPayrollEntry = (id: number, entry: { employee: number; component
 export const listTaxTables = () => apiGet<TaxTables>("/payroll-tax-tables/");
 export const addTaxTable = (values: { kind: string; effective_from: string; reason: string; bands: TaxBand[] }) =>
   apiSend<unknown>("POST", "/payroll-tax-tables/", values);
+
+/** Payslips of an approved payroll (P2B-08): all in one PDF to print, or one employee's. */
+export const payslipsUrl = (id: number, employee?: number) =>
+  `${API_BASE}/payroll/${id}/payslips/${employee ? `?employee=${employee}` : ""}`;
+export interface EmailedPayslips {
+  sent: string[];
+  failed: string[];
+  no_email: string[];
+}
+export const emailPayslips = (id: number) => apiSend<EmailedPayslips>("POST", `/payroll/${id}/email-payslips/`, {});

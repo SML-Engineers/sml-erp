@@ -6,10 +6,12 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import {
   actOnPayroll,
+  emailPayslips,
   getPayroll,
   listPayroll,
   payrollKey,
   payrollRunKey,
+  payslipsUrl,
   preparePayroll,
   setPayrollEntry,
   type PayrollAction,
@@ -200,6 +202,7 @@ function RunPage({ id }: { id: number }) {
               </dd>
             </div>
           </dl>
+          {r.status === "approved" && r.sees_people && <Payslips run={r} />}
           {!r.sees_people && <p className="muted">{t("payroll.totalsOnly")}</p>}
           {r.sees_people && (
             <div className="table-wrap">
@@ -326,6 +329,14 @@ function Details({ line, run, onDone }: { line: PayrollLine; run: PayrollRun; on
     <div>
       <p className="muted">
         {t("payroll.rates", { day: formatDecimal(line.day_rate), hour: formatDecimal(line.hourly_rate) })}
+        {run.status === "approved" && (
+          <>
+            {" "}
+            <a href={payslipsUrl(run.id, line.employee.id)} target="_blank" rel="noreferrer">
+              {t("payroll.payslip")}
+            </a>
+          </>
+        )}
       </p>
       <table aria-label={t("payroll.items", { number: line.employee.number })}>
         <tbody>
@@ -378,5 +389,36 @@ function Details({ line, run, onDone }: { line: PayrollLine; run: PayrollRun; on
         </form>
       )}
     </div>
+  );
+}
+
+/** Payslips (P2B-08): print them all, or email them to the employees with an email address. */
+function Payslips({ run }: { run: PayrollRun }) {
+  const { t } = useTranslation();
+  const send = useMutation({ mutationFn: () => emailPayslips(run.id) });
+  const result = send.data;
+  return (
+    <section className="panel" aria-label={t("payroll.payslips")}>
+      <h2>{t("payroll.payslips")}</h2>
+      <p className="muted">{t("payroll.payslipsHelp")}</p>
+      <div className="row-actions">
+        <a className="button secondary" href={payslipsUrl(run.id)} target="_blank" rel="noreferrer">
+          {t("payroll.printAll")}
+        </a>
+        {run.can_email_payslips && (
+          <button type="button" disabled={send.isPending} onClick={() => send.mutate()}>
+            {t("payroll.emailAll")}
+          </button>
+        )}
+      </div>
+      {result && (
+        <p role="status">
+          {t("payroll.emailed", { count: result.sent.length })}
+          {result.no_email.length > 0 && ` ${t("payroll.noEmail", { list: result.no_email.join(", ") })}`}
+          {result.failed.length > 0 && ` ${t("payroll.failed", { list: result.failed.join(", ") })}`}
+        </p>
+      )}
+      <ErrorLine error={send.error} />
+    </section>
   );
 }

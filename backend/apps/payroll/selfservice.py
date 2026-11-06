@@ -14,7 +14,8 @@ their own records.
 - **Supervisors** see the leave applications of the sections they supervise, to approve or
   reject.
 
-Asking HR to change personal or bank details comes with P2B-20.
+- **Details**: their phone, address, email and salary account, and their requests to change
+  them, which HR decides (P2B-20, detailchanges.py).
 """
 
 from decimal import Decimal
@@ -25,7 +26,7 @@ from django.utils import timezone
 from apps.core.audit import audit_context
 from apps.core.models import User
 
-from . import leave, payslips, periods, punches, returns
+from . import detailchanges, leave, payslips, periods, punches, returns
 from .models import AttendanceDay, Employee, Leave, LeaveType, PayrollLine, PayrollRun
 
 ZERO = Decimal("0.00")
@@ -131,6 +132,8 @@ def summary(user: User) -> dict:
             ],
         },
         "clock": punches.status(e),
+        "details": detailchanges.current(e),
+        "detail_requests": [detailchanges.row(x) for x in e.detail_changes.all()[:10]],
         "to_approve": [application(x) for x in to_approve(user)],
     }
 

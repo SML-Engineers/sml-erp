@@ -205,6 +205,8 @@ def test_every_endpoint_declares_its_access():
         "MyCertificateView",
         "MyLeaveView",
         "MyPunchView",
+        "MyDetailsView",
+        "MyDetailsWithdrawView",
         "MyLocationConsentView",
         "MyLeaveWithdrawView",
         "TeamLeaveDecideView",

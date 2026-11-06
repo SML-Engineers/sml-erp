@@ -17,8 +17,9 @@ from rest_framework.views import APIView
 from apps.core import approvals
 from apps.core.permissions import AreaAccess
 
-from . import changes, employees, overtime, pay, periods
+from . import changes, detailchanges, employees, overtime, pay, periods
 from .changes import ChangeError
+from .detailchanges import DetailChangeError
 from .employees import EmployeeError
 from .models import SETTING_FIELDS, Employee, LeaveType, PayChange, PayComponent, PayRate
 from .models import setting_on as _setting_on
@@ -458,3 +459,31 @@ class PayChangeActionView(_Employees):
         except ChangeError as error:
             return _error(error)
         return Response(_pay(change.employee, request.user))
+
+
+# --- Employees' requests to change their details (P2B-20) ----------------------------------------
+
+
+class DetailChangesView(_Employees):
+    """The requests waiting for HR in the user's divisions (never their own)."""
+
+    def get(self, request):
+        return Response(
+            {
+                "results": [detailchanges.row(x) for x in detailchanges.waiting(request.user)],
+                "can_decide": employees.can_edit(request.user),
+            }
+        )
+
+
+class DetailChangeDecideView(_Employees):
+    def post(self, request, pk, action):
+        if action not in ("approve", "reject"):
+            return _error("Unknown action.")
+        try:
+            detailchanges.decide(
+                request.user, pk, action == "approve", request.data.get("reason", "")
+            )
+        except DetailChangeError as error:
+            return _error(error)
+        return DetailChangesView().get(request)

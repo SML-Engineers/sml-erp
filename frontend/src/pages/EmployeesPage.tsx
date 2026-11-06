@@ -9,9 +9,12 @@ import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import {
   addEmployee,
+  decideDetailChange,
+  detailChangesKey,
   employeeExportUrl,
   employeesKey,
   employeeTemplateUrl,
+  getDetailChanges,
   importEmployees,
   listEmployees,
   type EmployeeImportResult,
@@ -81,6 +84,7 @@ export default function EmployeesPage({ me }: { me: CurrentUser }) {
       </div>
       {adding && data && <AddEmployee data={data} />}
       {data?.can_add && <ImportEmployees />}
+      {data?.can_add && <DetailRequests />}
       <ErrorLine error={list.error} />
       {data && (
         <div className="table-wrap">
@@ -271,5 +275,65 @@ function ImportEmployees() {
       )}
       <ErrorLine error={run.error} />
     </section>
+  );
+}
+
+/** P2B-20: employees' requests to change their details; HR approves or rejects. */
+function DetailRequests() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const found = useQuery({ queryKey: detailChangesKey, queryFn: getDetailChanges });
+  if (!found.data || found.data.results.length === 0) return <ErrorLine error={found.error} />;
+  const done = (d: Awaited<ReturnType<typeof getDetailChanges>>) => {
+    queryClient.setQueryData(detailChangesKey, d);
+    void queryClient.invalidateQueries({ queryKey: employeesKey });
+  };
+  return (
+    <section className="panel" aria-label={t("emp.requests")}>
+      <h2>{t("emp.requests")}</h2>
+      <ul className="plain">
+        {found.data.results.map((r) => (
+          <DetailRequestRow key={r.id} id={r.id} onDone={done}>
+            <strong>
+              <Link to={`/employees/${r.employee_id}`}>{r.employee}</Link>
+            </strong>{" "}
+            <span className="muted">{r.created_at.slice(0, 10)}</span>
+            <ul>
+              {r.changes.map((c) => (
+                <li key={c.field}>
+                  {t(`emp.f.${c.field}`)}: {c.before || "-"} → {c.after || "-"}
+                </li>
+              ))}
+            </ul>
+            {r.note && <p className="muted">{r.note}</p>}
+            {r.bank && <p className="muted">{t("emp.requestBank")}</p>}
+          </DetailRequestRow>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function DetailRequestRow({ id, onDone, children }: { id: number; onDone: (d: Awaited<ReturnType<typeof getDetailChanges>>) => void; children: React.ReactNode }) {
+  const { t } = useTranslation();
+  const [reason, setReason] = useState("");
+  const act = useMutation({
+    mutationFn: (action: "approve" | "reject") => decideDetailChange(id, action, reason),
+    onSuccess: onDone,
+  });
+  return (
+    <li>
+      {children}
+      <div className="row-actions">
+        <input aria-label={t("my.rejectReason")} placeholder={t("my.rejectReason")} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <button type="button" className="small" disabled={act.isPending} onClick={() => act.mutate("approve")}>
+          {t("my.approve")}
+        </button>
+        <button type="button" className="small secondary" disabled={act.isPending} onClick={() => act.mutate("reject")}>
+          {t("my.reject")}
+        </button>
+      </div>
+      <ErrorLine error={act.error} />
+    </li>
   );
 }

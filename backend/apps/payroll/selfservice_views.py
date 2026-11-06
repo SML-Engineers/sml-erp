@@ -7,7 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from . import punches, selfservice
+from . import detailchanges, punches, selfservice
+from .detailchanges import DetailChangeError
 from .punches import PunchError
 from .selfservice import SelfServiceError
 
@@ -121,5 +122,28 @@ class MyLocationConsentView(_Mine):
         try:
             punches.consent(request.user, request.data.get("consent") is True)
         except PunchError as error:
+            return _error(error)
+        return Response(selfservice.summary(request.user) | {"linked": True})
+
+
+# --- Asking to change details (P2B-20) -----------------------------------------------------------
+
+
+class MyDetailsView(_Mine):
+    """Ask HR to change phone, address, email or salary account: the new values and a note."""
+
+    def post(self, request):
+        try:
+            detailchanges.ask(request.user, request.data, request.data.get("note", ""))
+        except DetailChangeError as error:
+            return _error(error)
+        return Response(selfservice.summary(request.user) | {"linked": True}, status=201)
+
+
+class MyDetailsWithdrawView(_Mine):
+    def post(self, request, pk):
+        try:
+            detailchanges.withdraw(request.user, pk)
+        except DetailChangeError as error:
             return _error(error)
         return Response(selfservice.summary(request.user) | {"linked": True})

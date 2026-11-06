@@ -198,6 +198,14 @@ def test_every_endpoint_declares_its_access():
         # shows that one invoice, its PDF and the company's bank details.
         "PublicInvoiceView",
         "PublicInvoicePdfView",
+        # Self-service (P2B-11): any signed-in user, only their own employee record; a
+        # supervisor decides only the applications of the sections they supervise.
+        "MySummaryView",
+        "MyPayslipView",
+        "MyCertificateView",
+        "MyLeaveView",
+        "MyLeaveWithdrawView",
+        "TeamLeaveDecideView",
     }
 
     def walk(patterns):

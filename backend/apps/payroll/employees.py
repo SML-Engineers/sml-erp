@@ -231,6 +231,16 @@ def clean(user: User, values: dict, current: Employee | None = None) -> dict:
             if found is None:
                 raise EmployeeError("Unknown user.")
             out["user"] = found
+    if "user_email" in values:
+        # Self-service (P2B-11): HR links the employee to their sign-in by its email address;
+        # blank removes the link.
+        email = _text(values.get("user_email")).lower()
+        out["user"] = None
+        if email:
+            found = User.objects.filter(email__iexact=email, is_active=True).first()
+            if found is None:
+                raise EmployeeError(f"There is no active sign-in with the email {email}.")
+            out["user"] = found
     join = out.get("join_date") or (current.join_date if current else None)
     confirmed = out.get("confirmation_date", current.confirmation_date if current else None)
     if confirmed and join and confirmed < join:

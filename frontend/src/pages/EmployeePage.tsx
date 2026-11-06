@@ -32,7 +32,8 @@ const DATES = new Set(["date_of_birth", "join_date", "confirmation_date"]);
 
 function valuesOf(e: Employee): EmployeeValues {
   const out: EmployeeValues = {};
-  for (const key of [...EMPLOYEE_FIELDS, ...BANK_FIELDS]) out[key] = String(e[key] ?? "");
+  for (const key of [...EMPLOYEE_FIELDS, ...BANK_FIELDS])
+    out[key] = key === "user_email" ? (e.user?.email ?? "") : String(e[key] ?? "");
   return out;
 }
 

@@ -73,6 +73,7 @@ import LeavePage from "./pages/LeavePage";
 import AttendancePage from "./pages/AttendancePage";
 import OvertimePage from "./pages/OvertimePage";
 import AdvancesLoansPage from "./pages/AdvancesLoansPage";
+import MyPage from "./pages/MyPage";
 import PayrollPage from "./pages/PayrollPage";
 import StatutoryReturnsPage from "./pages/StatutoryReturnsPage";
 import TaxTablesPage from "./pages/TaxTablesPage";
@@ -209,6 +210,7 @@ export default function App() {
         <Route path="payroll-tax-tables" element={<TaxTablesPage />} />
         <Route path="payroll-returns" element={<StatutoryReturnsPage />} />
         <Route path="advances-loans" element={<AdvancesLoansPage />} />
+        <Route path="my" element={<MyPage />} />
         <Route path="work-rules" element={<WorkRulesPage />} />
         <Route path="holidays" element={<HolidaysPage />} />
         <Route path="goods-receipts" element={<WithMe page={(me) => <GoodsReceiptsPage me={me} />} />} />

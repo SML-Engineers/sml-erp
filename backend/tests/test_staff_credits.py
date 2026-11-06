@@ -130,7 +130,7 @@ def test_the_payroll_recovers_instalments_and_advances(hr, director, kamal):  # 
     line = run.lines.get()
     got = {i.code: (i.amount, i.credit_id) for i in line.items.filter(credit__isnull=False)}
     assert got == {"LOAN": (D("10000.00"), housing.pk), "ADVANCE": (D("10000.00"), advance.pk)}
-    assert line.net == D("47675.00")  # 67,675 - 20,000
+    assert line.net == D("46850.00")  # 66,850 - 20,000
     assert "balance after 230,000.00" in line.items.get(code="LOAN").basis
     payroll.submit(hr, run)
     payroll.approve(director, run)
@@ -158,7 +158,7 @@ def test_a_recovery_never_takes_the_net_to_40_percent(hr, director, kamal):  # n
     advance = given(kamal, hr, kind="advance", amount=D("50000"), months=1)
     line = run_october(hr, director, kamal).lines.get()
     item = line.items.get(credit=advance)
-    assert item.amount == D("43674.99")  # 67,675 - 24,000.01
+    assert item.amount == D("42849.99")  # 66,850 - 24,000.01
     assert line.net == D("24000.01")
     assert "reduced from 50,000.00" in item.basis
 

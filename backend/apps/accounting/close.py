@@ -6,8 +6,10 @@ Month end
   2. the month's depreciation posted, when assets are depreciated in it;
   3. the month-end revaluation posted, when anything is held in a foreign currency;
   4. no manual journal dated in the month left as a draft or waiting for approval;
-  5. accruals and prepayments entered (the Accountant ticks it: the system cannot see it).
-  The system checks 1-4 itself. The Accountant may tick any of them with a note when it is
+  5. accruals and prepayments entered (the Accountant ticks it: the system cannot see it);
+  6. the payroll of the pay month ending in the month approved (and so posted) for every
+     division with employees in it (P2B-13).
+  The system checks 1-4 and 6 itself. The Accountant may tick any of them with a note when it is
   done another way or not needed that month (an account with no statement yet, land only);
   ticks are never changed or taken back (database).
 - Closing then works as before (nothing more is posted into the month); reopening needs the
@@ -57,6 +59,7 @@ ITEMS = {
     "revaluation": "Foreign-currency balances revalued",
     "journals": "No manual journal of the month left as a draft or waiting for approval",
     "accruals": "Accruals and prepayments entered",
+    "payroll": "Payroll of the month approved and posted for every division",
 }
 
 
@@ -168,6 +171,28 @@ def _journals(start: date, end: date) -> tuple[bool, str]:
     return True, "None open."
 
 
+def _payroll(start: date) -> tuple[bool, str]:
+    """Pay month M (P2B-15: the 21st of the month before to the 20th of M) is posted on its
+    last day, so it belongs to calendar month M."""
+    from apps.payroll import periods
+    from apps.payroll.models import Employee, PayrollRun
+
+    first, last = periods.pay_period(start)
+    employed = Employee.objects.filter(join_date__lte=last).exclude(leaving_date__lt=first)
+    divisions = sorted(set(employed.values_list("division__code", flat=True)))
+    if not divisions:
+        return True, "No employees."
+    done = set(
+        PayrollRun.objects.filter(month=start, status=PayrollRun.Status.APPROVED).values_list(
+            "division__code", flat=True
+        )
+    )
+    missing = [d for d in divisions if d not in done]
+    if missing:
+        return False, "Not approved yet: " + ", ".join(missing) + " (HR and payroll → Payroll)."
+    return True, "Approved: " + ", ".join(divisions) + "."
+
+
 def checklist(month: date) -> list[Item]:
     start = month.replace(day=1)
     end = month_end(start)
@@ -177,6 +202,7 @@ def checklist(month: date) -> list[Item]:
         "revaluation": _revaluation(end),
         "journals": _journals(start, end),
         "accruals": (False, "The Accountant ticks this once they are entered."),
+        "payroll": _payroll(start),
     }
     ticks = {}
     for tick in MonthEndTick.objects.filter(month=start).select_related("ticked_by"):

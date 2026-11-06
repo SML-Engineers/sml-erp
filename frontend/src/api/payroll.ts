@@ -58,8 +58,17 @@ export interface PayrollLine {
   items: PayrollItem[];
 }
 
+/** P2B-13: gross + EPF 12% + ETF 3% over the hours worked; sections only for HR and the Director. */
+export interface LabourCost {
+  cost: string;
+  hours: string;
+  per_hour: string | null;
+  sections: { section: string; employees: number; cost: string; hours: string; per_hour: string | null }[];
+}
+
 export interface PayrollRun extends PayrollRunSummary {
   statutory: { epf_employee: string; epf_employer: string; etf: string };
+  labour: LabourCost;
   returned: boolean;
   history: { action: string; user: string | null; reason: string; at: string }[];
   can_work_out: boolean;

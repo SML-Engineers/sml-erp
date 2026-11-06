@@ -422,10 +422,25 @@ P2B-06**, in this order.
   listed for the sheet, today left for tomorrow, confirmed months untouched. An employee's
   days show their raw punches.
 
-- [ ] **P2B-13 Payroll in the rest of the system**
+- [x] **P2B-13 Payroll in the rest of the system**
   Net pay and statutory payments in the cash flow planner; actual labour cost per hour for
   job costing (Phase 3); payroll as a report builder source (HR and payroll area only);
   payroll on the month-end checklist.
+  Done: **Cash flow planner**: net pay on the last day of the pay month (owner, P2B-15),
+  EPF and ETF by the last day of the next month, APIT by the 15th of the next month. What
+  the ledger still owes on Salaries, EPF, ETF and APIT payable is matched to the approved
+  payrolls newest first, each part on its due date (today when overdue); each division's
+  coming pay months are estimated as its latest approved payroll (marked "estimate"; none
+  when that payroll is more than three months old). Totals per division only. **Month-end
+  checklist**: a sixth item, the payroll of the pay month ending in the month approved for
+  every division with employees (the Accountant can tick it with a note, e.g. months before
+  go-live). **Report builder**: "Payroll" source (approved payroll lines: pay month,
+  payroll, division, section, employee, category, days, basic, gross, EPF 8% and 12%, ETF,
+  APIT, other deductions, net), for HR and the Director only, with a ready-made "Payroll
+  cost by division, by month". **Labour cost per hour**: on each payroll, (gross + EPF 12%
+  + ETF 3%) ÷ hours worked in attendance, for the division and (HR and the Director only)
+  per section; `labour.rate(division, month)` gives job costing the rate of an approved
+  payroll.
 
 - [ ] **P2B-14 Migration and parallel payroll**
   Employees, their pay structure and the year's figures to date (gross, EPF, ETF, APIT)

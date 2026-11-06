@@ -16,6 +16,7 @@ import {
   setPayrollEntry,
   type PayrollAction,
   type PayrollLine,
+  type LabourCost,
   type PayrollRun,
 } from "../api/payroll";
 import PayPeriodLine from "../components/PayPeriodLine";
@@ -202,6 +203,7 @@ function RunPage({ id }: { id: number }) {
               </dd>
             </div>
           </dl>
+          <Labour labour={r.labour} />
           {r.status === "approved" && r.sees_people && <Payslips run={r} />}
           {!r.sees_people && <p className="muted">{t("payroll.totalsOnly")}</p>}
           {r.sees_people && (
@@ -420,5 +422,44 @@ function Payslips({ run }: { run: PayrollRun }) {
       )}
       <ErrorLine error={send.error} />
     </section>
+  );
+}
+
+/** P2B-13: what an hour of work cost the company this pay month (for job costing). */
+function Labour({ labour }: { labour: LabourCost }) {
+  const { t } = useTranslation();
+  return (
+    <details className="panel">
+      <summary>
+        {labour.per_hour
+          ? t("payroll.labourPerHour", { rate: formatDecimal(labour.per_hour), hours: labour.hours })
+          : t("payroll.labourNoHours")}
+      </summary>
+      <p className="muted">{t("payroll.labourHelp", { cost: formatDecimal(labour.cost) })}</p>
+      {labour.sections.length > 0 && (
+        <table aria-label={t("payroll.labourSections")}>
+          <thead>
+            <tr>
+              <th>{t("payroll.section")}</th>
+              <th className="num">{t("payroll.employees")}</th>
+              <th className="num">{t("payroll.hours")}</th>
+              <th className="num">{t("payroll.labourCost")}</th>
+              <th className="num">{t("payroll.perHour")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {labour.sections.map((s) => (
+              <tr key={s.section}>
+                <td>{s.section}</td>
+                <td className="num">{s.employees}</td>
+                <td className="num">{s.hours}</td>
+                <td className="num">{formatDecimal(s.cost)}</td>
+                <td className="num">{s.per_hour ? formatDecimal(s.per_hour) : "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </details>
   );
 }

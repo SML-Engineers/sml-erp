@@ -15,7 +15,10 @@ day by day for 13 weeks. Nothing here is ever posted.
     their schedule.
 - "What-if" items typed by the Accountant (a machine to buy, a loan to take) change the
   projection and can be switched off on the page; they are never posted.
-- Payroll is added when Phase 2b builds it.
+- Payroll (P2B-13, apps/payroll/cashflow.py): net pay on the last day of the pay month, EPF
+  and ETF by the end of the next month, APIT by the 15th of the next month; what the ledger
+  still owes, and the coming pay months estimated from each division's latest approved
+  payroll. Only totals per division.
 """
 
 from collections import defaultdict
@@ -43,7 +46,7 @@ WEEKS = 13
 class Flow:
     day: date
     amount: Decimal  # in is positive, out negative
-    kind: str  # receivable, cheque, payable, recurring, what_if
+    kind: str  # receivable, cheque, payable, recurring, payroll, statutory, what_if
     label: str
     link: str = ""
     item_id: int | None = None
@@ -177,6 +180,12 @@ def _recurring(today: date, end: date) -> list[Flow]:
     return flows
 
 
+def _payroll(today: date, end: date) -> list[Flow]:
+    from apps.payroll import cashflow
+
+    return [Flow(p.day, -p.amount, p.kind, p.label, p.link) for p in cashflow.payments(today, end)]
+
+
 def _what_ifs(today: date, end: date, without: set[int]) -> list[Flow]:
     return [
         Flow(max(today, i.on_date), i.amount, "what_if", i.description, item_id=i.pk)
@@ -194,6 +203,7 @@ def projection(user: User, today: date | None = None, without: set[int] = frozen
         _money_in(user, today, end)
         + _money_out(user, today, end)
         + _recurring(today, end)
+        + _payroll(today, end)
         + _what_ifs(today, end, set(without))
     )
     flows.sort(key=lambda f: (f.day, -f.amount))

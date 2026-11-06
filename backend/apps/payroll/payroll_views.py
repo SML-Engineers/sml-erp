@@ -18,7 +18,7 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.permissions import AreaAccess
 
-from . import credits, employees, payroll, payslips, periods, returns
+from . import credits, employees, labour, payroll, payslips, periods, returns
 from .models import PayComponent, PayrollRun, StaffCredit, StatutoryRate, TaxBand, TaxTable
 from .payroll import PayrollError
 
@@ -52,6 +52,32 @@ def _runs(user):
 
 def _t(values: dict) -> dict:
     return {k: (f"{v:.2f}" if isinstance(v, Decimal) else v) for k, v in values.items()}
+
+
+def _money(value) -> str | None:
+    return None if value is None else f"{value:.2f}"
+
+
+def _labour(run: PayrollRun, sees_people: bool) -> dict:
+    """P2B-13: labour cost per hour; per section only for HR and the Director."""
+    c = labour.cost(run)
+    return {
+        "cost": _money(c["cost"]),
+        "hours": f"{c['hours']:.2f}",
+        "per_hour": _money(c["per_hour"]),
+        "sections": [
+            {
+                "section": s["section"],
+                "employees": s["employees"],
+                "cost": _money(s["cost"]),
+                "hours": f"{s['hours']:.2f}",
+                "per_hour": _money(s["per_hour"]),
+            }
+            for s in c["sections"]
+        ]
+        if sees_people
+        else [],
+    }
 
 
 def _run(run: PayrollRun, user, detail=False) -> dict:
@@ -96,6 +122,7 @@ def _run(run: PayrollRun, user, detail=False) -> dict:
         "can_approve": payroll.can_approve(user, run),
         "sees_people": sees_people,
         "can_email_payslips": run.status == run.Status.APPROVED and employees.can_edit(user),
+        "labour": _labour(run, sees_people),
         "lines": [],
         "entries": [],
         "components": [],

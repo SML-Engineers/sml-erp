@@ -81,8 +81,8 @@ Status: `[ ]` to do · `[x]` done
   (again only adds what is missing); adjustments need a reason; grants never change
   (database). Leave days are Monday to Saturday, not holidays; half days; never across the
   new year; no overlaps; never more than the balance. HR records leave from the approved
-  leave form; leave applied for (self-service, P2B-11) is approved by HR, never by the
-  person who applied or entered it; leave is cancelled with a reason, never deleted or
+  leave form; leave applied for (self-service, P2B-11) is approved by HR or the section's
+  supervisor, never by the person who applied or entered it; leave is cancelled with a reason, never deleted or
   changed (database). Attendance leave codes use the same service (P2B-04).
 
 - [x] **P2B-04 Attendance from Excel**
@@ -370,11 +370,27 @@ P2B-06**, in this order.
 
 ## D. Self-service and links
 
-- [ ] **P2B-11 Employee self-service (phone)**
+- [x] **P2B-11 Employee self-service (phone)**
   Each employee signs in to see their payslips, EPF and ETF contributions, APIT
   certificates, leave balance and attendance; applies for leave (approved by their
   supervisor); asks to change personal or bank details, which HR approves (bank details
   with the second check).
+  Done: a new page "My pay and leave", in the menu for everyone signed in, shows only the
+  signed-in person's own records, whatever their role: the employee whose record HR linked
+  to their sign-in (new field "Sign-in email" on the employee page; blank removes the link).
+  Payslips of the approved payrolls (PDF, not password-locked as the person is signed in;
+  printing recorded), each month's EPF 8% and 12%, ETF 3% and APIT, the APIT certificate
+  of the year of assessment; the year's leave balances; applying for leave (not no-pay) and
+  withdrawing an application not yet decided; attendance from the previous pay month. Leave
+  applied for is approved or rejected (with a reason) by a **supervisor of the employee's
+  section** or by HR, never by the person themselves; supervisors see their sections'
+  applications on the same page, even if their own sign-in is not linked to an employee.
+  Asking to change personal or bank details moved to P2B-20.
+
+- [ ] **P2B-20 Employees ask to change their details**
+  On the self-service page an employee asks to change their phone, address, email or salary
+  account; HR approves the change (never the employee themselves), and a new salary account
+  still needs the Director's check (P2B-01) before any payment uses it.
 
 - [ ] **P2B-12 Phone punch clock**
   For staff working away: clock in and out from the phone, optionally limited to an area

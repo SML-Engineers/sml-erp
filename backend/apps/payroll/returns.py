@@ -88,7 +88,13 @@ def _month(value) -> date:
         raise ReturnError("Choose a pay month, for example 2026-10.") from None
 
 
-def _lines(user: User, months: list[date]) -> tuple[list[PayrollLine], list[str]]:
+def _whose(user: User, only) -> dict:
+    if only is not None:
+        return {"employee": only}
+    return {"employee__in": employees.visible(user)}
+
+
+def _lines(user: User, months: list[date], only=None) -> tuple[list[PayrollLine], list[str]]:
     """The lines of the approved payrolls for these pay months, and notes on divisions whose
     payroll is not approved."""
     runs = PayrollRun.objects.filter(month__in=months, status=PayrollRun.Status.APPROVED)
@@ -109,7 +115,7 @@ def _lines(user: User, months: list[date]) -> tuple[list[PayrollLine], list[str]
         if not done and not waiting:
             notes.append(f"Pay month {month:%B %Y}: no approved payroll.")
     lines = list(
-        PayrollLine.objects.filter(run__in=runs, employee__in=employees.visible(user))
+        PayrollLine.objects.filter(run__in=runs, **_whose(user, only))
         .select_related("employee", "run")
         .order_by("employee__number", "run__month")
     )
@@ -284,11 +290,13 @@ def _year_months(year) -> list[date]:
     return [date(year, m, 1) for m in range(4, 13)] + [date(year + 1, m, 1) for m in range(1, 4)]
 
 
-def apit_year(user: User, year) -> Report:
-    """The year of assessment from 1 April: by pay month (April to March)."""
-    _check(user)
+def apit_year(user: User, year, *, only=None) -> Report:
+    """The year of assessment from 1 April: by pay month (April to March). With `only` (an
+    employee, for their own self-service page) no HR access is needed."""
+    if only is None:
+        _check(user)
     months = _year_months(year)
-    lines, notes = _lines(user, months)
+    lines, notes = _lines(user, months, only)
     company = Company.get()
     first, last = months[0], months[-1]
     r = Report(
@@ -411,6 +419,16 @@ def certificates(user: User, year, number=None) -> bytes:
         report.rows = [r for r in report.rows if str(r[0]) == str(number).upper()]
     if not report.rows:
         raise ReturnError("There is nobody with an approved payroll in that year.")
+    return _certificates_pdf(report)
+
+
+def certificate_for(employee, year: int) -> bytes | None:
+    """One employee's own certificate (self-service, P2B-11); None without a payroll."""
+    report = apit_year(None, year, only=employee)
+    return _certificates_pdf(report) if report.rows else None
+
+
+def _certificates_pdf(report: Report) -> bytes:
     company = Company.get()
     title, small, cell = _style("t", 13, True), _style("s", 8), _style("c", 9)
     story = []

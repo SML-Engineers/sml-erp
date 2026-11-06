@@ -78,7 +78,9 @@ def _detail(e: Employee, user) -> dict:
         "confirmation_date": e.confirmation_date,
         "leaving_date": e.leaving_date,
         "leaving_reason": e.leaving_reason,
-        "user": None if e.user is None else {"id": e.user.pk, "name": e.user.full_name},
+        "user": None
+        if e.user is None
+        else {"id": e.user.pk, "name": e.user.full_name, "email": e.user.email},
         "bank_name": e.bank_name,
         "bank_branch": e.bank_branch,
         "account_name": e.account_name,

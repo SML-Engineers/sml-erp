@@ -35,7 +35,7 @@ export interface Employee extends EmployeeRow {
   confirmation_date: string | null;
   leaving_date: string | null;
   leaving_reason: string;
-  user: { id: number; name: string } | null;
+  user: { id: number; name: string; email: string } | null;
   bank_name: string;
   bank_branch: string;
   account_name: string;
@@ -84,6 +84,7 @@ export const EMPLOYEE_FIELDS = [
   "phone",
   "email",
   "address",
+  "user_email",
 ] as const;
 export const BANK_FIELDS = ["bank_name", "bank_branch", "account_name", "account_number"] as const;
 export type EmployeeValues = Partial<Record<(typeof EMPLOYEE_FIELDS)[number] | (typeof BANK_FIELDS)[number], string>>;

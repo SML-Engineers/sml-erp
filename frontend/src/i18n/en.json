@@ -3735,7 +3735,8 @@
       "bank_branch": "Branch",
       "account_name": "Account name",
       "account_number": "Account number",
-      "category": "Category"
+      "category": "Category",
+      "user_email": "Sign-in email (for self-service)"
     },
     "categories": {
       "shop_office": "Shop and Office",
@@ -4151,5 +4152,32 @@
     "return": "Return",
     "reject": "Reject",
     "withdraw": "Withdraw"
+  },
+  "my": {
+    "title": "My pay and leave",
+    "payslips": "My payslips",
+    "noPayslips": "No approved payslips yet.",
+    "net": "net LKR {{net}}",
+    "contributions": "EPF you 8% {{ee}}, company 12% {{er}}; ETF 3% {{etf}}; APIT {{apit}}",
+    "certificate": "APIT certificate {{year}}/{{next}} (PDF)",
+    "leave": "My leave",
+    "balances": "Leave {{year}}",
+    "left": "Left",
+    "taken": "Taken",
+    "apply": "Apply for leave",
+    "applyHelp": "Your section's supervisor or HR approves it. You can withdraw it until then.",
+    "kind": "Kind of leave",
+    "from": "From",
+    "to": "To (blank: one day)",
+    "halfDay": "Half day",
+    "reason": "Reason",
+    "send": "Apply",
+    "withdraw": "Withdraw",
+    "attendance": "My attendance",
+    "late": "{{minutes}} min late",
+    "toApprove": "Leave to approve",
+    "rejectReason": "Reason (needed to reject)",
+    "approve": "Approve",
+    "reject": "Reject"
   }
 }

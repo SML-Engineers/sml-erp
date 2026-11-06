@@ -425,10 +425,16 @@ def record(
 
 
 def decide(user: User, leave: Leave, approve: bool, note: str = "") -> Leave:
-    """HR approves or rejects leave applied for (rule 5: never one's own, nor what one entered)."""
-    if not employees.can_edit(user):
-        raise LeaveError("Only HR approves leave.")
-    _visible(user, leave.employee)
+    """HR, or the supervisor of the employee's section (P2B-11), approves or rejects leave
+    applied for (rule 5: never one's own, nor what one entered)."""
+    supervisor = (
+        bool(leave.employee.section_id)
+        and leave.employee.section.supervisors.filter(pk=user.pk).exists()
+    )
+    if not supervisor:
+        if not employees.can_edit(user):
+            raise LeaveError("Only HR or the section's supervisor approves leave.")
+        _visible(user, leave.employee)
     with (
         audit_context("leave_approved" if approve else "leave_rejected", note),
         transaction.atomic(),

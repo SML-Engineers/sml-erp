@@ -4,6 +4,7 @@ from . import attendance_views as av
 from . import leave_views as lv
 from . import overtime_views as ov
 from . import payroll_views as pr
+from . import selfservice_views as me
 from . import views as v
 
 urlpatterns = [
@@ -59,6 +60,16 @@ urlpatterns = [
     path("payroll/<int:pk>/<str:action>/", pr.PayrollActionView.as_view(), name="payroll-action"),
     path("payroll-tax-tables/", pr.TaxTableView.as_view(), name="payroll-tax-tables"),
     path("payroll-returns/<str:kind>/", pr.ReturnView.as_view(), name="payroll-return"),
+    path("my/", me.MySummaryView.as_view(), name="my-summary"),
+    path("my/payslips/<int:pk>/", me.MyPayslipView.as_view(), name="my-payslip"),
+    path("my/apit-certificate/", me.MyCertificateView.as_view(), name="my-certificate"),
+    path("my/leave/", me.MyLeaveView.as_view(), name="my-leave"),
+    path("my/leave/<int:pk>/withdraw/", me.MyLeaveWithdrawView.as_view(), name="my-leave-withdraw"),
+    path(
+        "my/team-leave/<int:pk>/<str:action>/",
+        me.TeamLeaveDecideView.as_view(),
+        name="team-leave-decide",
+    ),
     path("staff-credits/", pr.StaffCreditListView.as_view(), name="staff-credits"),
     path("staff-credits/<int:pk>/", pr.StaffCreditDetailView.as_view(), name="staff-credit"),
     path(

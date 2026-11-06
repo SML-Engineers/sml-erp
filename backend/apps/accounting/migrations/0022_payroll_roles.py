@@ -2,7 +2,7 @@ from django.db import migrations, models
 
 # The monthly payroll (backlog P2B-07): the accounts an approved payroll posts to. The starting
 # chart has most of them (6000, 6010, 2130-2160); they get their system role. Payroll
-# deductions payable (2190) is new.
+# deductions payable (2195) is new.
 ROLES = [
     ("accounts_receivable", "Accounts receivable"),
     ("accounts_payable", "Accounts payable"),
@@ -41,7 +41,7 @@ NEW = [
     ("salaries_payable", "2160", "Salaries payable", "other_current_liability", "Salaries payable"),
     (
         "payroll_deductions",
-        "2190",
+        "2195",
         "Payroll deductions payable",
         "other_current_liability",
         "Other current liability",

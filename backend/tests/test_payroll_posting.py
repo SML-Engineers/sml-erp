@@ -53,7 +53,7 @@ def test_the_payroll_roles_are_on_the_starting_accounts():
         Account.objects.exclude(system_role="")
         .filter(system_role__in=["salaries_expense", "salaries_payable", "payroll_deductions"])
         .values_list("system_role", "number")
-    ) == {"salaries_expense": "6000", "salaries_payable": "2160", "payroll_deductions": "2190"}
+    ) == {"salaries_expense": "6000", "salaries_payable": "2160", "payroll_deductions": "2195"}
 
 
 def test_a_missing_account_is_named():

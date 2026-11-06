@@ -277,7 +277,7 @@ P2B-06**, in this order.
   and posts one journal entry dated the last day of the pay period: Dr Salaries and wages
   (6000, earnings after no-pay) and Dr EPF and ETF contributions (6010, 12% + 3%) in the
   payroll's division; Cr EPF payable (2140, 8% + 12%), ETF payable (2150), APIT payable
-  (2130), Payroll deductions payable (2190, new) and Salaries payable (2160, the net). These
+  (2130), Payroll deductions payable (2195, new) and Salaries payable (2160, the net). These
   accounts carry new system roles (migration accounting 0022). If an account is missing the
   approval is refused and nothing changes. The journal and reports open the payroll from the
   entry. **Paying**: the Clerk enters a salary voucher for the net, coded to Salaries

@@ -41,7 +41,7 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 from apps.core.models import Company, User
 
 from . import employees, periods
-from .models import PayrollItem, PayrollLine, PayrollRun
+from .models import OpeningBatch, OpeningFigures, PayrollItem, PayrollLine, PayrollRun
 
 ZERO = Decimal("0.00")
 KINDS = ("epf", "etf", "apit")
@@ -307,6 +307,18 @@ def apit_year(user: User, year, *, only=None) -> Report:
         notes=[n for n in notes if "no approved payroll" not in n],
     )
     people: dict[int, list] = {}
+    # The months paid by the old payroll before the takeover (P2B-14), when brought over.
+    brought = OpeningFigures.objects.filter(
+        batch__tax_year=first, batch__status=OpeningBatch.Status.APPROVED, **_whose(user, only)
+    ).select_related("employee")
+    for o in brought:
+        e = o.employee
+        people[e.pk] = [e.number, _name(e), e.nic, o.months, o.apit_earnings, o.apit]
+    if brought:
+        r.notes.append(
+            "Includes the months paid by the old payroll before the takeover, as brought over "
+            "and approved."
+        )
     for x in lines:
         row = people.setdefault(
             x.employee_id, [x.employee.number, _name(x.employee), x.employee.nic, 0, ZERO, ZERO]
@@ -314,7 +326,7 @@ def apit_year(user: User, year, *, only=None) -> Report:
         row[3] += 1
         row[4] += x.apit_earnings
         row[5] += x.apit
-    r.rows = list(people.values())
+    r.rows = sorted(people.values(), key=lambda row: row[0])
     r.totals = ["", f"{len(r.rows)} employees", "", ""] + [
         sum((row[i] for row in r.rows), ZERO) for i in (4, 5)
     ]

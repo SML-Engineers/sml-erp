@@ -95,7 +95,12 @@ def provided(employee: Employee, before: date) -> Decimal:
         .order_by("-run__month")
         .first()
     )
-    return line.gratuity_liability if line else ZERO
+    if line is not None:
+        return line.gratuity_liability
+    # Before the first payroll here: what the old payroll provided (P2B-14), if brought over.
+    from .takeover import opening_gratuity
+
+    return opening_gratuity(employee, before) or ZERO
 
 
 def wage(employee: Employee, month: date) -> Decimal:

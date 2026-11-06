@@ -72,13 +72,24 @@ def year_to_date(line: PayrollLine) -> YearToDate:
     sums = lines.aggregate(
         gross=Sum("gross"), epf=Sum("epf_employee"), apit=Sum("apit"), net=Sum("net")
     )
-    return YearToDate(
+    out = YearToDate(
         sums["gross"] or ZERO,
         sums["epf"] or ZERO,
         sums["apit"] or ZERO,
         sums["net"] or ZERO,
         lines.count(),
     )
+    # The months paid by the old payroll before the takeover (P2B-14).
+    from .takeover import opening
+
+    o = opening(line.employee, year_start(run.period_end))
+    if o is not None and o.last_month < run.month:
+        out.gross += o.gross
+        out.epf_employee += o.epf_employee
+        out.apit += o.apit
+        out.net += o.net
+        out.months += o.months
+    return out
 
 
 def _masked(account_number: str) -> str:

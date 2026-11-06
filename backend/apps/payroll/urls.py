@@ -6,6 +6,7 @@ from . import leave_views as lv
 from . import overtime_views as ov
 from . import payroll_views as pr
 from . import selfservice_views as me
+from . import takeover_views as tv
 from . import views as v
 
 urlpatterns = [
@@ -74,6 +75,33 @@ urlpatterns = [
     path("my/payslips/<int:pk>/", me.MyPayslipView.as_view(), name="my-payslip"),
     path("my/apit-certificate/", me.MyCertificateView.as_view(), name="my-certificate"),
     path("my/leave/", me.MyLeaveView.as_view(), name="my-leave"),
+    path("payroll-takeover/", tv.TakeoverView.as_view(), name="takeover"),
+    path(
+        "payroll-takeover/pay-template/", tv.PayTemplateView.as_view(), name="takeover-pay-template"
+    ),
+    path("payroll-takeover/pay/", tv.PayImportView.as_view(), name="takeover-pay"),
+    path(
+        "payroll-takeover/opening-template/",
+        tv.OpeningTemplateView.as_view(),
+        name="takeover-opening-template",
+    ),
+    path("payroll-takeover/opening/", tv.OpeningImportView.as_view(), name="takeover-opening"),
+    path(
+        "payroll-takeover/opening/<int:pk>/<str:action>/",
+        tv.OpeningDecideView.as_view(),
+        name="takeover-opening-decide",
+    ),
+    path(
+        "payroll-takeover/compare-template/<int:run>/",
+        tv.CompareTemplateView.as_view(),
+        name="takeover-compare-template",
+    ),
+    path("payroll-takeover/compare/<int:run>/", tv.CompareView.as_view(), name="takeover-compare"),
+    path(
+        "payroll-takeover/checks/<int:pk>/sign-off/",
+        tv.SignOffView.as_view(),
+        name="takeover-sign-off",
+    ),
     path("gratuity/", gv.GratuityView.as_view(), name="gratuity"),
     path(
         "gratuity/settings/<int:pk>/<str:action>/",

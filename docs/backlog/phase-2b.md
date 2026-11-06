@@ -458,10 +458,27 @@ P2B-06**, in this order.
   per section; `labour.rate(division, month)` gives job costing the rate of an approved
   payroll.
 
-- [ ] **P2B-14 Migration and parallel payroll**
+- [x] **P2B-14 Migration and parallel payroll**
   Employees, their pay structure and the year's figures to date (gross, EPF, ETF, APIT)
   brought over from the current payroll; one month run in both, compared employee by
   employee, then sign-off.
+  Done: a "Payroll takeover" page (HR and payroll). The old payroll is Excel (owner,
+  question 2), so HR copies its figures into the ERP's own templates and uploads them into
+  the ERP; nothing goes into the repository and no sample of the owner's sheet was needed.
+  1. Employees: the employee import (P2B-01). 2. **Pay**: one row per employee (from pay
+  month, an amount under each component's code), checked first, all or nothing; each row
+  becomes the employee's first pay settings, sent to the Director as a new employee's
+  (P2B-17). 3. **The year's figures to date** (year of assessment from 1 April, up to the
+  last pay month the old payroll paid): months, gross, APIT taxable earnings, APIT, EPF 8%
+  and 12%, ETF, net, gratuity provided; one year per upload; refused for months already
+  paid here or an employee already brought over for the year; the Director approves the
+  upload ("payroll_opening"); then counted in the payslips' year to date, the APIT year
+  return and certificates, and as the gratuity already provided before the first payroll
+  here (P2B-19). Never changed (database). 4. **Parallel run**: HR downloads a payroll's
+  template, copies the old payroll's gross, EPF 8% and 12%, ETF, APIT and net per employee,
+  and compares: every difference to the cent and anyone missing on either side; kept as
+  compared; the Director signs it off (never the uploader), with a note when there are
+  differences. The comparison never changes and is never deleted (database).
 
 ---
 

@@ -1053,3 +1053,87 @@ class GratuitySetting(models.Model):
 
     def __str__(self):
         return f"{self.employee_id} gratuity from {self.effective_from}"
+
+
+# --- Taking over from the old payroll (P2B-14) ---------------------------------------------------
+
+
+class OpeningBatch(models.Model):
+    """One upload of the year's figures to date from the old payroll (P2B-14): HR uploads it,
+    the Director approves it (approval engine, "payroll_opening"). Decided batches never
+    change; none is deleted (database)."""
+
+    class Status(models.TextChoices):
+        AWAITING = "awaiting", "Waiting for the Director"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    file_name = models.CharField(max_length=200)
+    tax_year = models.DateField()  # 1 April of the year of assessment
+    status = models.CharField(max_length=10, choices=Status.choices, default="awaiting")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"Opening figures {self.tax_year:%Y} ({self.file_name})"
+
+
+class OpeningFigures(models.Model):
+    """An employee's figures from the old payroll for the year of assessment, up to and
+    including pay month `last_month`, and the gratuity provided for them so far. Counted in
+    the payslips' year to date, the APIT year return and certificate, and as the gratuity
+    provided before the first payroll here. Never changed (database)."""
+
+    batch = models.ForeignKey(OpeningBatch, on_delete=models.PROTECT, related_name="figures")
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="openings")
+    last_month = models.DateField()
+    months = models.PositiveSmallIntegerField()
+    gross = models.DecimalField(max_digits=18, decimal_places=2)
+    apit_earnings = models.DecimalField(max_digits=18, decimal_places=2)
+    apit = models.DecimalField(max_digits=18, decimal_places=2)
+    epf_employee = models.DecimalField(max_digits=18, decimal_places=2)
+    epf_employer = models.DecimalField(max_digits=18, decimal_places=2)
+    etf = models.DecimalField(max_digits=18, decimal_places=2)
+    net = models.DecimalField(max_digits=18, decimal_places=2)
+    gratuity_provision = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        ordering = ["batch", "employee__number"]
+        constraints = [
+            models.UniqueConstraint(fields=["batch", "employee"], name="payroll_opening_once"),
+        ]
+
+    def __str__(self):
+        return f"{self.employee_id} opening to {self.last_month}"
+
+
+class ParallelCheck(models.Model):
+    """A pay month run both in the old payroll and here (P2B-14): the old figures uploaded,
+    compared employee by employee with this payroll, and signed off by the Director (never
+    by the person who uploaded them). Kept as compared; never deleted (database)."""
+
+    run = models.ForeignKey(PayrollRun, on_delete=models.PROTECT, related_name="parallel_checks")
+    file_name = models.CharField(max_length=200)
+    result = models.JSONField()  # the comparison as shown
+    differences = models.PositiveIntegerField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    signed_off_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    signed_off_at = models.DateTimeField(null=True, blank=True)
+    note = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"Parallel check of {self.run_id}"

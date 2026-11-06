@@ -67,10 +67,10 @@ def test_a_payroll_not_yet_approved_is_named(hr, director, kamal):  # noqa: F811
 def test_downloads_and_who_sees_them(hr, director, approved):  # noqa: F811
     body = as_user(hr).get(URL + "epf/?month=2026-10").json()
     assert body["totals"][-1] == "25500.00" and body["money_from"] == 4
-    xlsx = as_user(director).get(URL + "epf/?month=2026-10&format=xlsx")
+    xlsx = as_user(director).get(URL + "epf/?month=2026-10&download=xlsx")
     assert xlsx.status_code == 200 and xlsx.content[:2] == b"PK"
     assert 'filename="epf-2026-10.xlsx"' in xlsx["Content-Disposition"]
-    pdf = as_user(hr).get(URL + "etf-half/?year=2026&half=2&format=pdf")
+    pdf = as_user(hr).get(URL + "etf-half/?year=2026&half=2&download=pdf")
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
     year = as_user(hr).get(URL + "apit-year/?year=2026")
     assert year.status_code == 200 and year.json()["title"].endswith("2026/27")

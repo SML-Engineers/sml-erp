@@ -181,7 +181,7 @@ test("HR sees the EPF return and downloads it", async () => {
   expect(screen.getAllByText("13,500.00")).toHaveLength(2);
   expect(screen.getByRole("link", { name: "Download Excel" })).toHaveAttribute(
     "href",
-    `/api/v1/payroll-returns/epf/?month=${lastMonthForTest()}&format=xlsx`,
+    `/api/v1/payroll-returns/epf/?month=${lastMonthForTest()}&download=xlsx`,
   );
 });
 

@@ -129,6 +129,6 @@ export interface StatutoryReturn {
 }
 export type ReturnKind = "epf" | "etf" | "apit" | "etf-half" | "apit-year";
 export const returnUrl = (kind: ReturnKind | "apit-certificates", query: string, format?: "xlsx" | "pdf") =>
-  `${API_BASE}/payroll-returns/${kind}/?${query}${format ? `&format=${format}` : ""}`;
+  `${API_BASE}/payroll-returns/${kind}/?${query}${format ? `&download=${format}` : ""}`;
 export const getReturn = (kind: ReturnKind, query: string) =>
   apiGet<StatutoryReturn>(`/payroll-returns/${kind}/?${query}`);

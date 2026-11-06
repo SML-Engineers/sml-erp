@@ -371,7 +371,7 @@ class PayslipEmailView(_Payroll):
 
 class ReturnView(_Payroll):
     """GET /payroll-returns/<kind>/ with ?month= (epf, etf, apit), ?year=&half= (etf-half) or
-    ?year= (apit-year, apit-certificates); &format=xlsx or pdf to download."""
+    ?year= (apit-year, apit-certificates); &download=xlsx or pdf."""
 
     def get(self, request, kind):
         q = request.query_params
@@ -397,7 +397,7 @@ class ReturnView(_Payroll):
                 return _error("Unknown return.")
         except returns.ReturnError as error:
             return _error(error)
-        wanted = q.get("format")
+        wanted = q.get("download")
         if wanted == "xlsx":
             response = HttpResponse(
                 returns.xlsx(report),

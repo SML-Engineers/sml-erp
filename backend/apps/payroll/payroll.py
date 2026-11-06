@@ -55,7 +55,7 @@ from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, Division, User
 from apps.core.numbering import NumberSeriesError, allocate
 
-from . import attendance, leave, pay, periods
+from . import attendance, credits, leave, pay, periods
 from .models import (
     AttendanceMonth,
     Employee,
@@ -349,6 +349,20 @@ def work_out_one(run, employee, check, summary, entries, statutory) -> Figures:
         }
     )
     out.net = out.gross - out.epf_employee - out.apit - out.deductions
+
+    # Advances and loans (P2B-10), never taking the net to 40% of the basic or below.
+    floor = q(out.basic * NET_SHARE_OF_BASIC) + CENT if out.basic > 0 else ZERO
+    for credit, amount, basis in credits.due(employee, run):
+        room = max(ZERO, out.net - floor)
+        take = min(amount, room)
+        if take < amount:
+            basis += f"; reduced from {money(amount)} to keep more than 40% of the basic"
+        if take <= 0:
+            continue
+        name = "Salary advance" if credit.kind == credit.Kind.ADVANCE else "Loan instalment"
+        out.add(credit.kind.upper(), name, D, take, basis)
+        out.items[-1]["credit"] = credit
+        out.net -= take
     return out
 
 
@@ -608,6 +622,17 @@ def journal_lines(run: PayrollRun) -> list[journal.Line]:
     t = totals(run)
     division = run.division
     what = f"Payroll {run.division.code} {run.month:%B %Y}"
+    # Advances and loans recovered (P2B-10): the amount lent back to Staff loans and
+    # advances, the interest share to its income account; the rest of the deductions stays
+    # payable.
+    principal = interest = ZERO
+    for item in PayrollItem.objects.filter(line__run=run, credit__isnull=False).select_related(
+        "credit"
+    ):
+        c = item.credit
+        share = q(item.amount * c.interest / c.total) if c.interest else ZERO
+        interest += share
+        principal += item.amount - share
     lines = [
         (
             "salaries_expense",
@@ -626,7 +651,21 @@ def journal_lines(run: PayrollRun) -> list[journal.Line]:
         ("epf_payable", ZERO, t["epf_employee"] + t["epf_employer"], None, f"{what}: EPF"),
         ("etf_payable", ZERO, t["etf"], None, f"{what}: ETF"),
         ("apit_payable", ZERO, t["apit"], None, f"{what}: APIT"),
-        ("payroll_deductions", ZERO, t["deductions"], None, f"{what}: other deductions"),
+        (
+            "payroll_deductions",
+            ZERO,
+            t["deductions"] - principal - interest,
+            None,
+            f"{what}: other deductions",
+        ),
+        ("staff_loans", ZERO, principal, None, f"{what}: advances and loans recovered"),
+        (
+            "staff_loan_interest",
+            ZERO,
+            interest,
+            division,
+            f"{what}: interest on staff loans",
+        ),
         ("salaries_payable", ZERO, t["net"], None, f"{what}: net pay"),
     ]
     return [

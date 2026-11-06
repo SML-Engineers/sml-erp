@@ -126,6 +126,7 @@ export const MENU: MenuSection[] = [
       { label: "wr.title", path: "/work-rules", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "payroll.title", path: "/payroll", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       { label: "returns.title", path: "/payroll-returns", area: "hr_payroll", anyLevel: ["enter", "approve"] },
+      { label: "credits.title", path: "/advances-loans", area: "hr_payroll", anyLevel: ["enter", "approve"] },
       // The Accountant keeps the APIT tables and EPF/ETF rates.
       { label: "taxTables.title", path: "/payroll-tax-tables", area: "accounting" },
       { label: "leave.title", path: "/leave", area: "hr_payroll", anyLevel: ["enter", "approve"] },

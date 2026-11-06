@@ -139,6 +139,8 @@ DOCUMENT_TYPES = {
     "pay_change": DocumentType("Pay change", min_approvals=1, final_role="director"),
     # The monthly payroll: HR prepares, the Director approves (owner, question 9; P2B-06).
     "payroll": DocumentType("Payroll", min_approvals=1, final_role="director"),
+    # A salary advance or staff loan: HR records, the Director approves every one (P2B-10).
+    "staff_credit": DocumentType("Advance or loan", min_approvals=1, final_role="director"),
 }
 
 

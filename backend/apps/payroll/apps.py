@@ -26,6 +26,7 @@ class PayrollConfig(AppConfig):
             PayRate,
             PayrollEntry,
             PayrollRun,
+            StaffCredit,
             StatutoryRate,
             TaxTable,
             WorkRule,
@@ -51,5 +52,6 @@ class PayrollConfig(AppConfig):
             PayrollEntry,
             StatutoryRate,
             TaxTable,
+            StaffCredit,
         ):
             register(model)

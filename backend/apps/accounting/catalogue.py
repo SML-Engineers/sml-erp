@@ -76,6 +76,9 @@ SYSTEM_ROLES = {
     "apit_payable": "APIT payable",
     "salaries_payable": "Salaries payable",
     "payroll_deductions": "Payroll deductions payable",
+    # Advances and loans to staff (P2B-10): paid out by voucher, recovered by the payroll.
+    "staff_loans": "Staff loans and advances",
+    "staff_loan_interest": "Interest from staff loans",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

@@ -70,6 +70,14 @@ KINDS = {
             "invoices": "Invoices paid",
         },
     ),
+    "payslip": (
+        "Payslip to an employee",
+        {
+            "pay_month": "Pay month",
+            "period": "Pay period",
+            "net_pay": "Net pay (LKR)",
+        },
+    ),
     "report": (
         "Report (outstanding, aging, profit and loss…)",
         {
@@ -128,3 +136,15 @@ DEFAULT_TEMPLATES_V1 = {
 
 def allowed(kind: str) -> dict[str, str]:
     return {**COMMON, **KINDS[kind][1]}
+
+
+# Added with payslips (P2B-08), loaded by payroll migration 0011 (frozen).
+DEFAULT_TEMPLATES_V2 = {
+    "payslip": (
+        "Your payslip for {pay_month} – {company_name}",
+        "Dear {recipient_name},\n\nPlease find attached your payslip for {pay_month} "
+        "({period}). Your net pay is LKR {net_pay}.\n\nThe payslip is locked: open it with "
+        "your NIC number as the password.\n\nIf anything looks wrong, please speak to HR.\n\n"
+        "Kind regards,\n{sender_name}\n{company_name}",
+    ),
+}

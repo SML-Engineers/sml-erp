@@ -14,7 +14,7 @@ const run: PayrollRun = {
   id: 4, division: "WS", month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
   status: "draft", status_label: "Draft", created_by: "HR Officer", worked_out_at: "2026-11-06T09:00:00Z",
   approved_at: null, number: "", journal: "", totals, statutory: { epf_employee: "8.00", epf_employer: "12.00", etf: "3.00" },
-  returned: false, history: [], can_work_out: true, can_submit: true, can_approve: false, sees_people: true,
+  returned: false, history: [], can_work_out: true, can_submit: true, can_approve: false, sees_people: true, can_email_payslips: false,
   lines: [
     {
       employee: { id: 7, number: "E001", name: "Kamal Perera", category: "shop_office" },
@@ -147,4 +147,19 @@ test("the Accountant enters an APIT table", async () => {
       }),
     ),
   );
+});
+
+test("HR prints and emails the payslips of an approved payroll", async () => {
+  const approved = { ...run, status: "approved" as const, status_label: "Approved", can_work_out: false, can_submit: false, can_email_payslips: true, number: "PR261001", journal: "JE1" };
+  const calls = mockApi({
+    "GET /api/v1/payroll/4/": { body: approved },
+    "POST /api/v1/payroll/4/email-payslips/": { body: { sent: ["E001"], failed: [], no_email: ["E002"] } },
+  });
+  renderAt("/payroll/4", <PayrollPage />, "/payroll/:id");
+  expect(await screen.findByRole("link", { name: "Print all payslips (PDF)" })).toHaveAttribute("href", "/api/v1/payroll/4/payslips/");
+  fireEvent.click(screen.getByRole("button", { name: "E001 Kamal Perera" }));
+  expect(screen.getByRole("link", { name: "Payslip (PDF)" })).toHaveAttribute("href", "/api/v1/payroll/4/payslips/?employee=7");
+  fireEvent.click(screen.getByRole("button", { name: "Email payslips" }));
+  expect(await screen.findByText("Emailed 1 payslip. No email address (print theirs): E002.")).toBeInTheDocument();
+  expect(calls).toHaveBeenCalledWith("/api/v1/payroll/4/email-payslips/", expect.objectContaining({ method: "POST" }));
 });

@@ -299,9 +299,22 @@ P2B-06**, in this order.
   expense, Cr provision for gratuity), by default as the change in the liability worked out
   per employee; the method is confirmed with the auditors (LKAS 19). Paid on leaving.
 
-- [ ] **P2B-08 Payslips**
+- [x] **P2B-08 Payslips**
   A payslip per employee (PDF), emailed or printed, in English first (Sinhala and Tamil with
   the rest of the system later); year-to-date figures.
+  Done: from an approved payroll only. An A5 page per employee: company, PAYSLIP and the pay
+  month, the pay period and payroll number; employee, designation, division, category, EPF
+  number, the salary account (last four digits only); every earning and deduction as the
+  payroll worked it out, each with where it came from; NET PAY; the company's EPF 12% and
+  ETF 3% (not deducted); year to date for the year of assessment (from 1 April: earnings,
+  EPF 8%, APIT, net) from the approved payrolls up to this one. On the payroll page HR and the
+  Director print all payslips in one PDF or one employee's; HR emails them to every employee
+  with an email address (owner, question 11), listing who has none (print theirs). **An
+  emailed payslip is locked with the employee's NIC number as its password** and is not
+  copied to the company's copy mailbox (new option of document email); every email is
+  recorded with the PDF's fingerprint; the message is a new document email kind "Payslip"
+  the Admin can edit. Printing is recorded in the audit log. The self-service page comes with
+  P2B-11.
 
 - [ ] **P2B-09 Statutory returns**
   EPF monthly return (C form) and its contribution file, ETF return, the APIT monthly

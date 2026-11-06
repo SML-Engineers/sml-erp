@@ -4064,7 +4064,16 @@
     "approve": "Approve",
     "return": "Return for correction",
     "reject": "Reject",
-    "posted": "Approved as {{number}} and posted to the accounts (journal {{journal}}): salaries and wages, the company's EPF and ETF, and EPF, ETF, APIT, deductions and net salaries payable. To pay the net LKR {{net}}, the Clerk enters a salary voucher coded to Salaries payable; it goes through the Accountant and the Director as usual."
+    "posted": "Approved as {{number}} and posted to the accounts (journal {{journal}}): salaries and wages, the company's EPF and ETF, and EPF, ETF, APIT, deductions and net salaries payable. To pay the net LKR {{net}}, the Clerk enters a salary voucher coded to Salaries payable; it goes through the Accountant and the Director as usual.",
+    "payslips": "Payslips",
+    "payslipsHelp": "Print them (one page each) or email each employee's payslip to their email address. An emailed payslip opens with the employee's NIC number as its password; no copy goes to the company mailbox. Every email is recorded.",
+    "printAll": "Print all payslips (PDF)",
+    "emailAll": "Email payslips",
+    "payslip": "Payslip (PDF)",
+    "emailed_one": "Emailed {{count}} payslip.",
+    "emailed_other": "Emailed {{count}} payslips.",
+    "noEmail": "No email address (print theirs): {{list}}.",
+    "failed": "Not sent, try again: {{list}}."
   },
   "taxTables": {
     "title": "APIT tables and EPF rates",

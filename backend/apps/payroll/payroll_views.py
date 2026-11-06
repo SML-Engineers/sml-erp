@@ -6,6 +6,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -17,7 +18,7 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.permissions import AreaAccess
 
-from . import employees, payroll, periods
+from . import employees, payroll, payslips, periods
 from .models import PayComponent, PayrollRun, StatutoryRate, TaxBand, TaxTable
 from .payroll import PayrollError
 
@@ -94,6 +95,7 @@ def _run(run: PayrollRun, user, detail=False) -> dict:
         "can_submit": hr and run.status == run.Status.DRAFT,
         "can_approve": payroll.can_approve(user, run),
         "sees_people": sees_people,
+        "can_email_payslips": run.status == run.Status.APPROVED and employees.can_edit(user),
         "lines": [],
         "entries": [],
         "components": [],
@@ -322,3 +324,43 @@ class TaxTableView(_Rates):
         except PayrollError as error:
             return _error(error)
         return Response(_table(table), status=status.HTTP_201_CREATED)
+
+
+# --- Payslips (P2B-08) ---------------------------------------------------------------------------
+
+
+class PayslipPdfView(_Payroll):
+    """All payslips of an approved payroll in one PDF to print, or one (?employee=<id>)."""
+
+    def get(self, request, pk):
+        run = get_object_or_404(_runs(request.user), pk=pk)
+        try:
+            lines = payslips.lines_of(request.user, run)
+        except payslips.PayslipError as error:
+            return _error(error)
+        one = request.query_params.get("employee")
+        if one:
+            lines = lines.filter(employee_id=one)
+        lines = list(lines)
+        if not lines:
+            return _error("There is no payslip to print.")
+        name = (
+            payslips.filename(lines[0])
+            if one
+            else f"payslips-{run.division.code}-{run.month:%Y-%m}.pdf"
+        )
+        with audit_context("payslips_printed", name):
+            content = payslips.render(lines)
+        response = HttpResponse(content, content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{name}"'
+        return response
+
+
+class PayslipEmailView(_Payroll):
+    def post(self, request, pk):
+        run = get_object_or_404(_runs(request.user), pk=pk)
+        try:
+            result = payslips.email(request.user, run, request.data.get("employees") or None)
+        except payslips.PayslipError as error:
+            return _error(error)
+        return Response(result)

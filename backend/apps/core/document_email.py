@@ -314,6 +314,7 @@ def send(
     document_id: int | None = None,
     attachment: tuple[str, bytes, str] | None = None,
     others: list[tuple[str, bytes, str]] | tuple = (),
+    keep_copy: bool = True,
 ) -> SentEmail:
     """Send the email exactly as given and record it. A failure is recorded too, and the
     record returned has status "failed" with the server's answer. The caller checks that
@@ -336,7 +337,9 @@ def send(
     body = (body or "").strip()
     if not body or len(body) > MAX_BODY:
         raise EmailError(f"The message is required and can have at most {MAX_BODY} characters.")
-    bcc = [account.copy_to] if account.copy_to else []
+    # keep_copy=False for personal documents (payslips, P2B-08): no copy to the company's
+    # copy mailbox.
+    bcc = [account.copy_to] if account.copy_to and keep_copy else []
 
     message = EmailMessage(
         subject=subject,

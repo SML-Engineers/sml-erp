@@ -50,6 +50,12 @@ urlpatterns = [
     path("work-rules/<int:pk>/", ov.WorkRuleDetailView.as_view(), name="work-rule"),
     path("payroll/", pr.PayrollListView.as_view(), name="payroll"),
     path("payroll/<int:pk>/", pr.PayrollDetailView.as_view(), name="payroll-run"),
+    path("payroll/<int:pk>/payslips/", pr.PayslipPdfView.as_view(), name="payroll-payslips"),
+    path(
+        "payroll/<int:pk>/email-payslips/",
+        pr.PayslipEmailView.as_view(),
+        name="payroll-email-payslips",
+    ),
     path("payroll/<int:pk>/<str:action>/", pr.PayrollActionView.as_view(), name="payroll-action"),
     path("payroll-tax-tables/", pr.TaxTableView.as_view(), name="payroll-tax-tables"),
     path("pay-periods/", ov.PayPeriodListView.as_view(), name="pay-periods"),

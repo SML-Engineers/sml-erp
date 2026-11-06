@@ -204,6 +204,11 @@ function RunPage({ id }: { id: number }) {
             </div>
           </dl>
           <Labour labour={r.labour} />
+          {Number(r.gratuity.provided) !== 0 && (
+            <p className="muted">
+              {t("payroll.gratuity", { provided: formatDecimal(r.gratuity.provided), liability: formatDecimal(r.gratuity.liability) })}
+            </p>
+          )}
           {r.status === "approved" && r.sees_people && <Payslips run={r} />}
           {!r.sees_people && <p className="muted">{t("payroll.totalsOnly")}</p>}
           {r.sees_people && (

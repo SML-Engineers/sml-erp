@@ -69,6 +69,8 @@ export interface LabourCost {
 export interface PayrollRun extends PayrollRunSummary {
   statutory: { epf_employee: string; epf_employer: string; etf: string };
   labour: LabourCost;
+  /** P2B-19: the gratuity liability at the end of the period and this month's provision. */
+  gratuity: { liability: string; provided: string };
   returned: boolean;
   history: { action: string; user: string | null; reason: string; at: string }[];
   can_work_out: boolean;

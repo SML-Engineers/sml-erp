@@ -6,6 +6,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -123,6 +124,12 @@ def _run(run: PayrollRun, user, detail=False) -> dict:
         "sees_people": sees_people,
         "can_email_payslips": run.status == run.Status.APPROVED and employees.can_edit(user),
         "labour": _labour(run, sees_people),
+        "gratuity": {
+            k: f"{v or 0:.2f}"
+            for k, v in run.lines.aggregate(
+                liability=Sum("gratuity_liability"), provided=Sum("gratuity_charge")
+            ).items()
+        },
         "lines": [],
         "entries": [],
         "components": [],

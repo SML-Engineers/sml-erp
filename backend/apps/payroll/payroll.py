@@ -25,6 +25,9 @@ where it came from:
   default; Table 07 secondary), on the APIT-taxable earnings including overtime.
 - **Deductions**: the approved monthly deductions (welfare, union, ...) and amounts typed in
   (e.g. an advance recovery); advances and loans themselves come with P2B-10.
+- **Gratuity** (P2B-19, gratuity.py): each line keeps the liability at the end of the period
+  and the month's provision (the change since the previous approved payroll), posted Dr
+  Gratuity Cr Provision for gratuity. It is not deducted from anyone's pay.
 - **Net** = earnings - no-pay - EPF 8% - APIT - deductions. Owner, follow-up 4: the employee
   always receives more than 40% of the basic salary; a payroll where someone would not is
   refused when it is sent.
@@ -55,7 +58,7 @@ from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, Division, User
 from apps.core.numbering import NumberSeriesError, allocate
 
-from . import attendance, credits, leave, pay, periods
+from . import attendance, credits, gratuity, leave, pay, periods
 from .models import (
     AttendanceMonth,
     Employee,
@@ -148,6 +151,9 @@ class Figures:
     apit: Decimal = ZERO
     net: Decimal = ZERO
     basic: Decimal = ZERO
+    gratuity_years: int = 0
+    gratuity_liability: Decimal = ZERO
+    gratuity_charge: Decimal = ZERO
 
     def add(self, code, name, kind, amount, basis="", epf=False, apit=False):
         amount = q(amount)
@@ -363,6 +369,12 @@ def work_out_one(run, employee, check, summary, entries, statutory) -> Figures:
         out.add(credit.kind.upper(), name, D, take, basis)
         out.items[-1]["credit"] = credit
         out.net -= take
+    # Gratuity (P2B-19): the liability at the end of the period on the full monthly wage, and
+    # the provision for it since the previous approved payroll.
+    out.gratuity_years, out.gratuity_liability = gratuity.liability(
+        employee, run.month, end, monthly
+    )
+    out.gratuity_charge = out.gratuity_liability - gratuity.provided(employee, run.month)
     return out
 
 
@@ -442,6 +454,9 @@ def _work_out(run: PayrollRun) -> None:
             deductions=f.deductions,
             net=f.net,
             basic=f.basic,
+            gratuity_years=f.gratuity_years,
+            gratuity_liability=f.gratuity_liability,
+            gratuity_charge=f.gratuity_charge,
         )
         PayrollItem.objects.bulk_create(
             PayrollItem(line=line, sort_order=i, **item) for i, item in enumerate(f.items)
@@ -668,6 +683,25 @@ def journal_lines(run: PayrollRun) -> list[journal.Line]:
         ),
         ("salaries_payable", ZERO, t["net"], None, f"{what}: net pay"),
     ]
+    # Gratuity (P2B-19): the month's provision; a fall releases it.
+    charge = run.lines.aggregate(total=Sum("gratuity_charge"))["total"] or ZERO
+    if charge:
+        lines += [
+            (
+                "gratuity_expense",
+                max(charge, ZERO),
+                max(-charge, ZERO),
+                division,
+                f"{what}: gratuity provided",
+            ),
+            (
+                "gratuity_provision",
+                max(-charge, ZERO),
+                max(charge, ZERO),
+                None,
+                f"{what}: provision for gratuity",
+            ),
+        ]
     return [
         journal.Line(
             account=_account(role), debit=debit, credit=credit, division=div, description=text

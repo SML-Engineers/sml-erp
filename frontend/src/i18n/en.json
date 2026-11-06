@@ -4096,7 +4096,8 @@
     "section": "Section",
     "hours": "Hours",
     "labourCost": "Cost",
-    "perHour": "Per hour"
+    "perHour": "Per hour",
+    "gratuity": "Gratuity provided this month: LKR {{provided}} (liability at the end of the period LKR {{liability}})."
   },
   "taxTables": {
     "title": "APIT tables and EPF rates",
@@ -4236,5 +4237,31 @@
     "latitude": "Latitude",
     "longitude": "Longitude",
     "radiusM": "Radius (m)"
+  },
+  "gratuity": {
+    "title": "Gratuity",
+    "help": "The Payment of Gratuity Act gives half a month's wage (basic and fixed allowance) for each completed year once 5 years are completed. Each approved payroll provides for the change in the liability. The Accountant may give an employee better terms, never less than the Act; the Director approves. Gratuity is paid on leaving by a payment voucher coded to Provision for gratuity.",
+    "total": "Liability if everyone left today: LKR {{amount}}",
+    "employee": "Employee",
+    "serviceFrom": "Service from",
+    "years": "Years",
+    "terms": "Terms",
+    "wage": "Monthly wage",
+    "liability": "Liability today",
+    "provided": "Provided so far",
+    "act": "The Act",
+    "own": "{{months}} month(s) a year after {{years}} years",
+    "change": "Change",
+    "waiting": "Waiting for the Director: from {{from}}, {{months}} month(s) a year after {{years}} years, service from {{service}} (entered by {{by}}).",
+    "reason": "Reason",
+    "approve": "Approve",
+    "reject": "Reject",
+    "withdraw": "Withdraw",
+    "form": "Gratuity settings: {{name}}",
+    "formHelp": "At least 0.5 month a year, earned after at most 5 years, service counted from joining or earlier.",
+    "from": "From pay month",
+    "monthsPerYear": "Months' pay per completed year",
+    "afterYears": "Earned after (years)",
+    "send": "Send to the Director"
   }
 }

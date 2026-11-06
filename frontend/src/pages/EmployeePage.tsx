@@ -134,7 +134,7 @@ function Details({ employee, onSaved }: { employee: Employee; onSaved: (e: Emplo
   return (
     <form className="panel form-grid" aria-label={t("emp.details")} onSubmit={submit}>
       <h2 className="wide">{t("emp.details")}</h2>
-      {EMPLOYEE_FIELDS.filter((k) => k !== "employment_type" && k !== "category").map(field)}
+      {EMPLOYEE_FIELDS.filter((k) => k !== "employment_type" && k !== "category" && k !== "phone_clock").map(field)}
       <label>
         {t("emp.f.employment_type")}
         <select
@@ -162,6 +162,27 @@ function Details({ employee, onSaved }: { employee: Employee; onSaved: (e: Emplo
             </option>
           ))}
         </select>
+      </label>
+      <label>
+        {t("emp.f.phone_clock")}
+        <select
+          value={values.phone_clock ?? "off"}
+          disabled={!editable}
+          onChange={(e) => setValues((v) => ({ ...v, phone_clock: e.target.value }))}
+        >
+          {(["off", "anywhere", "sites"] as const).map((k) => (
+            <option key={k} value={k}>
+              {t(`emp.phoneClocks.${k}`)}
+            </option>
+          ))}
+        </select>
+        {employee.phone_clock === "sites" && (
+          <span className="muted">
+            {employee.location_consent_at
+              ? t("emp.consentGiven", { at: employee.location_consent_at.slice(0, 10) })
+              : t("emp.consentMissing")}
+          </span>
+        )}
       </label>
       <h3 className="wide">{t("emp.bank")}</h3>
       {BANK_FIELDS.map(field)}

@@ -5,13 +5,16 @@ import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client";
 import {
   applyForLeave,
+  clockInOut,
   decideLeave,
+  giveLocationConsent,
   getMy,
   myCertificateUrl,
   myKey,
   myPayslipUrl,
   withdrawLeave,
   type LeaveApplication,
+  type MyClock,
   type MySummary,
 } from "../api/my";
 import { formatDecimal } from "../lib/decimal";
@@ -45,6 +48,8 @@ export default function MyPage() {
             {d.employee.number} {d.employee.name} · {d.employee.division}
             {d.employee.section && ` · ${d.employee.section}`} · {d.employee.category}
           </p>
+
+          {d.clock && <Clock clock={d.clock} onDone={done} />}
 
           <section className="panel" aria-label={t("my.payslips")}>
             <h2>{t("my.payslips")}</h2>
@@ -238,5 +243,80 @@ function Decide({ item: x, onDone }: { item: LeaveApplication; onDone: (d: MySum
       </div>
       <ErrorLine error={act.error} />
     </li>
+  );
+}
+
+/** Where the phone is, asked only when the employee presses the button (P2B-12). */
+function whereAmI(): Promise<{ latitude: number; longitude: number; accuracy: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("no-geolocation"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude, accuracy: Math.round(p.coords.accuracy) }),
+      () => reject(new Error("no-location")),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+    );
+  });
+}
+
+/** The phone punch clock (P2B-12): clock in and out; the server keeps the time. */
+function Clock({ clock, onDone }: { clock: MyClock; onDone: (d: MySummary) => void }) {
+  const { t } = useTranslation();
+  const [locating, setLocating] = useState(false);
+  const press = useMutation({
+    mutationFn: async (kind: "in" | "out") => {
+      if (!clock.needs_location) return clockInOut(kind);
+      setLocating(true);
+      try {
+        return await clockInOut(kind, await whereAmI());
+      } finally {
+        setLocating(false);
+      }
+    },
+    onSuccess: onDone,
+  });
+  const consent = useMutation({ mutationFn: (given: boolean) => giveLocationConsent(given), onSuccess: onDone });
+  const blocked = clock.needs_location && !clock.consent;
+  const lost = press.error instanceof Error && !(press.error instanceof ApiError);
+  return (
+    <section className="panel" aria-label={t("clock.title")}>
+      <h2>{t("clock.title")}</h2>
+      <p className="notice" role="status">
+        {clock.clocked_in ? t("clock.inSince", { time: clock.since }) : t("clock.out")}
+      </p>
+      {clock.needs_location && (
+        <div>
+          <p className="muted">{t("clock.sitesHelp", { sites: clock.sites.join(", ") || "-" })}</p>
+          <label className="check">
+            <input type="checkbox" checked={clock.consent} onChange={(e) => consent.mutate(e.target.checked)} />{" "}
+            {t("clock.consent")}
+          </label>
+        </div>
+      )}
+      <div className="row-actions">
+        <button type="button" disabled={blocked || press.isPending} onClick={() => press.mutate(clock.clocked_in ? "out" : "in")}>
+          {locating ? t("clock.locating") : clock.clocked_in ? t("clock.clockOut") : t("clock.clockIn")}
+        </button>
+      </div>
+      {lost ? (
+        <p className="form-error" role="alert">
+          {t("clock.noLocation")}
+        </p>
+      ) : (
+        <ErrorLine error={press.error ?? consent.error} />
+      )}
+      {clock.recent.length > 0 && (
+        <ul className="plain">
+          {clock.recent.map((p) => (
+            <li key={`${p.at}${p.kind}`}>
+              {p.at} {p.kind_label}
+              {p.site && ` - ${p.site}`}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -9,7 +9,8 @@ their own records.
 - **Leave**: the year's balances and their leave; they **apply for leave**, which their
   section's supervisor or HR approves (never themselves, rule 5), and may withdraw an
   application not yet decided.
-- **Attendance**: their days in the latest pay months.
+- **Attendance**: their days in the latest pay months, and the phone clock (P2B-12,
+  punches.py) for those HR has switched on.
 - **Supervisors** see the leave applications of the sections they supervise, to approve or
   reject.
 
@@ -24,7 +25,7 @@ from django.utils import timezone
 from apps.core.audit import audit_context
 from apps.core.models import User
 
-from . import leave, payslips, periods, returns
+from . import leave, payslips, periods, punches, returns
 from .models import AttendanceDay, Employee, Leave, LeaveType, PayrollLine, PayrollRun
 
 ZERO = Decimal("0.00")
@@ -129,6 +130,7 @@ def summary(user: User) -> dict:
                 for d in days.select_related("leave_type")
             ],
         },
+        "clock": punches.status(e),
         "to_approve": [application(x) for x in to_approve(user)],
     }
 

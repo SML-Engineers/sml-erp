@@ -78,6 +78,8 @@ def _detail(e: Employee, user) -> dict:
         "confirmation_date": e.confirmation_date,
         "leaving_date": e.leaving_date,
         "leaving_reason": e.leaving_reason,
+        "phone_clock": e.phone_clock,
+        "location_consent_at": e.location_consent_at,
         "user": None
         if e.user is None
         else {"id": e.user.pk, "name": e.user.full_name, "email": e.user.email},
@@ -117,6 +119,9 @@ class EmployeeListView(_Employees):
                 "types": [{"value": v, "label": label} for v, label in Employee.Type.choices],
                 "categories": [
                     {"value": v, "label": label} for v, label in Employee.Category.choices
+                ],
+                "phone_clocks": [
+                    {"value": v, "label": label} for v, label in Employee.PhoneClock.choices
                 ],
             }
         )

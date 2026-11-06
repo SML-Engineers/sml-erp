@@ -3736,12 +3736,20 @@
       "account_name": "Account name",
       "account_number": "Account number",
       "category": "Category",
-      "user_email": "Sign-in email (for self-service)"
+      "user_email": "Sign-in email (for self-service)",
+      "phone_clock": "Phone clock"
     },
     "categories": {
       "shop_office": "Shop and Office",
       "wages_board": "Wages Board"
-    }
+    },
+    "phoneClocks": {
+      "off": "Not used",
+      "anywhere": "From anywhere",
+      "sites": "Only at a site"
+    },
+    "consentGiven": "Location check agreed on {{at}}.",
+    "consentMissing": "The employee has not agreed to the location check yet, so cannot clock in."
   },
   "pc": {
     "title": "Pay components",
@@ -4179,5 +4187,38 @@
     "rejectReason": "Reason (needed to reject)",
     "approve": "Approve",
     "reject": "Reject"
+  },
+  "clock": {
+    "title": "Clock in and out",
+    "inSince": "Clocked in since {{time}}.",
+    "out": "Not clocked in.",
+    "clockIn": "Clock in",
+    "clockOut": "Clock out",
+    "locating": "Finding your location…",
+    "sitesHelp": "You can clock in or out only at a site: {{sites}}.",
+    "consent": "I agree that my phone's location is checked when I press Clock in or Clock out (only at that moment, never otherwise).",
+    "noLocation": "Your phone did not share its location. Allow location for this site in the browser, then try again."
+  },
+  "punch": {
+    "in": "in",
+    "out": "out",
+    "raw": "Phone punches ({{count}})",
+    "bringIn": "Phone punches",
+    "bringInHelp": "Bring the pay month's clock-ins and clock-outs from phones into attendance. Days entered from a sheet are kept; a clock-in without a clock-out is listed for you to enter in the sheet; today waits for tomorrow.",
+    "preview": "Preview {{month}}",
+    "save": "Bring in",
+    "checked": "{{punches}} punches make {{days}} days for {{employees}} employees. Check them, then bring them in.",
+    "saved": "{{days}} days for {{employees}} employees brought into attendance.",
+    "days": "Days from phone punches",
+    "sites": "Punch sites",
+    "sitesHelp": "Employees set to 'Only at a site' can clock in only within a site's radius. Copy the latitude and longitude from a map (long-press the place in Google Maps).",
+    "radius": "{{metres}} m",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "addSite": "Add site",
+    "siteName": "Site",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "radiusM": "Radius (m)"
   }
 }

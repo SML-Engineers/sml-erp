@@ -1,18 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useState } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 
 import {
+  addPunchSite,
   attendanceKey,
   attendanceTemplateUrl,
+  bringInPunches,
+  changePunchSite,
   confirmAttendance,
   getAttendance,
   getAttendanceDays,
+  getPunchSites,
   importAttendance,
+  punchSitesKey,
   reopenAttendance,
   type AttendanceImportResult,
   type AttendanceMonth,
+  type PunchBringIn,
+  type PunchSite,
 } from "../api/attendance";
 import { ApiError } from "../api/client";
 import PayPeriodLine from "../components/PayPeriodLine";
@@ -64,9 +71,11 @@ export default function AttendancePage() {
       </div>
       {d && <PayPeriodLine period={d.period} />}
       {d?.can_edit && <Upload />}
+      {d?.can_edit && <PhonePunches month={d.month} />}
       <ErrorLine error={found.error} />
       {d && <MonthStatus data={d} />}
       {d && <Summary data={d} />}
+      {d && <PunchSites />}
     </main>
   );
 }
@@ -247,33 +256,197 @@ function Days({ employeeId, month }: { employeeId: number; month: string }) {
   });
   if (!found.data) return <ErrorLine error={found.error} />;
   return (
-    <table aria-label={t("att.days")}>
-      <thead>
-        <tr>
-          <th>{t("att.date")}</th>
-          <th>{t("att.shift")}</th>
-          <th>{t("att.in")}</th>
-          <th>{t("att.out")}</th>
-          <th>{t("att.leaveCode")}</th>
-          <th className="num">{t("att.hours")}</th>
-          <th className="num">{t("att.lateMin")}</th>
-          <th>{t("att.remarks")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {found.data.days.map((x) => (
-          <tr key={x.date}>
-            <td>{x.date}</td>
-            <td>{x.shift}</td>
-            <td>{x.time_in}</td>
-            <td>{x.time_out}</td>
-            <td>{x.leave}</td>
-            <td className="num">{x.worked}</td>
-            <td className="num">{x.late || ""}</td>
-            <td>{x.remarks}</td>
+    <>
+      <table aria-label={t("att.days")}>
+        <thead>
+          <tr>
+            <th>{t("att.date")}</th>
+            <th>{t("att.shift")}</th>
+            <th>{t("att.in")}</th>
+            <th>{t("att.out")}</th>
+            <th>{t("att.leaveCode")}</th>
+            <th className="num">{t("att.hours")}</th>
+            <th className="num">{t("att.lateMin")}</th>
+            <th>{t("att.remarks")}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {found.data.days.map((x) => (
+            <tr key={x.date}>
+              <td>{x.date}</td>
+              <td>{x.shift}</td>
+              <td>{x.time_in}</td>
+              <td>{x.time_out}</td>
+              <td>{x.leave}</td>
+              <td className="num">{x.worked}</td>
+              <td className="num">{x.late || ""}</td>
+              <td>{x.remarks}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {found.data.punches.length > 0 && (
+        <details>
+          <summary>{t("punch.raw", { count: found.data.punches.length })}</summary>
+          <ul className="plain">
+            {found.data.punches.map((p) => (
+              <li key={`${p.at}${p.kind}`}>
+                {p.at} {t(`punch.${p.kind}`)}
+                {p.site && ` — ${p.site} (${p.distance_m} m)`}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </>
+  );
+}
+
+/** P2B-12: a pay month's phone punches into attendance, after a preview. */
+function PhonePunches({ month }: { month: string }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [result, setResult] = useState<PunchBringIn | null>(null);
+  const run = useMutation({
+    mutationFn: (dryRun: boolean) => bringInPunches(month, dryRun),
+    onSuccess: (r) => {
+      setResult(r);
+      if (r.saved) void queryClient.invalidateQueries({ queryKey: attendanceKey });
+    },
+  });
+  return (
+    <section className="panel" aria-label={t("punch.bringIn")}>
+      <h2>{t("punch.bringIn")}</h2>
+      <p className="muted">{t("punch.bringInHelp")}</p>
+      <div className="inline-form">
+        <button type="button" className="secondary" disabled={run.isPending} onClick={() => run.mutate(true)}>
+          {t("punch.preview", { month })}
+        </button>
+        <button
+          type="button"
+          disabled={run.isPending || !result || result.saved || result.days === 0 || result.month !== month}
+          onClick={() => run.mutate(false)}
+        >
+          {t("punch.save")}
+        </button>
+      </div>
+      {result && (
+        <p className="notice" role="status">
+          {t(result.saved ? "punch.saved" : "punch.checked", {
+            punches: result.punches,
+            days: result.days,
+            employees: result.employees,
+          })}
+        </p>
+      )}
+      {result && result.notes.length > 0 && (
+        <ul className="plain">
+          {result.notes.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+      {result && result.rows.length > 0 && !result.saved && (
+        <table aria-label={t("punch.days")}>
+          <tbody>
+            {result.rows.map((r) => (
+              <tr key={`${r.number}${r.date}`}>
+                <td>{r.number}</td>
+                <td>{r.name}</td>
+                <td>{r.date}</td>
+                <td>
+                  {r.time_in}–{r.time_out}
+                </td>
+                <td>{r.shift}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <ErrorLine error={run.error} />
+    </section>
+  );
+}
+
+/** P2B-12: the places where staff limited to sites may clock in (a point and a radius). */
+function PunchSites() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const found = useQuery({ queryKey: punchSitesKey, queryFn: getPunchSites });
+  const empty = { name: "", latitude: "", longitude: "", radius_m: "200" };
+  const [values, setValues] = useState(empty);
+  const done = () => void queryClient.invalidateQueries({ queryKey: punchSitesKey });
+  const add = useMutation({
+    mutationFn: () => addPunchSite(values),
+    onSuccess: () => {
+      setValues(empty);
+      done();
+    },
+  });
+  const toggle = useMutation({
+    mutationFn: (s: PunchSite) => changePunchSite(s.id, { is_active: !s.is_active }),
+    onSuccess: done,
+  });
+  const d = found.data;
+  if (!d) return <ErrorLine error={found.error} />;
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    add.mutate();
+  };
+  return (
+    <section className="panel" aria-label={t("punch.sites")}>
+      <h2>{t("punch.sites")}</h2>
+      <p className="muted">{t("punch.sitesHelp")}</p>
+      <table aria-label={t("punch.sites")}>
+        <tbody>
+          {d.results.map((s) => (
+            <tr key={s.id} className={s.is_active ? "" : "muted"}>
+              <td>{s.name}</td>
+              <td>
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${s.latitude}&mlon=${s.longitude}#map=17/${s.latitude}/${s.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {s.latitude}, {s.longitude}
+                </a>
+              </td>
+              <td className="num">{t("punch.radius", { metres: s.radius_m })}</td>
+              <td>
+                {d.can_edit && (
+                  <button type="button" className="small secondary" onClick={() => toggle.mutate(s)}>
+                    {s.is_active ? t("punch.deactivate") : t("punch.activate")}
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {d.can_edit && (
+        <form className="inline-form" aria-label={t("punch.addSite")} onSubmit={submit}>
+          <label>
+            {t("punch.siteName")}
+            <input value={values.name} onChange={(e) => setValues({ ...values, name: e.target.value })} />
+          </label>
+          <label>
+            {t("punch.latitude")}
+            <input inputMode="decimal" value={values.latitude} onChange={(e) => setValues({ ...values, latitude: e.target.value })} />
+          </label>
+          <label>
+            {t("punch.longitude")}
+            <input inputMode="decimal" value={values.longitude} onChange={(e) => setValues({ ...values, longitude: e.target.value })} />
+          </label>
+          <label>
+            {t("punch.radiusM")}
+            <input inputMode="numeric" value={values.radius_m} onChange={(e) => setValues({ ...values, radius_m: e.target.value })} />
+          </label>
+          <button type="submit" disabled={add.isPending}>
+            {t("punch.addSite")}
+          </button>
+        </form>
+      )}
+      <ErrorLine error={add.error ?? toggle.error} />
+    </section>
   );
 }

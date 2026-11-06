@@ -27,6 +27,13 @@ class Employee(models.Model):
         CASUAL = "casual", "Casual"
         TRAINEE = "trainee", "Trainee"
 
+    class PhoneClock(models.TextChoices):
+        """Whether the employee may clock in and out from the phone (P2B-12)."""
+
+        OFF = "off", "Not used"
+        ANYWHERE = "anywhere", "From anywhere"
+        SITES = "sites", "Only at a site"
+
     number = models.CharField(max_length=20, unique=True)
     full_name = models.CharField(max_length=200)
     name_with_initials = models.CharField(max_length=100, blank=True)
@@ -58,6 +65,10 @@ class Employee(models.Model):
         on_delete=models.PROTECT,
         related_name="employee",
     )
+    # Phone punch clock (P2B-12): set by HR; the location is checked only with the employee's
+    # own consent, given and withdrawn on their self-service page.
+    phone_clock = models.CharField(max_length=10, choices=PhoneClock.choices, default="off")
+    location_consent_at = models.DateTimeField(null=True, blank=True)
     # Salary bank account, and its second check.
     bank_name = models.CharField(max_length=100, blank=True)
     bank_branch = models.CharField(max_length=100, blank=True)
@@ -355,6 +366,11 @@ class Leave(models.Model):
 class AttendanceImport(models.Model):
     """One attendance sheet uploaded (P2B-04): who, when, and the file's fingerprint."""
 
+    class Kind(models.TextChoices):
+        SHEET = "sheet", "Excel sheet"
+        PUNCHES = "punches", "Phone punches"
+
+    kind = models.CharField(max_length=10, choices=Kind.choices, default="sheet")
     file_name = models.CharField(max_length=200)
     sha256 = models.CharField(max_length=64)
     rows = models.PositiveIntegerField()
@@ -426,6 +442,71 @@ class AttendanceMonth(models.Model):
 
     def __str__(self):
         return f"{self.division_id} {self.month:%Y-%m}"
+
+
+class PunchSite(models.Model):
+    """A place where staff may clock in from the phone when HR limits them to sites (P2B-12):
+    a point and a radius. Never deleted (rule 9); deactivated instead."""
+
+    name = models.CharField(max_length=100, unique=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    radius_m = models.PositiveIntegerField(default=200)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    latitude__gte=-90, latitude__lte=90, longitude__gte=-180, longitude__lte=180
+                ),
+                name="payroll_punchsite_point",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(radius_m__gte=20, radius_m__lte=5000),
+                name="payroll_punchsite_radius",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class Punch(models.Model):
+    """One clock-in or clock-out from the phone (P2B-12), at the server's time, never the
+    phone's. Insert-only (database); HR brings them into attendance per pay month, and a wrong
+    day is put right with the attendance sheet."""
+
+    class Kind(models.TextChoices):
+        IN = "in", "In"
+        OUT = "out", "Out"
+
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="punches")
+    kind = models.CharField(max_length=3, choices=Kind.choices)
+    at = models.DateTimeField(default=timezone.now)
+    # Only when the location was checked (limited to sites, with consent).
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    accuracy_m = models.PositiveIntegerField(null=True, blank=True)
+    site = models.ForeignKey(
+        PunchSite, null=True, blank=True, on_delete=models.PROTECT, related_name="punches"
+    )
+    distance_m = models.PositiveIntegerField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["employee", "at"]
+        indexes = [models.Index(fields=["employee", "at"], name="payroll_punch_at")]
+
+    def __str__(self):
+        return f"{self.employee.number} {self.kind} {self.at:%Y-%m-%d %H:%M}"
 
 
 class PayPeriodRule(models.Model):

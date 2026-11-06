@@ -392,9 +392,25 @@ P2B-06**, in this order.
   account; HR approves the change (never the employee themselves), and a new salary account
   still needs the Director's check (P2B-01) before any payment uses it.
 
-- [ ] **P2B-12 Phone punch clock**
+- [x] **P2B-12 Phone punch clock**
   For staff working away: clock in and out from the phone, optionally limited to an area
   around each site (with the employee's consent); feeds attendance like the Excel upload.
+  Done: HR sets each employee's **phone clock**: not used (default), from anywhere, or only
+  at a site. The employee clocks in and out on "My pay and leave"; the time is the
+  server's, never the phone's; one clock-in, then one clock-out (a clock-in left open 20
+  hours is forgotten). **Punch sites** (attendance page): a name, a point and a radius (20 m
+  to 5 km, default 200 m); never deleted, deactivated. For "only at a site" the phone's
+  location is read only at the moment of pressing the button and only after the employee
+  ticks their **consent** on their page (they can withdraw it; HR sees whether it is given);
+  refused when the location is shared less accurately than 150 m or the nearest site is
+  further than its radius; the site and distance are kept with the punch. Punches never
+  change (database). **Into attendance**: on the attendance page HR previews and brings in a
+  pay month's punches: each day takes the first clock-in and last clock-out (a night shift
+  belongs to the day it started) and the active shift starting nearest the clock-in (within
+  2 hours) for late and early minutes; days entered from a sheet are kept (the sheet is
+  HR's correction), days from earlier punches replaced, a clock-in without a clock-out
+  listed for the sheet, today left for tomorrow, confirmed months untouched. An employee's
+  days show their raw punches.
 
 - [ ] **P2B-13 Payroll in the rest of the system**
   Net pay and statutory payments in the cash flow planner; actual labour cost per hour for

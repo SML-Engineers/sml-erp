@@ -118,7 +118,10 @@ export const MENU: MenuSection[] = [
   },
   {
     label: "menu.production",
-    items: [{ label: "mould.title", path: "/moulds", area: "production_planning" }],
+    items: [
+      { label: "mould.title", path: "/moulds", area: "production_planning" },
+      { label: "routing.title", path: "/routings", area: "production_planning" },
+    ],
   },
   {
     label: "menu.people",

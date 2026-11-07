@@ -145,6 +145,10 @@ DOCUMENT_TYPES = {
     "gratuity_setting": DocumentType("Gratuity settings", min_approvals=1, final_role="director"),
     # The year's figures to date brought over from the old payroll: HR uploads, the Director
     # approves (P2B-14).
+    # A routing (P3-03): the Production Planner prepares, the Production Manager approves
+    # (owner, 7 Nov 2026: SML has one); no fixed final role, so the Admin can route it to the
+    # Director while nobody holds the role.
+    "routing": DocumentType("Routing", min_approvals=1),
     "payroll_opening": DocumentType(
         "Opening payroll figures", min_approvals=1, final_role="director"
     ),

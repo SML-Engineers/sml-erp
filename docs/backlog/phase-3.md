@@ -86,11 +86,23 @@ Status: `[ ]` to do · `[x]` done
   force never changes (database); `reasons.setting_on(day)` gives the limits for a shift or
   order date.
 
-- [ ] **P3-03 Routings**
+- [x] **P3-03 Routings**
   For machined parts (spec 7.1): ordered operations, each with section or machine type,
   standard setup time and run time per piece, and whether it is subcontracted (supplier,
   standard cost). Revisions linked to the drawing revision; the Production Planner prepares,
   the Production Manager approves; copy a routing; Excel import and export.
+  Done: Production → **Routings**. Operations numbered 10, 20 ...: each in a section (the
+  machining method, e.g. M-LAT Manual Lathe) and optionally one of its machines (the section
+  then follows the machine), with setup minutes per batch and run minutes per piece; or sent
+  out to a supplier at a cost per piece (database: a section or a supplier). Revisions:
+  the Planner drafts (new, a new revision copied from the one in force, or a copy of another
+  part's), sends it, the **Production Manager approves** or sends it back with a reason
+  (approval engine "routing", no fixed final role so the Admin can route it to the Director
+  if nobody holds the role; never the preparer); approval makes the earlier revision
+  obsolete. One routing in force and one open draft per part; approved and obsolete
+  routings and their operations never change and are never deleted (database). Totals per
+  routing (setup, run, subcontract cost). Excel export (one row per operation) and import
+  (each part a draft, all or nothing).
 
 - [ ] **P3-04 Bills of materials**
   Spec 7.1B in full: BOM per manufactured item (finished part, sub-assembly, mould, tool)

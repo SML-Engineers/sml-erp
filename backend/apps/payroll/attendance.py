@@ -256,7 +256,18 @@ def check(user: User, content: bytes) -> Plan:
 
 
 def import_sheet(user: User, content: bytes, file_name: str, *, dry_run: bool) -> dict:
-    plan = check(user, content)
+    """The template, or the fingerprint machine's own file (P2B-21, device.py), recognised by
+    its content."""
+    from . import device
+
+    kind, notes = AttendanceImport.Kind.SHEET, []
+    if device.is_device_file(content):
+        if len(content) > MAX_BYTES:
+            raise AttendanceError("The file is larger than 5 MB.")
+        kind = AttendanceImport.Kind.DEVICE
+        plan, notes = device.check(user, content)
+    else:
+        plan = check(user, content)
     calendar = periods.calendar()
     months = sorted({calendar.month_of(r.day).isoformat()[:7] for r in plan.rows})
     summary = {
@@ -264,6 +275,8 @@ def import_sheet(user: User, content: bytes, file_name: str, *, dry_run: bool) -
         "employees": len({r.employee.pk for r in plan.rows}),
         "months": months,
         "leave_days": sum(1 for r in plan.rows if r.leave_type),
+        "source": kind,
+        "notes": notes[:200],
     }
     if plan.errors:
         return summary | {"errors": plan.errors[:100], "saved": False}
@@ -273,6 +286,7 @@ def import_sheet(user: User, content: bytes, file_name: str, *, dry_run: bool) -
         return summary | {"errors": [], "saved": False}
     with audit_context("attendance_imported", file_name), transaction.atomic():
         source = AttendanceImport.objects.create(
+            kind=kind,
             file_name=(file_name or "attendance.xlsx")[:200],
             sha256=hashlib.sha256(content).hexdigest(),
             rows=len(plan.rows),

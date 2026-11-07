@@ -74,6 +74,7 @@ def _detail(e: Employee, user) -> dict:
         "phone": e.phone,
         "email": e.email,
         "epf_no": e.epf_no,
+        "device_id": e.device_id,
         "etf_no": e.etf_no,
         "grade": e.grade,
         "confirmation_date": e.confirmation_date,

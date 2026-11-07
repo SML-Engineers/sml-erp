@@ -41,6 +41,7 @@ TEXT_FIELDS = (
     "email",
     "epf_no",
     "etf_no",
+    "device_id",
     "designation",
     "grade",
     "leaving_reason",
@@ -62,6 +63,7 @@ COLUMNS = [
     ("confirmation_date", "Confirmation date"),
     ("epf_no", "EPF no"),
     ("etf_no", "ETF no"),
+    ("device_id", "Fingerprint ID"),
     ("phone", "Phone"),
     ("email", "Email"),
     ("address", "Address"),
@@ -168,6 +170,18 @@ def clean(user: User, values: dict, current: Employee | None = None) -> dict:
         raise EmployeeError("The email address is not valid.")
     if out.get("epf_no") and not re.match(r"^[0-9A-Z/-]{1,20}$", out["epf_no"].upper()):
         raise EmployeeError("The EPF number is digits (and / or -).")
+    if out.get("device_id"):
+        # P2B-21: the fingerprint machine's ID, one employee each.
+        if not re.match(r"^[0-9A-Za-z-]{1,20}$", out["device_id"]):
+            raise EmployeeError("The fingerprint ID is the number the machine shows, e.g. 220.")
+        taken = Employee.objects.filter(device_id=out["device_id"])
+        if current is not None:
+            taken = taken.exclude(pk=current.pk)
+        other = taken.first()
+        if other is not None:
+            raise EmployeeError(
+                f"Fingerprint ID {out['device_id']} is already {other.number} {other.full_name}'s."
+            )
     if out.get("account_number"):
         out["account_number"] = out["account_number"].upper()
         if not ACCOUNT_NUMBER.match(out["account_number"]):
@@ -390,6 +404,7 @@ def export_workbook(rows) -> bytes:
                 e.confirmation_date,
                 e.epf_no,
                 e.etf_no,
+                e.device_id,
                 e.phone,
                 e.email,
                 e.address,

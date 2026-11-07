@@ -40,7 +40,7 @@ const list: EmployeeList = {
 const employee: Employee = {
   ...list.results[0],
   name_with_initials: "K. Perera", nic: "199012345678", date_of_birth: "1990-05-01", address: "", phone: "",
-  email: "", epf_no: "1234", etf_no: "", grade: "", confirmation_date: null, leaving_date: null, leaving_reason: "", phone_clock: "off", location_consent_at: null,
+  email: "", epf_no: "1234", etf_no: "", device_id: "", grade: "", confirmation_date: null, leaving_date: null, leaving_reason: "", phone_clock: "off", location_consent_at: null,
   user: null, bank_name: "Commercial Bank", bank_branch: "Kandy", account_name: "K Perera",
   account_number: "8001234567", bank_changed_at: "2026-11-05T09:00:00Z", bank_changed_by: "HR Officer",
   bank_checked_at: null, bank_checked_by: null, created_by: "HR Officer", created_at: "2026-11-05T09:00:00Z",

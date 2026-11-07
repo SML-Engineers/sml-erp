@@ -32,6 +32,7 @@ export interface Employee extends EmployeeRow {
   email: string;
   epf_no: string;
   etf_no: string;
+  device_id: string;
   grade: string;
   confirmation_date: string | null;
   leaving_date: string | null;
@@ -84,6 +85,7 @@ export const EMPLOYEE_FIELDS = [
   "confirmation_date",
   "epf_no",
   "etf_no",
+  "device_id",
   "phone",
   "email",
   "address",

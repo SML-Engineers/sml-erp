@@ -113,3 +113,22 @@ test("HR adds a punch site and deactivates one", async () => {
     expect(calls).toHaveBeenCalledWith("/api/v1/punch-sites/1/", expect.objectContaining({ method: "PATCH" })),
   );
 });
+
+test("the fingerprint machine's file is checked like the template, with the days not brought in", async () => {
+  mockApi({
+    "GET /api/v1/attendance/": { body: month },
+    "GET /api/v1/punch-sites/": { body: sites },
+    "POST /api/v1/attendance/import/": {
+      body: {
+        rows: 3, employees: 1, months: ["2026-11"], leave_days: 0, errors: [], saved: false, source: "device",
+        notes: ["E001 2026-10-22: only one punch (08:30); enter the day in the sheet."],
+      },
+    },
+  });
+  renderAt("/attendance", <AttendancePage />);
+  const file = new File(["<Workbook/>"], "01Schedule-26-10.XLS");
+  fireEvent.change(await screen.findByLabelText("Excel file"), { target: { files: [file] } });
+  fireEvent.click(screen.getByRole("button", { name: "Check the file" }));
+  expect(await screen.findByText(/Fingerprint machine file:/)).toBeInTheDocument();
+  expect(screen.getByText(/only one punch \(08:30\)/)).toBeInTheDocument();
+});

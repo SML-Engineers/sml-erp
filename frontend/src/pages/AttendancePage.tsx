@@ -130,12 +130,20 @@ function Upload() {
       )}
       {result && result.errors.length === 0 && (
         <p className="notice" role="status">
+          {result.source === "device" && `${t("att.fromDevice")} `}
           {t(result.saved ? "att.saved" : "att.checked", {
             rows: result.rows,
             employees: result.employees,
             months: result.months.join(", "),
           })}
         </p>
+      )}
+      {result && (result.notes?.length ?? 0) > 0 && (
+        <ul className="plain muted" aria-label={t("att.notBroughtIn")}>
+          {result.notes!.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
       )}
       <ErrorLine error={run.error} />
     </section>

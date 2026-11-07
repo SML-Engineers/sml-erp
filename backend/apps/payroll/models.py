@@ -44,6 +44,9 @@ class Employee(models.Model):
     email = models.EmailField(blank=True)
     epf_no = models.CharField("EPF number", max_length=20, blank=True)
     etf_no = models.CharField("ETF number", max_length=20, blank=True)
+    # The employee's ID on the fingerprint machine (P2B-21): its attendance file names
+    # people by this number.
+    device_id = models.CharField("Fingerprint ID", max_length=20, blank=True)
     division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
     section = models.ForeignKey(
         "masters.Section", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
@@ -95,6 +98,11 @@ class Employee(models.Model):
                 condition=models.Q(leaving_date__isnull=True)
                 | models.Q(leaving_date__gte=models.F("join_date")),
                 name="payroll_employee_dates",
+            ),
+            models.UniqueConstraint(
+                fields=["device_id"],
+                condition=~models.Q(device_id=""),
+                name="payroll_employee_device_id_once",
             ),
         ]
 
@@ -369,6 +377,7 @@ class AttendanceImport(models.Model):
     class Kind(models.TextChoices):
         SHEET = "sheet", "Excel sheet"
         PUNCHES = "punches", "Phone punches"
+        DEVICE = "device", "Fingerprint machine"
 
     kind = models.CharField(max_length=10, choices=Kind.choices, default="sheet")
     file_name = models.CharField(max_length=200)

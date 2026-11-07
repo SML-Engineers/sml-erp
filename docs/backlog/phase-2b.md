@@ -438,6 +438,24 @@ P2B-06**, in this order.
   listed for the sheet, today left for tomorrow, confirmed months untouched. An employee's
   days show their raw punches.
 
+
+- [x] **P2B-21 Attendance from the fingerprint machine's file**
+  The owner sent the fingerprint machine's own export (7 Nov 2026): its "Schedule" report,
+  an Excel 2003 XML file named .XLS, with per person a block (ID, name, department, shift,
+  date range) and per day up to three IN/OUT pairs of clock times. HR uploads it as it is
+  on the attendance page, in the same box as the template (recognised by its content).
+  Done: each employee gets a **Fingerprint ID** (employee page and import; one employee
+  each); a person with punches but no matching employee is an error to fix first; a block
+  with no punches is ignored. Each day takes the earliest punch as time in and the latest
+  as time out (the machine repeats a time as OUT and IN); the shift is the active shift
+  starting nearest the time in (within 2 hours) for late and early minutes. Listed and not
+  brought in: a day with one punch only (enter it in the sheet; night shifts crossing
+  midnight show this way), days outside employment; kept as they are: days entered from
+  the sheet (HR's corrections) and days of leave; days from an earlier machine file are
+  replaced; today waits for tomorrow; a confirmed pay month is an error. The file is read
+  with defusedxml (new dependency) so a crafted upload cannot attack the server. The
+  owner's file itself was used only to learn the layout and is not in the repository; the
+  tests use a made-up file in the same layout.
 - [x] **P2B-13 Payroll in the rest of the system**
   Net pay and statutory payments in the cash flow planner; actual labour cost per hour for
   job costing (Phase 3); payroll as a report builder source (HR and payroll area only);

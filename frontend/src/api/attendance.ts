@@ -53,6 +53,9 @@ export interface AttendanceImportResult {
   leave_days: number;
   errors: string[];
   saved: boolean;
+  /** P2B-21: "device" for the fingerprint machine's own file; its days not brought in. */
+  source?: "sheet" | "device";
+  notes?: string[];
 }
 
 export const attendanceKey = ["attendance"] as const;

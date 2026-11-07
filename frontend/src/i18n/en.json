@@ -3739,7 +3739,8 @@
       "account_number": "Account number",
       "category": "Category",
       "user_email": "Sign-in email (for self-service)",
-      "phone_clock": "Phone clock"
+      "phone_clock": "Phone clock",
+      "device_id": "Fingerprint ID"
     },
     "categories": {
       "shop_office": "Shop and Office",
@@ -3936,7 +3937,7 @@
     "month": "Pay month",
     "division": "Division",
     "upload": "Upload the attendance sheet",
-    "uploadHelp": "The file is checked first; if any row is wrong nothing is saved and every wrong row is listed. A leave code with no times is a day of leave; with times, half a day.",
+    "uploadHelp": "The file is checked first; if any row is wrong nothing is saved and every wrong row is listed. A leave code with no times is a day of leave; with times, half a day. The fingerprint machine's own file (its Schedule report) can be uploaded as it is: people are matched by the Fingerprint ID on their employee page.",
     "template": "Download the template",
     "file": "Excel file",
     "check": "Check the file",
@@ -3968,7 +3969,9 @@
     "out": "Out",
     "leaveCode": "Leave",
     "lateMin": "Late (min)",
-    "remarks": "Remarks"
+    "remarks": "Remarks",
+    "fromDevice": "Fingerprint machine file:",
+    "notBroughtIn": "Days not brought in"
   },
   "ot": {
     "title": "Overtime",

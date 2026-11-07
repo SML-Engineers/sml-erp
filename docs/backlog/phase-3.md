@@ -104,7 +104,7 @@ Status: `[ ]` to do · `[x]` done
   routing (setup, run, subcontract cost). Excel export (one row per operation) and import
   (each part a draft, all or nothing).
 
-- [ ] **P3-04 Bills of materials**
+- [x] **P3-04 Bills of materials**
   Spec 7.1B in full: BOM per manufactured item (finished part, sub-assembly, mould, tool)
   for one unit or a batch; lines for raw material, masterbatch and additives (% of resin),
   bought-out parts, sub-assemblies (multi-level), subcontract services and packing, each
@@ -115,6 +115,24 @@ Status: `[ ]` to do · `[x]` done
   regrind %); family moulds as one BOM with several outputs. Revision, effective date,
   status Draft → Approved (Production Manager) → Obsolete. Copy, compare two revisions,
   Excel import and export, where-used, standard cost rolled up through all levels.
+  Done: Production → **Bills of materials**. Kinds machining, moulding and general; a base
+  quantity (one unit or a batch; a moulding BOM is per 1000 pieces or, for a family mould,
+  per shot). Lines: raw material, masterbatch, bought-out part, sub-assembly (its own BOM,
+  never in a loop), subcontract service (supplier and cost) and packing, each with
+  quantity, scrap %, operation number, manual or backflush issue and customer-supplied.
+  Machining calculator: leave the quantity blank and give the cut length (plus bar length,
+  facing and saw cut): length per piece, pieces per bar and the stock per piece (kg from
+  the item's kg per metre, or metres). Moulding calculator: shot weight from the mould's
+  parts (cavities × part weight) and runner, reject allowance → resin per piece;
+  masterbatch as % of resin; maximum regrind %; family moulds list several parts. Draft →
+  sent → **Production Manager approves** (approval engine "bom", never the preparer) →
+  the earlier revision becomes obsolete; approved BOMs and their lines never change
+  (database). New revision, copy to another part, compare two revisions, where-used, Excel
+  export and import (all or nothing). Standard cost per unit: materials at their current
+  stock cost, sub-assemblies through their own BOMs, services at their cost,
+  customer-supplied at 0, plus machine time from the routing at the machine-hour rates;
+  anything without a cost is listed rather than guessed. Overhead and labour rates come
+  with P3-05.
 
 - [ ] **P3-05 Production cost rates**
   Dated rates (rule 11), maintained by the Accountant: labour rate per section (by default

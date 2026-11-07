@@ -284,3 +284,160 @@ class RoutingOperation(models.Model):
 
     def __str__(self):
         return f"{self.seq} {self.name}"
+
+
+class Bom(models.Model):
+    """A bill of materials (spec 7.1B; backlog P3-04): what makes `base_quantity` of an item
+    (a finished part, sub-assembly, mould or tool); for a family mould, one mould run (a
+    shot) with each part as an output. Revisions as routings: the Production Planner
+    prepares, the Production Manager approves (approval engine, "bom"), the approved one
+    replaces the item's BOM in force; approved and obsolete BOMs never change and are never
+    deleted (database). Orders copy the BOM in force when released (P3-06, P3-11)."""
+
+    class Kind(models.TextChoices):
+        GENERAL = "general", "General"
+        MACHINING = "machining", "Machining"
+        MOULDING = "moulding", "Moulding"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING = "awaiting", "Waiting for approval"
+        APPROVED = "approved", "Approved"
+        OBSOLETE = "obsolete", "Obsolete"
+
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="boms")
+    revision = models.PositiveSmallIntegerField()
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.GENERAL)
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    drawing_revision = models.CharField(max_length=20, blank=True)
+    effective_from = models.DateField(default=timezone.localdate)
+    base_quantity = models.DecimalField(max_digits=14, decimal_places=4, default=1)
+    # Moulding: the mould, and the part data the resin is worked out from.
+    mould = models.ForeignKey(
+        Mould, null=True, blank=True, on_delete=models.PROTECT, related_name="boms"
+    )
+    reject_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    max_regrind_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["item__code", "-revision"]
+        constraints = [
+            models.UniqueConstraint(fields=["item", "revision"], name="production_bom_rev"),
+            models.UniqueConstraint(
+                fields=["item"],
+                condition=models.Q(status="approved"),
+                name="production_bom_one_in_force",
+            ),
+            models.UniqueConstraint(
+                fields=["item"],
+                condition=models.Q(status__in=["draft", "awaiting"]),
+                name="production_bom_one_open",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    base_quantity__gt=0,
+                    reject_pct__gte=0,
+                    reject_pct__lt=100,
+                ),
+                name="production_bom_quantities",
+            ),
+        ]
+
+    def __str__(self):
+        return f"BOM {self.item_id} rev {self.revision}"
+
+
+class BomLine(models.Model):
+    """One component of a BOM (spec 7.1B): its type, the quantity for the BOM's base
+    quantity in the component's unit, scrap allowance, the operation it is used at, how it is
+    issued, and whether the customer supplies it. A subcontract service has a description and
+    supplier instead of an item."""
+
+    class Type(models.TextChoices):
+        RAW = "raw", "Raw material"
+        MASTERBATCH = "masterbatch", "Masterbatch or additive"
+        BOUGHT = "bought", "Bought-out part"
+        SUB_ASSEMBLY = "sub_assembly", "Sub-assembly"
+        SUBCONTRACT = "subcontract", "Subcontract service"
+        PACKING = "packing", "Packing"
+
+    class Issue(models.TextChoices):
+        MANUAL = "manual", "Manual issue"
+        BACKFLUSH = "backflush", "Backflush"
+
+    bom = models.ForeignKey(Bom, on_delete=models.CASCADE, related_name="lines")
+    seq = models.PositiveSmallIntegerField()
+    line_type = models.CharField(max_length=15, choices=Type.choices)
+    component = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="used_in"
+    )
+    description = models.CharField(max_length=150, blank=True)
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    quantity = models.DecimalField(max_digits=14, decimal_places=6)
+    unit = models.CharField(max_length=10)
+    scrap_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    # Masterbatch and additives: % of the resin's weight (the quantity follows from it).
+    pct_of_resin = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    operation_seq = models.PositiveSmallIntegerField(null=True, blank=True)
+    issue_method = models.CharField(max_length=10, choices=Issue.choices, default=Issue.MANUAL)
+    customer_supplied = models.BooleanField(default=False)
+    unit_cost = models.DecimalField(
+        "Subcontract cost per unit", max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    # Machining: the stock and how each piece is cut from it (mm).
+    stock_size = models.CharField(max_length=50, blank=True)
+    bar_length_mm = models.DecimalField(max_digits=9, decimal_places=1, null=True, blank=True)
+    cut_length_mm = models.DecimalField(max_digits=9, decimal_places=1, null=True, blank=True)
+    facing_mm = models.DecimalField(max_digits=7, decimal_places=1, null=True, blank=True)
+    saw_mm = models.DecimalField(max_digits=7, decimal_places=1, null=True, blank=True)
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["bom", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["bom", "seq"], name="production_bomline_seq"),
+            models.CheckConstraint(
+                condition=models.Q(line_type="subcontract", supplier__isnull=False)
+                | (~models.Q(line_type="subcontract") & models.Q(component__isnull=False)),
+                name="production_bomline_what",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0, scrap_pct__gte=0, scrap_pct__lt=100),
+                name="production_bomline_quantities",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.seq} {self.component_id or self.description}"
+
+
+class BomOutput(models.Model):
+    """A part made by one run of a family mould's BOM, with its cavities and part weight; a
+    single-part moulding BOM has one output (the item itself)."""
+
+    bom = models.ForeignKey(Bom, on_delete=models.CASCADE, related_name="outputs")
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
+    cavities = models.PositiveSmallIntegerField()
+    part_weight_g = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        ordering = ["bom", "item__code"]
+        constraints = [
+            models.UniqueConstraint(fields=["bom", "item"], name="production_bomoutput_once"),
+            models.CheckConstraint(
+                condition=models.Q(cavities__gte=1, part_weight_g__gt=0),
+                name="production_bomoutput_values",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.item_id} x {self.cavities}"

@@ -139,6 +139,7 @@ def test_the_admin_sets_the_reminders(admin, accountant):
         ("gratuity_setting", True, 1),
         ("payroll_opening", True, 1),
         ("routing", True, 1),
+        ("bom", True, 1),
     }
     changed = client.put(
         "/api/v1/settings/approval-reminders/",

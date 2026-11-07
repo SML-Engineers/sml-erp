@@ -11,10 +11,12 @@ from rest_framework.views import APIView
 from apps.core.access import division_scope
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess
+from apps.inventory.models import Item
 from apps.masters.models import Machine
 
-from . import labels, moulds, reasons, routings
-from .models import Mould, ProductionSetting, ReasonCode, Routing
+from . import boms, labels, moulds, reasons, routings
+from .boms import BomError
+from .models import Bom, BomLine, Mould, ProductionSetting, ReasonCode, Routing
 from .moulds import ImportRefused, MouldError
 from .reasons import ReasonError
 from .routings import RoutingError
@@ -283,6 +285,138 @@ class RoutingImportView(_Planning):
         try:
             result = routings.import_workbook(request.user, uploaded.read(), dry_run=dry_run)
         except routings.ImportRefused as refused:
+            return Response(
+                {"detail": "Nothing was imported.", "errors": refused.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(result)
+
+
+# --- Bills of materials (P3-04) ------------------------------------------------------------------
+
+
+class BomListView(_Planning):
+    access_write_level = "view"  # the service checks who prepares
+
+    def get(self, request):
+        query = request.query_params
+        found = boms.search(query.get("q", "").strip(), query.get("status", ""))
+        return Response(
+            {
+                "results": [boms.payload(b, request.user) for b in found],
+                "can_prepare": boms.can_prepare(request.user),
+                "statuses": [{"value": v, "label": label} for v, label in Bom.Status.choices],
+                "line_types": [{"value": v, "label": label} for v, label in BomLine.Type.choices],
+            }
+        )
+
+    def post(self, request):
+        try:
+            bom = boms.create(request.user, request.data)
+        except BomError as error:
+            return _error(error)
+        return Response(boms.payload(bom, request.user), status=status.HTTP_201_CREATED)
+
+
+class BomDetailView(_Planning):
+    access_write_level = "view"
+
+    def get(self, request, pk):
+        return Response(boms.payload(get_object_or_404(Bom, pk=pk), request.user))
+
+    def patch(self, request, pk):
+        try:
+            bom = boms.update(request.user, get_object_or_404(Bom, pk=pk), request.data)
+        except BomError as error:
+            return _error(error)
+        return Response(boms.payload(bom, request.user))
+
+    def delete(self, request, pk):
+        try:
+            boms.delete(request.user, get_object_or_404(Bom, pk=pk))
+        except BomError as error:
+            return _error(error)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BomActionView(_Planning):
+    """submit, approve, send_back ({reason}) or copy ({item}: another item; blank: same)."""
+
+    access_write_level = "view"
+
+    def post(self, request, pk, action):
+        bom = get_object_or_404(Bom, pk=pk)
+        try:
+            if action == "submit":
+                bom = boms.submit(request.user, bom)
+            elif action == "copy":
+                bom = boms.copy(request.user, bom, request.data.get("item") or None)
+            else:
+                bom = boms.decide(request.user, bom, action, request.data.get("reason", ""))
+        except BomError as error:
+            return _error(error)
+        return Response(boms.payload(bom, request.user))
+
+
+class BomCompareView(_Planning):
+    """?a=<id>&b=<id>"""
+
+    def get(self, request):
+        a = get_object_or_404(Bom, pk=request.query_params.get("a") or 0)
+        b = get_object_or_404(Bom, pk=request.query_params.get("b") or 0)
+        return Response(
+            {
+                "a": f"{a.item.code} rev {a.revision}",
+                "b": f"{b.item.code} rev {b.revision}",
+                "lines": boms.compare(a, b),
+            }
+        )
+
+
+class BomWhereUsedView(_Planning):
+    """?item=CODE"""
+
+    def get(self, request):
+        item = get_object_or_404(Item, code=request.query_params.get("item", "").strip().upper())
+        return Response(boms.where_used(item))
+
+
+class BomMachiningCalcView(_Planning):
+    """The machining calculator: ?component=CODE&bar_length_mm=&cut_length_mm=&facing_mm=&saw_mm="""
+
+    def get(self, request):
+        query = request.query_params
+        try:
+            component = boms._item(query.get("component"))
+            values = {
+                f: boms._decimal(query.get(f), f.replace("_", " "), 1)
+                for f in ("bar_length_mm", "cut_length_mm", "facing_mm", "saw_mm")
+            }
+            result = boms.machining(component, **values)
+        except BomError as error:
+            return _error(error)
+        return Response(result | {"quantity": f"{result['quantity'].normalize():f}"})
+
+
+class BomExportView(_Planning):
+    def get(self, request):
+        response = HttpResponse(boms.export_workbook(), content_type=XLSX)
+        today = timezone.localdate().isoformat()
+        response["Content-Disposition"] = f'attachment; filename="boms-{today}.xlsx"'
+        return response
+
+
+class BomImportView(_Planning):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        uploaded = request.FILES.get("file")
+        if uploaded is None:
+            return _error("Choose an Excel file to import.")
+        dry_run = str(request.data.get("dry_run", "true")).lower() not in ("false", "0", "no")
+        try:
+            result = boms.import_workbook(request.user, uploaded.read(), dry_run=dry_run)
+        except boms.ImportRefused as refused:
             return Response(
                 {"detail": "Nothing was imported.", "errors": refused.errors},
                 status=status.HTTP_400_BAD_REQUEST,

@@ -10,6 +10,9 @@ class ProductionConfig(AppConfig):
         from apps.core.audit import register
 
         from .models import (
+            Bom,
+            BomLine,
+            BomOutput,
             Mould,
             MouldPart,
             ProductionSetting,
@@ -18,5 +21,15 @@ class ProductionConfig(AppConfig):
             RoutingOperation,
         )
 
-        for model in (Mould, MouldPart, ReasonCode, ProductionSetting, Routing, RoutingOperation):
+        for model in (
+            Mould,
+            MouldPart,
+            ReasonCode,
+            ProductionSetting,
+            Routing,
+            RoutingOperation,
+            Bom,
+            BomLine,
+            BomOutput,
+        ):
             register(model)

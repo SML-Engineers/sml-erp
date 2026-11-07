@@ -5,6 +5,7 @@ handover of 3 Nov 2026 (in the git history of this file; its sections on earlier
 still worth reading there).
 
 **Read in this order:** this file → `CLAUDE.md` (the non-negotiable rules) →
+`docs/backlog/phase-3.md` (production; its questions for the owner at the end) →
 `docs/backlog/phase-2b.md` (with the owner's answers of 5 Nov 2026 under its questions) →
 the spec sections of the task in hand.
 
@@ -40,7 +41,8 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.5 Sales documents | phase-1-5.md | Built. Only **P15-12 UAT and go-live** open. |
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | **P2-00 to P2-28 merged.** **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137: `docs/uat-scripts.md` and the QuickBooks comparison page) but stays **unticked until the owner's sign-off**. |
-| **2b Payroll and people** | **phase-2b.md** | **P2B-01 to P2B-05 merged** (#139–#143). The owner's answers of 5 Nov 2026 are recorded (#144, `docs/phase-2b-answers`) with new tasks P2B-15, P2B-16, P2B-17 before P2B-06. #144–#152 merged (P2B-15, answers, P2B-16, P2B-17, P2B-06 payroll, P2B-07 posting, P2B-08 payslips, P2B-09 returns). #153–#157 merged (P2B-10 advances and loans, P2B-11 self-service, P2B-12 phone punch clock, P2B-20 detail-change requests, P2B-13 payroll in the rest of the system). #158 merged (P2B-19 gratuity). **P2B-14** payroll takeover in PR #159. That completes Phase 2b except P2B-18 (Commercial Bank file), which waits for the bank's format. Next: the owner chooses what comes next (Phase 3 has no backlog yet). |
+| 2b Payroll and people | phase-2b.md | **P2B-01 to P2B-05 merged** (#139–#143). The owner's answers of 5 Nov 2026 are recorded (#144, `docs/phase-2b-answers`) with new tasks P2B-15, P2B-16, P2B-17 before P2B-06. #144–#152 merged (P2B-15, answers, P2B-16, P2B-17, P2B-06 payroll, P2B-07 posting, P2B-08 payslips, P2B-09 returns). #153–#157 merged (P2B-10 advances and loans, P2B-11 self-service, P2B-12 phone punch clock, P2B-20 detail-change requests, P2B-13 payroll in the rest of the system). #158 merged (P2B-19 gratuity). #159 merged (P2B-14 payroll takeover). Built except P2B-18 (Commercial Bank file), which waits for the bank's format. |
+| **3 Production** | **phase-3.md** | Backlog written from spec 7 in PR #160 (P3-01 to P3-22: masters, moulding first, machining, costing and profitability, OEE and reports, shop-floor languages and offline entry, UAT); questions sent to the owner 7 Nov 2026. Next: **P3-01 Moulds**. |
 
 Pull requests merged in this session: #126 (CI fix after making the repo public), #127 P2-21
 revaluation, #128 P2-22 budgets, #129 P2-23 month/year-end close, #130 quotation pictures

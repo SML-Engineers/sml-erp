@@ -78,6 +78,7 @@ import PayrollPage from "./pages/PayrollPage";
 import StatutoryReturnsPage from "./pages/StatutoryReturnsPage";
 import TaxTablesPage from "./pages/TaxTablesPage";
 import GratuityPage from "./pages/GratuityPage";
+import MouldsPage from "./pages/MouldsPage";
 import PayrollTakeoverPage from "./pages/PayrollTakeoverPage";
 import WorkRulesPage from "./pages/WorkRulesPage";
 import HolidaysPage from "./pages/HolidaysPage";
@@ -212,6 +213,7 @@ export default function App() {
         <Route path="payroll/:id" element={<PayrollPage />} />
         <Route path="payroll-tax-tables" element={<TaxTablesPage />} />
         <Route path="gratuity" element={<GratuityPage />} />
+        <Route path="moulds" element={<MouldsPage />} />
         <Route path="payroll-returns" element={<StatutoryReturnsPage />} />
         <Route path="advances-loans" element={<AdvancesLoansPage />} />
         <Route path="my" element={<MyPage />} />

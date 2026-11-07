@@ -292,7 +292,8 @@
     "approveVouchers": "Approve vouchers",
     "sales": "Sales",
     "purchasing": "Purchasing and stores",
-    "people": "People and payroll"
+    "people": "People and payroll",
+    "production": "Production"
   },
   "layout": {
     "menu": "Menu",
@@ -4310,5 +4311,53 @@
     "note": "Note (needed when there are differences)",
     "signOff": "Sign off",
     "waitingSignOff": "Waiting for the Director's sign-off."
+  },
+  "mould": {
+    "title": "Moulds",
+    "help": "Each mould, the parts it makes with their cavities, its size and the machines it can run on. A warning shows when a mould looks too big for a machine. Customer moulds are tracked for shots and maintenance only; a company mould can be linked to its fixed asset.",
+    "search": "Search (code, name or part)",
+    "status": "Status",
+    "all": "All",
+    "add": "Add a mould",
+    "edit": "Mould {{code}}",
+    "export": "Download as Excel",
+    "labels": "Print QR labels",
+    "code": "Code",
+    "name": "Name",
+    "parts": "Parts × cavities",
+    "partsInput": "Parts and cavities (part code x cavities; ...)",
+    "owner": "Owner",
+    "company": "Company",
+    "customer": "Customer",
+    "customerCode": "Customer code",
+    "asset": "Fixed asset code (if in the register)",
+    "cycle": "Cycle (s)",
+    "machines": "Compatible machines",
+    "noMachines": "No moulding machines yet (Settings → Factory).",
+    "shots": "Shots",
+    "pmDue": "Maintenance at {{at}}",
+    "fitWarning_one": "(1 size warning)",
+    "fitWarning_other": "({{count}} size warnings)",
+    "none": "No moulds yet.",
+    "notes": "Notes",
+    "save": "Save",
+    "savedWithWarnings": "Saved. Check that the mould fits:",
+    "f": {
+      "cycle_time_s": "Standard cycle time (s)",
+      "shot_weight_g": "Shot weight with runner (g)",
+      "runner_weight_g": "Runner weight (g)",
+      "tonnage_t": "Clamping force needed (t)",
+      "width_mm": "Width (mm)",
+      "height_mm": "Height (mm)",
+      "thickness_mm": "Thickness, closed (mm)",
+      "pm_interval_shots": "Maintenance every (shots)"
+    },
+    "import": "Import from Excel",
+    "importHelp": "Download the moulds as Excel, change or add rows, and import the file. It is checked first; if any row is wrong nothing is imported and every wrong row is listed.",
+    "file": "Excel file",
+    "check": "Check the file",
+    "importNow": "Import",
+    "checked": "Checked: {{created}} new and {{changed}} changed moulds. Nothing saved yet.",
+    "imported": "Imported: {{created}} new and {{changed}} changed moulds."
   }
 }

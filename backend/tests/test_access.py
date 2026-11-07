@@ -52,7 +52,10 @@ def test_standard_roles_are_loaded_with_phase_one_and_sales_roles_active():
         "store_supervisor",
         "qc_inspector",
         "hr_payroll_officer",
-    }  # Phase 1.5 (P15-01), Phase 1.6 (P16-02) and Phase 2b (P2B-01)
+        "production_planner",
+        "production_supervisor",
+        "production_manager",
+    }  # Phase 1.5 (P15-01), Phase 1.6 (P16-02), Phase 2b (P2B-01) and Phase 3 (P3-01)
     assert Role.objects.filter(is_standard=True).count() == len(STANDARD_ROLES_V1)
 
 
@@ -354,12 +357,14 @@ def test_admin_cannot_change_their_own_roles_or_scope(admin):
     assert roles.status_code == scope.status_code == deactivate.status_code == 403
 
 
-def test_later_phase_roles_cannot_be_assigned_yet(admin):
+def test_a_role_not_switched_on_cannot_be_assigned(admin):
+    # Every standard role is on since Phase 3 (P3-01); a role switched off still refuses.
+    Role.objects.create(code="later_role", name="Later role", is_active=False)
     user = person("s@sml.lk")
     response = as_user(admin).put(
-        f"/api/v1/users/{user.pk}/roles/", {"roles": ["production_planner"]}, format="json"
+        f"/api/v1/users/{user.pk}/roles/", {"roles": ["later_role"]}, format="json"
     )
-    assert response.status_code == 400
+    assert response.status_code == 400 and "Not available yet" in response.json()["detail"]
 
 
 # --- Phase 1.6 roles (P16-02, spec 5A.6) ----------------------------------------------------

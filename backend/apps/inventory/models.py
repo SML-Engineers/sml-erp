@@ -21,6 +21,9 @@ class Item(models.Model):
         CONSUMABLE = "consumable", "Consumable"
         SPARE = "spare", "Spare part"
         PACKING = "packing", "Packing material"
+        # Phase 3 (P3-01): parts the factory makes (moulded or machined), held in Finished
+        # goods once production is approved.
+        FINISHED = "finished", "Finished part"
 
     class Unit(models.TextChoices):
         PCS = "pcs", "pcs"

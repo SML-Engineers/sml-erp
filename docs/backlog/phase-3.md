@@ -40,7 +40,7 @@ Status: `[ ]` to do · `[x]` done
 
 ## A. Masters
 
-- [ ] **P3-01 Moulds**
+- [x] **P3-01 Moulds**
   Mould master (spec 7.1): code, name, part(s) it makes with cavities per part (a family
   mould makes several parts), standard cycle time, shot and runner weight, required tonnage
   and size, compatible machines, owner (company or customer), the fixed asset it is (P2-19,
@@ -48,12 +48,30 @@ Status: `[ ]` to do · `[x]` done
   when a mould is set against a machine too small for it (tonnage, shot weight, tie-bar
   spacing, mould height and thickness). Admin page with Excel import and export like
   3A.1; QR label per mould.
+  Done: a new `production` app; the Production Planner, Production Supervisor and
+  Production Manager roles switched on. **Moulds** page (Production → Moulds; Production
+  planning area, kept by the Planner and the Admin): code, name, division (IM by default),
+  parts with cavities (a family mould lists several), owner (company, or a customer's: then
+  the customer, and never a company asset), the fixed asset of a company mould (optional:
+  none is in the register yet), standard cycle time (s), shot weight with the runner and
+  runner weight (g), clamping force needed (t), width, height and closed thickness (mm),
+  compatible moulding machines, maintenance interval in shots, shot count, status (active,
+  under maintenance, retired), notes. **Fit warnings** (never refusals) per compatible
+  machine: clamping force, shot weight, maximum mould thickness and height, tie-bar spacing
+  either way round; an unknown measure is not checked. Excel export and import (checked
+  first, all or nothing), QR labels (100 x 50 mm, the code in the QR). The code is fixed
+  once a production document uses the mould, and a used mould is retired, never deleted
+  (database, as sections and machines). Items get a new category **Finished part**
+  (Finished goods account 1230) for the parts the factory makes.
 
 - [ ] **P3-02 Reason codes and production settings**
   Reject reasons and downtime reasons per division (spec 7.1, 7.4: breakdown, mould change,
   setup, power failure, no material, no operator, planned maintenance), each marked planned
-  or unplanned for OEE; added and deactivated by the Admin. Production settings: the entry
-  grace period after a shift (default 2 hours), reject % alert limit, cost overrun alert %.
+  or unplanned for OEE; added and deactivated by the Admin. **Production settings page**
+  (owner: limits set later by an authorised person in a control panel, not in code): the
+  entry grace period after a shift (**4 hours**, owner), reject % alert limit (5%), cost
+  overrun alert % (10%), minimum margin (the quotation's). Changing a setting is recorded
+  and dated (rule 11).
 
 - [ ] **P3-03 Routings**
   For machined parts (spec 7.1): ordered operations, each with section or machine type,
@@ -76,7 +94,9 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P3-05 Production cost rates**
   Dated rates (rule 11), maintained by the Accountant: labour rate per section (by default
   the latest approved payroll's labour cost per hour, P2B-13, which the Accountant accepts
-  or overrides), overhead rate per machine hour, regrind credit value per kg, mould
+  or overrides), overhead rate per machine hour (0 until set; P3-23 later works it out from
+  past data), regrind credit value per kg (**100% of the original material's cost**, owner;
+  regrind is reused in the same part and in other parts), mould
   amortisation per shot for company moulds (mould cost ÷ expected life in shots). Machine
   hourly rates already exist (3A.1).
 
@@ -112,9 +132,11 @@ Status: `[ ]` to do · `[x]` done
   Approval: good quantity into finished stock, resin, masterbatch and packing backflushed
   for good and rejected quantity at their lot cost, regrind into stock at its credit value,
   the mould's shot count updated, costs posted to the production order (P3-16). After the
-  grace period a change is a correction request the Production Manager approves; the
-  original stays on record. Until a Production Manager is appointed, the Director approves
-  (as for deviations).
+  grace period (4 hours) a change is a correction request approved by the Production
+  Manager, the Director, or a person the Admin gives that authority with the Director's
+  approval (owner, 7 Nov 2026); never the person who asked; the original stays on record.
+  SML has a Production Manager (owner); the Director approves only while nobody holds the
+  role.
 
 - [ ] **P3-10 Mould maintenance**
   Preventive maintenance due when the shot count reaches the interval: alerts to the
@@ -197,6 +219,16 @@ Status: `[ ]` to do · `[x]` done
   owner), and offline entry: saved on the device and synced when Wi-Fi returns, with a
   visible sync status and conflicts shown, never silently overwritten.
 
+- [ ] **P3-23 Overhead and machine-hour rates from past data**
+  Asked for by the owner (7 Nov 2026): the overhead rate and the rate per machine hour
+  worked out from the company's own figures, for each machine and each machining method
+  (milling, lathe, shaping and so on) and for the moulding machines: the period's overhead
+  costs from the ledger (by division and, where coded, section), spread over the machine
+  hours actually run (from the approved shift reports and job cards), with depreciation
+  and power of each machine where known; shown against the rates in use, so the Accountant
+  can adopt them as new dated rates (P3-05). Needs a few months of production data, so it
+  comes after costing (P3-16).
+
 - [ ] **P3-22 User acceptance testing and go-live**
   Scripts in `docs/uat-scripts.md` run by the supervisors, the Production Manager, stores
   and the Accountant; moulding live first, then machining.
@@ -232,3 +264,26 @@ italics is used and recorded, and can be changed.
    A5 paper; supervisors' own phones; offline entry built last (P3-21).* (P3-12, P3-21)
 10. **Languages.** Who will supply or check the Sinhala and Tamil wording? *Default: the
     owner arranges it; pages are built in English first.* (P3-21)
+
+### Answers (owner, 7 Nov 2026)
+
+1. Moulding first, then machining: **yes**.
+2. **SML already has a Production Manager**, who approves; the Director only while nobody
+   holds the role.
+3. The number of moulds will come later. **Some moulds belong to customers.** Company moulds
+   are **not yet in the fixed asset register**. Default accepted.
+4. **Both** to order and to stock. Default accepted.
+5. Regrind is **reused in the same part and in other parts**, valued at **100% of the
+   original material's cost**.
+6. Rates as stated (overhead 0 until the Accountant sets it); the owner also wants **a
+   module that works out the overhead and machine-hour rates from past data** per machine
+   and machining method: added as **P3-23**.
+7. Alerts as proposed; they must be **changeable later by an authorised person in a
+   control panel** (P3-02).
+8. Grace period **4 hours**; after it, a change is approved by the Production Manager, or
+   the Director, or a person the Admin gives that authority with the Director's approval.
+9. Job cards on **A5 or A4 paper**; supervisors' phones; **Wi-Fi most of the time**; the
+   owner wants entry to **work without Wi-Fi and upload later**: yes, in P3-21 (built after
+   the online pages).
+10. Sinhala and Tamil: the owner arranges them; English first. Default accepted.
+

@@ -117,6 +117,10 @@ export const MENU: MenuSection[] = [
     ],
   },
   {
+    label: "menu.production",
+    items: [{ label: "mould.title", path: "/moulds", area: "production_planning" }],
+  },
+  {
     label: "menu.people",
     items: [
       // Personal details: HR (Enter) and the Director (Approve), not the Accountant's totals view.

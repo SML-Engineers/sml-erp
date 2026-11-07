@@ -40,6 +40,7 @@ DEFAULT_INVENTORY_ACCOUNT = {
     Item.Category.CONSUMABLE: "1240",
     Item.Category.SPARE: "1240",
     Item.Category.PACKING: "1240",
+    Item.Category.FINISHED: "1230",
 }
 INVENTORY_TYPES = ("other_current_asset",)
 EXPENSE_TYPES = ("expense", "cost_of_goods_sold", "other_expense")

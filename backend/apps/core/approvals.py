@@ -149,6 +149,8 @@ DOCUMENT_TYPES = {
     # (owner, 7 Nov 2026: SML has one); no fixed final role, so the Admin can route it to the
     # Director while nobody holds the role.
     "routing": DocumentType("Routing", min_approvals=1),
+    # A bill of materials (P3-04): as routings, the Production Manager approves.
+    "bom": DocumentType("Bill of materials", min_approvals=1),
     "payroll_opening": DocumentType(
         "Opening payroll figures", min_approvals=1, final_role="director"
     ),

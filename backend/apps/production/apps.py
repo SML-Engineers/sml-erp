@@ -9,7 +9,14 @@ class ProductionConfig(AppConfig):
     def ready(self):
         from apps.core.audit import register
 
-        from .models import Mould, MouldPart, ProductionSetting, ReasonCode
+        from .models import (
+            Mould,
+            MouldPart,
+            ProductionSetting,
+            ReasonCode,
+            Routing,
+            RoutingOperation,
+        )
 
-        for model in (Mould, MouldPart, ReasonCode, ProductionSetting):
+        for model in (Mould, MouldPart, ReasonCode, ProductionSetting, Routing, RoutingOperation):
             register(model)

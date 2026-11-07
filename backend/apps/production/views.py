@@ -13,10 +13,11 @@ from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Machine
 
-from . import labels, moulds, reasons
-from .models import Mould, ProductionSetting, ReasonCode
+from . import labels, moulds, reasons, routings
+from .models import Mould, ProductionSetting, ReasonCode, Routing
 from .moulds import ImportRefused, MouldError
 from .reasons import ReasonError
+from .routings import RoutingError
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -194,3 +195,96 @@ class ReasonView(_Settings):
         except ReasonError as error:
             return _error(error)
         return ProductionSetupView().get(request)
+
+
+# --- Routings (P3-03) ----------------------------------------------------------------------------
+
+
+class RoutingListView(_Planning):
+    access_write_level = "view"  # the service checks who prepares
+
+    def get(self, request):
+        query = request.query_params
+        found = routings.search(query.get("q", "").strip(), query.get("status", ""))
+        return Response(
+            {
+                "results": [routings.payload(r, request.user) for r in found],
+                "can_prepare": routings.can_prepare(request.user),
+                "statuses": [{"value": v, "label": label} for v, label in Routing.Status.choices],
+            }
+        )
+
+    def post(self, request):
+        try:
+            routing = routings.create(request.user, request.data)
+        except RoutingError as error:
+            return _error(error)
+        return Response(routings.payload(routing, request.user), status=status.HTTP_201_CREATED)
+
+
+class RoutingDetailView(_Planning):
+    access_write_level = "view"
+
+    def get(self, request, pk):
+        return Response(routings.payload(get_object_or_404(Routing, pk=pk), request.user))
+
+    def patch(self, request, pk):
+        try:
+            routing = routings.update(request.user, get_object_or_404(Routing, pk=pk), request.data)
+        except RoutingError as error:
+            return _error(error)
+        return Response(routings.payload(routing, request.user))
+
+    def delete(self, request, pk):
+        try:
+            routings.delete(request.user, get_object_or_404(Routing, pk=pk))
+        except RoutingError as error:
+            return _error(error)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RoutingActionView(_Planning):
+    """submit, approve, send_back ({reason}) or copy ({item}: another part; blank: same)."""
+
+    access_write_level = "view"
+
+    def post(self, request, pk, action):
+        routing = get_object_or_404(Routing, pk=pk)
+        try:
+            if action == "submit":
+                routing = routings.submit(request.user, routing)
+            elif action == "copy":
+                routing = routings.copy(request.user, routing, request.data.get("item") or None)
+            else:
+                routing = routings.decide(
+                    request.user, routing, action, request.data.get("reason", "")
+                )
+        except RoutingError as error:
+            return _error(error)
+        return Response(routings.payload(routing, request.user))
+
+
+class RoutingExportView(_Planning):
+    def get(self, request):
+        response = HttpResponse(routings.export_workbook(), content_type=XLSX)
+        today = timezone.localdate().isoformat()
+        response["Content-Disposition"] = f'attachment; filename="routings-{today}.xlsx"'
+        return response
+
+
+class RoutingImportView(_Planning):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        uploaded = request.FILES.get("file")
+        if uploaded is None:
+            return _error("Choose an Excel file to import.")
+        dry_run = str(request.data.get("dry_run", "true")).lower() not in ("false", "0", "no")
+        try:
+            result = routings.import_workbook(request.user, uploaded.read(), dry_run=dry_run)
+        except routings.ImportRefused as refused:
+            return Response(
+                {"detail": "Nothing was imported.", "errors": refused.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(result)

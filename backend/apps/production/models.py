@@ -195,3 +195,92 @@ class ProductionSetting(models.Model):
 
     def __str__(self):
         return f"Production settings from {self.effective_from}"
+
+
+class Routing(models.Model):
+    """The operations that make a machined part (spec 7.1; backlog P3-03), one revision at a
+    time: the Production Planner prepares a draft and submits it, the Production Manager
+    approves it (approval engine, "routing"), and it replaces the part's routing in force,
+    which becomes obsolete. Approved and obsolete routings never change and are never deleted
+    (database); a change is a new revision."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        AWAITING = "awaiting", "Waiting for approval"
+        APPROVED = "approved", "Approved"
+        OBSOLETE = "obsolete", "Obsolete"
+
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="routings")
+    revision = models.PositiveSmallIntegerField()
+    drawing_revision = models.CharField(max_length=20, blank=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["item__code", "-revision"]
+        constraints = [
+            models.UniqueConstraint(fields=["item", "revision"], name="production_routing_rev"),
+            models.UniqueConstraint(
+                fields=["item"],
+                condition=models.Q(status="approved"),
+                name="production_routing_one_in_force",
+            ),
+            models.UniqueConstraint(
+                fields=["item"],
+                condition=models.Q(status__in=["draft", "awaiting"]),
+                name="production_routing_one_open",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.item_id} rev {self.revision}"
+
+
+class RoutingOperation(models.Model):
+    """One operation: in a section (the machining method, e.g. manual milling) and optionally
+    on one machine, with standard setup and run times; or sent out to a supplier."""
+
+    routing = models.ForeignKey(Routing, on_delete=models.CASCADE, related_name="operations")
+    seq = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=100)
+    section = models.ForeignKey(
+        "masters.Section", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    machine = models.ForeignKey(
+        "masters.Machine", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    setup_min = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    run_min = models.DecimalField(
+        "Run minutes per piece", max_digits=10, decimal_places=3, default=0
+    )
+    subcontract = models.BooleanField(default=False)
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    subcontract_cost = models.DecimalField(
+        "Cost per piece", max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["routing", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["routing", "seq"], name="production_operation_seq"),
+            models.CheckConstraint(
+                condition=models.Q(subcontract=True, supplier__isnull=False)
+                | models.Q(subcontract=False, section__isnull=False),
+                name="production_operation_where",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(setup_min__gte=0, run_min__gte=0),
+                name="production_operation_times",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.seq} {self.name}"

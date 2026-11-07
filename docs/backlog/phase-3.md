@@ -64,7 +64,7 @@ Status: `[ ]` to do · `[x]` done
   (database, as sections and machines). Items get a new category **Finished part**
   (Finished goods account 1230) for the parts the factory makes.
 
-- [ ] **P3-02 Reason codes and production settings**
+- [x] **P3-02 Reason codes and production settings**
   Reject reasons and downtime reasons per division (spec 7.1, 7.4: breakdown, mould change,
   setup, power failure, no material, no operator, planned maintenance), each marked planned
   or unplanned for OEE; added and deactivated by the Admin. **Production settings page**
@@ -72,6 +72,19 @@ Status: `[ ]` to do · `[x]` done
   entry grace period after a shift (**4 hours**, owner), reject % alert limit (5%), cost
   overrun alert % (10%), minimum margin (the quotation's). Changing a setting is recorded
   and dated (rule 11).
+  Done: Settings → **Production settings** (the Admin, who manages Settings). Reasons per
+  division and kind with code, name, order, active, and for downtime planned or unplanned
+  (only downtime can be planned: database). Starting lists: downtime for IM and WS
+  (breakdown, setting up, power failure, no material, no operator, waiting for quality
+  check, planned maintenance and nothing planned as planned stops; mould change for IM);
+  rejects for IM (short shot, flash, sink, burn, warpage, colour, contamination, flow lines,
+  start-up shots, other) and WS (out of dimension, surface finish, material defect,
+  setting-up piece, tool breakage, other). A used reason keeps its code and is deactivated,
+  never deleted (database). **Limits** dated from 1 Jan 2026 with the owner's values (4
+  hours, 5% rejects, 10% overrun, the quotation's margin); a change applies from today or a
+  later date with a reason, a future change can be replaced until its date, a setting in
+  force never changes (database); `reasons.setting_on(day)` gives the limits for a shift or
+  order date.
 
 - [ ] **P3-03 Routings**
   For machined parts (spec 7.1): ordered operations, each with section or machine type,

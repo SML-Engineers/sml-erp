@@ -9,7 +9,7 @@ class ProductionConfig(AppConfig):
     def ready(self):
         from apps.core.audit import register
 
-        from .models import Mould, MouldPart
+        from .models import Mould, MouldPart, ProductionSetting, ReasonCode
 
-        register(Mould)
-        register(MouldPart)
+        for model in (Mould, MouldPart, ReasonCode, ProductionSetting):
+            register(model)

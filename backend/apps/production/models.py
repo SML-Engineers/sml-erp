@@ -1,5 +1,6 @@
 """Production (Phase 3, spec 7). P3-01: moulds."""
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -110,3 +111,87 @@ class MouldPart(models.Model):
 
     def __str__(self):
         return f"{self.mould_id}: {self.item_id} x {self.cavities}"
+
+
+class ReasonCode(models.Model):
+    """A reason a part is rejected or a machine stops, per division (spec 7.1, 7.4; backlog
+    P3-02). Downtime reasons are planned (a planned stop is not lost time in OEE) or
+    unplanned. The Admin adds, renames and deactivates them; the code is fixed once a shift
+    report uses it, and a used reason is deactivated, never deleted (rule 9, database)."""
+
+    class Kind(models.TextChoices):
+        REJECT = "reject", "Reject"
+        DOWNTIME = "downtime", "Downtime"
+
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    code = models.CharField(max_length=20)
+    name = models.CharField(max_length=100)
+    planned = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    first_used_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["division", "kind", "sort_order", "code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["division", "kind", "code"], name="production_reason_once"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(code__regex=CODE_REGEX), name="production_reason_code_format"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(kind="downtime") | models.Q(planned=False),
+                name="production_reason_planned_downtime",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
+class ProductionSetting(models.Model):
+    """The production limits from a date (rule 11; backlog P3-02; owner, 7 Nov 2026: set in
+    a control panel by an authorised person, not in code). A setting in force is never
+    changed; a new one with a later date replaces it (database)."""
+
+    effective_from = models.DateField(unique=True)
+    grace_hours = models.DecimalField(
+        "Entry grace period after a shift (hours)", max_digits=4, decimal_places=1
+    )
+    reject_alert_pct = models.DecimalField("Reject % alert", max_digits=5, decimal_places=2)
+    overrun_alert_pct = models.DecimalField("Cost overrun % alert", max_digits=5, decimal_places=2)
+    # Blank: the minimum margin of the order's quotation.
+    min_margin_pct = models.DecimalField(
+        "Minimum margin %", max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    reason = models.CharField(max_length=200)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-effective_from"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    grace_hours__gte=0,
+                    grace_hours__lte=48,
+                    reject_alert_pct__gt=0,
+                    reject_alert_pct__lte=100,
+                    overrun_alert_pct__gt=0,
+                    overrun_alert_pct__lte=100,
+                ),
+                name="production_setting_ranges",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Production settings from {self.effective_from}"

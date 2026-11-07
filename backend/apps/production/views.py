@@ -9,12 +9,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.access import division_scope
+from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Machine
 
-from . import labels, moulds
-from .models import Mould
+from . import labels, moulds, reasons
+from .models import Mould, ProductionSetting, ReasonCode
 from .moulds import ImportRefused, MouldError
+from .reasons import ReasonError
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -131,3 +133,64 @@ class MouldLabelsView(_Planning):
         )
         response["Content-Disposition"] = 'inline; filename="mould-labels.pdf"'
         return response
+
+
+# --- Reasons and settings (P3-02) ----------------------------------------------------------------
+
+
+class _Settings(APIView):
+    permission_classes = [AreaAccess]
+    access_area = "settings"
+    access_write_level = "manage"
+
+
+class ProductionSetupView(_Settings):
+    """The reasons of every division and the settings: in force, future and past."""
+
+    def get(self, request):
+        found = ReasonCode.objects.select_related("division")
+        today = timezone.localdate()
+        current = reasons.setting_on(today)
+        return Response(
+            {
+                "reasons": [reasons.row(r) for r in found],
+                "divisions": list(
+                    Division.objects.filter(code__in=["IM", "WS"]).values_list("code", flat=True)
+                ),
+                "settings": [reasons.setting_row(s) for s in ProductionSetting.objects.all()],
+                "current": current.pk,
+                "can_manage": reasons.can_manage(request.user),
+            }
+        )
+
+    def post(self, request):
+        try:
+            reasons.add_setting(request.user, request.data)
+        except ReasonError as error:
+            return _error(error)
+        return self.get(request)
+
+
+class ReasonsView(_Settings):
+    def post(self, request):
+        try:
+            reasons.add(request.user, request.data)
+        except ReasonError as error:
+            return _error(error)
+        return ProductionSetupView().get(request)
+
+
+class ReasonView(_Settings):
+    def patch(self, request, pk):
+        try:
+            reasons.change(request.user, get_object_or_404(ReasonCode, pk=pk), request.data)
+        except ReasonError as error:
+            return _error(error)
+        return ProductionSetupView().get(request)
+
+    def delete(self, request, pk):
+        try:
+            reasons.remove(request.user, get_object_or_404(ReasonCode, pk=pk))
+        except ReasonError as error:
+            return _error(error)
+        return ProductionSetupView().get(request)

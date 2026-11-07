@@ -49,13 +49,29 @@ CREATE TRIGGER production_reason_guard
 BEFORE UPDATE OR DELETE ON production_reasoncode
 FOR EACH ROW EXECUTE FUNCTION masters_code_guard();
 
+CREATE OR REPLACE FUNCTION production_setting_guard() RETURNS trigger AS $$
+BEGIN
+  -- Saving a row unchanged is allowed (tests reload their starting data this way).
+  IF TG_OP = 'UPDATE' AND NEW IS NOT DISTINCT FROM OLD THEN
+    RETURN NEW;
+  END IF;
+  IF OLD.effective_from <= (now() AT TIME ZONE 'Asia/Colombo')::date THEN
+    RAISE EXCEPTION 'Production settings in force since % never change; add new ones',
+      OLD.effective_from USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER production_setting_guard
 BEFORE UPDATE OR DELETE ON production_productionsetting
-FOR EACH ROW EXECUTE FUNCTION masters_rate_guard();
+FOR EACH ROW EXECUTE FUNCTION production_setting_guard();
 """
 
 BACKWARD = """
 DROP TRIGGER IF EXISTS production_setting_guard ON production_productionsetting;
+DROP FUNCTION IF EXISTS production_setting_guard();
 DROP TRIGGER IF EXISTS production_reason_guard ON production_reasoncode;
 """
 

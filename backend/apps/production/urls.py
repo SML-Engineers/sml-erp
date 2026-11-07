@@ -9,4 +9,7 @@ urlpatterns = [
     path("moulds/labels/", v.MouldLabelsView.as_view(), name="moulds-labels"),
     path("moulds/<int:pk>/", v.MouldDetailView.as_view(), name="mould"),
     path("moulds/<int:pk>/fit/", v.MouldFitView.as_view(), name="mould-fit"),
+    path("production-setup/", v.ProductionSetupView.as_view(), name="production-setup"),
+    path("production-reasons/", v.ReasonsView.as_view(), name="production-reasons"),
+    path("production-reasons/<int:pk>/", v.ReasonView.as_view(), name="production-reason"),
 ]

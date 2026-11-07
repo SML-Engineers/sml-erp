@@ -117,6 +117,7 @@ import DivisionsPage from "./pages/settings/DivisionsPage";
 import FactoryPage from "./pages/settings/FactoryPage";
 import NumberSeriesPage from "./pages/settings/NumberSeriesPage";
 import ShiftsPage from "./pages/settings/ShiftsPage";
+import ProductionSetupPage from "./pages/settings/ProductionSetupPage";
 import CurrenciesPage from "./pages/settings/CurrenciesPage";
 import QuotationLimitsPage from "./pages/settings/QuotationLimitsPage";
 import TaxRatesPage from "./pages/settings/TaxRatesPage";
@@ -295,6 +296,7 @@ export default function App() {
           path="settings/shifts"
           element={<WithMe page={(me) => <ShiftsPage me={me} />} />}
         />
+        <Route path="settings/production" element={<ProductionSetupPage />} />
         <Route
           path="settings/currencies"
           element={<WithMe page={(me) => <CurrenciesPage me={me} />} />}

@@ -83,6 +83,7 @@ import RoutingsPage from "./pages/RoutingsPage";
 import BomsPage from "./pages/BomsPage";
 import CostRatesPage from "./pages/CostRatesPage";
 import ProductionOrdersPage from "./pages/ProductionOrdersPage";
+import JobOrdersPage from "./pages/JobOrdersPage";
 import MouldMaintenancePage from "./pages/MouldMaintenancePage";
 import ProductionPlanPage from "./pages/ProductionPlanPage";
 import ShiftReportPage from "./pages/ShiftReportPage";
@@ -142,20 +143,13 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/account/two-factor"
-        element={<AuthGate allowPending>{() => <TwoFactorSetupPage />}</AuthGate>}
-      />
+      <Route path="/account/two-factor" element={<AuthGate allowPending>{() => <TwoFactorSetupPage />}</AuthGate>} />
       <Route
         path="/account/password"
         element={
           <AuthGate allowPending>
             {(user) =>
-              user.requirements.includes("password_change_required") ? (
-                <ChangePasswordPage firstTime />
-              ) : (
-                <AppLayout user={user} />
-              )
+              user.requirements.includes("password_change_required") ? <ChangePasswordPage firstTime /> : <AppLayout user={user} />
             }
           </AuthGate>
         }
@@ -167,10 +161,7 @@ export default function App() {
       <Route element={<AuthGate>{(user) => <AppLayout user={user} />}</AuthGate>}>
         <Route index element={<WithMe page={(me) => <HomePage user={me} />} />} />
         <Route path="account/notifications" element={<NotificationSettingsPage />} />
-        <Route
-          path="bank-accounts"
-          element={<WithMe page={(me) => <BankAccountsPage me={me} />} />}
-        />
+        <Route path="bank-accounts" element={<WithMe page={(me) => <BankAccountsPage me={me} />} />} />
         <Route path="payees" element={<WithMe page={(me) => <PayeesPage me={me} />} />} />
         <Route path="customers" element={<WithMe page={(me) => <CustomersPage me={me} />} />} />
         <Route path="quotations" element={<WithMe page={(me) => <QuotationsPage me={me} />} />} />
@@ -226,6 +217,7 @@ export default function App() {
         <Route path="boms" element={<BomsPage />} />
         <Route path="cost-rates" element={<CostRatesPage />} />
         <Route path="production-orders" element={<ProductionOrdersPage />} />
+        <Route path="job-orders" element={<JobOrdersPage />} />
         <Route path="production-plan" element={<ProductionPlanPage />} />
         <Route path="mould-maintenance" element={<MouldMaintenancePage />} />
         <Route path="shift-report" element={<ShiftReportPage />} />
@@ -247,10 +239,7 @@ export default function App() {
         <Route path="supplier-invoices/:id" element={<SupplierInvoicePage />} />
         <Route path="settings/stores" element={<WithMe page={(me) => <StoresPage me={me} />} />} />
         <Route path="costing-rates" element={<WithMe page={(me) => <CostingRatesPage me={me} />} />} />
-        <Route
-          path="chart-of-accounts"
-          element={<WithMe page={(me) => <ChartOfAccountsPage me={me} />} />}
-        />
+        <Route path="chart-of-accounts" element={<WithMe page={(me) => <ChartOfAccountsPage me={me} />} />} />
         <Route path="journal" element={<WithMe page={(me) => <JournalPage me={me} />} />} />
         <Route path="journals/manual" element={<WithMe page={(me) => <ManualJournalsPage me={me} />} />} />
         <Route path="journals/manual/:id" element={<ManualJournalPage />} />
@@ -280,63 +269,24 @@ export default function App() {
         <Route path="supplier-statements" element={<WithMe page={(me) => <SupplierStatementsPage me={me} />} />} />
         <Route path="supplier-statements/:id" element={<SupplierStatementPage />} />
         <Route path="vouchers/:id" element={<WithMe page={(me) => <VoucherPage me={me} />} />} />
-        <Route
-          path="accounting-periods"
-          element={<WithMe page={(me) => <PeriodsPage me={me} />} />}
-        />
+        <Route path="accounting-periods" element={<WithMe page={(me) => <PeriodsPage me={me} />} />} />
         <Route path="admin/users" element={<WithMe page={(me) => <UsersPage me={me} />} />} />
-        <Route
-          path="admin/users/:id"
-          element={<WithMe page={(me) => <UserAccessPage me={me} />} />}
-        />
-        <Route
-          path="admin/access-review"
-          element={<WithMe page={(me) => <AccessReviewPage me={me} />} />}
-        />
+        <Route path="admin/users/:id" element={<WithMe page={(me) => <UserAccessPage me={me} />} />} />
+        <Route path="admin/access-review" element={<WithMe page={(me) => <AccessReviewPage me={me} />} />} />
         <Route path="admin/audit" element={<AuditLogPage />} />
-        <Route
-          path="settings/company"
-          element={<WithMe page={(me) => <CompanyPage me={me} />} />}
-        />
-        <Route
-          path="settings/divisions"
-          element={<WithMe page={(me) => <DivisionsPage me={me} />} />}
-        />
-        <Route
-          path="settings/factory"
-          element={<WithMe page={(me) => <FactoryPage me={me} />} />}
-        />
-        <Route
-          path="settings/shifts"
-          element={<WithMe page={(me) => <ShiftsPage me={me} />} />}
-        />
+        <Route path="settings/company" element={<WithMe page={(me) => <CompanyPage me={me} />} />} />
+        <Route path="settings/divisions" element={<WithMe page={(me) => <DivisionsPage me={me} />} />} />
+        <Route path="settings/factory" element={<WithMe page={(me) => <FactoryPage me={me} />} />} />
+        <Route path="settings/shifts" element={<WithMe page={(me) => <ShiftsPage me={me} />} />} />
         <Route path="settings/production" element={<ProductionSetupPage />} />
-        <Route
-          path="settings/currencies"
-          element={<WithMe page={(me) => <CurrenciesPage me={me} />} />}
-        />
-        <Route
-          path="settings/quotation-limits"
-          element={<WithMe page={(me) => <QuotationLimitsPage me={me} />} />}
-        />
+        <Route path="settings/currencies" element={<WithMe page={(me) => <CurrenciesPage me={me} />} />} />
+        <Route path="settings/quotation-limits" element={<WithMe page={(me) => <QuotationLimitsPage me={me} />} />} />
         <Route path="settings/tax-rates" element={<TaxRatesPage />} />
-        <Route
-          path="settings/number-series"
-          element={<WithMe page={(me) => <NumberSeriesPage me={me} />} />}
-        />
-        <Route
-          path="settings/approval-matrix"
-          element={<WithMe page={(me) => <ApprovalMatrixPage me={me} />} />}
-        />
-        <Route
-          path="settings/document-email"
-          element={<WithMe page={(me) => <DocumentEmailPage me={me} />} />}
-        />
+        <Route path="settings/number-series" element={<WithMe page={(me) => <NumberSeriesPage me={me} />} />} />
+        <Route path="settings/approval-matrix" element={<WithMe page={(me) => <ApprovalMatrixPage me={me} />} />} />
+        <Route path="settings/document-email" element={<WithMe page={(me) => <DocumentEmailPage me={me} />} />} />
         <Route path="admin/sent-emails" element={<SentEmailsPage />} />
-        <Route
-          path="settings/voucher-types"
-          element={<WithMe page={(me) => <VoucherTypesPage me={me} />} />}
-        />
+        <Route path="settings/voucher-types" element={<WithMe page={(me) => <VoucherTypesPage me={me} />} />} />
       </Route>
     </Routes>
   );

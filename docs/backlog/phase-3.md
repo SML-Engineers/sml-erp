@@ -319,12 +319,29 @@ Status: `[ ]` to do · `[x]` done
 
 ## C. Machining
 
-- [ ] **P3-11 Job orders and material issue**
+- [x] **P3-11 Job orders and material issue**
   A job order from a sales order line (part, drawing revision, quantity, due date) or an
   internal job (mould making or repair, tools); the approved routing and BOM copied and
   editable per job; numbered from the number series. Stores issues material against the
   job by lot; issuing more than the BOM allows needs a reason and the Production Manager's
   approval; returns credited.
+  - Done: Production → Job orders. The Planner makes a job (JO{YY}{MM}{NNNN}) for a sales
+    order line (its division; the line's jobs and production orders together never exceed
+    its quantity; tooling lines are mould making jobs) or an internal job: mould making,
+    mould repair (a mould from the register), tools and fixtures, other work, in a division
+    of theirs. The part's approved routing and (non-moulding) BOM are copied when the job is
+    made, each material as a quantity per piece with its scrap allowance; while a draft the
+    Planner changes the quantity, due date, operations and materials, or copies them again;
+    a job without a routing gets its operations by hand. Release needs one operation and fixes
+    them (database). Stores issues from a main store of the job's division by lot (oldest first
+    unless one is chosen), posted as any issue (P2-18), up to per piece × quantity less what
+    came back; more, or a material not on the job, needs a request with a reason that the
+    Production Manager approves ("job_excess", reminder after 1 day), which adds its quantity.
+    Returns go back against their issue and lot and are credited. Draft → Released →
+    Completed → Closed; cancelled with a reason only with no material out; closed only with
+    no request waiting. Jobs never deleted, issue links insert-only, decided requests never
+    change (database). Our choices: materials stay fixed after release (the extra goes
+    through a request); the stores person or the Planner may ask for more.
 
 - [ ] **P3-12 Job cards and operation entry**
   A printed job card per operation with a QR code (spec 7.2), travelling with the parts. The

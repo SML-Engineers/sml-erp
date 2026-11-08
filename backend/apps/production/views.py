@@ -18,6 +18,7 @@ from apps.masters.models import Machine
 
 from . import (
     boms,
+    jobs,
     labels,
     maintenance,
     moulds,
@@ -30,11 +31,14 @@ from . import (
     shift_reports,
 )
 from .boms import BomError
+from .jobs import JobError
 from .maintenance import MaintenanceError
 from .models import (
     Bom,
     BomLine,
     CostRate,
+    JobExcess,
+    JobOrder,
     Mould,
     ProductionOrder,
     ProductionSetting,
@@ -759,3 +763,121 @@ class MouldMaintenanceView(APIView):
         except MaintenanceError as error:
             return _error(error)
         return Response(maintenance.overview(request.user), status=status.HTTP_201_CREATED)
+
+
+class _Jobs(APIView):
+    """P3-11: the Planner works job orders; the stores person issues and takes back their
+    material; the Production Manager decides requests to issue more. The services check who
+    does what."""
+
+    permission_classes = [AreaAccess]
+    access_area = "production_planning"
+    access_also_area = "stores"
+    access_write_level = "view"
+
+
+class JobOrderListView(_Jobs):
+    def get(self, request):
+        p = request.query_params
+        found = jobs.search(
+            request.user, p.get("q", "").strip(), p.get("status", ""), p.get("purpose", "")
+        )
+        return Response(
+            {
+                "results": [jobs.row(j) for j in found[:500]],
+                "can_plan": jobs.can_plan(request.user),
+                "divisions": [d.code for d in division_scope(request.user)],
+                "statuses": [{"value": v, "label": x} for v, x in JobOrder.Status.choices],
+                "purposes": [{"value": v, "label": x} for v, x in JobOrder.Purpose.choices],
+            }
+        )
+
+    def post(self, request):
+        try:
+            job = jobs.create(request.user, request.data)
+        except JobError as error:
+            return _error(error)
+        return Response(jobs.payload(job, request.user), status=status.HTTP_201_CREATED)
+
+
+class JobOrderDetailView(_Jobs):
+    def get(self, request, pk):
+        return Response(
+            jobs.payload(get_object_or_404(jobs.visible(request.user), pk=pk), request.user)
+        )
+
+    def patch(self, request, pk):
+        job = get_object_or_404(jobs.visible(request.user), pk=pk)
+        try:
+            job = jobs.update(request.user, job, request.data)
+        except JobError as error:
+            return _error(error)
+        return Response(jobs.payload(job, request.user))
+
+
+class JobOrderActionView(_Jobs):
+    def post(self, request, pk, action):
+        job = get_object_or_404(jobs.visible(request.user), pk=pk)
+        d = request.data
+        try:
+            if action == "release":
+                job = jobs.release(request.user, job)
+            elif action == "complete":
+                job = jobs.complete(request.user, job)
+            elif action == "close":
+                job = jobs.close(request.user, job)
+            elif action == "cancel":
+                job = jobs.cancel(request.user, job, d.get("reason", ""))
+            elif action == "issue":
+                made = jobs.issue(request.user, job, d)
+                body = jobs.payload(job, request.user)
+                return Response(body | {"stock_issue": made.number}, status=status.HTTP_201_CREATED)
+            elif action == "return":
+                made = jobs.give_back(request.user, job, d)
+                body = jobs.payload(job, request.user)
+                return Response(body | {"stock_issue": made.number}, status=status.HTTP_201_CREATED)
+            elif action == "ask-more":
+                jobs.ask_more(request.user, job, d)
+            else:
+                return _error("Unknown action.", status.HTTP_404_NOT_FOUND)
+        except JobError as error:
+            return _error(error)
+        return Response(jobs.payload(job, request.user))
+
+
+class JobOrderLotsView(_Jobs):
+    def get(self, request, pk):
+        job = get_object_or_404(jobs.visible(request.user), pk=pk)
+        p = request.query_params
+        try:
+            return Response(
+                {"results": jobs.lots_for(request.user, job, p.get("store"), p.get("item", ""))}
+            )
+        except JobError as error:
+            return _error(error)
+
+
+class JobOrderSalesLinesView(_Jobs):
+    def get(self, request):
+        return Response(
+            {"results": orders.sales_lines(request.user, request.query_params.get("q", "").strip())}
+        )
+
+
+class JobExcessWaitingView(_Jobs):
+    def get(self, request):
+        return Response({"results": jobs.waiting(request.user)})
+
+
+class JobExcessDecideView(_Jobs):
+    def post(self, request, pk):
+        excess = get_object_or_404(
+            JobExcess.objects.filter(job__division__in=division_scope(request.user)), pk=pk
+        )
+        try:
+            excess = jobs.decide_more(
+                request.user, excess, request.data.get("action", ""), request.data.get("reason", "")
+            )
+        except JobError as error:
+            return _error(error)
+        return Response({"status": excess.status})

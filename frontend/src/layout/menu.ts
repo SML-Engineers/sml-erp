@@ -120,6 +120,7 @@ export const MENU: MenuSection[] = [
     label: "menu.production",
     items: [
       { label: "prodOrder.title", path: "/production-orders", area: "production_planning", alsoArea: "stores" },
+      { label: "job.title", path: "/job-orders", area: "production_planning", alsoArea: "stores" },
       { label: "plan.title", path: "/production-plan", area: "production_planning", alsoArea: "shop_floor" },
       { label: "shiftReport.title", path: "/shift-report", area: "shop_floor", alsoArea: "production_approvals" },
       { label: "mould.title", path: "/moulds", area: "production_planning" },

@@ -41,6 +41,7 @@ from apps.sales.models import SalesOrder, SalesOrderLine
 from .models import (
     Bom,
     BomLine,
+    JobOrder,
     Mould,
     OrderBomLine,
     PlanEntry,
@@ -182,12 +183,20 @@ def _sales_line(user: User, value, division: Division) -> SalesOrderLine:
     return line
 
 
-def planned_for(line: SalesOrderLine, *, but: ProductionOrder | None = None) -> Decimal:
-    """What the line's production orders (not cancelled) already make."""
+def planned_for(
+    line: SalesOrderLine, *, but: ProductionOrder | None = None, but_job=None
+) -> Decimal:
+    """What the line's production orders and job orders (P3-11), not cancelled, already
+    make."""
     found = ProductionOrder.objects.filter(sales_line=line).exclude(status=St.CANCELLED)
     if but is not None:
         found = found.exclude(pk=but.pk)
-    return found.aggregate(total=Sum("quantity"))["total"] or ZERO
+    jobs = JobOrder.objects.filter(sales_line=line).exclude(status=JobOrder.Status.CANCELLED)
+    if but_job is not None:
+        jobs = jobs.exclude(pk=but_job.pk)
+    return (found.aggregate(total=Sum("quantity"))["total"] or ZERO) + (
+        jobs.aggregate(total=Sum("quantity"))["total"] or ZERO
+    )
 
 
 def _dues(values: dict, quantity: Decimal, line: SalesOrderLine | None) -> list[tuple]:

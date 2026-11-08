@@ -258,6 +258,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
         {o.mould && <> · {t("prodOrder.mould", { mould: o.mould })}</>}
         {o.bom && <> · {t("prodOrder.bomRev", { item: o.bom.item, revision: o.bom.revision })}</>}
         {o.family_shots && <> · {t("prodOrder.shots", { shots: formatDecimal(o.family_shots) })}</>}
+        {o.status !== "draft" && <> · {t("prodOrder.made", { made: formatDecimal(o.made) })}</>}
       </p>
       <p className="muted">
         {o.sales_line

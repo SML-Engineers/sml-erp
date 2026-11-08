@@ -476,6 +476,9 @@ class StockMovement(models.Model):
         ISSUED = "issued", "Issued from stores"
         BACK = "back_in", "Returned to stores"
         ADJUSTED = "adjusted", "Adjustment or write-off"
+        PRODUCED = "produced", "Made in production"
+        REGRIND = "regrind", "Regrind from production"
+        UNDONE = "undone", "Production correction"
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="movements")
     store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="movements")

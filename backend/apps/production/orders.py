@@ -586,7 +586,14 @@ def payload(order: ProductionOrder, user: User) -> dict:
     shots = _factor(bom, cavities, order.quantity)[1] if bom is not None else None
     mould = order.mould or (bom.mould if bom else None)
     needs = requirements(order)
+    made = (
+        order.receipts.filter(undone=False, item=order.item).aggregate(total=Sum("quantity"))[
+            "total"
+        ]
+        or ZERO
+    )
     return row(order) | {
+        "made": _n(made),  # good pieces from approved shift reports (P3-09)
         "sales_line": _sales(order.sales_line),
         "dues": [{"due_date": d.due_date, "quantity": _n(d.quantity)} for d in order.dues.all()],
         "notes": order.notes,

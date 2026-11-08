@@ -4697,7 +4697,8 @@
     "making_other": "{{count}} open orders make {{total}}: {{orders}}",
     "makingNone": "No open order makes it.",
     "needing": "Released orders that need it: {{orders}}",
-    "needingNone": "No released order needs it."
+    "needingNone": "No released order needs it.",
+    "made": "{{made}} made so far"
   },
   "plan": {
     "title": "Production plan",
@@ -4813,6 +4814,29 @@
     "save": "Save",
     "submit": "Submit the report",
     "back": "Back",
-    "startTime": "Start time"
+    "startTime": "Start time",
+    "returned": "Returned by the Production Manager: {{reason}}",
+    "approvedBy": "Approved by {{name}}: the stock and the mould's shot count have been updated.",
+    "decision": "Approve or return",
+    "decisionHelp": "Approving takes the order's materials from the main store, puts the good pieces and the regrind into stock and adds the shots to the mould. Returning needs a reason.",
+    "reasonOrComment": "Reason or comment",
+    "approve": "Approve the report",
+    "sendBack": "Return to the supervisor",
+    "intoStock": "Put into stock",
+    "backflush": "Materials taken from the main store on stock issue {{number}}.",
+    "item": "Item",
+    "quantity": "Quantity",
+    "materialValue": "Material (LKR)",
+    "regrindCredit": "Regrind credit (LKR)",
+    "value": "Value (LKR)",
+    "regrindLabel": "regrind",
+    "undone": "(reversed by a correction)",
+    "corrections": "Corrections",
+    "correctionLine": "“{{reason}}” asked by {{by}}: {{status}}",
+    "approveCorrection": "Approve the correction",
+    "rejectCorrection": "Reject the correction",
+    "correctionHelp": "Approving reverses what the report posted and returns it to the supervisor (or reopens a late draft). The report as it was stays on record.",
+    "whatToCorrect": "What needs correcting",
+    "askCorrection": "Ask for a correction"
   }
 }

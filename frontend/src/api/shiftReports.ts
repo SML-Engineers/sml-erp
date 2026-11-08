@@ -102,6 +102,33 @@ export interface ShiftReport extends ReportRow {
   manpower: { machine: string; people: number; overtime_hours: string }[];
   summary: Summary;
   editable: boolean;
+  // P3-09: approval and corrections.
+  return_reason: string;
+  approved_by: string;
+  approved_at: string | null;
+  stock_issue: string;
+  receipts: {
+    order: string;
+    item: string;
+    is_regrind: boolean;
+    quantity: string;
+    material_value: string;
+    regrind_credit: string;
+    value: string;
+    undone: boolean;
+  }[];
+  corrections: {
+    id: number;
+    reason: string;
+    status: "awaiting" | "approved" | "rejected";
+    status_label: string;
+    requested_by: string;
+    requested_at: string;
+    can_decide: boolean;
+  }[];
+  can_decide: boolean;
+  can_ask: boolean;
+  reopened_until: string | null;
   options: {
     machines: { code: string; name: string }[];
     orders: { id: number; number: string; item: string; mould: string }[];
@@ -136,3 +163,8 @@ export const openReport = (values: { section: string; shift: string; day: string
 export const getReport = (id: number) => apiGet<ShiftReport>(`/shift-reports/${id}/`);
 export const saveReport = (id: number, values: ReportValues) => apiSend<ShiftReport>("PUT", `/shift-reports/${id}/`, values);
 export const submitReport = (id: number) => apiSend<ShiftReport>("POST", `/shift-reports/${id}/submit/`);
+export const decideReport = (id: number, action: "approve" | "send_back", reason = "") =>
+  apiSend<ShiftReport>("POST", `/shift-reports/${id}/decide/`, { action, reason });
+export const askCorrection = (id: number, reason: string) => apiSend<ShiftReport>("POST", `/shift-reports/${id}/corrections/`, { reason });
+export const decideCorrection = (id: number, action: "approve" | "reject", reason = "") =>
+  apiSend<ShiftReport>("POST", `/shift-reports/corrections/${id}/decide/`, { action, reason });

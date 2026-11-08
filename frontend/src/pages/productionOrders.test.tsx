@@ -22,6 +22,7 @@ const row = {
 const list: OrderList = { results: [row], can_plan: true, statuses: [{ value: "released", label: "Released" }] };
 const order: ProductionOrder = {
   ...row,
+  made: "3960",
   sales_line: {
     id: 3,
     order: "SO26110801",
@@ -94,6 +95,7 @@ test("an order shows its due dates and what it is short of; the stores raise a r
   const panel = await screen.findByRole("region", { name: "Production order MO26110001" });
   expect(within(panel).getByText(/For SO26110801 line 1, Unilever Sri Lanka/)).toBeInTheDocument();
   expect(within(panel).getByText(/6,000 by 2026-11-22; 4,000 by 2026-12-06/)).toBeInTheDocument();
+  expect(within(panel).getByText(/3,960 made so far/)).toBeInTheDocument();
   const needs = within(panel).getByRole("table", { name: "Materials for the order" });
   expect(within(within(needs).getByText("PP-H").closest("tr")!).getByText("34.5")).toBeInTheDocument();
   fireEvent.click(within(panel).getByRole("button", { name: "Raise a purchase request" }));

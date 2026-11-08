@@ -90,8 +90,12 @@ def window(day, shift: Shift) -> tuple[datetime, datetime, datetime]:
 
 
 def is_open(report: ShiftReport, now: datetime | None = None) -> bool:
+    """Open for entry: during the shift and its grace period, or until an approved
+    correction's new deadline (P3-09)."""
     start, _, close = window(report.day, report.shift)
     now = now or timezone.now()
+    if report.reopened_until and now <= report.reopened_until:
+        return True
     return start <= now <= close
 
 
@@ -514,6 +518,9 @@ def submit(user: User, report: ShiftReport) -> ShiftReport:
             report.submitted_by = user
             report.submitted_at = timezone.now()
             report.save()
+            from . import shift_approval  # P3-09: the Production Manager approves it
+
+            shift_approval.send(user, report)
         return report
 
 

@@ -59,6 +59,7 @@ ACTIONS = {
     "allow_credit_holds": "Allow documents on credit hold",
     "approve_customer_receipts": "Approve customer receipts and advances",
     "set_credit_terms": "Change customers' credit limits and payment terms",
+    "approve_production_corrections": "Approve corrections to shift reports",
 }
 
 # Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
@@ -66,6 +67,7 @@ SENSITIVE_AREA_LEVELS = {("vouchers", "approve"), ("users", "manage")}
 SENSITIVE_AREAS = {"hr_payroll"}
 SENSITIVE_ACTIONS = {
     "allow_credit_holds",
+    "approve_production_corrections",
     "approve_credit_notes",
     "approve_customer_receipts",
     "set_credit_terms",
@@ -372,6 +374,14 @@ ROLE_ACTIONS_V7 = {"accountant": ["approve_customer_receipts"]}
 # customer's credit limit and payment terms, so nobody lifts a credit hold (P2-08) by
 # changing them; a grant to anyone else is sensitive.
 ROLE_ACTIONS_V8 = {"director": ["set_credit_terms"], "accountant": ["set_credit_terms"]}
+
+# P3-09 (production migration 0019): a correction to a shift report after its entry time is
+# approved by the Production Manager, the Director, or a person the Admin gives
+# "approve_production_corrections" to and the Director confirms (owner, 7 Nov 2026).
+ROLE_ACTIONS_V9 = {
+    "production_manager": ["approve_production_corrections"],
+    "director": ["approve_production_corrections"],
+}
 
 # Phase 1.6 (P16-02, core migration 0019): purchasing, stores and QC roles switched on. SML has
 # one stores person, called Stores Manager or Stores Executive (owner, 31 Oct 2026).

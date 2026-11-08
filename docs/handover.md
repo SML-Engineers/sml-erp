@@ -42,15 +42,15 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | Built. **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137) and stays unticked until the owner's sign-off. |
 | 2b Payroll and people | phase-2b.md | Built except **P2B-18** (Commercial Bank file), which waits for the bank's format. |
-| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates (all merged). **P3-06** moulding production orders in PR #167. Next: P3-07 production plan. |
+| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders (all merged). **P3-07** production plan in PR #168. Next: P3-08 moulding shift report. |
 
 Latest migration per app (new migrations continue from these): accounting `0024_gratuity_roles`,
 assets `0001_initial`, banking `0004_petty_cash`, core `0027_company_epf_etf`, inventory
 `0011_finished_parts`, masters `0011_limit_no_maximum`, payments `0003_withholding_tax`, payroll
-`0017_fingerprint`, **production `0013_production_order_guards`**, purchasing `0008_opening_bills`, sales
+`0017_fingerprint`, **production `0015_plan_guards`**, purchasing `0008_opening_bills`, sales
 `0018_opening_invoices`, vouchers `0011_withholding_tax`.
 
-The last row of spec section 8.4 is **"Moulding production orders (P3-06)"**; the rows run in task
+The last row of spec section 8.4 is **"Production plan (P3-07)"**; the rows run in task
 order.
 
 ## 3. How we work with the owner (keep doing exactly this)
@@ -59,7 +59,7 @@ order.
   language, short steps, exact commands. He reads on his **phone**: keep replies to a screen
   or two, lead with the result.
 - **Order of work:** the backlogs in order, **one task per branch and PR**
-  (`task/P3-07-production-plan`). Feature or fix requests from him take priority, on their own
+  (`task/P3-08-shift-report`). Feature or fix requests from him take priority, on their own
   branches (`feature/...`, `fix/...`). Docs-only changes on `docs/...`.
 - **Never push to `main`, never merge.** Open each PR as a **draft**; wait for the **3 draft
   checks** (Lock files, Backend tests, Frontend tests); mark it ready; wait for **all 5**
@@ -114,6 +114,7 @@ Read the "Done:" notes in `docs/backlog/phase-3.md` for the full rules. Summary:
 | P3-04 BOMs | `boms.py`, migrations 0008–0009 | Multi-level BOMs, calculators, family moulds, approval, copy/compare/where-used/Excel, standard cost |
 | P3-05 Cost rates | `rates.py`, migrations 0010–0011 | Dated labour, overhead, regrind and mould amortisation rates kept by the Accountant; the BOM cost adds labour, overhead and mould |
 | P3-06 Production orders | `orders.py`, migrations 0012–0013 | Moulding orders for stock or a sales order line, BOM copied on release, material shortages and purchase requests, where-used |
+| P3-07 Production plan | `plan.py`, migrations 0014–0015 | Orders' moulds on machines per shift, planned quantity, warnings, supervisors' view |
 
 Access: area `production_planning` (Planner Enter, Production Manager Approve, Accountant and
 Director View); approvals in `production_approvals`. Cost rates are read in

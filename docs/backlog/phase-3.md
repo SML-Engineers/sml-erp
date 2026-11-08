@@ -199,12 +199,29 @@ Status: `[ ]` to do · `[x]` done
   from approved shift reports. **Where used**: the open orders making a part and the
   released orders needing a material; the list filters open orders per part.
 
-- [ ] **P3-07 Production plan**
+- [x] **P3-07 Production plan**
   Which mould runs on which machine on which shift, for a date range (spec 7.3), from the
   production orders and the roster; drag or pick; warnings for a mould too big for the
   machine, a machine planned twice, a mould on two machines, a shift with no crew, and
   material short. The planned quantity per shift from cycle time × cavities × planned time.
   Shown to the supervisors on their entry page.
+  Done: Production → **Production plan**: a grid per day (moulding machines × shifts) for
+  1 to 14 days (the API allows up to 31). The **Production Planner** picks a released
+  order, a date, a shift and a moulding machine (not retired), for the whole shift's
+  working time or some minutes of it; the order brings its mould. A run is **moved** by
+  picking another machine, shift or date (picking rather than dragging, which works the
+  same on a phone), removed, or a whole day copied to another day. **Planned quantity** =
+  whole shots in the planned minutes at the mould's standard cycle time × the part's
+  cavities. **Warnings**, shown in red but never blocking: the mould too big for the machine
+  (the 3A.1 sizes), machine or mould under maintenance, a machine planned twice on a shift
+  or beyond the shift's working time, the mould on two machines in the same shift, no crew
+  rostered on that shift in the machine's section (3A.2 roster), the order short of
+  material, and the plan making more than the order. The released orders are listed with
+  how much of each is planned. A plan is made for today or later; a past day's plan never
+  changes, and only released orders are planned (database). Runs after today leave the
+  plan when their order is completed or cancelled. **Supervisors** (shop floor) see the
+  plan of their own sections, read only; `GET /production-plan/mine/` gives today's and
+  tomorrow's runs for their entry page (P3-08).
 
 - [ ] **P3-08 Moulding shift report (supervisor)**
   Phone and tablet page (spec 7.4) for the sections assigned to the supervisor: per machine,

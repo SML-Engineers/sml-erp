@@ -42,7 +42,7 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | Built. **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137) and stays unticked until the owner's sign-off. |
 | 2b Payroll and people | phase-2b.md | Built except **P2B-18** (Commercial Bank file), which waits for the bank's format. |
-| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance (all merged). **QC deviation approver fix** (G10) in PR #172. Next: P3-11 job orders. |
+| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance; #172 QC deviation approver (all merged). **Production demo data** in PR #173. Next: asset depreciation defaults with the Director's approval per asset (owner's request of 8 Nov), then P3-11 job orders. |
 
 Latest migration per app (new migrations continue from these): accounting `0024_gratuity_roles`,
 assets `0001_initial`, banking `0004_petty_cash`, core `0027_company_epf_etf`, inventory
@@ -97,10 +97,11 @@ Windows, Docker Desktop, GitHub Desktop; repository at `D:\GitHub\sml-erp` with 
 **http://localhost:8080**. Demo data: `python manage.py load_demo_data` (runs only missing
 parts; refuses on production). Demo users `clerk@`, `accountant@`, `director@`, `cashier@`,
 `sales@`, `salesmanager@`, `purchasing@`, `stores@`, `qc@demo.sml.lk`, password
-`Demo-SML-2026!`. **There is no demo HR user, employees or production data yet** — add them in a small PR before
-the owner tests production (an HR and Payroll Officer, Production Planner, Supervisor and
-Manager users, a few employees in WS and IM, sections with supervisors, moulds, routings and
-BOMs).
+`Demo-SML-2026!`; production (8 Nov 2026): `hr@`, `planner@`, `supervisor@` and
+`productionmanager@demo.sml.lk`, four moulding employees on a day roster, presses IMM-250 and
+IMM-150, mould MD-C38, cap CAP-38 with an approved BOM, masterbatch and bags in stock (opening
+stock), cost rates, a released order for the Unilever call-off and a draft stock order, and
+the plan for today and tomorrow (the Supervisor can enter today's General-shift report).
 
 ## 5. Phase 3 as built (`backend/apps/production/`)
 

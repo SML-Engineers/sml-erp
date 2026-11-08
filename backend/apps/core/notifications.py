@@ -31,6 +31,7 @@ EVENTS = {
     "credit_hold_waiting": "A sales order or invoice is on credit hold and waits for me",
     "credit_hold_allowed": "A document of mine on credit hold was allowed",
     "reorder_alert": "An item's stock fell to its reorder level",
+    "material_shortage": "A released production order is short of material",
 }
 
 log = logging.getLogger(__name__)

@@ -549,3 +549,134 @@ class CostRate(models.Model):
 
     def __str__(self):
         return f"{self.kind} {self.effective_from} {self.rate}"
+
+
+class ProductionOrder(models.Model):
+    """A moulding production order (spec 7.7; backlog P3-06): a part and quantity with due
+    dates, for a sales order line's delivery schedule or for stock; numbered from the number
+    series. On release the BOM in force is copied to the order (`OrderBomLine`), so later
+    BOM changes never alter it. Draft → Released → Completed → Closed, or Cancelled before
+    completion; an order is never deleted and moves only forward (database)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        RELEASED = "released", "Released"
+        COMPLETED = "completed", "Completed"
+        CLOSED = "closed", "Closed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Purpose(models.TextChoices):
+        SALES = "sales", "For a sales order"
+        STOCK = "stock", "For stock"
+
+    number = models.CharField(max_length=30, unique=True)
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    item = models.ForeignKey(
+        "inventory.Item", on_delete=models.PROTECT, related_name="production_orders"
+    )
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    purpose = models.CharField(max_length=5, choices=Purpose.choices, default=Purpose.STOCK)
+    sales_line = models.ForeignKey(
+        "sales.SalesOrderLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="production_orders",
+    )
+    # Filled on release: the BOM copied, its mould, and the shots a family mould needs.
+    bom = models.ForeignKey(
+        Bom, null=True, blank=True, on_delete=models.PROTECT, related_name="production_orders"
+    )
+    mould = models.ForeignKey(
+        Mould, null=True, blank=True, on_delete=models.PROTECT, related_name="production_orders"
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    notes = models.TextField(blank=True)
+    end_reason = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    released_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    released_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_order_quantity"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(purpose="sales", sales_line__isnull=False)
+                | models.Q(purpose="stock", sales_line__isnull=True),
+                name="production_order_purpose",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["draft", "cancelled"])
+                | models.Q(bom__isnull=False, released_at__isnull=False),
+                name="production_order_released",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class ProductionOrderDue(models.Model):
+    """A due date and quantity of a production order; the quantities add up to the order's."""
+
+    order = models.ForeignKey(ProductionOrder, on_delete=models.CASCADE, related_name="dues")
+    due_date = models.DateField()
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+
+    class Meta:
+        ordering = ["order", "due_date", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_orderdue_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.quantity} by {self.due_date}"
+
+
+class OrderBomLine(models.Model):
+    """The BOM copied to a production order on release (spec 7.1B `order_bom_line`): each
+    line with the quantity the whole order needs. Never changed once copied (database)."""
+
+    order = models.ForeignKey(ProductionOrder, on_delete=models.PROTECT, related_name="bom_lines")
+    seq = models.PositiveSmallIntegerField()
+    line_type = models.CharField(max_length=15, choices=BomLine.Type.choices)
+    component = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    description = models.CharField(max_length=150, blank=True)
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    per_base = models.DecimalField("Quantity for the BOM's base", max_digits=14, decimal_places=6)
+    scrap_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    required = models.DecimalField("Needed for the order", max_digits=18, decimal_places=6)
+    unit = models.CharField(max_length=10)
+    operation_seq = models.PositiveSmallIntegerField(null=True, blank=True)
+    issue_method = models.CharField(max_length=10, choices=BomLine.Issue.choices)
+    customer_supplied = models.BooleanField(default=False)
+    unit_cost = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        ordering = ["order", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["order", "seq"], name="production_orderbomline_seq"),
+            models.CheckConstraint(
+                condition=models.Q(per_base__gt=0, required__gt=0),
+                name="production_orderbomline_quantities",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.order_id}/{self.seq}"

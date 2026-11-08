@@ -166,13 +166,38 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Moulding (first)
 
-- [ ] **P3-06 Moulding production orders**
+- [x] **P3-06 Moulding production orders**
   A production order (spec 7.7): part, quantity, due dates, from a sales order line's
   delivery schedule or to replenish stock; numbered from the number series; the approved
   BOM copied on release (later BOM changes never alter it). Material requirements: order
   quantity × BOM against stock and open purchase orders gives a shortage list and suggested
   purchase requests (which follow their normal approval). Statuses Draft → Released →
   Completed → Closed; where-used and open orders per part.
+  Done: Production → **Production orders** (number series "MO", e.g. MO26110001). A part
+  (a finished item) and quantity, **for stock** (a due date) or **for a sales order line**
+  (an open, non-tooling line of the same division; its delivery schedule becomes the due
+  dates, and the line's orders, not cancelled, never add up to more than its quantity; the
+  rest is made for stock). Due quantities add up to the order's. The **Production
+  Planner** (production planning, Enter) makes, changes (drafts only), releases, completes
+  and closes orders; the stores person and purchasing read them (menu also under Stores).
+  **Release** needs the part's approved **moulding** BOM with a mould (not retired) and
+  copies it to the order with each line's quantity for the whole order (quantity × (1 +
+  scrap %) ÷ base); a part made in a **family mould** uses the family BOM by the shot
+  (quantity ÷ the part's cavities, rounded up). The copy never changes, and later BOM
+  revisions never alter it (database). **Materials:** per line, needed, in the division's
+  main stores, ordered or requested (open purchase orders and purchase requests), needed by
+  the other released orders, and the shortage; a draft shows what the BOM in force would
+  need. On release the stores person and purchasing are notified of any shortage (new
+  notification "A released production order is short of material"). **"Raise a purchase
+  request"** (stores person or purchasing only) makes one draft purchase request for the
+  bought materials short (raw material, masterbatch, bought-out, packing; never
+  customer-supplied or sub-assemblies), needed by the first due date, which then follows
+  its normal approval; what is requested counts as coming. **Statuses** Draft → Released →
+  Completed → Closed, or Cancelled (draft or released) with a reason; never deleted, only
+  forward, number and division fixed, part, quantity, due dates and BOM fixed once released
+  (database). "Completed" is set by the Planner for now; P3-09 will count the good quantity
+  from approved shift reports. **Where used**: the open orders making a part and the
+  released orders needing a material; the list filters open orders per part.
 
 - [ ] **P3-07 Production plan**
   Which mould runs on which machine on which shift, for a date range (spec 7.3), from the

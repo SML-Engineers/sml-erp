@@ -14,10 +14,20 @@ from apps.core.permissions import AreaAccess
 from apps.inventory.models import Item
 from apps.masters.models import Machine
 
-from . import boms, labels, moulds, rates, reasons, routings
+from . import boms, labels, moulds, orders, rates, reasons, routings
 from .boms import BomError
-from .models import Bom, BomLine, CostRate, Mould, ProductionSetting, ReasonCode, Routing
+from .models import (
+    Bom,
+    BomLine,
+    CostRate,
+    Mould,
+    ProductionOrder,
+    ProductionSetting,
+    ReasonCode,
+    Routing,
+)
 from .moulds import ImportRefused, MouldError
+from .orders import OrderError
 from .rates import RateError
 from .reasons import ReasonError
 from .routings import RoutingError
@@ -462,3 +472,89 @@ class CostRateView(_Rates):
         except RateError as error:
             return _error(error)
         return Response(rates.overview(request.user))
+
+
+class _Orders(APIView):
+    """P3-06: production planning works the orders; the stores person and purchasing read
+    them to raise purchase requests for shortages. The services check who does what."""
+
+    permission_classes = [AreaAccess]
+    access_area = "production_planning"
+    access_also_area = "stores"
+    access_write_level = "view"
+
+
+class ProductionOrderListView(_Orders):
+    def get(self, request):
+        p = request.query_params
+        found = orders.search(
+            request.user, p.get("q", "").strip(), p.get("status", ""), p.get("item", "").strip()
+        )
+        return Response(
+            {
+                "results": [orders.row(o) for o in found[:500]],
+                "can_plan": orders.can_plan(request.user),
+                "statuses": [
+                    {"value": v, "label": label} for v, label in ProductionOrder.Status.choices
+                ],
+            }
+        )
+
+    def post(self, request):
+        try:
+            order = orders.create(request.user, request.data)
+        except OrderError as error:
+            return _error(error)
+        return Response(orders.payload(order, request.user), status=status.HTTP_201_CREATED)
+
+
+class ProductionOrderDetailView(_Orders):
+    def _order(self, request, pk) -> ProductionOrder:
+        return get_object_or_404(orders.visible(request.user), pk=pk)
+
+    def get(self, request, pk):
+        return Response(orders.payload(self._order(request, pk), request.user))
+
+    def patch(self, request, pk):
+        try:
+            order = orders.update(request.user, self._order(request, pk), request.data)
+        except OrderError as error:
+            return _error(error)
+        return Response(orders.payload(order, request.user))
+
+
+class ProductionOrderActionView(_Orders):
+    def post(self, request, pk, action):
+        order = get_object_or_404(orders.visible(request.user), pk=pk)
+        try:
+            if action == "release":
+                order = orders.release(request.user, order)
+            elif action == "complete":
+                order = orders.complete(request.user, order)
+            elif action == "close":
+                order = orders.close(request.user, order)
+            elif action == "cancel":
+                order = orders.cancel(request.user, order, request.data.get("reason", ""))
+            elif action == "purchase-request":
+                made = orders.raise_request(request.user, order)
+                body = orders.payload(order, request.user)
+                return Response(body | {"purchase_request": {"id": made.pk, "number": made.number}})
+            else:
+                return _error("Unknown action.", status.HTTP_404_NOT_FOUND)
+        except OrderError as error:
+            return _error(error)
+        return Response(orders.payload(order, request.user))
+
+
+class ProductionOrderSalesLinesView(_Orders):
+    def get(self, request):
+        return Response(
+            {"results": orders.sales_lines(request.user, request.query_params.get("q", "").strip())}
+        )
+
+
+class ProductionOrderWhereUsedView(_Orders):
+    def get(self, request):
+        code = request.query_params.get("item", "").strip().upper()
+        item = get_object_or_404(Item, code=code)
+        return Response(orders.where_used(request.user, item))

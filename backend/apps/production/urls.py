@@ -22,6 +22,27 @@ urlpatterns = [
     path("boms/machining/", v.BomMachiningCalcView.as_view(), name="boms-machining"),
     path("boms/<int:pk>/", v.BomDetailView.as_view(), name="bom"),
     path("boms/<int:pk>/<str:action>/", v.BomActionView.as_view(), name="bom-action"),
+    path("production-orders/", v.ProductionOrderListView.as_view(), name="production-orders"),
+    path(
+        "production-orders/sales-lines/",
+        v.ProductionOrderSalesLinesView.as_view(),
+        name="production-orders-sales-lines",
+    ),
+    path(
+        "production-orders/where-used/",
+        v.ProductionOrderWhereUsedView.as_view(),
+        name="production-orders-where-used",
+    ),
+    path(
+        "production-orders/<int:pk>/",
+        v.ProductionOrderDetailView.as_view(),
+        name="production-order",
+    ),
+    path(
+        "production-orders/<int:pk>/<str:action>/",
+        v.ProductionOrderActionView.as_view(),
+        name="production-order-action",
+    ),
     path("cost-rates/", v.CostRatesView.as_view(), name="cost-rates"),
     path("cost-rates/accept/", v.CostRatesAcceptView.as_view(), name="cost-rates-accept"),
     path("cost-rates/<int:pk>/", v.CostRateView.as_view(), name="cost-rate"),

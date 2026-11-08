@@ -16,6 +16,9 @@ class ProductionConfig(AppConfig):
             CostRate,
             Mould,
             MouldPart,
+            OrderBomLine,
+            ProductionOrder,
+            ProductionOrderDue,
             ProductionSetting,
             ReasonCode,
             Routing,
@@ -33,5 +36,8 @@ class ProductionConfig(AppConfig):
             BomLine,
             BomOutput,
             CostRate,
+            ProductionOrder,
+            ProductionOrderDue,
+            OrderBomLine,
         ):
             register(model)

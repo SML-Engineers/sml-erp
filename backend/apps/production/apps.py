@@ -15,6 +15,11 @@ class ProductionConfig(AppConfig):
             BomOutput,
             CostRate,
             DowntimeEntry,
+            JobExcess,
+            JobIssue,
+            JobMaterial,
+            JobOperation,
+            JobOrder,
             ManpowerEntry,
             MaterialEntry,
             Mould,
@@ -36,6 +41,11 @@ class ProductionConfig(AppConfig):
         )
 
         for model in (
+            JobOrder,
+            JobOperation,
+            JobMaterial,
+            JobIssue,
+            JobExcess,
             Mould,
             MouldPart,
             ReasonCode,

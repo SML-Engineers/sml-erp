@@ -43,6 +43,21 @@ urlpatterns = [
         v.ProductionOrderActionView.as_view(),
         name="production-order-action",
     ),
+    path("job-orders/", v.JobOrderListView.as_view(), name="job-orders"),
+    path(
+        "job-orders/sales-lines/", v.JobOrderSalesLinesView.as_view(), name="job-orders-sales-lines"
+    ),
+    path("job-orders/waiting/", v.JobExcessWaitingView.as_view(), name="job-orders-waiting"),
+    path(
+        "job-orders/excess/<int:pk>/decide/",
+        v.JobExcessDecideView.as_view(),
+        name="job-excess-decide",
+    ),
+    path("job-orders/<int:pk>/", v.JobOrderDetailView.as_view(), name="job-order"),
+    path("job-orders/<int:pk>/lots/", v.JobOrderLotsView.as_view(), name="job-order-lots"),
+    path(
+        "job-orders/<int:pk>/<str:action>/", v.JobOrderActionView.as_view(), name="job-order-action"
+    ),
     path("production-plan/", v.PlanView.as_view(), name="production-plan"),
     path("production-plan/copy/", v.PlanCopyView.as_view(), name="production-plan-copy"),
     path("production-plan/mine/", v.MyPlanView.as_view(), name="production-plan-mine"),

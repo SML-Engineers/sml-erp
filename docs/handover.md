@@ -42,15 +42,15 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | Built. **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137) and stays unticked until the owner's sign-off. |
 | 2b Payroll and people | phase-2b.md | Built except **P2B-18** (Commercial Bank file), which waits for the bank's format. |
-| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance; #172 QC deviation approver (all merged). #173 production demo data (merged). **Asset depreciation terms** with the Director's approval per asset (owner's request of 8 Nov) in PR #174. Next: P3-11 job orders. |
+| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance; #172 QC deviation approver (all merged). #173 production demo data; #174 asset depreciation terms (all merged). **P3-11 job orders** in PR #175. Next: P3-12 job cards. |
 
 Latest migration per app (new migrations continue from these): accounting `0024_gratuity_roles`,
 assets `0003_owner_defaults`, banking `0004_petty_cash`, core `0027_company_epf_etf`, inventory
 `0013_deviation_approver`, masters `0011_limit_no_maximum`, payments `0003_withholding_tax`, payroll
-`0017_fingerprint`, **production `0021_mould_maintenance_guard`**, purchasing `0008_opening_bills`, sales
+`0017_fingerprint`, **production `0023_job_order_guards`**, purchasing `0008_opening_bills`, sales
 `0018_opening_invoices`, vouchers `0011_withholding_tax`.
 
-The last row of spec section 8.4 is **"Asset depreciation terms (owner, 8 Nov)"**; the rows run in task
+The last row of spec section 8.4 is **"Job orders and material issue (P3-11)"**; the rows run in task
 order.
 
 ## 3. How we work with the owner (keep doing exactly this)

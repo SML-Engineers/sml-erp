@@ -1495,6 +1495,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | QC deviation approver (fix, G10) | Deviations approved by the Production Manager; on a failed critical check by the Director (approval subtypes standard/critical; refused if the matrix skips the Director) | 6A.4 |
 | Production demo data | `load_demo_data` adds an HR officer, Planner, Supervisor and Production Manager, moulding staff on a roster, presses, a mould, an approved BOM, opening stock, cost rates, a released and a draft order and today's plan | — |
 | Asset depreciation terms (owner, 8 Nov) | Class defaults (straight line: buildings 5%/20 y, plant and machinery and moulds 10%/10 y, vehicles 20%/5 y, furniture and computers 25%/4 y); each asset's own dated method, rate and useful life, approved by the Director before depreciation; class default changes approved by the Director; straight line rate = 100 ÷ life; approved terms never change (database) | 6 |
+| Job orders and material issue (P3-11) | Job orders (JO) for a sales order line or internal work (mould making, mould repair, tools, other); approved routing and BOM copied, changeable while a draft, fixed on release; the jobs and production orders of a sales line never exceed it; Stores issues by lot up to per piece × quantity; more needs the Production Manager's approval with a reason; returns credited; cancel only with no material out | 7.2 |
 
 **Still needed for initial setup**
 

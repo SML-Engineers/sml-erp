@@ -1026,3 +1026,231 @@ class MouldMaintenance(models.Model):
 
     def __str__(self):
         return f"{self.mould_id} {self.kind} {self.done_on}"
+
+
+class JobOrder(models.Model):
+    """A machining job order (spec 7.2; backlog P3-11): a part, drawing revision, quantity and
+    due date for a sales order line, or an internal job (a new mould, a mould repair, tools,
+    other work). Numbered from the number series ("JO"). The approved routing and BOM of the
+    part are copied to the job when it is made and can be changed for this job while it is a
+    draft; on release they are fixed. Draft → Released → Completed → Closed, or Cancelled
+    before completion; never deleted, and only moves forward (database)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        RELEASED = "released", "Released"
+        COMPLETED = "completed", "Completed"
+        CLOSED = "closed", "Closed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Purpose(models.TextChoices):
+        SALES = "sales", "For a sales order"
+        NEW_MOULD = "new_mould", "Mould making"
+        MOULD_REPAIR = "mould_repair", "Mould repair"
+        TOOLS = "tools", "Tools and fixtures"
+        INTERNAL = "internal", "Other internal work"
+
+    number = models.CharField(max_length=30, unique=True)
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    purpose = models.CharField(max_length=15, choices=Purpose.choices)
+    sales_line = models.ForeignKey(
+        "sales.SalesOrderLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="job_orders",
+    )
+    item = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="job_orders"
+    )
+    mould = models.ForeignKey(
+        Mould, null=True, blank=True, on_delete=models.PROTECT, related_name="job_orders"
+    )
+    description = models.CharField(max_length=200)
+    drawing_no = models.CharField(max_length=50, blank=True)
+    drawing_revision = models.CharField(max_length=20, blank=True)
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    due_date = models.DateField()
+    # Where the operations and materials were copied from (none for a job entered by hand).
+    routing = models.ForeignKey(
+        Routing, null=True, blank=True, on_delete=models.PROTECT, related_name="job_orders"
+    )
+    bom = models.ForeignKey(
+        Bom, null=True, blank=True, on_delete=models.PROTECT, related_name="job_orders"
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    notes = models.TextField(blank=True)
+    end_reason = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    released_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    released_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_job_quantity"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(purpose="sales", sales_line__isnull=False, item__isnull=False)
+                | (~models.Q(purpose="sales") & models.Q(sales_line__isnull=True)),
+                name="production_job_purpose",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(purpose="mould_repair") | models.Q(mould__isnull=False),
+                name="production_job_repair_mould",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["draft", "cancelled"])
+                | models.Q(released_at__isnull=False),
+                name="production_job_released",
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class JobOperation(models.Model):
+    """An operation of a job, copied from the routing (or entered for this job); changed only
+    while the job is a draft (database)."""
+
+    job = models.ForeignKey(JobOrder, on_delete=models.CASCADE, related_name="operations")
+    seq = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=100)
+    section = models.ForeignKey(
+        "masters.Section", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    machine = models.ForeignKey(
+        "masters.Machine", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    setup_min = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    run_min = models.DecimalField(
+        "Run minutes per piece", max_digits=10, decimal_places=3, default=0
+    )
+    subcontract = models.BooleanField(default=False)
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    subcontract_cost = models.DecimalField(
+        "Cost per piece", max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["job", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["job", "seq"], name="production_joboperation_seq"),
+            models.CheckConstraint(
+                condition=models.Q(subcontract=True, supplier__isnull=False)
+                | models.Q(subcontract=False, section__isnull=False),
+                name="production_joboperation_where",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(setup_min__gte=0, run_min__gte=0),
+                name="production_joboperation_times",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job_id}/{self.seq} {self.name}"
+
+
+class JobMaterial(models.Model):
+    """A material of a job with the quantity per piece, copied from the BOM (or entered for
+    this job); changed only while the job is a draft (database). Stores issues up to that
+    quantity times the job's; more needs the Production Manager's approval (`JobExcess`)."""
+
+    job = models.ForeignKey(JobOrder, on_delete=models.CASCADE, related_name="materials")
+    seq = models.PositiveSmallIntegerField()
+    line_type = models.CharField(max_length=15, choices=BomLine.Type.choices)
+    component = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    description = models.CharField(max_length=150, blank=True)
+    supplier = models.ForeignKey(
+        "masters.Supplier", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    # Per piece of the job, with the scrap allowance; the job may use this × its quantity.
+    per_piece = models.DecimalField(max_digits=14, decimal_places=6)
+    unit = models.CharField(max_length=10)
+    operation_seq = models.PositiveSmallIntegerField(null=True, blank=True)
+    customer_supplied = models.BooleanField(default=False)
+    unit_cost = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    stock_size = models.CharField(max_length=50, blank=True)
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["job", "seq"]
+        constraints = [
+            models.UniqueConstraint(fields=["job", "seq"], name="production_jobmaterial_seq"),
+            models.CheckConstraint(
+                condition=models.Q(line_type="subcontract", supplier__isnull=False)
+                | (~models.Q(line_type="subcontract") & models.Q(component__isnull=False)),
+                name="production_jobmaterial_what",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(per_piece__gt=0), name="production_jobmaterial_per_piece"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job_id}/{self.seq}"
+
+
+class JobIssue(models.Model):
+    """A stock issue to a job, or a return from it, by the stores person (inventory
+    `StockIssue`). Insert-only (database)."""
+
+    job = models.ForeignKey(JobOrder, on_delete=models.PROTECT, related_name="issues")
+    stock_issue = models.OneToOneField(
+        "inventory.StockIssue", on_delete=models.PROTECT, related_name="job_link"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["job", "id"]
+
+    def __str__(self):
+        return f"{self.job_id} {self.stock_issue_id}"
+
+
+class JobExcess(models.Model):
+    """A request to issue more of a material than the job allows (or one not on it), with a
+    reason; the Production Manager approves it (approval engine, "job_excess"). An approved
+    request adds its quantity to what Stores may issue. Never deleted; only a waiting request
+    changes, and then only its decision (database)."""
+
+    class Status(models.TextChoices):
+        AWAITING = "awaiting", "Waiting for approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    job = models.ForeignKey(JobOrder, on_delete=models.PROTECT, related_name="excess")
+    component = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    reason = models.CharField(max_length=300)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.AWAITING)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["job", "-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_jobexcess_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job_id} +{self.quantity} {self.component_id}"

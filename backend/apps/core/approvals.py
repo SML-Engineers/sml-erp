@@ -153,6 +153,8 @@ DOCUMENT_TYPES = {
     "routing": DocumentType("Routing", min_approvals=1),
     # A bill of materials (P3-04): as routings, the Production Manager approves.
     "bom": DocumentType("Bill of materials", min_approvals=1),
+    # Issuing more material to a job than it allows (P3-11): the Production Manager approves.
+    "job_excess": DocumentType("Material over the job's allowance", min_approvals=1),
     # A submitted moulding shift report (P3-09): the Production Manager approves or returns
     # it; approval moves stock and mould shot counts.
     "shift_report": DocumentType("Shift report", min_approvals=1),

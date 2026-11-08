@@ -299,11 +299,23 @@ Status: `[ ]` to do · `[x]` done
   undone, and returns the report to the supervisor to correct and submit again. Requests
   never change once decided (database). Approval engine: new `reopen` for this.
 
-- [ ] **P3-10 Mould maintenance**
+- [x] **P3-10 Mould maintenance**
   Preventive maintenance due when the shot count reaches the interval: alerts to the
   Production Manager, a list of moulds approaching it; maintenance records (planned or
   repair, date, work done, cost, by whom); repair history per mould. A repair done by the
   workshop is an internal job (P3-15).
+  Done: Production → **Mould maintenance**. Every mould (not retired) with its shot count,
+  shots since the last preventive maintenance, interval and state: **due** at the interval,
+  **approaching** from 90% (chosen; owner's list of 8 Nov, item 8), moulds due first. When an
+  approved shift report (P3-09) takes a mould to approaching or due, the **Production
+  Manager** of the division is notified (new notification "A mould is near or at its
+  preventive maintenance"), once per stage until the next preventive maintenance. **Records**
+  (Production Manager or Planner): preventive maintenance or repair, date (not in the
+  future), the shot count then, work done, cost (LKR), done by, "done by our workshop" (to
+  become an internal job, P3-15), and optionally the mould put under maintenance or back in
+  service. Preventive maintenance restarts the count. Records are never changed or deleted
+  (database); history per mould with its total cost. The cost is for the mould's history;
+  payment goes through a voucher.
 
 ## C. Machining
 

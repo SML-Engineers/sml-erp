@@ -4838,5 +4838,48 @@
     "correctionHelp": "Approving reverses what the report posted and returns it to the supervisor (or reopens a late draft). The report as it was stays on record.",
     "whatToCorrect": "What needs correcting",
     "askCorrection": "Ask for a correction"
+  },
+  "mouldMaint": {
+    "title": "Mould maintenance",
+    "help": "Shot counts come from approved shift reports. A mould is due for preventive maintenance when its shots since the last one reach its interval; the Production Manager is told at 90% and at 100%.",
+    "moulds": "Moulds and their next maintenance",
+    "mould": "Mould",
+    "shots": "Shot count",
+    "since": "Shots since last maintenance",
+    "interval": "Interval (shots)",
+    "state": "Maintenance",
+    "states": {
+      "due": "Due now",
+      "approaching": "Approaching: {{left}} shots left",
+      "ok": "{{left}} shots left"
+    },
+    "noInterval": "No interval set",
+    "history": "History",
+    "historyOf": "History of {{code}}",
+    "record": "Record maintenance or a repair",
+    "choose": "Choose…",
+    "kind": "Kind",
+    "kinds": {
+      "planned": "Preventive maintenance",
+      "repair": "Repair"
+    },
+    "doneOn": "Date",
+    "cost": "Cost (LKR)",
+    "doneBy": "Done by",
+    "byWorkshop": "Done by our workshop",
+    "statusAfter": "Mould afterwards",
+    "statusSame": "No change",
+    "statusMaintenance": "Under maintenance",
+    "statusActive": "Back in service",
+    "workDone": "Work done",
+    "save": "Save the record",
+    "recordHelp": "Preventive maintenance restarts the count of shots. Records are never changed; put a mistake right with a new record. The cost is for the mould's history; pay it through a voucher as usual.",
+    "historyFor": "Maintenance history of {{code}}",
+    "allHistory": "Maintenance history",
+    "showAll": "Show all moulds",
+    "none": "No maintenance recorded yet.",
+    "shotsThen": "Shot count then",
+    "workshop": "(our workshop)",
+    "totalCost": "Total cost shown: LKR {{cost}}"
   }
 }

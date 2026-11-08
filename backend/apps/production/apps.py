@@ -19,6 +19,7 @@ class ProductionConfig(AppConfig):
             MaterialEntry,
             Mould,
             MouldingRun,
+            MouldMaintenance,
             MouldPart,
             OrderBomLine,
             PlanEntry,
@@ -57,5 +58,6 @@ class ProductionConfig(AppConfig):
             ManpowerEntry,
             ProductionReceipt,
             ShiftCorrection,
+            MouldMaintenance,
         ):
             register(model)

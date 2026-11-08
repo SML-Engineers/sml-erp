@@ -14,10 +14,11 @@ from apps.core.permissions import AreaAccess
 from apps.inventory.models import Item
 from apps.masters.models import Machine
 
-from . import boms, labels, moulds, reasons, routings
+from . import boms, labels, moulds, rates, reasons, routings
 from .boms import BomError
-from .models import Bom, BomLine, Mould, ProductionSetting, ReasonCode, Routing
+from .models import Bom, BomLine, CostRate, Mould, ProductionSetting, ReasonCode, Routing
 from .moulds import ImportRefused, MouldError
+from .rates import RateError
 from .reasons import ReasonError
 from .routings import RoutingError
 
@@ -422,3 +423,42 @@ class BomImportView(_Planning):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(result)
+
+
+class _Rates(APIView):
+    """P3-05: everyone in production planning reads the cost rates; the service lets only
+    the Accountant (Accounting, enter) change them."""
+
+    permission_classes = [AreaAccess]
+    access_area = "production_planning"
+    access_write_level = "view"
+
+
+class CostRatesView(_Rates):
+    def get(self, request):
+        return Response(rates.overview(request.user))
+
+    def post(self, request):
+        try:
+            rates.add(request.user, request.data)
+        except RateError as error:
+            return _error(error)
+        return Response(rates.overview(request.user), status=status.HTTP_201_CREATED)
+
+
+class CostRatesAcceptView(_Rates):
+    def post(self, request):
+        try:
+            rates.accept(request.user, request.data)
+        except RateError as error:
+            return _error(error)
+        return Response(rates.overview(request.user))
+
+
+class CostRateView(_Rates):
+    def delete(self, request, pk):
+        try:
+            rates.remove(request.user, get_object_or_404(CostRate, pk=pk))
+        except RateError as error:
+            return _error(error)
+        return Response(rates.overview(request.user))

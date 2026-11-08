@@ -1,13 +1,13 @@
 # Handover: continuing SML ERP development
 
-Written **5 Nov 2026**, for the next Claude session (or any developer). It replaces the
-handover of 3 Nov 2026 (in the git history of this file; its sections on earlier phases are
-still worth reading there).
+Updated **8 Nov 2026**, for the next Claude session (or any developer). It replaces the
+handovers of 3 and 5 Nov 2026 (in the git history of this file). A fuller handover package
+(architecture, database, API, testing, deployment, decisions) is kept outside the
+repository by the owner and given to each new session.
 
 **Read in this order:** this file → `CLAUDE.md` (the non-negotiable rules) →
-`docs/backlog/phase-3.md` (production; its questions for the owner at the end) →
-`docs/backlog/phase-2b.md` (with the owner's answers of 5 Nov 2026 under its questions) →
-the spec sections of the task in hand.
+`docs/backlog/phase-3.md` (production, the work queue; the owner's answers of 7 Nov 2026 at
+the end) → the spec sections of the task in hand.
 
 ---
 
@@ -26,40 +26,32 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
   pytest / Vitest, Docker Compose, Nginx; servers will be a Hostinger VPS (not bought yet).
   Domain **smlerp.com.lk**.
 - Apps: `core`, `masters`, `accounting`, `vouchers`, `payments`, `sales`, `purchasing`,
-  `inventory`, `banking`, `assets`, **`payroll`** (new, Phase 2b).
+  `inventory`, `banking`, `assets`, `payroll`, **`production`** (Phase 3).
 - `CLAUDE.md` holds the **non-negotiable rules** (money as Decimal, balanced journals,
   posted entries never changed, no supplier payment without Director approval, segregation
   of duties, three-level vouchers, insert-only logs, server-side permissions, immutable codes,
   number series in the saving transaction, effective-dated settings, no secrets). Never weaken
   them, even if a task or the owner seems to ask; explain and offer a safe alternative.
 
-## 2. Where things stand (5 Nov 2026)
+## 2. Where things stand (8 Nov 2026)
 
 | Phase | Backlog | State |
 | --- | --- | --- |
 | 0 + 1 Payment vouchers | phase-1.md | Built. Only **P1-12 UAT and go-live** open (waits for staff testing and servers). |
 | 1.5 Sales documents | phase-1-5.md | Built. Only **P15-12 UAT and go-live** open. |
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
-| 2 Financial accounting | phase-2.md | **P2-00 to P2-28 merged.** **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137: `docs/uat-scripts.md` and the QuickBooks comparison page) but stays **unticked until the owner's sign-off**. |
-| 2b Payroll and people | phase-2b.md | **P2B-01 to P2B-05 merged** (#139–#143). The owner's answers of 5 Nov 2026 are recorded (#144, `docs/phase-2b-answers`) with new tasks P2B-15, P2B-16, P2B-17 before P2B-06. #144–#152 merged (P2B-15, answers, P2B-16, P2B-17, P2B-06 payroll, P2B-07 posting, P2B-08 payslips, P2B-09 returns). #153–#157 merged (P2B-10 advances and loans, P2B-11 self-service, P2B-12 phone punch clock, P2B-20 detail-change requests, P2B-13 payroll in the rest of the system). #158 merged (P2B-19 gratuity). #159 merged (P2B-14 payroll takeover). **P2B-21** (attendance from the fingerprint machine's own file) in PR #161. Built except P2B-18 (Commercial Bank file), which waits for the bank's format. |
-| **3 Production** | **phase-3.md** | Backlog in #160 (P3-01 to P3-23), the owner's answers of 7 Nov 2026 under its questions. #161 merged (P2B-21 fingerprint machine file). #162–#163 merged (P3-01 moulds, P3-02 reasons and settings). #164 merged (P3-03 routings). **P3-04** BOMs in PR #165. Next: P3-05 production cost rates. |
+| 2 Financial accounting | phase-2.md | Built. **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137) and stays unticked until the owner's sign-off. |
+| 2b Payroll and people | phase-2b.md | Built except **P2B-18** (Commercial Bank file), which waits for the bank's format. |
+| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs (all merged). **P3-05** production cost rates in PR #166. Next: P3-06 moulding production orders. |
 
-Pull requests merged in this session: #126 (CI fix after making the repo public), #127 P2-21
-revaluation, #128 P2-22 budgets, #129 P2-23 month/year-end close, #130 quotation pictures
-(owner feature: up to 3 images ≤ 1 MB, shown to the approver, emailed with the quotation), #131
-P2-24 cash flow and financial dashboard, #132 P2-25 cash planner, #133 P2-26 report builder,
-#134 P2-27 invoice tracking and OnePay links, #135/#136 P2-28 QuickBooks migration (opening
-balances; open invoices and bills), #137 P2-29 tools, #138 Phase 2b backlog, #139 P2B-01
-employees, #140 P2B-02 pay structure, #141 P2B-03 holidays and leave, #142 P2B-04 attendance
-from Excel, #143 P2B-05 overtime and work rules.
+Latest migration per app (new migrations continue from these): accounting `0024_gratuity_roles`,
+assets `0001_initial`, banking `0004_petty_cash`, core `0027_company_epf_etf`, inventory
+`0011_finished_parts`, masters `0011_limit_no_maximum`, payments `0003_withholding_tax`, payroll
+`0017_fingerprint`, **production `0011_cost_rate_guards`**, purchasing `0008_opening_bills`, sales
+`0018_opening_invoices`, vouchers `0011_withholding_tax`.
 
-Latest migration per app (new migrations continue from these):
-accounting `0021_opening_balances`, assets `0001_initial`, banking `0004_petty_cash`, core
-`0026_sentemail_other_attachments`, inventory `0010_issues_adjustments_counts`, masters
-`0011_limit_no_maximum`, payments `0003_withholding_tax`, **payroll `0005_overtime`**,
-purchasing `0008_opening_bills`, sales `0018_opening_invoices`, vouchers `0011_withholding_tax`.
-
-The last row added to spec section 8.4 is **"Overtime and attendance rules (P2B-05)"**.
+The last row of spec section 8.4 is **"Production cost rates (P3-05)"**; the rows run in task
+order.
 
 ## 3. How we work with the owner (keep doing exactly this)
 
@@ -67,7 +59,7 @@ The last row added to spec section 8.4 is **"Overtime and attendance rules (P2B-
   language, short steps, exact commands. He reads on his **phone**: keep replies to a screen
   or two, lead with the result.
 - **Order of work:** the backlogs in order, **one task per branch and PR**
-  (`task/P2B-06-payroll-run`). Feature or fix requests from him take priority, on their own
+  (`task/P3-06-production-orders`). Feature or fix requests from him take priority, on their own
   branches (`feature/...`, `fix/...`). Docs-only changes on `docs/...`.
 - **Never push to `main`, never merge.** Open each PR as a **draft**; wait for the **3 draft
   checks** (Lock files, Backend tests, Frontend tests); mark it ready; wait for **all 5**
@@ -84,9 +76,9 @@ The last row added to spec section 8.4 is **"Overtime and attendance rules (P2B-
      `docker compose -f deploy/docker-compose.dev.yml --env-file .env restart backend`.
      When a library or Dockerfile changes, `... up -d --build` instead of `restart backend`.
   The body ends with the attribution line and session link given in **your own** system
-  reminder. PR #143's body is a real example.
+  reminder. PR #165's body is a real example.
 - **Every PR that completes a task:** tick it in the backlog with a **"Done:"** note (what was
-  built, rules, defaults used) and add a row to **spec section 8.4**.
+  built, rules, defaults used) and add a row to **spec section 8.4**, and update the status line in section 2 of this file.
 - **Decisions:** tell him when one of his decisions looks wrong for the business or breaks a
   rule, and why. Send **lists of questions as .txt files**. When he does not answer, use the
   default, say so, and record it in the backlog as a default he can change. Record his
@@ -105,82 +97,47 @@ Windows, Docker Desktop, GitHub Desktop; repository at `D:\GitHub\sml-erp` with 
 **http://localhost:8080**. Demo data: `python manage.py load_demo_data` (runs only missing
 parts; refuses on production). Demo users `clerk@`, `accountant@`, `director@`, `cashier@`,
 `sales@`, `salesmanager@`, `purchasing@`, `stores@`, `qc@demo.sml.lk`, password
-`Demo-SML-2026!`. **There is no demo HR user or demo employees yet** — add them to the demo
-data in a small PR when convenient (an HR and Payroll Officer user, a few employees in WS and
-IM, a section with a supervisor).
+`Demo-SML-2026!`. **There is no demo HR user, employees or production data yet** — add them in a small PR before
+the owner tests production (an HR and Payroll Officer, Production Planner, Supervisor and
+Manager users, a few employees in WS and IM, sections with supervisors, moulds, routings and
+BOMs).
 
-## 5. Phase 2b as built (payroll app, `backend/apps/payroll/`)
+## 5. Phase 3 as built (`backend/apps/production/`)
 
-Read `docs/backlog/phase-2b.md` "Done:" notes for the full rules. Summary:
+Read the "Done:" notes in `docs/backlog/phase-3.md` for the full rules. Summary:
 
 | Task | Files | What exists |
 | --- | --- | --- |
-| P2B-01 Employees | `employees.py`, `views.py` (Employee views), `models.Employee`, migration 0001 | Employee master; NIC (old/new) checked and unique; number immutable; never deleted (trigger); leavers with date and reason; salary bank account with a **second check by the Director** (never the person who changed it); Excel template/export/import (all or nothing); export of everyone needs action `export_personal_data`. The **HR and Payroll Officer** role is switched on. Link to a user kept by the API (UI comes with self-service). |
-| P2B-02 Pay structure | `pay.py`, `models.PayComponent/PayRate`, migration 0002 | Components (earning/deduction, EPF/ETF-liable, APIT-taxable, fixed or variable); deductions never EPF/APIT (DB check). Per-employee dated amounts from the 1st of a month, never changed (trigger); 0 ends a component; future amounts withdrawable. Seeded: BASIC, FIXED, ATTEND, TRAVEL, INCENTIVE; WELFARE, UNION, LOAN, ADVANCE. **No budgetary relief allowance**: it ended as a separate payment on 31 March 2025 (Amendment Acts No. 9 and 10 of 2025). |
-| P2B-03 Holidays and leave | `leave.py`, `leave_views.py`, `models.Holiday/LeaveType/LeaveGrant/Leave`, migration 0003 | Holidays (past ones kept); leave types with rules `annual_soe` (14/10/7/4 by joining quarter), `casual_soe` (½ day per completed month in joining year, then 7), `fixed`, `unlimited`; "Grant the year's leave"; adjustments with reason; grants insert-only; leave counted Mon–Sat without holidays; half days; no overlaps; never beyond balance; applied-for leave approved by HR, never one's own; cancel, never delete. Seeded: ANNUAL, CASUAL, MATERNITY, NOPAY. |
-| P2B-04 Attendance | `attendance.py`, `attendance_views.py`, `models.AttendanceImport/AttendanceDay/AttendanceMonth`, migration 0004 | Excel template (Employee no, Date, Time in, Time out, Shift, Leave code, Remarks); checked first, all or nothing; minutes worked (less shift break), late, early; night shifts past midnight; leave code without times = day of leave, with times = half day. HR confirms a **division's calendar month** after it ends: leave codes become leave (balances checked); confirmed days frozen (trigger); reopen with reason. |
-| P2B-05 Overtime | `overtime.py`, `overtime_views.py`, `models.WorkRule/OvertimeCheck`, migration 0005 | Dated **work rules per division** (default 480 min day, 10 min grace, 2 short leaves of 90 min, OT from 30 min in 15-min steps, rates 1.5/2.0/2.0, hourly divisor 240); OT per day; short time = late beyond grace + early, covered by short leave, rest no-pay; no-pay days = absent + unpaid leave. The section supervisor or the Director checks each employee's month (never the attendance confirmer, never oneself); checked figures frozen (trigger) and voided if attendance is reopened. |
+| P3-01 Moulds | `moulds.py`, `labels.py`, migrations 0001–0003 | Company or customer moulds, cavities per part, fit to machines, shot counts, Excel, QR labels; production roles switched on |
+| P3-02 Reasons and settings | `reasons.py`, migrations 0004–0005 | Reject/downtime reasons per division; dated production settings (grace 4 h, rejects 5%, overrun 10%) |
+| P3-03 Routings | `routings.py`, migrations 0006–0007 | Operations by section and machine, setup/run minutes or subcontract; Planner drafts, Production Manager approves |
+| P3-04 BOMs | `boms.py`, migrations 0008–0009 | Multi-level BOMs, calculators, family moulds, approval, copy/compare/where-used/Excel, standard cost |
+| P3-05 Cost rates | `rates.py`, migrations 0010–0011 | Dated labour, overhead, regrind and mould amortisation rates kept by the Accountant; the BOM cost adds labour, overhead and mould |
 
-Frontend: menu section **"People and payroll"** (`menu.people`): Employees, Pay components,
-Attendance, Overtime, Work rules, Leave, Holidays and leave types. Pages in
-`frontend/src/pages/` (`EmployeesPage`, `EmployeePage` + `EmployeePay` + `EmployeeLeave`,
-`PayComponentsPage`, `AttendancePage`, `OvertimePage`, `WorkRulesPage`, `LeavePage`,
-`HolidaysPage`); API clients `src/api/employees.ts`, `pay.ts`, `leave.ts`, `attendance.ts`,
-`overtime.ts`. Menu items support `anyLevel: ["enter", "approve"]` (HR or the Director, not the
-Accountant's "totals only" view).
+Access: area `production_planning` (Planner Enter, Production Manager Approve, Accountant and
+Director View); approvals in `production_approvals`. Cost rates are read in
+`production_planning` and changed only by those who can enter in `accounting` (service check).
 
-Access in payroll: area `hr_payroll`. HR and Payroll Officer = Manage; Director = Approve
-(sees everything, checks bank accounts and overtime, enters nothing); Accountant = View
-"totals only" (sees no personal data: `employees.can_view` needs Enter or Approve); Production
-Supervisor = View "attendance" (checks overtime for the sections they supervise). The System
-Admin has **no** payroll access by default.
+## 6. The owner's Phase 3 answers (7 Nov 2026)
 
-## 6. The owner's answers of 5 Nov 2026 and the next tasks
+Recorded at the end of `docs/backlog/phase-3.md`: moulding first, then machining; SML has a
+Production Manager, who approves (the Director only while nobody holds the role); some moulds
+belong to customers, company moulds are not yet in the asset register; production both to
+order and to stock; regrind reused, valued at 100% of the material's cost; overhead 0 until
+the Accountant sets it, plus a module to work rates out from past data (P3-23); alerts
+changeable in a control panel; grace period 4 hours; job cards on A5/A4; offline entry later
+(P3-21); Sinhala and Tamil arranged by the owner.
 
-He answered all 13 Phase 2b questions after P2B-01 to P2B-05 were built. The answers are
-recorded under each question in `docs/backlog/phase-2b.md` ("Owner, 5 Nov 2026: …") and in
-spec 8.4. In short:
-
-- **Pay period 21st to 20th**, paid on the last day of the month; advances during the month
-  are deducted at month end.
-- **Everything per employee, approved by the Director**: overtime settings, attendance bonus
-  (default LKR 1,500, lost when absent four half days), up to four allowances, leave, APIT.
-- **Leave per labour category**: Shop and Office (annual 14, casual and sick 7, short leave
-  2 × 1.5 h paid) and Wages Board (annual 7, casual and sick 7, short leave 2 × 1.5 h unpaid,
-  a quarter day's pay deducted each).
-- Payroll approved by the Director **and** paid through a three-level voucher; Commercial
-  Bank of Ceylon PLC; payslips as the default; loans in equal monthly instalments; gratuity
-  "as the government's guidance".
-
-**Next tasks, in this order:** P2B-15 pay period → P2B-16 labour categories and leave →
-P2B-17 pay settings approved by the Director → P2B-06 payroll run → P2B-07 to P2B-14.
-The backlog has the text of each. Implementation hints:
-
-- **P2B-15:** keep `AttendanceMonth.month` and `OvertimeCheck.month` as the 1st of the pay
-  month; add a helper `pay_period(month) -> (start, end)`; the DB trigger in migration 0004
-  uses `date_trunc('month', date)` — replace it in a new migration with the period rule
-  (date ≥ 21 → next pay month); the cut-off day is a dated company setting (default 21).
-  Nothing is live, so no data migration.
-- **P2B-16:** `Employee.category`; entitlements and short-leave rules per category; check
-  maternity days by web search (Shop and Office Act, Maternity Benefits Ordinance as
-  amended), not memory.
-- **P2B-17:** a "pay settings change" document through `apps/core/approvals.py`
-  (DocumentType + ApprovalRule level 2 Director + reminder; add to
-  `tests/test_approval_reminders.py`). Decide how `pay.add_rate` fits (pending rows, or the
-  amounts move into the change) and record it. "The Admin" = HR and Payroll Officer (System
-  Admin has no payroll access by design).
-- **P2B-06:** search the current IRD APIT tables (2026/27); do not use memory.
-
-**Follow-up questions** were sent to him with #144 (as a .txt) and are listed in the backlog
-under "Follow-up questions (sent 5 Nov 2026)", with defaults. Record his answers there.
+**Pending follow-up:** QC deviations are still approved by the Director (`quality_deviation`
+in `apps/core/approvals.py`); the owner's rule was "until the Production Manager role is
+switched on", which it now is. Ask him before routing them to the Production Manager.
 
 ## 7. Still waiting on the owner (from earlier phases)
 
 | What | For | Status |
 | --- | --- | --- |
 | Staff UAT and parallel month; auditors' and owner's sign-off | P1-12, P15-12, P16-14, P2-29 | `docs/uat-scripts.md` (sent to him as SML-ERP-test-scripts.md) and the Parallel run page are ready |
-| Commercial Bank bulk transfer file format | P2B-07 | Follow-up question 10 |
-| A masked sample of the payroll Excel | P2B-14 | Asked |
+| Commercial Bank bulk transfer file format | P2B-18 | Waits for the bank |
 | Auditors' depreciation methods and rates (P2-19 built with editable classes) | Go-live | He said "soon" |
 | Bank statement exports in Excel/CSV per bank (P2-15 built with templates) | Go-live | Asked |
 | Hostinger VPS, Backblaze B2, GitHub Team, make the repository private | Go-live | Later |
@@ -192,24 +149,23 @@ leave; assign section supervisors.
 
 ## 8. Technical notes (learned the hard way)
 
-**The workspace**
-- **pip to PyPI fails**: no local Django; you cannot run backend tests. **CI is the backend
-  test runner.** `ruff` works: `/root/.local/bin/ruff check --fix .` and `ruff format .` in
-  `backend/` (line length 100; migrations excluded from ruff's format).
-- **npm works now**: `cd frontend && npm ci`, then `npx tsc --noEmit` and
-  `npx vitest run [file]` run locally (the full suite takes ~100 s). Run them before pushing.
-- **Migrations are written by hand.** CI runs `makemigrations --check`; it fails when the
-  migration does not match the model exactly. Lessons: `Q(a=1, b=2)` sorts its keywords, so
-  write the same `models.Q(...)` expression in model and migration; keep field options
-  identical (`verbose_name`, defaults as `Decimal("1.50")`).
+**The workspace** (no Docker in the AI workspace)
+- Run PostgreSQL 16 (port 5433) and Redis directly, and a Python virtualenv from
+  `backend/requirements-dev.lock.txt`; PyPI and npm are reachable. The backend tests run
+  locally: one file in seconds, the full suite in about 9 minutes (run it in the background).
+  Postgres can stop between turns: start it again with `pg_ctl`.
+- `ruff check --fix . && ruff format .` in `backend/` (line length 100); `npx tsc --noEmit`
+  and `npx vitest run` in `frontend/` (about 2 minutes).
+- **Generate migrations with `makemigrations`** and review them; hand-write only the
+  `RunSQL` guard migrations. CI runs `makemigrations --check`.
 - **Seeded rows in tables with "never change" triggers** must use whole-second timestamps
-  (e.g. `datetime(2024, 1, 1, tzinfo=UTC)`): transactional tests reload serialized data with
-  millisecond precision and the trigger refuses the "change" (this broke #143 once).
+  (e.g. `datetime(2024, 1, 1, tzinfo=UTC)`): transactional tests reload serialized data.
 - Triggers allow an unchanged re-save with `IF NEW IS NOT DISTINCT FROM OLD THEN RETURN NEW`.
-- Services receive model instances that may be stale: re-read the row (`visible(user)
-  .filter(pk=...).first()` or `select_for_update()`) before checking state (this broke #140
-  once).
-- Pushes are occasionally silently rejected: verify with `git ls-remote origin <branch>`.
+- Services receive model instances that may be stale: re-read the row (`select_for_update()`)
+  before checking state.
+- The clone uses per-branch fetch refspecs: before the first push of a new branch run
+  `git config --add remote.origin.fetch +refs/heads/<branch>:refs/remotes/origin/<branch>`,
+  then `git push -u origin <branch>`, and verify with `git ls-remote origin <branch>`.
 
 **GitHub through `gh api`** (GraphQL is blocked in this environment):
 - Draft PR: `gh api repos/SML-Engineers/sml-erp/pulls -f title=... -f head=<branch> -f base=main -F draft=true -F body=@file --jq .number` (retry on 502).
@@ -237,8 +193,8 @@ leave; assign section supervisors.
 - Approval engine `apps/core/approvals.py` (register DocumentType, seed ApprovalRule level 2
   Director + ApprovalReminder in a migration, add the tuple to
   `tests/test_approval_reminders.py`). Nobody approves their own document.
-- Audit: `apps.core.audit.audit_context(event, reason)` around changes; register models in
-  `apps/payroll/apps.py`. Insert-only tables use `core_refuse_change()`.
+- Audit: `apps.core.audit.audit_context(event, reason)` around changes; register models in the
+  app's `apps.py`. Insert-only tables use `core_refuse_change()`.
 - Journal: `apps.accounting.journal.post(...)`; add new posting documents to
   `apps/accounting/sources.py`. Numbers: `apps.core.numbering.allocate(...)` inside the
   transaction.

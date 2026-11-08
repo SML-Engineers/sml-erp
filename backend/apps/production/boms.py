@@ -21,7 +21,9 @@
 - **Standard cost** rolled up through all levels: materials at their stock average cost
   (customer-supplied at nil), sub-assemblies at their own BOM's cost, subcontract services
   at their cost, and the routing's run time at the machine hourly rates (a section's average
-  when no machine is named). Missing costs are listed, never guessed.
+  when no machine is named), plus labour at the section's labour rate, overhead per machine
+  hour and, for a company mould, its amortisation per shot (P3-05 cost rates). Missing costs
+  are listed, never guessed.
 - Copy (a new revision or another item), compare two revisions, where-used, Excel.
 """
 
@@ -45,7 +47,7 @@ from apps.inventory.models import Item
 from apps.masters.models import Machine, Supplier
 from apps.masters.services import rate_on
 
-from . import routings
+from . import rates, routings
 from .models import Bom, BomLine, BomOutput, Mould
 
 DOC = "bom"
@@ -596,18 +598,22 @@ def decide(user: User, bom: Bom, action: str, reason: str = "") -> Bom:
 # --- Standard cost -------------------------------------------------------------------------------
 
 
-def _machine_cost(item: Item, day) -> tuple[Decimal, list[str]]:
-    """The routing's run time at machine hourly rates, and its subcontract costs, per piece."""
+def _operation_cost(item: Item, day) -> tuple[dict, list[str]]:
+    """Per piece, from the routing's run time: machine time at the machine hourly rates,
+    labour at the section's labour rate and overhead at the overhead rate per machine hour
+    (P3-05), and the subcontract costs. Setup time is costed on the orders (P3-16)."""
+    out = {"machine": ZERO, "labour": ZERO, "overhead": ZERO}
     routing = routings.in_force(item)
     if routing is None:
-        return ZERO, [f"{item.code}: no routing in force (machine time not costed)"]
-    total, missing = ZERO, []
+        return out, [f"{item.code}: no routing in force (machine time not costed)"]
+    missing = []
     for op in routing.operations.select_related("machine", "section"):
         if op.subcontract:
             if op.subcontract_cost is None:
                 missing.append(f"{item.code} op {op.seq}: no subcontract cost")
-            total += op.subcontract_cost or ZERO
+            out["machine"] += op.subcontract_cost or ZERO
             continue
+        hours = op.run_min / 60
         machines = (
             [op.machine]
             if op.machine_id
@@ -615,13 +621,34 @@ def _machine_cost(item: Item, day) -> tuple[Decimal, list[str]]:
                 Machine.objects.filter(section=op.section).exclude(status=Machine.Status.RETIRED)
             )
         )
-        rates = [r for r in (rate_on(m, day) for m in machines) if r is not None]
-        if not rates:
+        hourly = [r for r in (rate_on(m, day) for m in machines) if r is not None]
+        if hourly:
+            out["machine"] += hours * sum(hourly, ZERO) / len(hourly)
+        else:
             missing.append(f"{item.code} op {op.seq}: no machine rate")
-            continue
-        hourly = sum(rates, ZERO) / len(rates)
-        total += op.run_min * hourly / 60
-    return total, missing
+        overheads = [rates.overhead_on(op.section, m, day) for m in machines] or [
+            rates.overhead_on(op.section, None, day)
+        ]
+        out["overhead"] += hours * sum(overheads, ZERO) / len(overheads)
+        labour = rates.labour_on(op.section, day)
+        if labour is None:
+            missing.append(f"{item.code} op {op.seq}: no labour rate for {op.section.code}")
+        else:
+            out["labour"] += hours * labour
+    return out, missing
+
+
+def _mould_cost(bom: Bom, day) -> Decimal:
+    """Mould amortisation per unit: the company mould's rate per shot, over the pieces a shot
+    makes (a family mould's BOM is per shot already). Customer moulds cost nothing."""
+    if bom.kind != Bom.Kind.MOULDING or bom.mould_id is None:
+        return ZERO
+    per_shot = rates.mould_on(bom.mould, day)
+    outputs = list(bom.outputs.all())
+    if not per_shot or len(outputs) > 1:
+        return per_shot
+    pieces = outputs[0].cavities if outputs else sum(p.cavities for p in bom.mould.parts.all())
+    return per_shot / pieces if pieces else per_shot
 
 
 def cost(bom: Bom, *, day=None, depth: int = 0) -> dict:
@@ -649,13 +676,15 @@ def cost(bom: Bom, *, day=None, depth: int = 0) -> dict:
         value = (needed * (unit or ZERO)).quantize(CENT, ROUND_HALF_UP)
         material += value
         lines.append({"seq": x.seq, "unit_cost": f"{unit or ZERO:.2f}", "value": f"{value:.2f}"})
-    machine, more = _machine_cost(bom.item, day)
+    ops, more = _operation_cost(bom.item, day)
     missing += more
-    per_unit = (material / bom.base_quantity + machine).quantize(CENT, ROUND_HALF_UP)
+    mould = _mould_cost(bom, day)
+    per_unit = material / bom.base_quantity + sum(ops.values(), ZERO) + mould
     return {
         "material": material,
-        "machine": machine.quantize(CENT, ROUND_HALF_UP),
-        "per_unit": per_unit,
+        **{k: v.quantize(CENT, ROUND_HALF_UP) for k, v in ops.items()},
+        "mould": mould.quantize(CENT, ROUND_HALF_UP),
+        "per_unit": per_unit.quantize(CENT, ROUND_HALF_UP),
         "lines": lines,
         "missing": missing,
     }
@@ -755,6 +784,9 @@ def payload(bom: Bom, user: User) -> dict:
         "cost": {
             "material": f"{standard['material']:.2f}",
             "machine": f"{standard['machine']:.2f}",
+            "labour": f"{standard['labour']:.2f}",
+            "overhead": f"{standard['overhead']:.2f}",
+            "mould": f"{standard['mould']:.2f}",
             "per_unit": f"{standard['per_unit']:.2f}",
             "missing": standard["missing"],
         },

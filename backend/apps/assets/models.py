@@ -53,14 +53,23 @@ class AssetClass(models.Model):
         return self.name
 
 
+class Approval(models.TextChoices):
+    AWAITING = "awaiting", "Waiting for the Director"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
+
+
 class AssetClassRate(models.Model):
-    """The method and annual rate of a class from a date (rule 11): months already posted keep
-    the rate they were worked out at."""
+    """The default method, annual rate and useful life of a class from a date (rule 11),
+    which new assets of the class take. The Accountant sets them and the Director approves
+    (owner, 8 Nov 2026); months already posted keep the rate they were worked out at."""
 
     asset_class = models.ForeignKey(AssetClass, on_delete=models.PROTECT, related_name="rates")
     effective_from = models.DateField()
     method = models.CharField(max_length=20, choices=Method.choices)
     rate = models.DecimalField(max_digits=7, decimal_places=4)  # percent a year
+    life_years = models.PositiveSmallIntegerField("Useful life (years)", null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Approval.choices, default=Approval.APPROVED)
     reason = models.TextField(blank=True)
     set_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
@@ -71,7 +80,9 @@ class AssetClassRate(models.Model):
         ordering = ["asset_class", "-effective_from"]
         constraints = [
             models.UniqueConstraint(
-                fields=["asset_class", "effective_from"], name="assets_rate_once_per_day"
+                fields=["asset_class", "effective_from"],
+                condition=~models.Q(status="rejected"),
+                name="assets_rate_once_per_day",
             ),
             models.CheckConstraint(
                 condition=models.Q(rate__gte=0) & models.Q(rate__lte=100),
@@ -208,3 +219,40 @@ class DepreciationLine(models.Model):
 
     def __str__(self):
         return f"{self.run} {self.asset}"
+
+
+class AssetTerms(models.Model):
+    """One asset's depreciation method, rate and useful life from a month (owner, 8 Nov
+    2026): a new asset takes its class's defaults, which the Accountant may change for it;
+    the Director approves each before the asset is depreciated with them. A later change is
+    new terms from a later month; months already posted keep what they used."""
+
+    asset = models.ForeignKey(FixedAsset, on_delete=models.PROTECT, related_name="terms")
+    effective_from = models.DateField()
+    method = models.CharField(max_length=20, choices=Method.choices)
+    rate = models.DecimalField(max_digits=7, decimal_places=4)  # percent a year
+    life_years = models.PositiveSmallIntegerField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=Approval.choices, default=Approval.AWAITING)
+    reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["asset", "-effective_from", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["asset", "effective_from"],
+                condition=~models.Q(status="rejected"),
+                name="assets_terms_once_per_month",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rate__gte=0) & models.Q(rate__lte=100),
+                name="assets_terms_percent",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.asset_id} {self.rate}% from {self.effective_from}"

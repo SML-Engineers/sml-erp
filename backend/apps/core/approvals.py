@@ -156,6 +156,12 @@ DOCUMENT_TYPES = {
     # A submitted moulding shift report (P3-09): the Production Manager approves or returns
     # it; approval moves stock and mould shot counts.
     "shift_report": DocumentType("Shift report", min_approvals=1),
+    # Fixed assets (owner, 8 Nov 2026): the Director approves each asset's depreciation
+    # method, rate and life, and changes to a class's defaults set by the Accountant.
+    "asset_terms": DocumentType("Asset depreciation terms", min_approvals=1, final_role="director"),
+    "asset_class_rate": DocumentType(
+        "Asset class depreciation defaults", min_approvals=1, final_role="director"
+    ),
     # A change to a shift report after its entry time (P3-09): the Production Manager, the
     # Director, or a person the Admin gives "approve_production_corrections" to and the
     # Director confirms (owner, 7 Nov 2026).

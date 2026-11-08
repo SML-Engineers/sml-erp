@@ -69,6 +69,7 @@ urlpatterns = [
         v.ShiftCorrectionDecideView.as_view(),
         name="shift-correction-decide",
     ),
+    path("mould-maintenance/", v.MouldMaintenanceView.as_view(), name="mould-maintenance"),
     path("cost-rates/", v.CostRatesView.as_view(), name="cost-rates"),
     path("cost-rates/accept/", v.CostRatesAcceptView.as_view(), name="cost-rates-accept"),
     path("cost-rates/<int:pk>/", v.CostRateView.as_view(), name="cost-rate"),

@@ -19,6 +19,7 @@ from apps.masters.models import Machine
 from . import (
     boms,
     labels,
+    maintenance,
     moulds,
     orders,
     plan,
@@ -29,6 +30,7 @@ from . import (
     shift_reports,
 )
 from .boms import BomError
+from .maintenance import MaintenanceError
 from .models import (
     Bom,
     BomLine,
@@ -736,3 +738,24 @@ class ShiftCorrectionDecideView(_Reports):
             return _error(error)
         report = shift_reports.visible(request.user).get(pk=fix.report_id)
         return Response(_report_body(report, request.user))
+
+
+class MouldMaintenanceView(APIView):
+    """P3-10: production planning reads the moulds due and their maintenance; the
+    Production Manager or the Planner records it (checked in the service)."""
+
+    permission_classes = [AreaAccess]
+    access_area = "production_planning"
+    access_write_level = "view"
+
+    def get(self, request):
+        return Response(
+            maintenance.overview(request.user, request.query_params.get("mould", "").strip())
+        )
+
+    def post(self, request):
+        try:
+            maintenance.record(request.user, request.data)
+        except MaintenanceError as error:
+            return _error(error)
+        return Response(maintenance.overview(request.user), status=status.HTTP_201_CREATED)

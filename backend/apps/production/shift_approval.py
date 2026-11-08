@@ -18,7 +18,8 @@ supervisor corrects it and submits again. Final approval, in one transaction:
    added by order costing, P3-16). A family mould's other parts are counted too (shots × their
    cavities), sharing the run's value by their weight. Dr finished goods inventory and Dr
    the regrind's inventory, Cr Raw materials used.
-4. Each **mould's shot count** goes up by its shots.
+4. Each **mould's shot count** goes up by its shots; the Production Manager is told when a
+   mould approaches or reaches its preventive maintenance (P3-10).
 
 The supervisor's own material issue and return lines are kept as a record next to the
 backflush (the consumption report compares them, P3-20).
@@ -51,7 +52,7 @@ from apps.inventory import items as item_master
 from apps.inventory.models import Item, StockMovement
 from apps.inventory.stock import StockError, _store
 
-from . import rates, shift_reports
+from . import maintenance, rates, shift_reports
 from .models import (
     BomLine,
     Mould,
@@ -296,6 +297,7 @@ def _post(user: User, report: ShiftReport) -> None:
         for mould_id, count in shots.items():
             Mould.objects.filter(pk=mould_id).update(shot_count=F("shot_count") + count)
             Mould.objects.filter(pk=mould_id, first_used_at__isnull=True).update(first_used_at=now)
+        maintenance.after_shots(shots)  # P3-10: tell the Production Manager when due
         report.status = St.APPROVED
         report.approved_by = user
         report.approved_at = now

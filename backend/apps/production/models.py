@@ -990,3 +990,39 @@ class ShiftCorrection(models.Model):
 
     def __str__(self):
         return f"{self.report_id}: {self.status}"
+
+
+class MouldMaintenance(models.Model):
+    """A maintenance record of a mould (spec 7.5 `mould_maintenance`; backlog P3-10):
+    preventive (planned) maintenance, which restarts the count of shots towards the next
+    one, or a repair; with the date, the shot count then, the work done, its cost and who
+    did it. Records are never changed or deleted (database); a mistake is put right with a
+    new record."""
+
+    class Kind(models.TextChoices):
+        PLANNED = "planned", "Preventive maintenance"
+        REPAIR = "repair", "Repair"
+
+    mould = models.ForeignKey(Mould, on_delete=models.PROTECT, related_name="maintenance")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    done_on = models.DateField()
+    shot_count = models.PositiveBigIntegerField()
+    work_done = models.TextField()
+    cost = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    done_by = models.CharField("Done by", max_length=100)
+    by_workshop = models.BooleanField("Done by our workshop", default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["mould", "-done_on", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(cost__gte=0), name="production_mouldmaintenance_cost"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.mould_id} {self.kind} {self.done_on}"

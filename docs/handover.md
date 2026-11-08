@@ -42,11 +42,11 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | Built. **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137) and stays unticked until the owner's sign-off. |
 | 2b Payroll and people | phase-2b.md | Built except **P2B-18** (Commercial Bank file), which waits for the bank's format. |
-| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections (all merged). **P3-10** mould maintenance in PR #171. Next: `fix/deviation-approver` (owner answered G10 on 8 Nov), then P3-11 job orders. |
+| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance (all merged). **QC deviation approver fix** (G10) in PR #172. Next: P3-11 job orders. |
 
 Latest migration per app (new migrations continue from these): accounting `0024_gratuity_roles`,
 assets `0001_initial`, banking `0004_petty_cash`, core `0027_company_epf_etf`, inventory
-`0012_production_kinds`, masters `0011_limit_no_maximum`, payments `0003_withholding_tax`, payroll
+`0013_deviation_approver`, masters `0011_limit_no_maximum`, payments `0003_withholding_tax`, payroll
 `0017_fingerprint`, **production `0021_mould_maintenance_guard`**, purchasing `0008_opening_bills`, sales
 `0018_opening_invoices`, vouchers `0011_withholding_tax`.
 
@@ -134,8 +134,8 @@ changeable in a control panel; grace period 4 hours; job cards on A5/A4; offline
 (P3-21); Sinhala and Tamil arranged by the owner.
 
 **Owner's answer of 8 Nov 2026 (G10):** QC deviations go to the Production Manager; the
-Director still approves deviations for critical materials. To do in `fix/deviation-approver`
-right after P3-10. His list of pending decisions (sent 8 Nov, each with a default) is in the
+Director still approves deviations on a failed critical check (approval subtypes "standard"
+and "critical", inventory migration 0013; PR #172). His list of pending decisions (sent 8 Nov, each with a default) is in the
 "Pending decisions" note below section 7.
 
 ## 7. Still waiting on the owner (from earlier phases)

@@ -9,7 +9,8 @@ from django.db import transaction
 from django.db.utils import DatabaseError
 from django.utils import timezone
 
-from apps.core.models import Division, Notification
+from apps.core import approvals
+from apps.core.models import ApprovalRule, Division, Notification, Role
 from apps.inventory import inspections, items, receipts
 from apps.inventory.inspections import InspectionError, ParameterInput, ResultInput
 from apps.inventory.models import IncomingInspection, InspectionResult
@@ -433,3 +434,42 @@ def test_the_api_saves_plans(qc, resin):
 def test_people_without_quality_access_see_nothing(line):
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     assert as_user(clerk).get("/api/v1/inspections/queue/").status_code == 403
+
+
+def test_a_standard_deviation_goes_to_the_production_manager(line, qc, director):
+    """Owner, 8 Nov 2026 (G10): the Production Manager approves deviations; the Director
+    approves those on a failed critical check."""
+    manager = person("pm@sml.lk", "production_manager", all_divisions=True)
+    inspection = inspections.start(qc, line)
+    inspections.save(qc, inspection, results=results(bag=False))
+    inspection = inspections.decide(qc, inspection, D.DEVIATION, "Dusty bags, contents fine")
+    state = approvals.state_of("quality_deviation", inspection.pk)
+    assert (state.subtype, state.route[-1]["role"]) == ("standard", "production_manager")
+    with pytest.raises(InspectionError):
+        inspections.approve_deviation(director, inspection)  # not the Director's step
+    inspection = inspections.approve_deviation(manager, inspection, "Fine")
+    assert (inspection.status, inspection.decision) == (St.DECIDED, D.DEVIATION)
+
+
+def test_a_critical_deviation_stays_with_the_director(line, qc, director):
+    manager = person("pm@sml.lk", "production_manager", all_divisions=True)
+    inspection = inspections.start(qc, line)
+    inspections.save(qc, inspection, results=results(mfi="15.5"))
+    inspection = inspections.decide(qc, inspection, D.DEVIATION, "Trial OK")
+    state = approvals.state_of("quality_deviation", inspection.pk)
+    assert (state.subtype, state.route[-1]["role"]) == ("critical", "director")
+    with pytest.raises(InspectionError):
+        inspections.approve_deviation(manager, inspection)
+    assert inspections.approve_deviation(director, inspection).decision == D.DEVIATION
+
+
+def test_a_critical_deviation_is_refused_if_the_matrix_skips_the_director(line, qc):
+    ApprovalRule.objects.filter(document_type="quality_deviation", subtype="critical").update(
+        role=Role.objects.get(code="production_manager")
+    )
+    inspection = inspections.start(qc, line)
+    inspections.save(qc, inspection, results=results(mfi="15.5"))
+    with pytest.raises(InspectionError, match="approved by the Director"):
+        inspections.decide(qc, inspection, D.DEVIATION, "Trial OK")
+    inspection.refresh_from_db()
+    assert inspection.status == St.DRAFT

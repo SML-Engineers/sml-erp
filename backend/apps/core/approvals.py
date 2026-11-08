@@ -84,10 +84,12 @@ DOCUMENT_TYPES = {
     # 2026; P16-06); so is reversing a confirmed goods receiving note.
     "goods_receipt": DocumentType("GRN with excess", min_approvals=1, final_role="director"),
     "goods_receipt_reversal": DocumentType("GRN reversal", min_approvals=1, final_role="director"),
-    # Accepting material that fails a check: the Director approves every deviation until the
-    # Production Manager role is switched on (owner, 1 Nov 2026; P16-08).
+    # Accepting material that fails a check (P16-08): the Production Manager approves; a
+    # deviation on a failed critical check (subtype "critical") is approved by the Director
+    # (owner, 8 Nov 2026; until then the Director approved every deviation). The inspection
+    # service refuses a critical deviation whose route does not end with the Director.
     "quality_deviation": DocumentType(
-        "Accept under deviation", min_approvals=1, final_role="director"
+        "Accept under deviation", min_approvals=1, subtype_label="Checks failed"
     ),  # A supplier invoice that does not match its PO and GRN exactly: no tolerance, the
     # Director approves the exception (owner, 31 Oct 2026; P16-10).
     "invoice_exception": DocumentType(

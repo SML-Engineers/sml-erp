@@ -149,6 +149,11 @@ Status: `[ ]` to do · `[x]` done
 
 ## E. Stock and accounting
 
+  - Changed 8 Nov 2026 (owner; known issue G10, `fix/deviation-approver`): the Production
+    Manager approves deviations (approval subtype "standard"); a deviation on a failed
+    critical check (subtype "critical") is approved by the Director, and is refused if the
+    approval matrix does not end with the Director. Migration inventory 0013 moved the
+    default rule to the Production Manager and added the Director's "critical" rule.
 - [x] **P16-09 Stock movements and valuation** (spec 5A.3, IAS 2)
   Every movement recorded by item, store and lot; balances computed, never typed; weighted
   average cost. On acceptance: Dr Inventory, Cr Goods received not invoiced (GRNI), at the PO

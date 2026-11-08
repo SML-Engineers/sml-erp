@@ -9,8 +9,9 @@
   - Accept: all of it, or all but some packages (owner, 1 Nov 2026: decisions per package),
     or, for an item not received by package, a smaller accepted quantity.
   - Reject the whole line, with a reason.
-  - Accept under deviation, with a reason, when a check failed: the Director approves (owner,
-    1 Nov 2026: the Director approves every deviation for now).
+  - Accept under deviation, with a reason, when a check failed: the Production Manager
+    approves, and the Director when a critical check failed (owner, 8 Nov 2026; approval
+    subtype "critical" or "standard").
   A failed critical check cannot simply be accepted.
 - The QC Inspector is never the person who received or confirmed the GRN, and never changes
   received quantities. A decided inspection never changes (database guard).
@@ -444,7 +445,17 @@ def decide(user: User, inspection: IncomingInspection, decision: str, reason: st
                 if not reason:
                     raise InspectionError("Give the reason for accepting under deviation.")
                 line = inspection.line
+                subtype = "critical" if any(r.critical for r in failed) else "standard"
                 try:
+                    if subtype == "critical":
+                        route = approvals.route_for(
+                            DOC, division=line.receipt.division, subtype=subtype
+                        )
+                        if route[-1]["role"] != "director":
+                            raise InspectionError(
+                                "A deviation on a failed critical check is approved by the "
+                                "Director: ask the Admin to correct the approval matrix."
+                            )
                     approvals.submit(
                         user,
                         DOC,
@@ -452,6 +463,7 @@ def decide(user: User, inspection: IncomingInspection, decision: str, reason: st
                         created_by=user,
                         amount=None,
                         division=line.receipt.division,
+                        subtype=subtype,
                         comment=reason,
                         title=(
                             f"Accept {line.item.code} of {line.receipt.number} under deviation: "

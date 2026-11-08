@@ -84,6 +84,7 @@ import BomsPage from "./pages/BomsPage";
 import CostRatesPage from "./pages/CostRatesPage";
 import ProductionOrdersPage from "./pages/ProductionOrdersPage";
 import ProductionPlanPage from "./pages/ProductionPlanPage";
+import ShiftReportPage from "./pages/ShiftReportPage";
 import PayrollTakeoverPage from "./pages/PayrollTakeoverPage";
 import WorkRulesPage from "./pages/WorkRulesPage";
 import HolidaysPage from "./pages/HolidaysPage";
@@ -225,6 +226,7 @@ export default function App() {
         <Route path="cost-rates" element={<CostRatesPage />} />
         <Route path="production-orders" element={<ProductionOrdersPage />} />
         <Route path="production-plan" element={<ProductionPlanPage />} />
+        <Route path="shift-report" element={<ShiftReportPage />} />
         <Route path="payroll-returns" element={<StatutoryReturnsPage />} />
         <Route path="advances-loans" element={<AdvancesLoansPage />} />
         <Route path="my" element={<MyPage />} />

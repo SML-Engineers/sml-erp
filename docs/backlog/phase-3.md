@@ -223,7 +223,7 @@ Status: `[ ]` to do · `[x]` done
   plan of their own sections, read only; `GET /production-plan/mine/` gives today's and
   tomorrow's runs for their entry page (P3-08).
 
-- [ ] **P3-08 Moulding shift report (supervisor)**
+- [x] **P3-08 Moulding shift report (supervisor)**
   Phone and tablet page (spec 7.4) for the sections assigned to the supervisor: per machine,
   the mould, material batch, shot counter at start and end, rejects by reason, operator;
   downtime log; material issued, returned and regrind generated; manpower (operators per
@@ -232,6 +232,33 @@ Status: `[ ]` to do · `[x]` done
   counters never go down, rejects never exceed shots × cavities, times on one machine never
   overlap, entry only during the shift and the grace period. Large buttons, number pads,
   QR scanning of machines, moulds and material batches. Submitted reports are locked.
+  Done: Production → **Shift report** (shop floor). A supervisor sees the shifts of **their
+  own moulding sections** open for entry now (a night shift belongs to the day it starts)
+  and starts or continues the report: one per section, day and shift. **Runs** per machine:
+  production order (one tap from the shift's plan, which is listed at the top), material
+  batch (a lot in the division's stock), operator (the section's employees), start and end
+  time (HH:MM within the shift), shot counter at start and end, rejects by reject reason.
+  The system works out **good quantity** = shots × the part's cavities − rejects, **actual
+  cycle time** = run time less the machine's downtime in it ÷ shots (shown against the
+  mould's standard), and, in the **shift summary**, good, made, rejects and reject %,
+  downtime minutes by reason, material used (issued − returned) and grams per good piece,
+  regrind made, people and overtime. **Downtime** per machine with a downtime reason;
+  **material** issued and returned by batch, regrind by material; **manpower** per machine
+  or for the section with overtime hours. **Checks:** shot counters never go down (within a
+  run, and from the machine's previous run in any report), rejects never exceed shots ×
+  cavities, times on one machine never overlap (runs, and downtime; also in the database),
+  times within the shift, entry only from the shift's start to the end of the grace period
+  (production settings), and only by a supervisor of the section. **Submit** (at least one
+  run or downtime) locks the report (database) and marks the reasons used. The whole
+  report is saved at once, ready for offline entry (P3-21). Large buttons and inputs,
+  number pads (`inputMode`), and a **Scan** button for machines, moulds (picks the order
+  using that mould) and batches using the browser's own barcode reader (Chrome on Android;
+  no library); where a browser has none, a handheld scanner types into the field. The
+  Production Manager and Planner read all reports of their divisions; supervisors their
+  sections. The plan page now shows supervisors only their own sections' machines (fix to
+  P3-07). Not yet: stock, mould shots and costs move on approval (P3-09); a family mould's
+  other parts are counted when approved (P3-09); corrections after the grace period
+  (P3-09); machining and support pages (P3-12).
 
 - [ ] **P3-09 Approving shift reports and corrections**
   The Production Manager approves or returns each submitted report (never their own).

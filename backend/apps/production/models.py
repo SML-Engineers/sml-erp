@@ -717,3 +717,183 @@ class PlanEntry(models.Model):
 
     def __str__(self):
         return f"{self.day} {self.shift_id} {self.machine_id}: {self.order_id}"
+
+
+class ShiftReport(models.Model):
+    """A supervisor's report of one section's shift (spec 7.4, 7.5 `shift_report`; backlog
+    P3-08): moulding runs per machine with their rejects, downtime, material issued, returned
+    and regrind, and manpower. Entered during the shift and the grace period after it, then
+    submitted; a submitted report is locked (database). The Production Manager approves or
+    returns it (P3-09)."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Submitted"
+        RETURNED = "returned", "Returned"
+        APPROVED = "approved", "Approved"
+
+    section = models.ForeignKey("masters.Section", on_delete=models.PROTECT, related_name="+")
+    day = models.DateField()
+    shift = models.ForeignKey("masters.Shift", on_delete=models.PROTECT, related_name="+")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-day", "shift__start_time", "section__code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["section", "day", "shift"], name="production_shiftreport_once"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.section_id} {self.day} {self.shift_id}"
+
+
+class MouldingRun(models.Model):
+    """One machine's run in a shift report (`production_entry`): the production order and its
+    mould, the material batch, the operator, the times and the shot counter at start and end.
+    Good quantity = shots × cavities − rejects."""
+
+    report = models.ForeignKey(ShiftReport, on_delete=models.CASCADE, related_name="runs")
+    machine = models.ForeignKey("masters.Machine", on_delete=models.PROTECT, related_name="+")
+    order = models.ForeignKey(
+        ProductionOrder, on_delete=models.PROTECT, related_name="moulding_runs"
+    )
+    mould = models.ForeignKey(Mould, on_delete=models.PROTECT, related_name="runs")
+    plan_entry = models.ForeignKey(
+        PlanEntry, null=True, blank=True, on_delete=models.SET_NULL, related_name="runs"
+    )
+    material = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    material_lot = models.CharField(max_length=40, blank=True)
+    operator = models.ForeignKey(
+        "payroll.Employee", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField()
+    start_counter = models.PositiveBigIntegerField()
+    end_counter = models.PositiveBigIntegerField()
+    cavities = models.PositiveSmallIntegerField()
+    good_quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    actual_cycle_s = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        ordering = ["report", "machine__code", "started_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_counter__gte=models.F("start_counter")),
+                name="production_run_counter",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(ended_at__gt=models.F("started_at")),
+                name="production_run_times",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(cavities__gt=0, good_quantity__gte=0),
+                name="production_run_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.report_id}/{self.machine_id}"
+
+    @property
+    def shots(self) -> int:
+        return self.end_counter - self.start_counter
+
+
+class RejectEntry(models.Model):
+    run = models.ForeignKey(MouldingRun, on_delete=models.CASCADE, related_name="rejects")
+    reason = models.ForeignKey(ReasonCode, on_delete=models.PROTECT, related_name="+")
+    quantity = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ["run", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_reject_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.run_id}: {self.quantity}"
+
+
+class DowntimeEntry(models.Model):
+    report = models.ForeignKey(ShiftReport, on_delete=models.CASCADE, related_name="downtime")
+    machine = models.ForeignKey("masters.Machine", on_delete=models.PROTECT, related_name="+")
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField()
+    reason = models.ForeignKey(ReasonCode, on_delete=models.PROTECT, related_name="+")
+    remarks = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["report", "machine__code", "started_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(ended_at__gt=models.F("started_at")),
+                name="production_downtime_times",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.machine_id} {self.started_at}"
+
+
+class MaterialEntry(models.Model):
+    """Material drawn from stores for the shift, returned to stores, or regrind made."""
+
+    class Kind(models.TextChoices):
+        ISSUE = "issue", "Issued"
+        RETURN = "return", "Returned"
+        REGRIND = "regrind", "Regrind made"
+
+    report = models.ForeignKey(ShiftReport, on_delete=models.CASCADE, related_name="materials")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
+    lot_no = models.CharField(max_length=40, blank=True)
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+
+    class Meta:
+        ordering = ["report", "kind", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_material_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} {self.item_id} {self.quantity}"
+
+
+class ManpowerEntry(models.Model):
+    """People working the shift, per machine (or the section as a whole), and overtime."""
+
+    report = models.ForeignKey(ShiftReport, on_delete=models.CASCADE, related_name="manpower")
+    machine = models.ForeignKey(
+        "masters.Machine", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    people = models.PositiveSmallIntegerField()
+    overtime_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["report", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(people__gt=0, overtime_hours__gte=0),
+                name="production_manpower_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.report_id}: {self.people}"

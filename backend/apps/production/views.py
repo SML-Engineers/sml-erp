@@ -16,7 +16,7 @@ from apps.core.permissions import AreaAccess
 from apps.inventory.models import Item
 from apps.masters.models import Machine
 
-from . import boms, labels, moulds, orders, plan, rates, reasons, routings
+from . import boms, labels, moulds, orders, plan, rates, reasons, routings, shift_reports
 from .boms import BomError
 from .models import (
     Bom,
@@ -34,6 +34,7 @@ from .plan import PlanError
 from .rates import RateError
 from .reasons import ReasonError
 from .routings import RoutingError
+from .shift_reports import ShiftReportError
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -625,3 +626,58 @@ class PlanCopyView(_Plan):
 class MyPlanView(_Plan):
     def get(self, request):
         return Response(plan.mine(request.user))
+
+
+class _Reports(APIView):
+    """P3-08: supervisors (shop floor) enter their sections' shift reports; the Production
+    Manager reads them (production approvals). The service checks who may change them."""
+
+    permission_classes = [AreaAccess]
+    access_area = "shop_floor"
+    access_also_area = "production_approvals"
+    access_write_level = "view"
+
+
+class ShiftReportListView(_Reports):
+    def get(self, request):
+        user = request.user
+        recent = shift_reports.visible(user)[:60]
+        return Response(
+            {
+                "open": shift_reports.open_shifts(user),
+                "recent": [shift_reports.row(r) for r in recent],
+                "can_enter": shift_reports.can_enter(user),
+            }
+        )
+
+    def post(self, request):
+        try:
+            report = shift_reports.open_report(request.user, request.data)
+        except ShiftReportError as error:
+            return _error(error)
+        return Response(shift_reports.payload(report, request.user), status=status.HTTP_201_CREATED)
+
+
+class ShiftReportDetailView(_Reports):
+    def _report(self, request, pk):
+        return get_object_or_404(shift_reports.visible(request.user), pk=pk)
+
+    def get(self, request, pk):
+        return Response(shift_reports.payload(self._report(request, pk), request.user))
+
+    def put(self, request, pk):
+        try:
+            report = shift_reports.save(request.user, self._report(request, pk), request.data)
+        except ShiftReportError as error:
+            return _error(error)
+        return Response(shift_reports.payload(report, request.user))
+
+
+class ShiftReportSubmitView(_Reports):
+    def post(self, request, pk):
+        report = get_object_or_404(shift_reports.visible(request.user), pk=pk)
+        try:
+            report = shift_reports.submit(request.user, report)
+        except ShiftReportError as error:
+            return _error(error)
+        return Response(shift_reports.payload(report, request.user))

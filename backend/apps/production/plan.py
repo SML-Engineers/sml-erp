@@ -51,14 +51,24 @@ def _check(user: User) -> None:
         raise PlanError("Only the Production Planner changes the production plan.")
 
 
+def own_sections_only(user: User) -> bool:
+    """A supervisor (shop floor, not planning or approving) sees only their own sections."""
+    access = effective_access(user)
+    return (
+        access.has("shop_floor", "enter")
+        and not access.has("production_planning", "enter")
+        and not access.has("production_approvals", "approve")
+    )
+
+
 def visible(user: User):
     """Plan entries of the user's divisions; a supervisor sees their own sections."""
     found = PlanEntry.objects.select_related(
         "shift", "machine", "machine__section", "order", "order__item", "mould", "created_by"
     )
-    if effective_access(user).has("production_planning", "view"):
-        return found.filter(order__division__in=division_scope(user))
-    return found.filter(machine__section__in=section_scope(user))
+    if own_sections_only(user):
+        return found.filter(machine__section__in=section_scope(user))
+    return found.filter(order__division__in=division_scope(user))
 
 
 # --- Working out ---------------------------------------------------------------------------------
@@ -302,10 +312,10 @@ def board(user: User, start=None, days=None) -> dict:
     last = first + timedelta(days=count - 1)
     entries = list(visible(user).filter(day__range=(first, last)))
     warnings = warnings_for(entries, first, count)
-    if effective_access(user).has("production_planning", "view"):
-        sections = Section.objects.filter(division__in=division_scope(user))
-    else:
+    if own_sections_only(user):
         sections = section_scope(user)
+    else:
+        sections = Section.objects.filter(division__in=division_scope(user))
     machines = (
         Machine.objects.filter(section__section_type=Section.Type.MOULDING, section__in=sections)
         .exclude(status=Machine.Status.RETIRED)

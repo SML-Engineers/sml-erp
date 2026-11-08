@@ -680,3 +680,40 @@ class OrderBomLine(models.Model):
 
     def __str__(self):
         return f"{self.order_id}/{self.seq}"
+
+
+class PlanEntry(models.Model):
+    """One run in the moulding production plan (spec 7.3, 7.5 `production_plan`; backlog
+    P3-07): a released production order's mould on a machine for a shift of a date (a night
+    shift belongs to the date it starts), for some minutes of the shift. The planned
+    quantity follows from the mould's cycle time and the part's cavities. Past days never
+    change (database)."""
+
+    day = models.DateField()
+    shift = models.ForeignKey("masters.Shift", on_delete=models.PROTECT, related_name="+")
+    machine = models.ForeignKey(
+        "masters.Machine", on_delete=models.PROTECT, related_name="plan_entries"
+    )
+    order = models.ForeignKey(
+        ProductionOrder, on_delete=models.PROTECT, related_name="plan_entries"
+    )
+    mould = models.ForeignKey(Mould, on_delete=models.PROTECT, related_name="plan_entries")
+    minutes = models.PositiveSmallIntegerField("Planned minutes")
+    quantity = models.DecimalField("Planned quantity", max_digits=18, decimal_places=3)
+    notes = models.CharField(max_length=200, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["day", "shift__start_time", "machine__code", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(minutes__gt=0, quantity__gte=0),
+                name="production_planentry_figures",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.day} {self.shift_id} {self.machine_id}: {self.order_id}"

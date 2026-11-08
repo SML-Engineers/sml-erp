@@ -38,7 +38,15 @@ from apps.purchasing.models import PurchaseOrderLine, PurchaseRequestLine
 from apps.purchasing.orders import PurchasingError
 from apps.sales.models import SalesOrder, SalesOrderLine
 
-from .models import Bom, BomLine, Mould, OrderBomLine, ProductionOrder, ProductionOrderDue
+from .models import (
+    Bom,
+    BomLine,
+    Mould,
+    OrderBomLine,
+    PlanEntry,
+    ProductionOrder,
+    ProductionOrderDue,
+)
 
 DOC = "production_order"
 St = ProductionOrder.Status
@@ -359,6 +367,9 @@ def _move(user: User, order: ProductionOrder, event: str, to: str, before: tuple
         for key, value in more.items():
             setattr(order, key, value)
         order.save()
+        if to in (St.COMPLETED, St.CANCELLED):
+            # P3-07: a finished or cancelled order leaves the plan after today.
+            PlanEntry.objects.filter(order=order, day__gt=timezone.localdate()).delete()
         return order
 
 

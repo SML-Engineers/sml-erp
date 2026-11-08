@@ -1,5 +1,7 @@
 """Production API (Phase 3). P3-01: moulds."""
 
+from datetime import date
+
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -14,7 +16,7 @@ from apps.core.permissions import AreaAccess
 from apps.inventory.models import Item
 from apps.masters.models import Machine
 
-from . import boms, labels, moulds, orders, rates, reasons, routings
+from . import boms, labels, moulds, orders, plan, rates, reasons, routings
 from .boms import BomError
 from .models import (
     Bom,
@@ -28,6 +30,7 @@ from .models import (
 )
 from .moulds import ImportRefused, MouldError
 from .orders import OrderError
+from .plan import PlanError
 from .rates import RateError
 from .reasons import ReasonError
 from .routings import RoutingError
@@ -558,3 +561,67 @@ class ProductionOrderWhereUsedView(_Orders):
         code = request.query_params.get("item", "").strip().upper()
         item = get_object_or_404(Item, code=code)
         return Response(orders.where_used(request.user, item))
+
+
+class _Plan(APIView):
+    """P3-07: production planning works the plan; supervisors (shop floor) read their own
+    sections' plan. The service checks who may change it."""
+
+    permission_classes = [AreaAccess]
+    access_area = "production_planning"
+    access_also_area = "shop_floor"
+    access_write_level = "view"
+
+
+class PlanView(_Plan):
+    def get(self, request):
+        p = request.query_params
+        try:
+            return Response(plan.board(request.user, p.get("start"), p.get("days")))
+        except PlanError as error:
+            return _error(error)
+
+    def post(self, request):
+        try:
+            entry = plan.add(request.user, request.data)
+        except PlanError as error:
+            return _error(error)
+        return Response(plan.entry_row(entry, []), status=status.HTTP_201_CREATED)
+
+
+class PlanEntryView(_Plan):
+    def _entry(self, request, pk):
+        return get_object_or_404(plan.visible(request.user), pk=pk)
+
+    def patch(self, request, pk):
+        try:
+            entry = plan.change(request.user, self._entry(request, pk), request.data)
+        except PlanError as error:
+            return _error(error)
+        return Response(plan.entry_row(entry, []))
+
+    def delete(self, request, pk):
+        try:
+            plan.remove(request.user, self._entry(request, pk))
+        except PlanError as error:
+            return _error(error)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PlanCopyView(_Plan):
+    def post(self, request):
+        try:
+            source = date.fromisoformat(str(request.data.get("source", "")))
+            target = date.fromisoformat(str(request.data.get("target", "")))
+        except ValueError:
+            return _error("Give the day to copy and the day to copy it to.")
+        try:
+            copied = plan.copy_day(request.user, source, target)
+        except PlanError as error:
+            return _error(error)
+        return Response({"copied": copied})
+
+
+class MyPlanView(_Plan):
+    def get(self, request):
+        return Response(plan.mine(request.user))

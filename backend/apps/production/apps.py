@@ -17,6 +17,7 @@ class ProductionConfig(AppConfig):
             Mould,
             MouldPart,
             OrderBomLine,
+            PlanEntry,
             ProductionOrder,
             ProductionOrderDue,
             ProductionSetting,
@@ -39,5 +40,6 @@ class ProductionConfig(AppConfig):
             ProductionOrder,
             ProductionOrderDue,
             OrderBomLine,
+            PlanEntry,
         ):
             register(model)

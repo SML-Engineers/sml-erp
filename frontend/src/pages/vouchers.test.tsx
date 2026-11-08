@@ -109,9 +109,7 @@ test("the clerk creates a draft: division, type, payee with balance, a line", as
   fireEvent.change(within(form).getByLabelText("Amount, line 1"), { target: { value: "25000.00" } });
   fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
 
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "POST")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({
     voucher_type: "CHQ",
@@ -131,9 +129,7 @@ test("scans are uploaded and a duplicate file is flagged", async () => {
       status: 201,
       body: {
         ...draft,
-        attachments: [
-          { id: 4, file_name: "invoice.pdf", content_type: "application/pdf", size: 2048, sha256: "ab", uploaded_at: "" },
-        ],
+        attachments: [{ id: 4, file_name: "invoice.pdf", content_type: "application/pdf", size: 2048, sha256: "ab", uploaded_at: "" }],
         upload_warnings: ["This file is already attached to voucher WS261028004."],
       },
     },

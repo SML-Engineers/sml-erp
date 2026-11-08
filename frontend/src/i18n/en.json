@@ -4778,7 +4778,7 @@
   },
   "shiftReport": {
     "title": "Shift report",
-    "help": "Enter your section's shift: each machine's run, rejects, downtime, material and manpower. You can enter during the shift and the grace period after it. Submit when the shift is done; the Production Manager then approves it.",
+    "help": "Enter your section's shift: each machine's run (moulding) or each job card worked on (machining), rejects, downtime, material and manpower. You can enter during the shift and the grace period after it. Submit when the shift is done; the Production Manager then approves it.",
     "openNow": "Shifts open for entry",
     "noneOpen": "None of your sections has a shift open for entry now.",
     "start": "Start {{section}} · {{shift}} · {{day}}",
@@ -4869,7 +4869,22 @@
     "rejectCorrection": "Reject the correction",
     "correctionHelp": "Approving reverses what the report posted and returns it to the supervisor (or reopens a late draft). The report as it was stays on record.",
     "whatToCorrect": "What needs correcting",
-    "askCorrection": "Ask for a correction"
+    "askCorrection": "Ask for a correction",
+    "jobCards": "Job cards worked on",
+    "jobCardsHelp": "Scan the job card travelling with the parts, then enter the machine, times and pieces. Completed and rejected pieces can never be more than the operation before released.",
+    "work": "Job card {{n}}",
+    "scanCard": "Scan job card {{n}}",
+    "job": "Job",
+    "operation": "Operation",
+    "operationOption": "{{seq}} {{name}} ({{in_hand}} in hand)",
+    "completed": "Pieces completed",
+    "rework": "Pieces for rework",
+    "setup": "Includes the setup",
+    "standard": "Standard: {{minutes}} min a piece",
+    "removeWork": "Remove this job card",
+    "addWork": "Add a job card",
+    "workWorked": "{{minutes}} min a piece (standard {{standard}})",
+    "jobTotals": "{{completed}} completed, {{rejected}} rejected, {{rework}} for rework in {{minutes}} minutes"
   },
   "mouldMaint": {
     "title": "Mould maintenance",
@@ -5018,6 +5033,16 @@
     "lotNo": "lot {{lot}}",
     "returnOf": "Return of {{item}} {{lot}} from {{number}}",
     "backPlaceholder": "up to {{most}}",
-    "takeBack": "Take back to stores"
+    "takeBack": "Take back to stores",
+    "progress": "Progress by operation",
+    "received": "Received",
+    "completed": "Completed",
+    "rejected": "Rejected",
+    "rework": "For rework",
+    "inHand": "In hand",
+    "available": "Ready for next",
+    "finished": "Finished",
+    "printCards": "Print job cards",
+    "subcontractPasses": "sent out (recorded when back, P3-13)"
   }
 }

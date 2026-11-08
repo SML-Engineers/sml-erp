@@ -136,10 +136,7 @@ test("the Accountant changes an account number with a reason", async () => {
   fireEvent.click(within(form).getByRole("button", { name: "Save" }));
 
   await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith(
-      "/api/v1/payees/1/bank-accounts/9/",
-      expect.objectContaining({ method: "PATCH" }),
-    ),
+    expect(calls).toHaveBeenCalledWith("/api/v1/payees/1/bank-accounts/9/", expect.objectContaining({ method: "PATCH" })),
   );
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PATCH")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({

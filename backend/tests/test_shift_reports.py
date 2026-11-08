@@ -246,7 +246,7 @@ def test_only_the_sections_own_supervisor(clock, press, released, supervisor):
     other = person("other@sml.lk", "production_supervisor", divisions=["IM"])
     other.all_sections = False
     other.save()
-    with pytest.raises(ShiftReportError, match="Choose one of your moulding sections"):
+    with pytest.raises(ShiftReportError, match="Choose one of your sections"):
         shift_reports.open_report(other, {"section": "IM-MLD", "shift": "G", "day": TODAY})
     report = shift_reports.open_report(
         supervisor, {"section": "IM-MLD", "shift": "G", "day": TODAY}
@@ -259,7 +259,7 @@ def test_only_the_sections_own_supervisor(clock, press, released, supervisor):
         shift_reports.save(pm, report, {})
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     assert as_user(clerk).get(URL).status_code == 403
-    with pytest.raises(ShiftReportError, match="at least one run or downtime"):
+    with pytest.raises(ShiftReportError, match="at least one run, job card or downtime"):
         shift_reports.submit(supervisor, report)
 
 

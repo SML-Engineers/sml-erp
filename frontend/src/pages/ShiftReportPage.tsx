@@ -15,6 +15,7 @@ import {
   saveReport,
   submitReport,
   type DowntimeValues,
+  type JobWorkValues,
   type ManpowerValues,
   type MaterialValues,
   type ReportValues,
@@ -34,7 +35,8 @@ function ErrorLine({ error }: { error: unknown }) {
   );
 }
 
-/** P3-08: the supervisor's moulding shift report, made for phones and tablets. */
+/** P3-08: the supervisor's shift report, made for phones and tablets: moulding runs, or job
+ * card operations in a machining section (P3-12). */
 export default function ShiftReportPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
@@ -115,6 +117,19 @@ function valuesOf(r: ShiftReport): ReportValues {
       end_counter: String(x.end_counter),
       rejects: x.rejects.map((j) => ({ reason: j.reason, quantity: String(j.quantity) })),
     })),
+    operations: r.operations.map((x) => ({
+      job: x.job,
+      operation: String(x.operation),
+      machine: x.machine,
+      operator: x.operator,
+      start_time: x.start_time,
+      end_time: x.end_time,
+      completed: x.completed,
+      rework: x.rework,
+      setup: x.setup,
+      notes: x.notes,
+      rejects: x.rejects.map((j) => ({ ...j })),
+    })),
     downtime: r.downtime.map((x) => ({ ...x })),
     materials: r.materials.map((x) => ({ ...x })),
     manpower: r.manpower.map((x) => ({ machine: x.machine, people: String(x.people), overtime_hours: x.overtime_hours })),
@@ -171,7 +186,10 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
       {edit && <p className="muted small">{t("shiftReport.closes", { at: new Date(r.closes_at).toLocaleString() })}</p>}
       {r.return_reason && r.status === "returned" && <p className="notice">{t("shiftReport.returned", { reason: r.return_reason })}</p>}
       {r.approved_by && r.status === "approved" && <p className="notice">{t("shiftReport.approvedBy", { name: r.approved_by })}</p>}
-      {edit && o.plan.length > 0 && (
+      {r.section_type === "machining" && (
+        <JobCards report={r} rows={v.operations} edit={edit} fresh={values === null} onChange={(operations) => put({ operations })} />
+      )}
+      {r.section_type !== "machining" && edit && o.plan.length > 0 && (
         <section className="panel" aria-label={t("shiftReport.plan")}>
           <h2>{t("shiftReport.plan")}</h2>
           {o.plan.map((p) => (
@@ -194,7 +212,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
           ))}
         </section>
       )}
-      <section className="panel" aria-label={t("shiftReport.runs")}>
+      <section className="panel" aria-label={t("shiftReport.runs")} hidden={r.section_type === "machining"}>
         <h2>{t("shiftReport.runs")}</h2>
         {v.runs.map((x, i) => {
           const saved = r.runs[i];
@@ -337,7 +355,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
         )}
       </section>
       <Downtime report={r} rows={v.downtime} edit={edit} onChange={(downtime) => put({ downtime })} />
-      <Materials rows={v.materials} edit={edit} onChange={(materials) => put({ materials })} />
+      {r.section_type !== "machining" && <Materials rows={v.materials} edit={edit} onChange={(materials) => put({ materials })} />}
       <Manpower report={r} rows={v.manpower} edit={edit} onChange={(manpower) => put({ manpower })} />
       <section className="panel" aria-label={t("shiftReport.summary")}>
         <h2>{t("shiftReport.summary")}</h2>
@@ -499,6 +517,23 @@ function Approval({ report, onDone }: { report: ShiftReport; onDone: (r: ShiftRe
 function Totals({ report }: { report: ShiftReport }) {
   const { t } = useTranslation();
   const s = report.summary;
+  if (report.section_type === "machining") {
+    const m = s.machining;
+    return (
+      <ul>
+        <li>
+          {t("shiftReport.jobTotals", {
+            completed: formatDecimal(m.completed),
+            rejected: formatDecimal(m.rejected),
+            rework: formatDecimal(m.rework),
+            minutes: m.minutes,
+          })}
+        </li>
+        <li>{t("shiftReport.totalDowntime", { minutes: s.downtime_minutes })}</li>
+        <li>{t("shiftReport.totalPeople", { people: s.people, overtime: s.overtime_hours })}</li>
+      </ul>
+    );
+  }
   return (
     <ul>
       <li>
@@ -703,6 +738,189 @@ function Manpower({
       {edit && (
         <button type="button" className="secondary" onClick={() => onChange([...rows, { machine: "", people: "", overtime_hours: "0" }])}>
           {t("shiftReport.addManpower")}
+        </button>
+      )}
+    </section>
+  );
+}
+
+const NEW_WORK: JobWorkValues = {
+  job: "",
+  operation: "",
+  machine: "",
+  operator: "",
+  start_time: "",
+  end_time: "",
+  completed: "",
+  rework: "",
+  setup: false,
+  notes: "",
+  rejects: [],
+};
+
+/** P3-12: the supervisor scans each job card and enters the work done on it. */
+function JobCards({
+  report,
+  rows,
+  edit,
+  fresh,
+  onChange,
+}: {
+  report: ShiftReport;
+  rows: JobWorkValues[];
+  edit: boolean;
+  fresh: boolean;
+  onChange: (rows: JobWorkValues[]) => void;
+}) {
+  const { t } = useTranslation();
+  const o = report.options;
+  const set = (i: number, next: Partial<JobWorkValues>) => onChange(rows.map((x, n) => (n === i ? { ...x, ...next } : x)));
+  const scanned = (i: number, code: string) => {
+    const [job, op] = code.trim().toUpperCase().split("/");
+    const found = o.jobs.find((j) => j.number === job);
+    const step = found?.operations.find((x) => String(x.seq) === op);
+    set(i, { job: job ?? "", operation: op ?? "", machine: rows[i].machine || step?.machine || "" });
+  };
+  return (
+    <section className="panel" aria-label={t("shiftReport.jobCards")}>
+      <h2>{t("shiftReport.jobCards")}</h2>
+      <p className="muted small">{t("shiftReport.jobCardsHelp")}</p>
+      {rows.map((x, i) => {
+        const label = t("shiftReport.work", { n: i + 1 });
+        const job = o.jobs.find((j) => j.number === x.job);
+        const step = job?.operations.find((s) => String(s.seq) === x.operation);
+        const saved = fresh ? report.operations[i] : undefined;
+        return (
+          <fieldset key={i} className="run-card" aria-label={label} disabled={!edit}>
+            <legend>{label}</legend>
+            <div className="form-grid">
+              <ScanButton label={t("shiftReport.scanCard", { n: i + 1 })} onScan={(code) => scanned(i, code)} />
+              <label>
+                {t("shiftReport.job")}
+                <select value={x.job} onChange={(e) => set(i, { job: e.target.value, operation: "" })}>
+                  <option value="">{t("shiftReport.choose")}</option>
+                  {o.jobs.map((j) => (
+                    <option key={j.id} value={j.number}>
+                      {j.number} {j.item} {j.description}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t("shiftReport.operation")}
+                <select value={x.operation} onChange={(e) => set(i, { operation: e.target.value })}>
+                  <option value="">{t("shiftReport.choose")}</option>
+                  {job?.operations.map((s) => (
+                    <option key={s.seq} value={String(s.seq)}>
+                      {t("shiftReport.operationOption", { seq: s.seq, name: s.name, in_hand: formatDecimal(s.in_hand) })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t("shiftReport.machine")}
+                <select value={x.machine} onChange={(e) => set(i, { machine: e.target.value })}>
+                  <option value="">{t("shiftReport.choose")}</option>
+                  {o.machines.map((m) => (
+                    <option key={m.code} value={m.code}>
+                      {m.code} {m.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t("shiftReport.operator")}
+                <select value={x.operator} onChange={(e) => set(i, { operator: e.target.value })}>
+                  <option value="">{t("shiftReport.choose")}</option>
+                  {o.operators.map((p) => (
+                    <option key={p.number} value={p.number}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {t("shiftReport.startTime")}
+                <input type="time" value={x.start_time} onChange={(e) => set(i, { start_time: e.target.value })} />
+              </label>
+              <label>
+                {t("shiftReport.end")}
+                <input type="time" value={x.end_time} onChange={(e) => set(i, { end_time: e.target.value })} />
+              </label>
+              <label>
+                {t("shiftReport.completed")}
+                <input inputMode="decimal" value={x.completed} onChange={(e) => set(i, { completed: e.target.value })} />
+              </label>
+              <label>
+                {t("shiftReport.rework")}
+                <input inputMode="decimal" value={x.rework} onChange={(e) => set(i, { rework: e.target.value })} />
+              </label>
+              <label className="check">
+                <input type="checkbox" checked={x.setup} onChange={(e) => set(i, { setup: e.target.checked })} />
+                {t("shiftReport.setup")}
+              </label>
+            </div>
+            {step && <p className="muted small">{t("shiftReport.standard", { minutes: formatDecimal(step.run_min) })}</p>}
+            <h3>{t("shiftReport.rejects")}</h3>
+            {x.rejects.map((j, k) => (
+              <div key={k} className="inline-form">
+                <label>
+                  {t("shiftReport.reason")}
+                  <select
+                    value={j.reason}
+                    onChange={(e) => set(i, { rejects: x.rejects.map((y, m) => (m === k ? { ...y, reason: e.target.value } : y)) })}
+                  >
+                    <option value="">{t("shiftReport.choose")}</option>
+                    {o.reject_reasons.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t("shiftReport.pieces")}
+                  <input
+                    inputMode="decimal"
+                    value={j.quantity}
+                    onChange={(e) => set(i, { rejects: x.rejects.map((y, m) => (m === k ? { ...y, quantity: e.target.value } : y)) })}
+                  />
+                </label>
+                {edit && (
+                  <button type="button" className="secondary" onClick={() => set(i, { rejects: x.rejects.filter((_, m) => m !== k) })}>
+                    {t("shiftReport.remove")}
+                  </button>
+                )}
+              </div>
+            ))}
+            {edit && (
+              <div className="row-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => set(i, { rejects: [...x.rejects, { reason: "", quantity: "" }] })}
+                >
+                  {t("shiftReport.addReject")}
+                </button>
+                <button type="button" className="secondary" onClick={() => onChange(rows.filter((_, n) => n !== i))}>
+                  {t("shiftReport.removeWork")}
+                </button>
+              </div>
+            )}
+            {saved && (
+              <p className="notice">
+                {t("shiftReport.workWorked", {
+                  minutes: saved.minutes_per_piece ? formatDecimal(saved.minutes_per_piece) : "—",
+                  standard: formatDecimal(saved.standard_minutes),
+                })}
+              </p>
+            )}
+          </fieldset>
+        );
+      })}
+      {edit && (
+        <button type="button" className="secondary" onClick={() => onChange([...rows, { ...NEW_WORK, rejects: [] }])}>
+          {t("shiftReport.addWork")}
         </button>
       )}
     </section>

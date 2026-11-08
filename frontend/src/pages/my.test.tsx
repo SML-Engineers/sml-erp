@@ -8,19 +8,46 @@ import MyPage from "./MyPage";
 const mine: MySummary = {
   linked: true,
   employee: {
-    number: "E001", name: "Kamal Perera", division: "WS", section: "Manual Milling", designation: "Machinist",
-    category: "Shop and Office", epf_no: "101",
+    number: "E001",
+    name: "Kamal Perera",
+    division: "WS",
+    section: "Manual Milling",
+    designation: "Machinist",
+    category: "Shop and Office",
+    epf_no: "101",
   },
   payslips: [
-    { id: 11, month: "2026-10", gross: "73325.00", net: "67675.00", epf_employee: "5400.00", epf_employer: "8100.00", etf: "2025.00", apit: "0.00" },
+    {
+      id: 11,
+      month: "2026-10",
+      gross: "73325.00",
+      net: "67675.00",
+      epf_employee: "5400.00",
+      epf_employer: "8100.00",
+      etf: "2025.00",
+      apit: "0.00",
+    },
   ],
   tax_year: 2026,
   leave_year: 2026,
   balances: [{ code: "ANNUAL", name: "Annual", granted: "14.0", taken: "2.0", pending: "1.0", left: "11.0" }],
   leave: [
-    { id: 5, type: "Annual", start: "2026-11-10", end: "2026-11-10", days: "1.0", status: "applied", status_label: "Applied", note: "", can_withdraw: true },
+    {
+      id: 5,
+      type: "Annual",
+      start: "2026-11-10",
+      end: "2026-11-10",
+      days: "1.0",
+      status: "applied",
+      status_label: "Applied",
+      note: "",
+      can_withdraw: true,
+    },
   ],
-  leave_types: [{ code: "ANNUAL", name: "Annual" }, { code: "CASUAL", name: "Casual" }],
+  leave_types: [
+    { code: "ANNUAL", name: "Annual" },
+    { code: "CASUAL", name: "Casual" },
+  ],
   attendance: { from: "2026-09-21", days: [{ date: "2026-10-20", time_in: "07:58", time_out: "17:05", leave: "", late: 0 }] },
   to_approve: [],
 };
@@ -35,10 +62,7 @@ test("an employee sees their payslips and applies for leave", async () => {
   const slip = await screen.findByRole("link", { name: "2026-10" });
   expect(slip).toHaveAttribute("href", "/api/v1/my/payslips/11/");
   expect(screen.getByText(/net LKR 67,675.00/)).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: /APIT certificate 2026\/27/ })).toHaveAttribute(
-    "href",
-    "/api/v1/my/apit-certificate/?year=2026",
-  );
+  expect(screen.getByRole("link", { name: /APIT certificate 2026\/27/ })).toHaveAttribute("href", "/api/v1/my/apit-certificate/?year=2026");
   fireEvent.change(screen.getByLabelText("Kind of leave"), { target: { value: "CASUAL" } });
   fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-11-12" } });
   fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "Family" } });
@@ -70,15 +94,20 @@ test("an unlinked supervisor still approves their section's leave", async () => 
   expect(await screen.findByText(/Ask HR to link it/)).toBeInTheDocument();
   expect(screen.getByText("E002 Nimal Silva")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Approve" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/my/team-leave/8/approve/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/my/team-leave/8/approve/", expect.objectContaining({ method: "POST" })));
   await waitFor(() => expect(screen.queryByText("E002 Nimal Silva")).not.toBeInTheDocument());
 });
 
 const clock = {
-  mode: "sites" as const, mode_label: "Only at a site", needs_location: true, consent: false, consent_at: null,
-  clocked_in: false, since: "", recent: [], sites: ["Colombo office"],
+  mode: "sites" as const,
+  mode_label: "Only at a site",
+  needs_location: true,
+  consent: false,
+  consent_at: null,
+  clocked_in: false,
+  since: "",
+  recent: [],
+  sites: ["Colombo office"],
 };
 
 test("an employee limited to sites agrees to the location check and clocks in", async () => {
@@ -92,7 +121,15 @@ test("an employee limited to sites agrees to the location check and clocks in", 
     "GET /api/v1/my/": { body: { ...mine, clock } },
     "POST /api/v1/my/location-consent/": { body: agreed },
     "POST /api/v1/my/clock/": {
-      body: { ...agreed, clock: { ...agreed.clock, clocked_in: true, since: "08:05", recent: [{ kind: "in", kind_label: "In", at: "2026-11-06 08:05", site: "Colombo office" }] } },
+      body: {
+        ...agreed,
+        clock: {
+          ...agreed.clock,
+          clocked_in: true,
+          since: "08:05",
+          recent: [{ kind: "in", kind_label: "In", at: "2026-11-06 08:05", site: "Colombo office" }],
+        },
+      },
       status: 201,
     },
   });
@@ -127,14 +164,23 @@ test("from anywhere, no location is asked", async () => {
 test("an employee asks HR to change their phone and may withdraw it", async () => {
   const details = { phone: "0771234567", address: "", email: "", bank_name: "", bank_branch: "", account_name: "", account_number: "" };
   const waiting = {
-    id: 9, employee: "E001 Kamal Perera", employee_id: 7, bank: false, note: "New SIM", status: "waiting" as const,
-    status_label: "Waiting for HR", created_at: "2026-11-06T10:00:00Z", decision_note: "",
+    id: 9,
+    employee: "E001 Kamal Perera",
+    employee_id: 7,
+    bank: false,
+    note: "New SIM",
+    status: "waiting" as const,
+    status_label: "Waiting for HR",
+    created_at: "2026-11-06T10:00:00Z",
+    decision_note: "",
     changes: [{ field: "phone", before: "0771234567", after: "0719998887" }],
   };
   const calls = mockApi({
     "GET /api/v1/my/": { body: { ...mine, details, detail_requests: [] } },
     "POST /api/v1/my/details/": { body: { ...mine, details, detail_requests: [waiting] }, status: 201 },
-    "POST /api/v1/my/details/9/withdraw/": { body: { ...mine, details, detail_requests: [{ ...waiting, status: "withdrawn", status_label: "Withdrawn" }] } },
+    "POST /api/v1/my/details/9/withdraw/": {
+      body: { ...mine, details, detail_requests: [{ ...waiting, status: "withdrawn", status_label: "Withdrawn" }] },
+    },
   });
   renderAt("/my", <MyPage />, "/my");
   const ask = await screen.findByRole("button", { name: "Ask HR to change" });

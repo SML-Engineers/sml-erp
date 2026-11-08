@@ -28,11 +28,23 @@ test("the cashier puts customers' cheques on a deposit slip", async () => {
     "GET /api/v1/cheques/received/": { body: [cheque] },
     "GET /api/v1/deposits/": { body: [] },
     "GET /api/v1/payments/accounts/": {
-      body: [{ id: 2, code: "COM-CUR", name: "Commercial Bank current", kind: "current", currency: "LKR", has_ledger: true, next_cheque: null }],
+      body: [
+        { id: 2, code: "COM-CUR", name: "Commercial Bank current", kind: "current", currency: "LKR", has_ledger: true, next_cheque: null },
+      ],
     },
     "POST /api/v1/deposits/": (sent) => ({
       status: 201,
-      body: { id: 1, number: "DP26110001", account: { id: 2, code: "COM-CUR", name: "x" }, deposit_date: (sent as { deposit_date: string }).deposit_date, slip_no: "", total: "20000.00", journal_entry: "JE1", created_by: "Kamal", cheques: [] },
+      body: {
+        id: 1,
+        number: "DP26110001",
+        account: { id: 2, code: "COM-CUR", name: "x" },
+        deposit_date: (sent as { deposit_date: string }).deposit_date,
+        slip_no: "",
+        total: "20000.00",
+        journal_entry: "JE1",
+        created_by: "Kamal",
+        cheques: [],
+      },
     }),
   });
   renderAt("/cheques", <ChequesPage />);

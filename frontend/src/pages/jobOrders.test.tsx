@@ -104,6 +104,22 @@ const job: JobOrder = {
   can_issue: true,
   can_return: true,
   can_ask_more: true,
+  progress: [
+    {
+      seq: 10,
+      name: "Turn",
+      subcontract: false,
+      received: "20",
+      completed: "18",
+      rejected: "1",
+      rework: "1",
+      in_hand: "1",
+      available: "18",
+      finished: "0",
+      card: "JO26110001/10",
+    },
+  ],
+  can_print_cards: true,
 };
 
 test("Stores issues material by lot and takes back what was not used", async () => {
@@ -118,6 +134,8 @@ test("Stores issues material by lot and takes back what was not used", async () 
   renderAt("/job-orders?job=7", <JobOrdersPage />, "/job-orders");
   const panel = await screen.findByRole("region", { name: "Job JO26110001" });
   expect(within(panel).getByRole("table", { name: "Materials" })).toHaveTextContent("EN8-50");
+  expect(within(panel).getByRole("table", { name: "Progress by operation" })).toHaveTextContent("10 Turn");
+  expect(within(panel).getByRole("link", { name: "Print job cards" })).toHaveAttribute("href", "/api/v1/job-orders/7/cards/");
   const issue = within(panel).getByRole("region", { name: "Issue material" });
   fireEvent.change(within(issue).getByLabelText("Material 1"), { target: { value: "EN8-50" } });
   fireEvent.change(within(issue).getByLabelText("Quantity 1"), { target: { value: "5" } });
@@ -188,6 +206,8 @@ test("the Planner makes a mould repair job and changes its operations while a dr
     can_issue: false,
     can_return: false,
     can_ask_more: false,
+    progress: [],
+    can_print_cards: false,
   };
   const calls = mockApi({
     "GET /api/v1/job-orders/waiting/": { body: { results: [] } },

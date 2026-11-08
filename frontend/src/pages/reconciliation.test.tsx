@@ -22,9 +22,23 @@ const rec: Reconciliation = {
   unpresented: [],
   lines: [
     {
-      id: 7, date: "2026-10-08", description: "CHQ 000100", reference: "", money_out: "1000.00", money_in: "0.00",
-      balance: "19000.00", match: null,
-      suggestion: { entry: { id: 31, number: "JE-31" }, date: "2026-10-06", narration: "Cheque 000100", source_type: "supplier_payment", source_id: "PY26100001", amount: "-1000.00", reference_found: true },
+      id: 7,
+      date: "2026-10-08",
+      description: "CHQ 000100",
+      reference: "",
+      money_out: "1000.00",
+      money_in: "0.00",
+      balance: "19000.00",
+      match: null,
+      suggestion: {
+        entry: { id: 31, number: "JE-31" },
+        date: "2026-10-06",
+        narration: "Cheque 000100",
+        source_type: "supplier_payment",
+        source_id: "PY26100001",
+        amount: "-1000.00",
+        reference_found: true,
+      },
       coding: null,
     },
   ],
@@ -34,7 +48,9 @@ const rec: Reconciliation = {
 test("the accountant accepts a suggested match", async () => {
   const calls = mockApi({
     "GET /api/v1/payments/accounts/": {
-      body: [{ id: 2, code: "COM-CUR", name: "Commercial Bank current", kind: "current", currency: "LKR", has_ledger: true, next_cheque: null }],
+      body: [
+        { id: 2, code: "COM-CUR", name: "Commercial Bank current", kind: "current", currency: "LKR", has_ledger: true, next_cheque: null },
+      ],
     },
     [`GET /api/v1/reconciliation/?account=2&period_end=${lastMonthEnd()}`]: { body: rec },
     "GET /api/v1/bank-rules/": { body: [] },

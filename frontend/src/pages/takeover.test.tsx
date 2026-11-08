@@ -38,7 +38,10 @@ test("HR checks the year's figures, then sends them to the Director", async () =
 test("a pay month is compared and the Director signs it off", async () => {
   const people = [
     {
-      number: "E002", name: "Nimal Silva", missing: "" as const, differs: true,
+      number: "E002",
+      name: "Nimal Silva",
+      missing: "" as const,
+      differs: true,
       figures: [{ field: "Net pay", here: "60000.00", old: "59989.50", difference: "10.50" }],
     },
     { number: "E009", name: "", missing: "here" as const, differs: true, figures: [] },
@@ -59,8 +62,18 @@ test("a pay month is compared and the Director signs it off", async () => {
 
 test("the Director signs off a kept comparison", async () => {
   const check = {
-    id: 7, run: 4, title: "WS October 2026", file_name: "old.xlsx", employees: 2, differences: 0, people: [],
-    created_by: "HR Officer", created_at: "2026-11-07T10:00:00Z", signed_off_by: "", signed_off_at: null, note: "",
+    id: 7,
+    run: 4,
+    title: "WS October 2026",
+    file_name: "old.xlsx",
+    employees: 2,
+    differences: 0,
+    people: [],
+    created_by: "HR Officer",
+    created_at: "2026-11-07T10:00:00Z",
+    signed_off_by: "",
+    signed_off_at: null,
+    note: "",
     can_sign_off: true,
   };
   const director = { ...page, can_edit: false, is_director: true, checks: [check] };

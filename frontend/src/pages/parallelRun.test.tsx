@@ -11,7 +11,10 @@ const comparison: Comparison = {
     { label: "1100 Debtors", quickbooks: "150000.00", erp: "150000.00", difference: "0.00", agrees: true },
   ],
   unknown_accounts: [],
-  customers: { rows: [{ label: "Lanka Tiles PLC", quickbooks: "150000.00", erp: "150000.00", difference: "0.00", agrees: true }], unknown: [] },
+  customers: {
+    rows: [{ label: "Lanka Tiles PLC", quickbooks: "150000.00", erp: "150000.00", difference: "0.00", agrees: true }],
+    unknown: [],
+  },
   suppliers: null,
   differences: { accounts: 1, customers: 0, suppliers: null },
 };

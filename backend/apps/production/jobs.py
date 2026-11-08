@@ -40,7 +40,7 @@ from apps.inventory.stock import StockError
 from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
-from . import orders, routings
+from . import job_cards, orders, routings
 from .models import (
     Bom,
     BomLine,
@@ -815,6 +815,9 @@ def payload(job: JobOrder, user: User) -> dict:
             for o in job.operations.select_related("section", "machine", "supplier")
         ],
         "materials": _materials_now(job),
+        # P3-12: what each operation received, completed, rejected and passed on.
+        "progress": job_cards.progress(job) if job.status != St.DRAFT else [],
+        "can_print_cards": job.status in (St.RELEASED, St.COMPLETED),
         "issues": _issues(job),
         "excess": _excess(job, user),
         "stores": [

@@ -9,9 +9,22 @@ import SalesReportsPage from "./SalesReportsPage";
 const register: RegisterReport = {
   rows: [
     {
-      id: 12, label: "QL26103101 Rev 0", quote_date: "2026-10-31", valid_until: "2026-11-30", division: "IM", customer_id: 4,
-      customer: "Unilever Sri Lanka", salesperson_id: 3, salesperson: "Nimal", status: "Lost", status_code: "lost",
-      reason: "Price", currency: "LKR", total: "LKR 23,500.00", total_amount: "23500.00", total_lkr: "23500.00",
+      id: 12,
+      label: "QL26103101 Rev 0",
+      quote_date: "2026-10-31",
+      valid_until: "2026-11-30",
+      division: "IM",
+      customer_id: 4,
+      customer: "Unilever Sri Lanka",
+      salesperson_id: 3,
+      salesperson: "Nimal",
+      status: "Lost",
+      status_code: "lost",
+      reason: "Price",
+      currency: "LKR",
+      total: "LKR 23,500.00",
+      total_amount: "23500.00",
+      total_lkr: "23500.00",
     },
   ],
   summary: [{ status_code: "lost", status: "Lost", count: 1, total_lkr: "23500.00" }],
@@ -60,12 +73,30 @@ test("won and lost shows the win rate and the reasons", async () => {
 
 test("the sales tiles open their reports", async () => {
   const board: Board = {
-    division: "", divisions: [{ code: "IM", name: "Moulding" }, { code: "WS", name: "Workshop" }],
-    can_approve: true, can_enter: false,
+    division: "",
+    divisions: [
+      { code: "IM", name: "Moulding" },
+      { code: "WS", name: "Workshop" },
+    ],
+    can_approve: true,
+    can_enter: false,
     waiting_for_me: { count: 2, quotations: 1, orders: 1, total: "23500.00" },
-    awaiting_approval: 1, expiring: 2, live: { count: 3, total: "70500.00" },
-    this_month: { from: "2026-10-01", to: "2026-10-31", won: 1, won_lkr: "10000.00", lost: 1, lost_lkr: "5000.00", win_rate: "50.0", value_win_rate: "66.7" },
-    open_orders: { count: 1, total: "23500.00" }, deliveries: { overdue: 1, this_week: 0 }, advances: { count: 0, balance: "0.00" },
+    awaiting_approval: 1,
+    expiring: 2,
+    live: { count: 3, total: "70500.00" },
+    this_month: {
+      from: "2026-10-01",
+      to: "2026-10-31",
+      won: 1,
+      won_lkr: "10000.00",
+      lost: 1,
+      lost_lkr: "5000.00",
+      win_rate: "50.0",
+      value_win_rate: "66.7",
+    },
+    open_orders: { count: 1, total: "23500.00" },
+    deliveries: { overdue: 1, this_week: 0 },
+    advances: { count: 0, balance: "0.00" },
   };
   const calls = mockApi({
     "GET /api/v1/sales/dashboard/": { body: board },
@@ -73,11 +104,17 @@ test("the sales tiles open their reports", async () => {
   });
   renderAt("/", <SalesDashboard />);
   const tiles = await screen.findByRole("region", { name: "Sales" });
-  expect(within(tiles).getByRole("link", { name: /Quotations needing attention 3/ })).toHaveAttribute("href", "/sales/reports?tab=attention");
+  expect(within(tiles).getByRole("link", { name: /Quotations needing attention 3/ })).toHaveAttribute(
+    "href",
+    "/sales/reports?tab=attention",
+  );
   expect(within(tiles).getByRole("link", { name: /Won this month LKR 10,000.00/ })).toHaveTextContent("win rate 50.0%");
   expect(within(tiles).getByRole("link", { name: /Open sales orders/ })).toHaveTextContent("1 deliveries overdue");
   expect(within(tiles).queryByText("Advances not yet set off")).not.toBeInTheDocument();
   fireEvent.click(within(tiles).getByRole("button", { name: "IM" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/sales/dashboard/?division=IM", expect.anything()));
-  expect(await within(tiles).findByRole("link", { name: /Open sales orders/ })).toHaveAttribute("href", "/sales/reports?tab=orders&division=IM");
+  expect(await within(tiles).findByRole("link", { name: /Open sales orders/ })).toHaveAttribute(
+    "href",
+    "/sales/reports?tab=orders&division=IM",
+  );
 });

@@ -1254,3 +1254,59 @@ class JobExcess(models.Model):
 
     def __str__(self):
         return f"{self.job_id} +{self.quantity} {self.component_id}"
+
+
+class JobCardEntry(models.Model):
+    """Work on one operation of a job in a machining shift report (spec 7.4 `production_entry`;
+    backlog P3-12), entered by scanning the job card: the machine, operator, start and end,
+    pieces completed, rejected (by reason) and sent for rework. Locked with its report."""
+
+    report = models.ForeignKey(ShiftReport, on_delete=models.CASCADE, related_name="job_entries")
+    job = models.ForeignKey(JobOrder, on_delete=models.PROTECT, related_name="entries")
+    operation = models.ForeignKey(JobOperation, on_delete=models.PROTECT, related_name="entries")
+    machine = models.ForeignKey("masters.Machine", on_delete=models.PROTECT, related_name="+")
+    operator = models.ForeignKey(
+        "payroll.Employee", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField()
+    completed = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    rejected = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    rework = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    setup = models.BooleanField("Includes the setup", default=False)
+    # Minutes worked less the machine's downtime in them, per piece (completed + rejected).
+    minutes_per_piece = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    notes = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["report", "machine__code", "started_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(ended_at__gt=models.F("started_at")),
+                name="production_jobentry_times",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(completed__gte=0, rejected__gte=0, rework__gte=0),
+                name="production_jobentry_quantities",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.report_id}/{self.job_id}/{self.operation_id}"
+
+
+class JobCardReject(models.Model):
+    entry = models.ForeignKey(JobCardEntry, on_delete=models.CASCADE, related_name="rejects")
+    reason = models.ForeignKey(ReasonCode, on_delete=models.PROTECT, related_name="+")
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+
+    class Meta:
+        ordering = ["entry", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_jobreject_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.entry_id} {self.reason_id} {self.quantity}"

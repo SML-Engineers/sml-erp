@@ -18,6 +18,7 @@ from apps.masters.models import Machine
 
 from . import (
     boms,
+    job_cards,
     jobs,
     labels,
     maintenance,
@@ -881,3 +882,15 @@ class JobExcessDecideView(_Jobs):
         except JobError as error:
             return _error(error)
         return Response({"status": excess.status})
+
+
+class JobCardsView(_Jobs):
+    """P3-12: the printed job cards of a released job, one per operation, with QR codes."""
+
+    def get(self, request, pk):
+        job = get_object_or_404(jobs.visible(request.user), pk=pk)
+        if job.status not in (JobOrder.Status.RELEASED, JobOrder.Status.COMPLETED):
+            return _error("Job cards are printed for a released job.")
+        response = HttpResponse(job_cards.render(job), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="job-cards-{job.number}.pdf"'
+        return response

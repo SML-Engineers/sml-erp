@@ -24,9 +24,26 @@ const options: ItemOptions = {
 };
 
 const resin: Item = {
-  id: 5, code: "PP-H-WHITE", name: "PP homopolymer, white", description: "", category: "raw_material", unit: "kg",
-  is_stock: true, package_type: "bag", inspection_required: true, package_tare: "0.100", weight_tolerance_pct: "0.50", standard_kg_per_m: null, density: null, inventory_account: { number: "1210", name: "Raw materials" },
-  expense_account: null, material: null, division: null, notes: "", is_active: true, used: true,
+  id: 5,
+  code: "PP-H-WHITE",
+  name: "PP homopolymer, white",
+  description: "",
+  category: "raw_material",
+  unit: "kg",
+  is_stock: true,
+  package_type: "bag",
+  inspection_required: true,
+  package_tare: "0.100",
+  weight_tolerance_pct: "0.50",
+  standard_kg_per_m: null,
+  density: null,
+  inventory_account: { number: "1210", name: "Raw materials" },
+  expense_account: null,
+  material: null,
+  division: null,
+  notes: "",
+  is_active: true,
+  used: true,
 };
 
 const divisions = {

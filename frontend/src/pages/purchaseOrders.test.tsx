@@ -7,19 +7,53 @@ import PurchaseOrderPage from "./PurchaseOrderPage";
 import PurchaseOrdersPage from "./PurchaseOrdersPage";
 
 const draft: PODetail = {
-  id: 9, number: "PO26110101", revision: 0, label: "PO26110101", po_date: "2026-11-01", delivery_date: "2026-11-08",
-  status: "draft", division: "IM", supplier: { id: 3, code: "S0003", name: "SDD Polymer (Pvt) Ltd" }, currency: "LKR",
-  total_amount: "177000.00", total_lkr: "177000.00", created_by: "Buyer", deliver_to: "SML Engineers\nSeeduwa",
-  pay_mode: "online", payment_terms: "Net 30", exchange_rate: "1.000000", notes: "", subtotal: "177000.00", tax_total: "0.00",
-  approved_at: null, end_reason: "", parent: null, revisions: [],
+  id: 9,
+  number: "PO26110101",
+  revision: 0,
+  label: "PO26110101",
+  po_date: "2026-11-01",
+  delivery_date: "2026-11-08",
+  status: "draft",
+  division: "IM",
+  supplier: { id: 3, code: "S0003", name: "SDD Polymer (Pvt) Ltd" },
+  currency: "LKR",
+  total_amount: "177000.00",
+  total_lkr: "177000.00",
+  created_by: "Buyer",
+  deliver_to: "SML Engineers\nSeeduwa",
+  pay_mode: "online",
+  payment_terms: "Net 30",
+  exchange_rate: "1.000000",
+  notes: "",
+  subtotal: "177000.00",
+  tax_total: "0.00",
+  approved_at: null,
+  end_reason: "",
+  parent: null,
+  revisions: [],
   lines: [
     {
-      line_no: 1, item: { id: 5, code: "48-BL-08" }, description: "Black MB 45% carbon", unit: "kg", quantity: "300.000",
-      unit_price: "590.00", amount: "177000.00", tax_code: null, tax_amount: "0.00", total: "177000.00", received_quantity: "0.000",
+      line_no: 1,
+      item: { id: 5, code: "48-BL-08" },
+      description: "Black MB 45% carbon",
+      unit: "kg",
+      quantity: "300.000",
+      unit_price: "590.00",
+      amount: "177000.00",
+      tax_code: null,
+      tax_amount: "0.00",
+      total: "177000.00",
+      received_quantity: "0.000",
     },
   ],
-  can_edit: true, can_approve: false, can_revise: false, can_cancel: true, can_close: false, approval: null,
-  can_email: false, emails: [],
+  can_edit: true,
+  can_approve: false,
+  can_revise: false,
+  can_cancel: true,
+  can_close: false,
+  approval: null,
+  can_email: false,
+  emails: [],
 };
 
 const formApi = {
@@ -67,8 +101,15 @@ test("the buyer raises a PO and sends it to the Director", async () => {
 
 test("the Director approves a waiting PO", async () => {
   const waiting: PODetail = {
-    ...draft, status: "awaiting_approval", can_edit: false, can_cancel: false, can_approve: true,
-    approval: { status: "in_progress", history: [{ action: "submit", action_label: "Submitted", by: "Buyer", at: "2026-11-01T09:00:00", reason: "" }] },
+    ...draft,
+    status: "awaiting_approval",
+    can_edit: false,
+    can_cancel: false,
+    can_approve: true,
+    approval: {
+      status: "in_progress",
+      history: [{ action: "submit", action_label: "Submitted", by: "Buyer", at: "2026-11-01T09:00:00", reason: "" }],
+    },
   };
   const calls = mockApi({
     "GET /api/v1/purchase-orders/9/": { body: waiting },
@@ -103,10 +144,20 @@ test("the buyer emails an approved PO to the supplier and can print it", async (
   const calls = mockApi({
     "GET /api/v1/purchase-orders/9/": { body: approved },
     "GET /api/v1/purchase-orders/9/email/": {
-      body: { from: "purchasing@sml.lk", ready: true, to: ["sales@sddpolymer.lk"], cc: [], subject: "Purchase order PO26110101 from SML", body: "Dear SDD" },
+      body: {
+        from: "purchasing@sml.lk",
+        ready: true,
+        to: ["sales@sddpolymer.lk"],
+        cc: [],
+        subject: "Purchase order PO26110101 from SML",
+        body: "Dear SDD",
+      },
     },
     "POST /api/v1/purchase-orders/9/email/": {
-      body: { ...approved, emails: [{ to: "sales@sddpolymer.lk", subject: "PO", status: "sent", error: "", sent_at: "2026-11-01T10:00:00", by: "Buyer" }] },
+      body: {
+        ...approved,
+        emails: [{ to: "sales@sddpolymer.lk", subject: "PO", status: "sent", error: "", sent_at: "2026-11-01T10:00:00", by: "Buyer" }],
+      },
     },
   });
   renderAt("/purchase-orders/9", <PurchaseOrderPage />, "/purchase-orders/:id");

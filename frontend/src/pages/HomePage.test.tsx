@@ -23,7 +23,5 @@ test("says when the database is not reachable", async () => {
   });
   renderAt("/dashboard", <HomePage user={sampleUser} />);
 
-  expect(
-    await screen.findByText("System status: the database is not reachable"),
-  ).toBeInTheDocument();
+  expect(await screen.findByText("System status: the database is not reachable")).toBeInTheDocument();
 });

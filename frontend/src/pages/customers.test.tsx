@@ -21,7 +21,13 @@ const viewer: CurrentUser = {
 };
 
 const nimali: Contact = {
-  id: 5, name: "Nimali Fernando", position: "Buyer", phone: "0771234567", email: "", is_main: true, is_active: true,
+  id: 5,
+  name: "Nimali Fernando",
+  position: "Buyer",
+  phone: "0771234567",
+  email: "",
+  is_main: true,
+  is_active: true,
 };
 
 const unilever: Customer = {
@@ -159,7 +165,10 @@ test("a contact is added, and another made the main contact", async () => {
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
       "/api/v1/customers/1/contacts/",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ name: "Kasun", position: "", phone: "", email: "kasun@unilever.com" }) }),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ name: "Kasun", position: "", phone: "", email: "kasun@unilever.com" }),
+      }),
     ),
   );
   expect(within(contacts).getByText("main")).toBeInTheDocument();
@@ -222,9 +231,7 @@ test("the Accountant changes the credit terms, with a reason", async () => {
   fireEvent.change(within(terms).getByLabelText("Payment terms (days; 0 = on receipt)"), { target: { value: "45" } });
   fireEvent.change(within(terms).getByLabelText("Reason"), { target: { value: "Agreed with the Director" } });
   fireEvent.click(within(terms).getByRole("button", { name: "Save the credit terms" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/customers/1/credit-terms/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/customers/1/credit-terms/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/customers/1/credit-terms/")!;
   expect(JSON.parse(String(init!.body))).toEqual({
     credit_limit: "750000",

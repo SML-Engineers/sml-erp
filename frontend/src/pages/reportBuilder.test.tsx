@@ -36,7 +36,15 @@ const result: ReportResult = {
 };
 
 test("choose a source and columns, put them in order and run", async () => {
-  const wanted = { source: "journal_lines", columns: ["debit", "account"], filters: [], group_by: null, sort: [], period: "", measure: null };
+  const wanted = {
+    source: "journal_lines",
+    columns: ["debit", "account"],
+    filters: [],
+    group_by: null,
+    sort: [],
+    period: "",
+    measure: null,
+  };
   const calls = mockApi({
     "GET /api/v1/report-builder/": { body: builder },
     [`GET /api/v1/report-builder/run/?d=${encodeURIComponent(JSON.stringify(wanted))}`]: { body: result },

@@ -5,16 +5,36 @@ import { mockApi, renderAt } from "../test-utils";
 import GratuityPage from "./GratuityPage";
 
 const row = {
-  id: 3, number: "E003", name: "Sunil Silva", division: "WS", join_date: "2020-01-15", service_from: "2020-01-15",
-  months_per_year: "0.50", after_years: 5, by_act: true, years: 6, wage: "66000.00", liability: "198000.00",
-  provided: "198000.00", waiting: null,
+  id: 3,
+  number: "E003",
+  name: "Sunil Silva",
+  division: "WS",
+  join_date: "2020-01-15",
+  service_from: "2020-01-15",
+  months_per_year: "0.50",
+  after_years: 5,
+  by_act: true,
+  years: 6,
+  wage: "66000.00",
+  liability: "198000.00",
+  provided: "198000.00",
+  waiting: null,
 };
 const list: GratuityList = { results: [row], can_enter: true };
 
 test("the Accountant sends better terms to the Director", async () => {
   const waiting = {
-    id: 9, effective_from: "2026-11", service_from: "2019-06-01", months_per_year: "1.00", after_years: 3, reason: "Agreed",
-    status: "awaiting", status_label: "Waiting for the Director", created_by: "Accountant", can_approve: false, can_withdraw: true,
+    id: 9,
+    effective_from: "2026-11",
+    service_from: "2019-06-01",
+    months_per_year: "1.00",
+    after_years: 3,
+    reason: "Agreed",
+    status: "awaiting",
+    status_label: "Waiting for the Director",
+    created_by: "Accountant",
+    can_approve: false,
+    can_withdraw: true,
   };
   const calls = mockApi({
     "GET /api/v1/gratuity/": { body: list },
@@ -50,8 +70,17 @@ test("the Accountant sends better terms to the Director", async () => {
 
 test("the Director approves", async () => {
   const waiting = {
-    id: 9, effective_from: "2026-11", service_from: "2019-06-01", months_per_year: "1.00", after_years: 3, reason: "Agreed",
-    status: "awaiting", status_label: "Waiting for the Director", created_by: "Accountant", can_approve: true, can_withdraw: false,
+    id: 9,
+    effective_from: "2026-11",
+    service_from: "2019-06-01",
+    months_per_year: "1.00",
+    after_years: 3,
+    reason: "Agreed",
+    status: "awaiting",
+    status_label: "Waiting for the Director",
+    created_by: "Accountant",
+    can_approve: true,
+    can_withdraw: false,
   };
   const calls = mockApi({
     "GET /api/v1/gratuity/": { body: { results: [{ ...row, waiting }], can_enter: false } },

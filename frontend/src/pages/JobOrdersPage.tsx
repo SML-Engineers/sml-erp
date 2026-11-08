@@ -14,6 +14,7 @@ import {
   getJobSalesLines,
   getWaitingExcess,
   jobAction,
+  jobCardsUrl,
   jobsKey,
   type JobAction,
   type JobIssueDoc,
@@ -321,9 +322,16 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
         <EditLines job={j} onSaved={saved} />
       ) : (
         <>
-          <Operations job={j} />
+          {j.progress.length > 0 ? <Progress job={j} /> : <Operations job={j} />}
           <Materials job={j} />
         </>
+      )}
+      {j.can_print_cards && (
+        <p>
+          <a href={jobCardsUrl(j.id)} target="_blank" rel="noreferrer">
+            {t("job.printCards")}
+          </a>
+        </p>
       )}
       <div className="row-actions">
         {j.can_release && (
@@ -392,6 +400,46 @@ function Operations({ job }: { job: JobOrder }) {
               <td>{o.subcontract ? t("job.sentTo", { supplier: o.supplier }) : `${o.section} ${o.machine}`}</td>
               <td className="num">{formatDecimal(o.setup_min)}</td>
               <td className="num">{formatDecimal(o.run_min)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** P3-12: what each operation received, completed, rejected and passed on. */
+function Progress({ job }: { job: JobOrder }) {
+  const { t } = useTranslation();
+  return (
+    <div className="table-wrap">
+      <table aria-label={t("job.progress")}>
+        <thead>
+          <tr>
+            <th>{t("job.operation")}</th>
+            <th className="num">{t("job.received")}</th>
+            <th className="num">{t("job.completed")}</th>
+            <th className="num">{t("job.rejected")}</th>
+            <th className="num">{t("job.rework")}</th>
+            <th className="num">{t("job.inHand")}</th>
+            <th className="num">{t("job.available")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {job.progress.map((s) => (
+            <tr key={s.seq}>
+              <td>
+                {s.seq} {s.name}
+                {s.subcontract && <span className="muted small"> {t("job.subcontractPasses")}</span>}
+              </td>
+              <td className="num">{formatDecimal(s.received)}</td>
+              <td className="num">{formatDecimal(s.completed)}</td>
+              <td className="num">{formatDecimal(s.rejected)}</td>
+              <td className="num">{formatDecimal(s.rework)}</td>
+              <td className="num">{formatDecimal(s.in_hand)}</td>
+              <td className="num">
+                {s.finished !== "0" ? `${t("job.finished")} ${formatDecimal(s.finished)}` : formatDecimal(s.available)}
+              </td>
             </tr>
           ))}
         </tbody>

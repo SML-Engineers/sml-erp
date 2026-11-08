@@ -7,20 +7,51 @@ import GoodsReceiptPage from "./GoodsReceiptPage";
 import GoodsReceiptsPage from "./GoodsReceiptsPage";
 
 const draft: GRNDetail = {
-  id: 4, number: "GRN26110101", receipt_date: "2026-11-01", status: "draft", division: "IM", store: "IM-QUAR",
-  purchase_order: { id: 9, label: "PO26110101" }, supplier: { id: 3, code: "S0003", name: "SDD Polymer (Pvt) Ltd" },
-  delivery_note_no: "", created_by: "Stores", vehicle_no: "", supplier_invoice_no: "", notes: "",
-  confirmed_by: null, confirmed_at: null, reversal_reason: "", reversed_at: null,
+  id: 4,
+  number: "GRN26110101",
+  receipt_date: "2026-11-01",
+  status: "draft",
+  division: "IM",
+  store: "IM-QUAR",
+  purchase_order: { id: 9, label: "PO26110101" },
+  supplier: { id: 3, code: "S0003", name: "SDD Polymer (Pvt) Ltd" },
+  delivery_note_no: "",
+  created_by: "Stores",
+  vehicle_no: "",
+  supplier_invoice_no: "",
+  notes: "",
+  confirmed_by: null,
+  confirmed_at: null,
+  reversal_reason: "",
+  reversed_at: null,
   lines: [
     {
-      line_no: 1, po_line: 21, item: { id: 5, code: "48-BL-08", name: "Black MB", unit: "kg", package_type: "none", package_tare: "0.000" }, description: "Black MB 45% carbon", unit: "kg",
-      ordered_quantity: "300.000", outstanding_quantity: "300.000", received_quantity: "300.000", damaged_quantity: "0.000",
-      good_quantity: "300.000", excess_quantity: "0.000", notes: "", weight_tolerance_pct: "0.50", inspection: null, packages: [],
+      line_no: 1,
+      po_line: 21,
+      item: { id: 5, code: "48-BL-08", name: "Black MB", unit: "kg", package_type: "none", package_tare: "0.000" },
+      description: "Black MB 45% carbon",
+      unit: "kg",
+      ordered_quantity: "300.000",
+      outstanding_quantity: "300.000",
+      received_quantity: "300.000",
+      damaged_quantity: "0.000",
+      good_quantity: "300.000",
+      excess_quantity: "0.000",
+      notes: "",
+      weight_tolerance_pct: "0.50",
+      inspection: null,
+      packages: [],
       package_totals: { count: 0, net_weight: "0", declared_weight: "0", net_of_declared: "0", outside: 0 },
     },
   ],
-  photos: [], can_edit: true, can_add_photo: true, can_approve_excess: false, can_request_reversal: false,
-  can_approve_reversal: false, excess_history: [], reversal_history: [],
+  photos: [],
+  can_edit: true,
+  can_add_photo: true,
+  can_approve_excess: false,
+  can_request_reversal: false,
+  can_approve_reversal: false,
+  excess_history: [],
+  reversal_history: [],
 };
 
 test("the stores person receives against an approved PO", async () => {
@@ -30,8 +61,14 @@ test("the stores person receives against an approved PO", async () => {
     "GET /api/v1/goods-receipts/receivable/": {
       body: [
         {
-          id: 9, label: "PO26110101", po_date: "2026-11-01", delivery_date: "2026-11-08", status: "approved", division: "IM",
-          supplier: { id: 3, code: "S0003", name: "SDD Polymer (Pvt) Ltd" }, outstanding_lines: 1,
+          id: 9,
+          label: "PO26110101",
+          po_date: "2026-11-01",
+          delivery_date: "2026-11-08",
+          status: "approved",
+          division: "IM",
+          supplier: { id: 3, code: "S0003", name: "SDD Polymer (Pvt) Ltd" },
+          outstanding_lines: 1,
         },
       ],
     },
@@ -70,7 +107,11 @@ test("the stores person enters the damaged quantity, saves and confirms", async 
 
 test("the Director sees the excess and accepts it", async () => {
   const waiting: GRNDetail = {
-    ...draft, status: "awaiting_approval", can_edit: false, can_add_photo: false, can_approve_excess: true,
+    ...draft,
+    status: "awaiting_approval",
+    can_edit: false,
+    can_add_photo: false,
+    can_approve_excess: true,
     lines: [{ ...draft.lines[0], received_quantity: "320.000", good_quantity: "320.000", excess_quantity: "20.000" }],
     excess_history: [{ action: "submit", action_label: "Submitted", by: "Stores", at: "2026-11-01T09:00:00", reason: "48-BL-08: 20 over" }],
   };
@@ -95,15 +136,29 @@ test("the stores person adds 2 bags of 25 kg at once, weighs them and sees the v
   };
   const withBags: GRNDetail = { ...draft, lines: [bagLine] };
   const pkg = (n: number, gross: string, net: string, pct: string, outside: boolean) => ({
-    package_no: n, lot_no: `GRN26110101-1-00${n}`, supplier_lot: "", gross_weight: gross, tare_weight: "0.100", net_weight: net,
-    declared_weight: "25.000", pieces: null, piece_length: null, length_mm: null, width_mm: null, thickness_mm: null,
-    quantity: net, damaged: false, notes: "", check: { basis: "declared" as const, expected: "25.000", actual: net, variance_pct: pct, outside },
+    package_no: n,
+    lot_no: `GRN26110101-1-00${n}`,
+    supplier_lot: "",
+    gross_weight: gross,
+    tare_weight: "0.100",
+    net_weight: net,
+    declared_weight: "25.000",
+    pieces: null,
+    piece_length: null,
+    length_mm: null,
+    width_mm: null,
+    thickness_mm: null,
+    quantity: net,
+    damaged: false,
+    notes: "",
+    check: { basis: "declared" as const, expected: "25.000", actual: net, variance_pct: pct, outside },
   });
   const saved: GRNDetail = {
     ...draft,
     lines: [
       {
-        ...bagLine, received_quantity: "49.750",
+        ...bagLine,
+        received_quantity: "49.750",
         packages: [pkg(1, "25.150", "25.050", "0.20", false), pkg(2, "24.800", "24.700", "-1.20", true)],
         package_totals: { count: 2, net_weight: "49.750", declared_weight: "50.000", net_of_declared: "49.750", outside: 1 },
       },
@@ -122,7 +177,9 @@ test("the stores person adds 2 bags of 25 kg at once, weighs them and sees the v
   fireEvent.change(within(panel).getByLabelText("Gross kg, package 1"), { target: { value: "25.15" } });
   fireEvent.change(within(panel).getByLabelText("Gross kg, package 2"), { target: { value: "24.80" } });
   fireEvent.click(within(panel).getByRole("button", { name: "Save the packages" }));
-  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/goods-receipts/4/lines/1/packages/", expect.objectContaining({ method: "PUT" })));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/goods-receipts/4/lines/1/packages/", expect.objectContaining({ method: "PUT" })),
+  );
   const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/goods-receipts/4/lines/1/packages/")!;
   expect(JSON.parse(String(init!.body)).packages).toMatchObject([
     { declared_weight: "25", gross_weight: "25.15", damaged: false },
@@ -131,5 +188,8 @@ test("the stores person adds 2 bags of 25 kg at once, weighs them and sees the v
   const updated = await screen.findByRole("region", { name: "Packages: 48-BL-08" });
   expect(await within(updated).findByText("-1.20% vs declared")).toHaveClass("form-error");
   expect(within(updated).getByText(/1 outside the tolerance/)).toBeInTheDocument();
-  expect(within(updated).getByRole("link", { name: "Print labels (PDF)" })).toHaveAttribute("href", "/api/v1/goods-receipts/4/labels/?line=1");
+  expect(within(updated).getByRole("link", { name: "Print labels (PDF)" })).toHaveAttribute(
+    "href",
+    "/api/v1/goods-receipts/4/labels/?line=1",
+  );
 });

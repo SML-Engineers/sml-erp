@@ -5,9 +5,24 @@ import { mockApi, renderAt } from "../test-utils";
 import ManualJournalPage from "./ManualJournalPage";
 
 const account = (id: number, number: string, full_name: string, account_type: string) => ({
-  id, number, name: full_name, full_name, depth: 0, parent: null, account_type, account_type_label: account_type, section: "assets",
-  detail_type: { id: 1, name: "x" }, description: "", default_division: null, default_tax_code: null, system_role: null,
-  is_active: true, merged_into: null, in_use: true, company_account: null,
+  id,
+  number,
+  name: full_name,
+  full_name,
+  depth: 0,
+  parent: null,
+  account_type,
+  account_type_label: account_type,
+  section: "assets",
+  detail_type: { id: 1, name: "x" },
+  description: "",
+  default_division: null,
+  default_tax_code: null,
+  system_role: null,
+  is_active: true,
+  merged_into: null,
+  in_use: true,
+  company_account: null,
 });
 
 const formApi = {
@@ -24,13 +39,40 @@ const formApi = {
 };
 
 const draft: MJDetail = {
-  id: 5, number: "MJ26110201", entry_date: "2026-11-02", narration: "Accrue October repairs", status: "draft", status_label: "Draft",
-  total_debit: "25000.00", total_credit: "25000.00", created_by: "Kumari Silva", journal_entry: null,
+  id: 5,
+  number: "MJ26110201",
+  entry_date: "2026-11-02",
+  narration: "Accrue October repairs",
+  status: "draft",
+  status_label: "Draft",
+  total_debit: "25000.00",
+  total_credit: "25000.00",
+  created_by: "Kumari Silva",
+  journal_entry: null,
   lines: [
-    { line_no: 1, account: { id: 1, number: "6220", name: "Building repairs", account_type: "expense" }, division: "WS", supplier: null, description: "", debit: "25000.00", credit: "0.00" },
-    { line_no: 2, account: { id: 2, number: "2170", name: "Accrued expenses", account_type: "other_current_liability" }, division: null, supplier: null, description: "", debit: "0.00", credit: "25000.00" },
+    {
+      line_no: 1,
+      account: { id: 1, number: "6220", name: "Building repairs", account_type: "expense" },
+      division: "WS",
+      supplier: null,
+      description: "",
+      debit: "25000.00",
+      credit: "0.00",
+    },
+    {
+      line_no: 2,
+      account: { id: 2, number: "2170", name: "Accrued expenses", account_type: "other_current_liability" },
+      division: null,
+      supplier: null,
+      description: "",
+      debit: "0.00",
+      credit: "25000.00",
+    },
   ],
-  attachments: [], can_edit: true, can_approve: false, approval: null,
+  attachments: [],
+  can_edit: true,
+  can_approve: false,
+  approval: null,
 };
 
 async function choose(form: HTMLElement, label: string, typed: string, option: string) {
@@ -82,13 +124,26 @@ test("a payables line asks for the supplier", async () => {
 
 test("the Director approves and the journal is posted", async () => {
   const waiting: MJDetail = {
-    ...draft, status: "awaiting_approval", status_label: "Waiting for approval", can_edit: false, can_approve: true,
-    approval: { status: "in_progress", history: [{ action: "submit", action_label: "Submitted", by: "Kumari Silva", at: "2026-11-02T09:00:00", reason: "" }] },
+    ...draft,
+    status: "awaiting_approval",
+    status_label: "Waiting for approval",
+    can_edit: false,
+    can_approve: true,
+    approval: {
+      status: "in_progress",
+      history: [{ action: "submit", action_label: "Submitted", by: "Kumari Silva", at: "2026-11-02T09:00:00", reason: "" }],
+    },
   };
   const calls = mockApi({
     "GET /api/v1/manual-journals/5/": { body: waiting },
     "POST /api/v1/manual-journals/5/approve/": {
-      body: { ...waiting, status: "posted", status_label: "Approved and posted", can_approve: false, journal_entry: { id: 40, number: "JV26110012" } },
+      body: {
+        ...waiting,
+        status: "posted",
+        status_label: "Approved and posted",
+        can_approve: false,
+        journal_entry: { id: 40, number: "JV26110012" },
+      },
     },
   });
   renderAt("/journals/manual/5", <ManualJournalPage />, "/journals/manual/:id");
@@ -97,7 +152,10 @@ test("the Director approves and the journal is posted", async () => {
   expect(screen.queryByRole("button", { name: "Send for approval" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Approve and post" }));
   await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/manual-journals/5/approve/", expect.objectContaining({ body: JSON.stringify({ comment: "" }) })),
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/manual-journals/5/approve/",
+      expect.objectContaining({ body: JSON.stringify({ comment: "" }) }),
+    ),
   );
   expect(await screen.findByRole("link", { name: "JV26110012" })).toBeInTheDocument();
 });

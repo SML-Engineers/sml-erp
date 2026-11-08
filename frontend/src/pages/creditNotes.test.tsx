@@ -5,24 +5,56 @@ import { mockApi, renderAt } from "../test-utils";
 import CreditNotePage from "./CreditNotePage";
 
 const line = {
-  id: 21, line_no: 1, product_code: "DS-114", description: "Drive shaft, EN8", unit: "pcs", quantity: "50.000", net: "115750.00",
-  tax_code: "VAT-SSCL", left_amount: "115750.00", left_quantity: "50.000", credit_amount: null, credit_quantity: null, credit_tax: null,
+  id: 21,
+  line_no: 1,
+  product_code: "DS-114",
+  description: "Drive shaft, EN8",
+  unit: "pcs",
+  quantity: "50.000",
+  net: "115750.00",
+  tax_code: "VAT-SSCL",
+  left_amount: "115750.00",
+  left_quantity: "50.000",
+  credit_amount: null,
+  credit_quantity: null,
+  credit_tax: null,
 };
 
 const invoice: InvoiceForCredit = {
-  id: 4, number: "26NOV_W1_01", invoice_date: "2026-11-03", customer: "Lanka Tiles PLC", total_amount: "139487.43", lines: [line],
+  id: 4,
+  number: "26NOV_W1_01",
+  invoice_date: "2026-11-03",
+  customer: "Lanka Tiles PLC",
+  total_amount: "139487.43",
+  lines: [line],
 };
 
 const draft: CNDetail = {
-  id: 6, number: "", status: "draft", status_label: "Draft", kind: "return", credit_date: "2026-11-03",
-  invoice: { id: 4, number: "26NOV_W1_01" }, customer: { id: 1, name: "Lanka Tiles PLC" }, division: "WS", total_amount: "13987.69",
-  created_by: "Nimal", reason: "5 shafts returned", invoice_date: "2026-11-03", subtotal: "11575.00", tax_total: "2412.69",
-  amount_in_words: "", lines: [{ ...line, credit_amount: "11575.00", credit_quantity: "5.000", credit_tax: "2412.69" }],
+  id: 6,
+  number: "",
+  status: "draft",
+  status_label: "Draft",
+  kind: "return",
+  credit_date: "2026-11-03",
+  invoice: { id: 4, number: "26NOV_W1_01" },
+  customer: { id: 1, name: "Lanka Tiles PLC" },
+  division: "WS",
+  total_amount: "13987.69",
+  created_by: "Nimal",
+  reason: "5 shafts returned",
+  invoice_date: "2026-11-03",
+  subtotal: "11575.00",
+  tax_total: "2412.69",
+  amount_in_words: "",
+  lines: [{ ...line, credit_amount: "11575.00", credit_quantity: "5.000", credit_tax: "2412.69" }],
   taxes: [
     { label: "SSCL", rate: "2.125", on_tax: false, amount: "245.97" },
     { label: "VAT", rate: "18", on_tax: true, amount: "2127.75" },
   ],
-  journal_entry: null, can_edit: true, can_approve: false, approval: null,
+  journal_entry: null,
+  can_edit: true,
+  can_approve: false,
+  approval: null,
 };
 
 test("a credit note for returned goods is made from the invoice", async () => {
@@ -50,7 +82,13 @@ test("a credit note for returned goods is made from the invoice", async () => {
 
 test("the Director approves and the note is numbered", async () => {
   let current: CNDetail = { ...draft, status: "awaiting_approval", can_edit: false, can_approve: true };
-  const approved: CNDetail = { ...current, status: "approved", number: "CN26110301", can_approve: false, journal_entry: { id: 90, number: "JV26110050" } };
+  const approved: CNDetail = {
+    ...current,
+    status: "approved",
+    number: "CN26110301",
+    can_approve: false,
+    journal_entry: { id: 90, number: "JV26110050" },
+  };
   const calls = mockApi({
     "GET /api/v1/credit-notes/6/": () => ({ body: current }),
     "POST /api/v1/credit-notes/6/approve/": () => {

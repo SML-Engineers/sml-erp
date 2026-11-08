@@ -30,8 +30,18 @@ const list: EmployeeList = {
   ],
   results: [
     {
-      id: 7, number: "E001", full_name: "Kamal Perera", designation: "Machinist", division: "WS", section: "",
-      employment_type: "permanent", employment_type_label: "Permanent", category: "shop_office", category_label: "Shop and Office", join_date: "2024-01-15", is_active: true,
+      id: 7,
+      number: "E001",
+      full_name: "Kamal Perera",
+      designation: "Machinist",
+      division: "WS",
+      section: "",
+      employment_type: "permanent",
+      employment_type_label: "Permanent",
+      category: "shop_office",
+      category_label: "Shop and Office",
+      join_date: "2024-01-15",
+      is_active: true,
       bank_check_pending: true,
     },
   ],
@@ -39,12 +49,34 @@ const list: EmployeeList = {
 
 const employee: Employee = {
   ...list.results[0],
-  name_with_initials: "K. Perera", nic: "199012345678", date_of_birth: "1990-05-01", address: "", phone: "",
-  email: "", epf_no: "1234", etf_no: "", device_id: "", grade: "", confirmation_date: null, leaving_date: null, leaving_reason: "", phone_clock: "off", location_consent_at: null,
-  user: null, bank_name: "Commercial Bank", bank_branch: "Kandy", account_name: "K Perera",
-  account_number: "8001234567", bank_changed_at: "2026-11-05T09:00:00Z", bank_changed_by: "HR Officer",
-  bank_checked_at: null, bank_checked_by: null, created_by: "HR Officer", created_at: "2026-11-05T09:00:00Z",
-  can_edit: false, can_check_bank: true,
+  name_with_initials: "K. Perera",
+  nic: "199012345678",
+  date_of_birth: "1990-05-01",
+  address: "",
+  phone: "",
+  email: "",
+  epf_no: "1234",
+  etf_no: "",
+  device_id: "",
+  grade: "",
+  confirmation_date: null,
+  leaving_date: null,
+  leaving_reason: "",
+  phone_clock: "off",
+  location_consent_at: null,
+  user: null,
+  bank_name: "Commercial Bank",
+  bank_branch: "Kandy",
+  account_name: "K Perera",
+  account_number: "8001234567",
+  bank_changed_at: "2026-11-05T09:00:00Z",
+  bank_changed_by: "HR Officer",
+  bank_checked_at: null,
+  bank_checked_by: null,
+  created_by: "HR Officer",
+  created_at: "2026-11-05T09:00:00Z",
+  can_edit: false,
+  can_check_bank: true,
 };
 
 const thisYear = new Date().getFullYear();
@@ -52,40 +84,120 @@ const noLeave = { year: thisYear, balances: [], grants: [], leave: [], can_adjus
 const leaveRoute = { [`GET /api/v1/employees/7/leave/balances/?year=${thisYear}`]: { body: noLeave } };
 
 const settings = {
-  normal_day_minutes: null, grace_minutes: null, rate_working_day: null, rate_sunday: null, rate_holiday: null,
-  annual_leave_days: null, casual_leave_days: null, apit: null,
+  normal_day_minutes: null,
+  grace_minutes: null,
+  rate_working_day: null,
+  rate_sunday: null,
+  rate_holiday: null,
+  annual_leave_days: null,
+  casual_leave_days: null,
+  apit: null,
 };
 
 const pay: EmployeePay = {
   on: "2026-11-05",
   current: [
-    { component: "BASIC", component_name: "Basic salary", kind: "earning", epf_liable: true, apit_taxable: true, own_marks: false, amount: "60000.00", since: "2024-01" },
-    { component: "WELFARE", component_name: "Welfare society", kind: "deduction", epf_liable: false, apit_taxable: false, own_marks: false, amount: "250.00", since: "2024-01" },
+    {
+      component: "BASIC",
+      component_name: "Basic salary",
+      kind: "earning",
+      epf_liable: true,
+      apit_taxable: true,
+      own_marks: false,
+      amount: "60000.00",
+      since: "2024-01",
+    },
+    {
+      component: "WELFARE",
+      component_name: "Welfare society",
+      kind: "deduction",
+      epf_liable: false,
+      apit_taxable: false,
+      own_marks: false,
+      amount: "250.00",
+      since: "2024-01",
+    },
   ],
   totals: { earnings: "60000.00", deductions: "250.00", net: "59750.00", epf_earnings: "60000.00", apit_earnings: "60000.00" },
   upcoming: [],
   history: [
-    { id: 3, component: "BASIC", component_name: "Basic salary", kind: "earning", effective_from: "2024-01", amount: "60000.00", epf_liable: null, apit_taxable: null, reason: "Joined", created_by: "HR", created_at: "2026-11-05T09:00:00Z" },
+    {
+      id: 3,
+      component: "BASIC",
+      component_name: "Basic salary",
+      kind: "earning",
+      effective_from: "2024-01",
+      amount: "60000.00",
+      epf_liable: null,
+      apit_taxable: null,
+      reason: "Joined",
+      created_by: "HR",
+      created_at: "2026-11-05T09:00:00Z",
+    },
   ],
   components: [
-    { id: 1, code: "BASIC", name: "Basic salary", kind: "earning", basis: "fixed", epf_liable: true, apit_taxable: true, is_allowance: false, in_day_rate: false, sort_order: 10, is_active: true },
-    { id: 3, code: "ATTEND", name: "Attendance bonus", kind: "earning", basis: "variable", epf_liable: true, apit_taxable: true, is_allowance: false, in_day_rate: false, sort_order: 30, is_active: true },
+    {
+      id: 1,
+      code: "BASIC",
+      name: "Basic salary",
+      kind: "earning",
+      basis: "fixed",
+      epf_liable: true,
+      apit_taxable: true,
+      is_allowance: false,
+      in_day_rate: false,
+      sort_order: 10,
+      is_active: true,
+    },
+    {
+      id: 3,
+      code: "ATTEND",
+      name: "Attendance bonus",
+      kind: "earning",
+      basis: "variable",
+      epf_liable: true,
+      apit_taxable: true,
+      is_allowance: false,
+      in_day_rate: false,
+      sort_order: 30,
+      is_active: true,
+    },
   ],
   settings: null,
   settings_since: null,
-  defaults: { ...settings, normal_day_minutes: "480", grace_minutes: "10", annual_leave_days: "14.0", casual_leave_days: "7.0", apit: "primary" },
+  defaults: {
+    ...settings,
+    normal_day_minutes: "480",
+    grace_minutes: "10",
+    annual_leave_days: "14.0",
+    casual_leave_days: "7.0",
+    apit: "primary",
+  },
   changes: [],
   next_month: "2026-12",
   can_prepare: true,
 };
 
 const waiting: PayChange = {
-  id: 9, effective_from: "2026-12", is_new_employee: false, reason: "Increment", status: "awaiting",
-  status_label: "Waiting for the Director", returned: false,
-  lines: [{ component: "BASIC", component_name: "Basic salary", kind: "earning", amount: "66000.00", epf_liable: null, apit_taxable: null }],
-  settings: null, created_by: "HR Officer", created_at: "2026-11-05T09:00:00Z", approved_at: null,
+  id: 9,
+  effective_from: "2026-12",
+  is_new_employee: false,
+  reason: "Increment",
+  status: "awaiting",
+  status_label: "Waiting for the Director",
+  returned: false,
+  lines: [
+    { component: "BASIC", component_name: "Basic salary", kind: "earning", amount: "66000.00", epf_liable: null, apit_taxable: null },
+  ],
+  settings: null,
+  created_by: "HR Officer",
+  created_at: "2026-11-05T09:00:00Z",
+  approved_at: null,
   history: [{ action: "Submitted", user: "HR Officer", reason: "", at: "2026-11-05T09:00:00Z" }],
-  can_edit: false, can_submit: false, can_withdraw: false, can_approve: true,
+  can_edit: false,
+  can_submit: false,
+  can_withdraw: false,
+  can_approve: true,
 };
 
 test("only HR and the Director have the Employees menu", () => {
@@ -109,7 +221,10 @@ test("HR sees the list with the bank check waiting, and can export", async () =>
 test("the Director confirms a new bank account", async () => {
   let current = employee;
   const checked = {
-    ...employee, bank_check_pending: false, can_check_bank: false, bank_checked_by: "Director",
+    ...employee,
+    bank_check_pending: false,
+    can_check_bank: false,
+    bank_checked_by: "Director",
     bank_checked_at: "2026-11-05T10:00:00Z",
   };
   const calls = mockApi({
@@ -123,9 +238,7 @@ test("the Director confirms a new bank account", async () => {
   });
   renderAt("/employees/7", <EmployeePage />, "/employees/:id");
   fireEvent.click(await screen.findByRole("button", { name: "I have confirmed this account" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/employees/7/check-bank/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/employees/7/check-bank/", expect.objectContaining({ method: "POST" })));
   expect(await screen.findByText(/Bank account checked by Director/)).toBeInTheDocument();
 });
 
@@ -207,8 +320,15 @@ test("the Director approves a pay change waiting for him", async () => {
 
 test("HR approves an employee's request to change their salary account", async () => {
   const request = {
-    id: 3, employee: "E001 Kamal Perera", employee_id: 7, bank: true, note: "Moved my account", status: "waiting" as const,
-    status_label: "Waiting for HR", created_at: "2026-11-06T10:00:00Z", decision_note: "",
+    id: 3,
+    employee: "E001 Kamal Perera",
+    employee_id: 7,
+    bank: true,
+    note: "Moved my account",
+    status: "waiting" as const,
+    status_label: "Waiting for HR",
+    created_at: "2026-11-06T10:00:00Z",
+    decision_note: "",
     changes: [{ field: "account_number", before: "1234567890", after: "8001234567" }],
   };
   const calls = mockApi({

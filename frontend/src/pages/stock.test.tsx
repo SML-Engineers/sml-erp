@@ -15,13 +15,25 @@ const row = (store: string, kind: "main" | "rejected", quantity: string, value: 
 test("stock on hand shows quantity and value per store, and an item's movements", async () => {
   const calls = mockApi({
     "GET /api/v1/stock/": {
-      body: { total_value: "31500.00", rows: [row("IM-MAIN", "main", "75.000", "31500.00", "420.0000"), row("IM-REJ", "rejected", "25.000", "0.00", null)] },
+      body: {
+        total_value: "31500.00",
+        rows: [row("IM-MAIN", "main", "75.000", "31500.00", "420.0000"), row("IM-REJ", "rejected", "25.000", "0.00", null)],
+      },
     },
     "GET /api/v1/stock/movements/?item=5": {
       body: [
         {
-          id: 1, date: "2026-11-01", kind: "accepted", item: { id: 5, code: "PP-H-WHITE", unit: "kg" }, store: "IM-MAIN",
-          lot_no: "GRN26110101-1-001", quantity: "25.000", value: "10500.00", grn: { id: 4, number: "GRN26110101" }, journal: "JE26110001", by: "QC",
+          id: 1,
+          date: "2026-11-01",
+          kind: "accepted",
+          item: { id: 5, code: "PP-H-WHITE", unit: "kg" },
+          store: "IM-MAIN",
+          lot_no: "GRN26110101-1-001",
+          quantity: "25.000",
+          value: "10500.00",
+          grn: { id: 4, number: "GRN26110101" },
+          journal: "JE26110001",
+          by: "QC",
         },
       ],
     },

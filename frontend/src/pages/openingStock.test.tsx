@@ -12,15 +12,31 @@ const accountant: CurrentUser = {
 };
 
 const loaded: OSDetail = {
-  id: 3, number: "OS26110201", count_date: "2026-11-02", status: "draft", notes: "", lines: 1, value: "525210.00",
-  created_by: "Kumari Silva", journal_entry: null,
+  id: 3,
+  number: "OS26110201",
+  count_date: "2026-11-02",
+  status: "draft",
+  notes: "",
+  lines: 1,
+  value: "525210.00",
+  created_by: "Kumari Silva",
+  journal_entry: null,
   rows: [
     {
-      line_no: 1, item: { id: 1, code: "PP-H-25", name: "PP resin" }, unit: "kg", store: "IM-MAIN", division: "IM",
-      lot_no: "OS26110201-LOT-7", quantity: "1250.500", unit_cost: "420.0000", value: "525210.00",
+      line_no: 1,
+      item: { id: 1, code: "PP-H-25", name: "PP resin" },
+      unit: "kg",
+      store: "IM-MAIN",
+      division: "IM",
+      lot_no: "OS26110201-LOT-7",
+      quantity: "1250.500",
+      unit_cost: "420.0000",
+      value: "525210.00",
     },
   ],
-  can_edit: true, can_approve: false, approval: null,
+  can_edit: true,
+  can_approve: false,
+  approval: null,
 };
 
 function chooseFile(form: HTMLElement) {
@@ -38,14 +54,18 @@ test("the Accountant checks the sheet and sees every row to correct", async () =
   });
   renderAt("/opening-stock", <OpeningStocksPage me={accountant} />);
   const form = await screen.findByRole("form", { name: "Load the counted stock" });
-  expect(within(form).getByRole("link", { name: "Download the Excel sheet to fill in" })).toHaveAttribute("href", "/api/v1/opening-stock/template/");
+  expect(within(form).getByRole("link", { name: "Download the Excel sheet to fill in" })).toHaveAttribute(
+    "href",
+    "/api/v1/opening-stock/template/",
+  );
   chooseFile(form);
   fireEvent.click(within(form).getByRole("button", { name: "Check the file" }));
   const errors = await within(form).findByRole("list", { name: "Rows to correct" });
-  expect(within(errors).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
-    "Row 2: There is no item NOPE.",
-    "Row 4: The quantity must be more than 0.",
-  ]);
+  expect(
+    within(errors)
+      .getAllByRole("listitem")
+      .map((li) => li.textContent),
+  ).toEqual(["Row 2: There is no item NOPE.", "Row 4: The quantity must be more than 0."]);
 });
 
 test("a good sheet is checked, then loaded as a draft", async () => {
@@ -81,7 +101,10 @@ test("the Director approves and the stock goes in", async () => {
   expect(screen.queryByRole("form", { name: "Load the counted stock" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Approve: put it into stock" }));
   await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/opening-stock/3/approve/", expect.objectContaining({ body: JSON.stringify({ comment: "" }) })),
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/opening-stock/3/approve/",
+      expect.objectContaining({ body: JSON.stringify({ comment: "" }) }),
+    ),
   );
   expect(await screen.findByRole("link", { name: "JV26110014" })).toBeInTheDocument();
 });

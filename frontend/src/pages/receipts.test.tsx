@@ -27,12 +27,24 @@ const options: ReceiptOptions = {
       name: "Lanka Tiles PLC",
       invoices: [
         {
-          id: 21, number: "26NOV_W1_01", invoice_date: "2026-11-02", due_date: "2026-12-02", division: "WS",
-          customer_po: "LT/PO/1201", total_amount: "55794.98", open_amount: "55794.98",
+          id: 21,
+          number: "26NOV_W1_01",
+          invoice_date: "2026-11-02",
+          due_date: "2026-12-02",
+          division: "WS",
+          customer_po: "LT/PO/1201",
+          total_amount: "55794.98",
+          open_amount: "55794.98",
         },
         {
-          id: 22, number: "26NOV_W1_02", invoice_date: "2026-11-03", due_date: "2026-12-03", division: "WS",
-          customer_po: "LT/PO/1201", total_amount: "83692.46", open_amount: "83692.46",
+          id: 22,
+          number: "26NOV_W1_02",
+          invoice_date: "2026-11-03",
+          due_date: "2026-12-03",
+          division: "WS",
+          customer_po: "LT/PO/1201",
+          total_amount: "83692.46",
+          open_amount: "83692.46",
         },
       ],
     },
@@ -44,14 +56,34 @@ const options: ReceiptOptions = {
 };
 
 const made: ReceiptDetail = {
-  id: 5, number: "RC26110002", receipt_date: "2026-11-03", customer: { id: 9, code: "C0009", name: "Lanka Tiles PLC" },
-  method: "transfer", reference: "CEFT 99120", cheque_date: null, amount: "100000.00", status: "awaiting_approval",
-  created_by: "Cashier", account: { id: 1, code: "COM-CUR", name: "Commercial Bank current" }, cheque_bank: "", notes: "",
+  id: 5,
+  number: "RC26110002",
+  receipt_date: "2026-11-03",
+  customer: { id: 9, code: "C0009", name: "Lanka Tiles PLC" },
+  method: "transfer",
+  reference: "CEFT 99120",
+  cheque_date: null,
+  amount: "100000.00",
+  status: "awaiting_approval",
+  created_by: "Cashier",
+  account: { id: 1, code: "COM-CUR", name: "Commercial Bank current" },
+  cheque_bank: "",
+  notes: "",
   allocations: [
-    { invoice: { id: 21, number: "26NOV_W1_01", invoice_date: "2026-11-02", division: "WS", total_amount: "55794.98" }, amount: "55794.98" },
-    { invoice: { id: 22, number: "26NOV_W1_02", invoice_date: "2026-11-03", division: "WS", total_amount: "83692.46" }, amount: "44205.02" },
+    {
+      invoice: { id: 21, number: "26NOV_W1_01", invoice_date: "2026-11-02", division: "WS", total_amount: "55794.98" },
+      amount: "55794.98",
+    },
+    {
+      invoice: { id: 22, number: "26NOV_W1_02", invoice_date: "2026-11-03", division: "WS", total_amount: "83692.46" },
+      amount: "44205.02",
+    },
   ],
-  journal_entry: null, approved_by: null, approved_at: null, posted_at: null, can_approve: false,
+  journal_entry: null,
+  approved_by: null,
+  approved_at: null,
+  posted_at: null,
+  can_approve: false,
   history: [{ action: "submit", action_label: "Submitted", by: "Cashier", at: "2026-11-03T09:00:00", reason: "" }],
 };
 
@@ -146,20 +178,51 @@ test("a post-dated cheque says when it will be posted", async () => {
 
 test("the Accountant sets off an advance against an open invoice", async () => {
   const advance: AdvanceDetail = {
-    id: 7, number: "RC26110001", receipt_date: "2026-11-01", customer: { id: 9, code: "C0009", name: "Lanka Tiles PLC" },
-    quotation: null, proforma: null, sales_order: null, division: "WS", currency: "LKR", amount: "25000.00",
-    amount_lkr: "25000.00", balance_lkr: "25000.00", method: "transfer", status: "approved", created_by: "Cashier",
-    account: { id: 1, code: "COM-CUR", name: "Commercial Bank current" }, reference: "CEFT 70001", exchange_rate: "1.000000",
-    rate_date: null, set_off_lkr: "0.00", notes: "", journal_entry: { id: 2, number: "JE-2026-0002" }, approved_at: null,
-    can_approve: false, history: [], set_offs: [], can_set_off: true,
+    id: 7,
+    number: "RC26110001",
+    receipt_date: "2026-11-01",
+    customer: { id: 9, code: "C0009", name: "Lanka Tiles PLC" },
+    quotation: null,
+    proforma: null,
+    sales_order: null,
+    division: "WS",
+    currency: "LKR",
+    amount: "25000.00",
+    amount_lkr: "25000.00",
+    balance_lkr: "25000.00",
+    method: "transfer",
+    status: "approved",
+    created_by: "Cashier",
+    account: { id: 1, code: "COM-CUR", name: "Commercial Bank current" },
+    reference: "CEFT 70001",
+    exchange_rate: "1.000000",
+    rate_date: null,
+    set_off_lkr: "0.00",
+    notes: "",
+    journal_entry: { id: 2, number: "JE-2026-0002" },
+    approved_at: null,
+    can_approve: false,
+    history: [],
+    set_offs: [],
+    can_set_off: true,
     open_invoices: [{ id: 21, number: "26NOV_W1_01", invoice_date: "2026-11-02", open_amount: "5794.98" }],
   };
   const calls = mockApi({
     "GET /api/v1/advances/7/": { body: advance },
     "POST /api/v1/advances/7/set-off/": {
       body: {
-        ...advance, balance_lkr: "19205.02", set_off_lkr: "5794.98",
-        set_offs: [{ invoice: { id: 21, number: "26NOV_W1_01" }, amount: "5794.98", set_off_date: "2026-11-03", journal_entry: "JE-2026-0009", by: "Accountant" }],
+        ...advance,
+        balance_lkr: "19205.02",
+        set_off_lkr: "5794.98",
+        set_offs: [
+          {
+            invoice: { id: 21, number: "26NOV_W1_01" },
+            amount: "5794.98",
+            set_off_date: "2026-11-03",
+            journal_entry: "JE-2026-0009",
+            by: "Accountant",
+          },
+        ],
       },
     },
   });
@@ -168,9 +231,7 @@ test("the Accountant sets off an advance against an open invoice", async () => {
   fireEvent.change(within(form).getByLabelText("Invoice"), { target: { value: "21" } });
   expect(within(form).getByLabelText("Amount LKR")).toHaveValue("5794.98"); // what is open, less than the advance
   fireEvent.click(within(form).getByRole("button", { name: "Set off" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/advances/7/set-off/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/advances/7/set-off/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/advances/7/set-off/")!;
   expect(JSON.parse(String(init!.body))).toEqual({ invoice: 21, amount: "5794.98" });
   expect(await screen.findByText(/JE-2026-0009/)).toBeInTheDocument();
@@ -185,8 +246,15 @@ test("dollar invoices are paid in dollars into a dollar account (P2-09)", async 
         invoices: [
           ...options.customers[0].invoices,
           {
-            id: 30, number: "26NOV_W1_05", invoice_date: "2026-11-03", due_date: "2026-12-03", division: "WS",
-            customer_po: "MG/PO/55", currency: "USD", total_amount: "2500.00", open_amount: "2500.00",
+            id: 30,
+            number: "26NOV_W1_05",
+            invoice_date: "2026-11-03",
+            due_date: "2026-12-03",
+            division: "WS",
+            customer_po: "MG/PO/55",
+            currency: "USD",
+            total_amount: "2500.00",
+            open_amount: "2500.00",
           },
         ],
       },

@@ -19,22 +19,72 @@ const viewer: CurrentUser = {
 };
 
 const nordic: Customer = {
-  id: 4, code: "C0004", name: "Nordic Plast AB", billing_address: "", delivery_address: "", phone: "", email: "",
-  vat_no: "", tin: "", currency: "EUR", payment_terms_days: 60, credit_limit: null, is_export: true, country: "Sweden",
-  incoterm: "FOB", port_of_destination: "Gothenburg", notes: "", is_active: true,
-  main_contact: { id: 7, name: "Lars", position: "", phone: "", email: "", is_main: true, is_active: true }, in_use: false,
+  id: 4,
+  code: "C0004",
+  name: "Nordic Plast AB",
+  billing_address: "",
+  delivery_address: "",
+  phone: "",
+  email: "",
+  vat_no: "",
+  tin: "",
+  currency: "EUR",
+  payment_terms_days: 60,
+  credit_limit: null,
+  is_export: true,
+  country: "Sweden",
+  incoterm: "FOB",
+  port_of_destination: "Gothenburg",
+  notes: "",
+  is_active: true,
+  main_contact: { id: 7, name: "Lars", position: "", phone: "", email: "", is_main: true, is_active: true },
+  in_use: false,
 };
 
 const saved: QuotationDetail = {
-  id: 12, number: "QL26103101", revision: 0, status: "draft", quote_date: "2026-10-31", valid_until: "2026-11-07",
-  division: "IM", customer: { id: 4, code: "C0004", name: "Nordic Plast AB" }, enquiry_ref: "", currency: "EUR",
-  total_amount: "235.00", total_lkr: "76469.00", created_by: "Sales", contact: { id: 7, name: "Lars", email: "" },
-  exchange_rate: "325.400000", rate_date: "2026-10-29", payment_terms: "60 days", delivery_lead_time: "", incoterm: "FOB",
-  notes: "", discount_pct: "0.00", discount_total: "0.00", subtotal: "235.00", tax_total: "0.00", created_by_id: 1, created_at: "",
+  id: 12,
+  number: "QL26103101",
+  revision: 0,
+  status: "draft",
+  quote_date: "2026-10-31",
+  valid_until: "2026-11-07",
+  division: "IM",
+  customer: { id: 4, code: "C0004", name: "Nordic Plast AB" },
+  enquiry_ref: "",
+  currency: "EUR",
+  total_amount: "235.00",
+  total_lkr: "76469.00",
+  created_by: "Sales",
+  contact: { id: 7, name: "Lars", email: "" },
+  exchange_rate: "325.400000",
+  rate_date: "2026-10-29",
+  payment_terms: "60 days",
+  delivery_lead_time: "",
+  incoterm: "FOB",
+  notes: "",
+  discount_pct: "0.00",
+  discount_total: "0.00",
+  subtotal: "235.00",
+  tax_total: "0.00",
+  created_by_id: 1,
+  created_at: "",
   lines: [
     {
-      id: 31, line_no: 1, description: "Cap, PP, white", drawing_no: "NP-77", drawing_rev: "B", quantity: "100.000", unit: "pcs",
-      min_order_qty: null, unit_price: "2.35", is_tooling: false, tax_code: null, amount: "235.00", discount: "0.00", tax_amount: "0.00", total: "235.00",
+      id: 31,
+      line_no: 1,
+      description: "Cap, PP, white",
+      drawing_no: "NP-77",
+      drawing_rev: "B",
+      quantity: "100.000",
+      unit: "pcs",
+      min_order_qty: null,
+      unit_price: "2.35",
+      is_tooling: false,
+      tax_code: null,
+      amount: "235.00",
+      discount: "0.00",
+      tax_amount: "0.00",
+      total: "235.00",
       breaks: [{ quantity: "1000.000", unit_price: "2.10" }],
     },
   ],
@@ -146,8 +196,15 @@ test("the list links to each quotation; only sales staff who enter see New quota
 // --- Costing (P15-04) --------------------------------------------------------------------
 
 const costingPage: CostingPage = {
-  quotation_id: 12, number: "QL26103101", revision: 0, division: "WS", currency: "LKR", exchange_rate: "1.000000",
-  quote_date: "2026-10-31", can_edit: true, default_method: "machining",
+  quotation_id: 12,
+  number: "QL26103101",
+  revision: 0,
+  division: "WS",
+  currency: "LKR",
+  exchange_rate: "1.000000",
+  quote_date: "2026-10-31",
+  can_edit: true,
+  default_method: "machining",
   defaults: { overhead_pct: "15.00", margin_pct: "20.00", setup_rate: "1500.00" },
   materials: [{ id: 3, code: "EN8", name: "EN8 steel bar", kind: "metal", form: "round_bar", density: "7.850", rate: "450.00" }],
   machines: [
@@ -156,41 +213,106 @@ const costingPage: CostingPage = {
   ],
   lines: [
     {
-      line_no: 1, description: "Shaft, EN8", drawing_no: "UL-2210", quantity: "10.000", unit: "pcs", unit_price: "3000.00",
-      is_tooling: false, costing: null, results: null,
+      line_no: 1,
+      description: "Shaft, EN8",
+      drawing_no: "UL-2210",
+      quantity: "10.000",
+      unit: "pcs",
+      unit_price: "3000.00",
+      is_tooling: false,
+      costing: null,
+      results: null,
     },
   ],
 };
 
 const noMoulding = {
-  method: "machining" as const, masterbatch: null, masterbatch_rate: null, masterbatch_pct: "0.00", part_weight_g: null,
-  runner_weight_g: null, cavities: null, machine: null, machine_rate: null, cycle_time_s: null, reject_pct: "0.00",
-  packing_amount: "0.00", packing_per: "piece" as const, pcs_per_carton: null, tooling: "none" as const, tooling_cost: "0.00",
+  method: "machining" as const,
+  masterbatch: null,
+  masterbatch_rate: null,
+  masterbatch_pct: "0.00",
+  part_weight_g: null,
+  runner_weight_g: null,
+  cavities: null,
+  machine: null,
+  machine_rate: null,
+  cycle_time_s: null,
+  reject_pct: "0.00",
+  packing_amount: "0.00",
+  packing_per: "piece" as const,
+  pcs_per_carton: null,
+  tooling: "none" as const,
+  tooling_cost: "0.00",
   tooling_qty: null,
 };
 
 const costedLine: CostingLine = {
   ...costingPage.lines[0],
   costing: {
-    rates_date: "2026-10-31", material: { id: 3, code: "EN8", name: "EN8 steel bar" }, material_rate: "450.00", density: "7.850",
-    form: "round_bar", size_a_mm: "50.00", size_b_mm: null, length_mm: "100.00", cutting_allowance_mm: "5.00",
-    entered_weight_kg: null, weight_kg: "1.6184", setup_hours: "2.00", setup_rate: "1500.00", overhead_pct: "15.00",
-    margin_pct: "20.00", notes: "",
+    rates_date: "2026-10-31",
+    material: { id: 3, code: "EN8", name: "EN8 steel bar" },
+    material_rate: "450.00",
+    density: "7.850",
+    form: "round_bar",
+    size_a_mm: "50.00",
+    size_b_mm: null,
+    length_mm: "100.00",
+    cutting_allowance_mm: "5.00",
+    entered_weight_kg: null,
+    weight_kg: "1.6184",
+    setup_hours: "2.00",
+    setup_rate: "1500.00",
+    overhead_pct: "15.00",
+    margin_pct: "20.00",
+    notes: "",
     operations: [{ machine: { id: 5, code: "C-LAT-01", name: "CNC lathe" }, description: "Turn", minutes: "12.000", rate: "3000.00" }],
     extras: [{ description: "Transport", amount: "2000.00", per_order: true }],
     ...noMoulding,
-    updated_by: "Sales", updated_at: "2026-10-31T10:00:00",
+    updated_by: "Sales",
+    updated_at: "2026-10-31T10:00:00",
   },
   results: [
     {
-      quantity: "10.000", material: "728.28", machining: "840.00", hours_per_1000: null, rejects: "0.00", packing: "0.00", tooling: "0.00", setup: "300.00", subcontract: "285.00", direct_cost: "2153.28",
-      overhead: "322.99", cost: "2476.27", margin: "495.25", suggested_price_lkr: "2971.52", suggested_price: "2971.52",
-      quoted_price: "3000.00", quoted_price_lkr: "3000.00", quoted_margin_pct: "21.15", below_cost: false,
+      quantity: "10.000",
+      material: "728.28",
+      machining: "840.00",
+      hours_per_1000: null,
+      rejects: "0.00",
+      packing: "0.00",
+      tooling: "0.00",
+      setup: "300.00",
+      subcontract: "285.00",
+      direct_cost: "2153.28",
+      overhead: "322.99",
+      cost: "2476.27",
+      margin: "495.25",
+      suggested_price_lkr: "2971.52",
+      suggested_price: "2971.52",
+      quoted_price: "3000.00",
+      quoted_price_lkr: "3000.00",
+      quoted_margin_pct: "21.15",
+      below_cost: false,
     },
     {
-      quantity: "50.000", material: "728.28", machining: "840.00", hours_per_1000: null, rejects: "0.00", packing: "0.00", tooling: "0.00", setup: "60.00", subcontract: "125.00", direct_cost: "1753.28",
-      overhead: "262.99", cost: "2016.27", margin: "403.25", suggested_price_lkr: "2419.52", suggested_price: "2419.52",
-      quoted_price: "1900.00", quoted_price_lkr: "1900.00", quoted_margin_pct: "-5.77", below_cost: true,
+      quantity: "50.000",
+      material: "728.28",
+      machining: "840.00",
+      hours_per_1000: null,
+      rejects: "0.00",
+      packing: "0.00",
+      tooling: "0.00",
+      setup: "60.00",
+      subcontract: "125.00",
+      direct_cost: "1753.28",
+      overhead: "262.99",
+      cost: "2016.27",
+      margin: "403.25",
+      suggested_price_lkr: "2419.52",
+      suggested_price: "2419.52",
+      quoted_price: "1900.00",
+      quoted_price_lkr: "1900.00",
+      quoted_margin_pct: "-5.77",
+      below_cost: true,
     },
   ],
 };
@@ -243,9 +365,7 @@ test("the creator costs a line: material by size, operations and subcontract", a
   expect(within(form).getByLabelText("Margin %")).toHaveAttribute("placeholder", "20.00");
   fireEvent.click(within(form).getByRole("button", { name: "Save costing" }));
 
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/costing/1/", expect.objectContaining({ method: "PUT" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/costing/1/", expect.objectContaining({ method: "PUT" })));
   const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/quotations/12/costing/1/")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({
     material: 3,
@@ -287,15 +407,40 @@ const mouldingPage: CostingPage = {
   ],
   machines: [{ id: 11, code: "IM-250", name: "250 t press", rate: "2880.00" }],
   lines: [
-    { line_no: 1, description: "Cap, PP, white", drawing_no: "", quantity: "10000.000", unit: "pcs", unit_price: "18.00", is_tooling: false, costing: null, results: null },
+    {
+      line_no: 1,
+      description: "Cap, PP, white",
+      drawing_no: "",
+      quantity: "10000.000",
+      unit: "pcs",
+      unit_price: "18.00",
+      is_tooling: false,
+      costing: null,
+      results: null,
+    },
   ],
 };
 
 test("a moulded line is costed from resin, cavities, cycle time, packing and the mould", async () => {
   const mouldResult: CostingResult = {
-    quantity: "10000.000", material: "5.47", machining: "4.00", hours_per_1000: "1.39", rejects: "0.28", setup: "0.36", packing: "0.24",
-    subcontract: "0.00", direct_cost: "10.35", overhead: "1.04", cost: "11.39", margin: "2.85", tooling: "3.00",
-    suggested_price_lkr: "17.24", suggested_price: "17.24", quoted_price: "18.00", quoted_price_lkr: "18.00", quoted_margin_pct: "31.69",
+    quantity: "10000.000",
+    material: "5.47",
+    machining: "4.00",
+    hours_per_1000: "1.39",
+    rejects: "0.28",
+    setup: "0.36",
+    packing: "0.24",
+    subcontract: "0.00",
+    direct_cost: "10.35",
+    overhead: "1.04",
+    cost: "11.39",
+    margin: "2.85",
+    tooling: "3.00",
+    suggested_price_lkr: "17.24",
+    suggested_price: "17.24",
+    quoted_price: "18.00",
+    quoted_price_lkr: "18.00",
+    quoted_margin_pct: "31.69",
     below_cost: false,
   };
   const calls = mockApi({
@@ -306,7 +451,15 @@ test("a moulded line is costed from resin, cavities, cycle time, packing and the
         lines: [
           {
             ...mouldingPage.lines[0],
-            costing: { ...costedLine.costing!, ...noMoulding, method: "moulding", material: { id: 8, code: "PP-H110", name: "Polypropylene" }, tooling: "amortised", tooling_cost: "900000.00", tooling_qty: "300000.000" },
+            costing: {
+              ...costedLine.costing!,
+              ...noMoulding,
+              method: "moulding",
+              material: { id: 8, code: "PP-H110", name: "Polypropylene" },
+              tooling: "amortised",
+              tooling_cost: "900000.00",
+              tooling_qty: "300000.000",
+            },
             results: [mouldResult],
           },
         ],
@@ -334,9 +487,7 @@ test("a moulded line is costed from resin, cavities, cycle time, packing and the
   fireEvent.change(within(form).getByLabelText("Spread over (pieces)"), { target: { value: "300000" } });
   fireEvent.click(within(form).getByRole("button", { name: "Save costing" }));
 
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/costing/1/", expect.objectContaining({ method: "PUT" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/costing/1/", expect.objectContaining({ method: "PUT" })));
   const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/quotations/12/costing/1/")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({
     method: "moulding",
@@ -423,7 +574,9 @@ test("the Director sees the warnings and approves or returns", async () => {
   };
   const calls = mockApi({
     "GET /api/v1/quotations/12/": { body: waitingOne },
-    "POST /api/v1/quotations/12/approve/": { body: { ...waitingOne, status: "approved", can_approve: false, is_final: true, approval: null } },
+    "POST /api/v1/quotations/12/approve/": {
+      body: { ...waitingOne, status: "approved", can_approve: false, is_final: true, approval: null },
+    },
   });
   renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
   const panel = await screen.findByRole("region", { name: "Approval and status" });
@@ -436,11 +589,24 @@ test("the Director sees the warnings and approves or returns", async () => {
 });
 
 test("an approved quotation is marked sent, then won or lost with the reason", async () => {
-  const sent: QuotationDetail = { ...saved, status: "sent", can_edit: false, can_submit: false, is_final: true, can_record_outcome: true, can_revise: true };
+  const sent: QuotationDetail = {
+    ...saved,
+    status: "sent",
+    can_edit: false,
+    can_submit: false,
+    is_final: true,
+    can_record_outcome: true,
+    can_revise: true,
+  };
   const calls = mockApi({
     "GET /api/v1/quotations/12/": { body: sent },
     "POST /api/v1/quotations/12/outcome/": {
-      body: { ...sent, status: "lost", can_record_outcome: false, outcome: { reason: "price", reason_label: "Price", note: "15% cheaper", at: "", by: "Sales" } },
+      body: {
+        ...sent,
+        status: "lost",
+        can_record_outcome: false,
+        outcome: { reason: "price", reason_label: "Price", note: "15% cheaper", at: "", by: "Sales" },
+      },
     },
   });
   renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
@@ -456,7 +622,14 @@ test("an approved quotation is marked sent, then won or lost with the reason", a
 });
 
 test("a revision opens as a new draft with the same number", async () => {
-  const approvedOne: QuotationDetail = { ...saved, status: "approved", can_edit: false, can_submit: false, is_final: true, can_revise: true };
+  const approvedOne: QuotationDetail = {
+    ...saved,
+    status: "approved",
+    can_edit: false,
+    can_submit: false,
+    is_final: true,
+    can_revise: true,
+  };
   const rev1: QuotationDetail = {
     ...saved,
     id: 13,
@@ -503,18 +676,43 @@ test("every quotation can be printed; a draft prints marked NOT APPROVED", async
 });
 
 test("an approved quotation is emailed to the customer with its PDF", async () => {
-  const approvedOne: QuotationDetail = { ...saved, status: "approved", can_edit: false, can_submit: false, is_final: true, can_email: true, can_mark_sent: true };
+  const approvedOne: QuotationDetail = {
+    ...saved,
+    status: "approved",
+    can_edit: false,
+    can_submit: false,
+    is_final: true,
+    can_email: true,
+    can_mark_sent: true,
+  };
   const calls = mockApi({
     "GET /api/v1/quotations/12/": { body: approvedOne },
     "GET /api/v1/quotations/12/email/": {
-      body: { from: "SML Engineers <sales@smlengineers.lk>", ready: true, to: ["lars@nordic.se"], cc: [], subject: "Quotation QL26103101 from SML", body: "Dear Lars," },
+      body: {
+        from: "SML Engineers <sales@smlengineers.lk>",
+        ready: true,
+        to: ["lars@nordic.se"],
+        cc: [],
+        subject: "Quotation QL26103101 from SML",
+        body: "Dear Lars,",
+      },
     },
     "POST /api/v1/quotations/12/email/": {
       body: {
         ...approvedOne,
         status: "sent",
         can_mark_sent: false,
-        emails: [{ to: "lars@nordic.se", cc: "", subject: "Quotation QL26103101 from SML", status: "sent", error: "", sent_at: "2026-10-31T15:00:00", by: "Sales" }],
+        emails: [
+          {
+            to: "lars@nordic.se",
+            cc: "",
+            subject: "Quotation QL26103101 from SML",
+            status: "sent",
+            error: "",
+            sent_at: "2026-10-31T15:00:00",
+            by: "Sales",
+          },
+        ],
       },
     },
   });
@@ -538,7 +736,13 @@ test("an approved quotation is emailed to the customer with its PDF", async () =
 // --- Discount (P15-07b) ----------------------------------------------------------------------
 
 test("a discount % is entered on the quotation and shown in the totals", async () => {
-  const discounted: QuotationDetail = { ...saved, discount_pct: "3.00", discount_total: "7.05", subtotal: "227.95", total_amount: "227.95" };
+  const discounted: QuotationDetail = {
+    ...saved,
+    discount_pct: "3.00",
+    discount_total: "7.05",
+    subtotal: "227.95",
+    total_amount: "227.95",
+  };
   const calls = mockApi(formApi({ "GET /api/v1/quotations/12/": { body: saved }, "PUT /api/v1/quotations/12/": { body: discounted } }));
   renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
   const form = await screen.findByRole("form", { name: "Quotation details" });
@@ -553,7 +757,14 @@ test("a discount % is entered on the quotation and shown in the totals", async (
 // --- Proforma from an accepted quotation (P15-08) -------------------------------------------
 
 test("an accepted quotation makes a proforma invoice", async () => {
-  const won: QuotationDetail = { ...saved, status: "accepted", can_edit: false, can_submit: false, is_final: true, can_make_proforma: true };
+  const won: QuotationDetail = {
+    ...saved,
+    status: "accepted",
+    can_edit: false,
+    can_submit: false,
+    is_final: true,
+    can_make_proforma: true,
+  };
   const calls = mockApi({
     "GET /api/v1/quotations/12/": { body: won },
     "POST /api/v1/proformas/": { status: 201, body: { id: 40 } },
@@ -567,13 +778,27 @@ test("an accepted quotation makes a proforma invoice", async () => {
 
 test("the pictures are shown to the approver and can be left out of the email", async () => {
   const withPictures: QuotationDetail = {
-    ...saved, status: "approved", can_edit: false, can_submit: false, is_final: true, can_email: true, can_mark_sent: true,
+    ...saved,
+    status: "approved",
+    can_edit: false,
+    can_submit: false,
+    is_final: true,
+    can_email: true,
+    can_mark_sent: true,
     images: [{ id: 3, file_name: "die.jpg", content_type: "image/jpeg", size: 120000, uploaded_at: "2026-11-04T09:00:00" }],
   };
   const calls = mockApi({
     "GET /api/v1/quotations/12/": { body: withPictures },
     "GET /api/v1/quotations/12/email/": {
-      body: { from: "SML <sales@smlengineers.lk>", ready: true, to: ["lars@nordic.se"], cc: [], subject: "Quotation", body: "Dear Lars,", images: ["die.jpg"] },
+      body: {
+        from: "SML <sales@smlengineers.lk>",
+        ready: true,
+        to: ["lars@nordic.se"],
+        cc: [],
+        subject: "Quotation",
+        body: "Dear Lars,",
+        images: ["die.jpg"],
+      },
     },
     "POST /api/v1/quotations/12/email/": { body: { ...withPictures, status: "sent" } },
   });

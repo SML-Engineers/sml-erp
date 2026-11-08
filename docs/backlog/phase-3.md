@@ -343,12 +343,28 @@ Status: `[ ]` to do · `[x]` done
     change (database). Our choices: materials stay fixed after release (the extra goes
     through a request); the stores person or the Planner may ask for more.
 
-- [ ] **P3-12 Job cards and operation entry**
+- [x] **P3-12 Job cards and operation entry**
   A printed job card per operation with a QR code (spec 7.2), travelling with the parts. The
   supervisor scans it and enters operation, machine, operator, start and end, quantity
   completed, rejected (reason) and for rework. Checks: completed never exceeds what the
   previous operation released; no overlapping times on a machine. Time per piece against
   standard; quantity available for the next operation. Reports approved as in P3-09.
+  - Done: Job orders → "Print job cards" (a released job): one A5 card per operation with the
+    part, drawing, quantity, due date, section and machine, standard times, the next
+    operation and boxes for the floor, and a QR code "JO26110001/20". Machining sections now
+    have shift reports too (same page, entry window, downtime, manpower, submit, approval,
+    corrections as P3-08/P3-09): the supervisor scans the card (or picks the job and
+    operation) and enters the machine of the section, operator, start and end, pieces
+    completed, rejected by reason and for rework, and whether it includes the setup.
+    Checks: a released job of the division; not a subcontract operation (P3-13); times in the
+    shift and never overlapping on a machine (database too); completed + rejected at an
+    operation never more than the operation before completed (the job's quantity for the
+    first). Worked out: minutes per piece (less downtime in the entry, over completed +
+    rejected) against the routing's standard; per operation on the job: received,
+    completed, rejected, for rework, in hand and ready for the next operation. Approval of
+    a machining report moves no stock (job costs come with P3-16). Our choices: rework
+    pieces stay in hand at the operation until completed or rejected; until P3-13, a
+    subcontract operation passes on what it received.
 
 - [ ] **P3-13 Subcontract operations**
   Parts sent out to a supplier for an operation and received back against the job (with

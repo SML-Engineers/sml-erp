@@ -5,11 +5,31 @@ import { mockApi, renderAt } from "../test-utils";
 import MouldsPage from "./MouldsPage";
 
 const mould: Mould = {
-  id: 1, code: "MD-001", name: "Cap 28 mm", division: "IM", owner: "company", owner_label: "Company", customer: "",
-  customer_name: "", asset: "", cycle_time_s: "12.50", shot_weight_g: "36.0", runner_weight_g: "4.0", tonnage_t: "120.0",
-  width_mm: "400.0", height_mm: "450.0", thickness_mm: "380.0", pm_interval_shots: 50000, shot_count: 1200,
-  pm_due_at: 50000, status: "active", status_label: "Active", notes: "", in_use: false,
-  parts: [{ item: "CAP-28", name: "Bottle cap", cavities: 8 }], machines: ["IMM-250", "IMM-90"],
+  id: 1,
+  code: "MD-001",
+  name: "Cap 28 mm",
+  division: "IM",
+  owner: "company",
+  owner_label: "Company",
+  customer: "",
+  customer_name: "",
+  asset: "",
+  cycle_time_s: "12.50",
+  shot_weight_g: "36.0",
+  runner_weight_g: "4.0",
+  tonnage_t: "120.0",
+  width_mm: "400.0",
+  height_mm: "450.0",
+  thickness_mm: "380.0",
+  pm_interval_shots: 50000,
+  shot_count: 1200,
+  pm_due_at: 50000,
+  status: "active",
+  status_label: "Active",
+  notes: "",
+  in_use: false,
+  parts: [{ item: "CAP-28", name: "Bottle cap", cavities: 8 }],
+  machines: ["IMM-250", "IMM-90"],
   warnings: ["IMM-90: Clamping force: the mould needs 120 t, IMM-90 has 90"],
 };
 const list: MouldList = {
@@ -48,9 +68,7 @@ test("a new mould is saved and its size warnings are shown", async () => {
   fireEvent.change(within(form).getByLabelText("Standard cycle time (s)"), { target: { value: "12.5" } });
   fireEvent.click(within(form).getByRole("checkbox", { name: /IMM-90/ }));
   fireEvent.click(within(form).getByRole("button", { name: "Save" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/moulds/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/moulds/", expect.objectContaining({ method: "POST" })));
   const sent = JSON.parse((calls.mock.calls.find((c) => c[0] === "/api/v1/moulds/")![1] as RequestInit).body as string);
   expect(sent).toMatchObject({ code: "MD-001", parts: "CAP-28 x 8", cycle_time_s: "12.5", machines: ["IMM-90"] });
   expect(await within(form).findByText(/Saved. Check that the mould fits/)).toBeInTheDocument();

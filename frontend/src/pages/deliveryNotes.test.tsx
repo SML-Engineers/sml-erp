@@ -5,23 +5,64 @@ import { mockApi, renderAt } from "../test-utils";
 import DeliveryNotePage from "./DeliveryNotePage";
 
 const caps = {
-  id: 11, line_no: 1, description: "Cap, PP, white", drawing_no: "", unit: "pcs", ordered: "10000.000",
-  delivered_before: "6000.000", to_deliver: "4000.000", quantity: null,
-  schedule: [{ due_date: "2026-11-03", quantity: "6000.000" }, { due_date: "2026-12-03", quantity: "4000.000" }],
+  id: 11,
+  line_no: 1,
+  description: "Cap, PP, white",
+  drawing_no: "",
+  unit: "pcs",
+  ordered: "10000.000",
+  delivered_before: "6000.000",
+  to_deliver: "4000.000",
+  quantity: null,
+  schedule: [
+    { due_date: "2026-11-03", quantity: "6000.000" },
+    { due_date: "2026-12-03", quantity: "4000.000" },
+  ],
 };
-const moulds = { ...caps, id: 12, line_no: 2, description: "Cap mould", ordered: "2.000", delivered_before: "0.000", to_deliver: "2.000", schedule: [] };
+const moulds = {
+  ...caps,
+  id: 12,
+  line_no: 2,
+  description: "Cap mould",
+  ordered: "2.000",
+  delivered_before: "0.000",
+  to_deliver: "2.000",
+  schedule: [],
+};
 
 const order: OrderForDelivery = {
-  id: 3, number: "SO26110301", customer: "Unilever Sri Lanka", customer_po: "UL/PO/7781", delivery_address: "Grandpass, Colombo 14",
+  id: 3,
+  number: "SO26110301",
+  customer: "Unilever Sri Lanka",
+  customer_po: "UL/PO/7781",
+  delivery_address: "Grandpass, Colombo 14",
   lines: [caps, moulds],
 };
 
 const draft: DNDetail = {
-  id: 8, number: "DN26110301", delivery_date: "2026-11-03", status: "draft", status_label: "Draft",
-  order: { id: 3, number: "SO26110301", customer_po: "UL/PO/7781" }, division: "IM", customer: { id: 1, name: "Unilever Sri Lanka" },
-  vehicle_no: "LH-4521", created_by: "Sunil", driver: "", delivery_address: "Grandpass, Colombo 14", notes: "",
-  issued_by: null, issued_at: null, received_by: "", received_on: null, signed_copy: null, cancel_reason: "",
-  lines: [{ ...caps, quantity: "4000.000" }, moulds], can_edit: true, can_receive: false, can_cancel: false,
+  id: 8,
+  number: "DN26110301",
+  delivery_date: "2026-11-03",
+  status: "draft",
+  status_label: "Draft",
+  order: { id: 3, number: "SO26110301", customer_po: "UL/PO/7781" },
+  division: "IM",
+  customer: { id: 1, name: "Unilever Sri Lanka" },
+  vehicle_no: "LH-4521",
+  created_by: "Sunil",
+  driver: "",
+  delivery_address: "Grandpass, Colombo 14",
+  notes: "",
+  issued_by: null,
+  issued_at: null,
+  received_by: "",
+  received_on: null,
+  signed_copy: null,
+  cancel_reason: "",
+  lines: [{ ...caps, quantity: "4000.000" }, moulds],
+  can_edit: true,
+  can_receive: false,
+  can_cancel: false,
 };
 
 test("the stores make a delivery note from the order's remaining quantities", async () => {
@@ -51,8 +92,23 @@ test("the stores make a delivery note from the order's remaining quantities", as
 });
 
 test("an issued note is printed, then the signed copy is recorded", async () => {
-  const issued: DNDetail = { ...draft, status: "issued", status_label: "Issued", issued_by: "Sunil", can_edit: false, can_receive: true, can_cancel: true };
-  const signed: DNDetail = { ...issued, status: "received", received_by: "N. Perera", received_on: "2026-11-03", signed_copy: "dn.pdf", can_receive: false };
+  const issued: DNDetail = {
+    ...draft,
+    status: "issued",
+    status_label: "Issued",
+    issued_by: "Sunil",
+    can_edit: false,
+    can_receive: true,
+    can_cancel: true,
+  };
+  const signed: DNDetail = {
+    ...issued,
+    status: "received",
+    received_by: "N. Perera",
+    received_on: "2026-11-03",
+    signed_copy: "dn.pdf",
+    can_receive: false,
+  };
   let current = issued;
   const calls = mockApi({
     "GET /api/v1/delivery-notes/8/": () => ({ body: current }),
@@ -67,6 +123,8 @@ test("an issued note is printed, then the signed copy is recorded", async () => 
   expect(screen.getByRole("link", { name: "Print for the customer to sign" })).toHaveAttribute("href", "/api/v1/delivery-notes/8/pdf/");
   fireEvent.change(screen.getByLabelText("Received by (name)"), { target: { value: "N. Perera" } });
   fireEvent.click(screen.getByRole("button", { name: "Record the customer's signature" }));
-  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/delivery-notes/8/received/", expect.objectContaining({ method: "POST" })));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/delivery-notes/8/received/", expect.objectContaining({ method: "POST" })),
+  );
   expect(await screen.findByRole("link", { name: "Signed copy" })).toBeInTheDocument();
 });

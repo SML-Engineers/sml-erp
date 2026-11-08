@@ -23,14 +23,21 @@ const approvedRow: ApprovedRow = {
 const pending: PendingReport = {
   rows: [
     {
-      id: 2, number: "WS261029002", type: "Online Payment", division: "WS", payee: "CEB", level: 2,
-      waiting_for: "L2 Accountant", approvers: "Kumari", since: "2026-10-20T09:00:00Z", days: 9,
-      band: "8–14 days", total_amount: "25000.00",
+      id: 2,
+      number: "WS261029002",
+      type: "Online Payment",
+      division: "WS",
+      payee: "CEB",
+      level: 2,
+      waiting_for: "L2 Accountant",
+      approvers: "Kumari",
+      since: "2026-10-20T09:00:00Z",
+      days: 9,
+      band: "8–14 days",
+      total_amount: "25000.00",
     },
   ],
-  summary: [
-    { waiting_for: "L2 Accountant", count: 1, bands: { "0–2 days": 0, "3–7 days": 0, "8–14 days": 1, "15 days or more": 0 } },
-  ],
+  summary: [{ waiting_for: "L2 Accountant", count: 1, bands: { "0–2 days": 0, "3–7 days": 0, "8–14 days": 1, "15 days or more": 0 } }],
 };
 
 test("the approved list filters by date and exports with the same filters", async () => {
@@ -43,9 +50,7 @@ test("the approved list filters by date and exports with the same filters", asyn
   const table = await screen.findByRole("table", { name: "Approved list" });
   expect(within(table).getByText("Mewantha")).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-10-01" } });
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/reports/approved/?from=2026-10-01", expect.anything()),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/reports/approved/?from=2026-10-01", expect.anything()));
   const downloads = screen.getByRole("group", { name: "Download Approved list" });
   expect(within(downloads).getByRole("link", { name: "Excel" })).toHaveAttribute(
     "href",
@@ -75,9 +80,16 @@ test("pending vouchers by approver and age", async () => {
 
 test("the approval history of a voucher found by its number", async () => {
   const found: VoucherSummary = {
-    id: 5, number: "WS261029005", status: "paid", voucher_type: { code: "CHQ", name: "Cheque Payment" },
-    division: "WS", payee: { id: 3, name: "Lanka Steel" }, voucher_date: "2026-10-29", total_amount: "1000.00",
-    created_by: "Nimal", attachments: 1,
+    id: 5,
+    number: "WS261029005",
+    status: "paid",
+    voucher_type: { code: "CHQ", name: "Cheque Payment" },
+    division: "WS",
+    payee: { id: 3, name: "Lanka Steel" },
+    voucher_date: "2026-10-29",
+    total_amount: "1000.00",
+    created_by: "Nimal",
+    attachments: 1,
   };
   mockApi({
     "GET /api/v1/vouchers/reports/approved/": { body: [] },

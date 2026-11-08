@@ -34,8 +34,17 @@ const listApi = (rows: VoucherSummary[], extra = {}) => ({
 });
 
 const cheque: VoucherType = {
-  id: 1, code: "CHQ", name: "Cheque Payment", payment_method: "cheque", needs_payee: true,
-  payee_category: "", is_advance: false, notes: "", sort_order: 10, is_active: true, in_use: true,
+  id: 1,
+  code: "CHQ",
+  name: "Cheque Payment",
+  payment_method: "cheque",
+  needs_payee: true,
+  payee_category: "",
+  is_advance: false,
+  notes: "",
+  sort_order: 10,
+  is_active: true,
+  in_use: true,
 };
 
 const detail: VoucherDetail = {
@@ -53,8 +62,18 @@ const detail: VoucherDetail = {
   revisions: [],
   lines: [
     {
-      line_no: 1, invoice_no: "LS-1", invoice_date: "2026-10-28", description: "", amount: "1000.00",
-      tax_code: null, tax_amount: "0.00", total: "1000.00", account: null, division: "WS", job_ref: "", splits: [],
+      line_no: 1,
+      invoice_no: "LS-1",
+      invoice_date: "2026-10-28",
+      description: "",
+      amount: "1000.00",
+      tax_code: null,
+      tax_amount: "0.00",
+      total: "1000.00",
+      account: null,
+      division: "WS",
+      job_ref: "",
+      splits: [],
     },
   ],
   attachments: [
@@ -88,12 +107,18 @@ test("each row's menu shows only the actions the person may take", async () => {
 
   await screen.findByRole("button", { name: "Actions for WS261029001" });
   let menu = openMenu("WS261029001");
-  const items = within(menu).getAllByRole("menuitem").map((i) => i.textContent);
+  const items = within(menu)
+    .getAllByRole("menuitem")
+    .map((i) => i.textContent);
   expect(items).toEqual(["Resources", "Print", "Edit", "Delete"]);
   expect(within(menu).getByRole("menuitem", { name: "Edit" })).toHaveAttribute("href", "/vouchers/1");
 
   menu = openMenu("WS261029002");
-  expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Resources", "Print", "Edit"]);
+  expect(
+    within(menu)
+      .getAllByRole("menuitem")
+      .map((i) => i.textContent),
+  ).toEqual(["Resources", "Print", "Edit"]);
   expect(within(menu).getByRole("menuitem", { name: "Edit" })).toHaveAttribute("href", "/vouchers/review?open=2");
 
   menu = openMenu("WS261029003");
@@ -153,10 +178,7 @@ test("resources pages through the files, zooms and rotates", async () => {
   fireEvent.click(within(viewer).getByRole("button", { name: "Rotate" }));
   fireEvent.click(within(viewer).getByRole("button", { name: "Zoom in" }));
   expect(image).toHaveStyle({ transform: "rotate(90deg) scale(1.25)" });
-  expect(within(viewer).getByRole("link", { name: "Download" })).toHaveAttribute(
-    "href",
-    "/api/v1/vouchers/5/attachments/8/?download=1",
-  );
+  expect(within(viewer).getByRole("link", { name: "Download" })).toHaveAttribute("href", "/api/v1/vouchers/5/attachments/8/?download=1");
   fireEvent.click(within(viewer).getByRole("button", { name: "Close" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
@@ -177,7 +199,10 @@ test("the Director changes the amount; the voucher goes back to the Accountant",
         actions: ["resources", "print", "delete"],
         approvals: [
           {
-            level: 3, action: "send_down", user: "Mewantha", acted_at: "2026-10-29T10:00:00Z",
+            level: 3,
+            action: "send_down",
+            user: "Mewantha",
+            acted_at: "2026-10-29T10:00:00Z",
             reason: "Changed: Line 1 amount: 1,000.00 → 1,200.00; Total: 1,000.00 → 1,200.00",
           },
         ],
@@ -190,14 +215,10 @@ test("the Director changes the amount; the voucher goes back to the Accountant",
   expect(await screen.findByRole("note")).toHaveTextContent("sends the voucher back to the Accountant");
   fireEvent.change(screen.getByLabelText("Amount, line 1"), { target: { value: "1200.00" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/5/revise/", expect.objectContaining({ method: "PATCH" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/5/revise/", expect.objectContaining({ method: "PATCH" })));
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PATCH")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({ voucher_type: "CHQ", payee: 3, lines: [{ amount: "1200.00" }] });
-  expect(await screen.findByText(/Changed by Mewantha and sent back for checking/)).toHaveTextContent(
-    "Line 1 amount: 1,000.00 → 1,200.00",
-  );
+  expect(await screen.findByText(/Changed by Mewantha and sent back for checking/)).toHaveTextContent("Line 1 amount: 1,000.00 → 1,200.00");
 });
 
 test("deleted vouchers are listed with who, when and why", async () => {

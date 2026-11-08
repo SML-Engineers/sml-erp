@@ -31,8 +31,17 @@ const voucher: VoucherDetail = {
   number: "WS261029001",
   status: "submitted",
   voucher_type: {
-    id: 1, code: "ONL", name: "Online Payment", payment_method: "transfer", needs_payee: true,
-    payee_category: "", is_advance: false, notes: "", sort_order: 20, is_active: true, in_use: true,
+    id: 1,
+    code: "ONL",
+    name: "Online Payment",
+    payment_method: "transfer",
+    needs_payee: true,
+    payee_category: "",
+    is_advance: false,
+    notes: "",
+    sort_order: 20,
+    is_active: true,
+    in_use: true,
   },
   division: "WS",
   payee: { id: 3, code: "S0003", name: "Ceylon Electricity Board", category: "utility" },
@@ -50,13 +59,21 @@ const voucher: VoucherDetail = {
   revisions: [],
   lines: [
     {
-      line_no: 1, invoice_no: "CEB-1029", invoice_date: "2026-10-28", description: "", amount: "25000.00",
-      tax_code: null, tax_amount: "0.00", total: "25000.00", account: null, division: "WS", job_ref: "", splits: [],
+      line_no: 1,
+      invoice_no: "CEB-1029",
+      invoice_date: "2026-10-28",
+      description: "",
+      amount: "25000.00",
+      tax_code: null,
+      tax_amount: "0.00",
+      total: "25000.00",
+      account: null,
+      division: "WS",
+      job_ref: "",
+      splits: [],
     },
   ],
-  attachments: [
-    { id: 4, file_name: "bill.pdf", content_type: "application/pdf", size: 2048, sha256: "ab", uploaded_at: "" },
-  ],
+  attachments: [{ id: 4, file_name: "bill.pdf", content_type: "application/pdf", size: 2048, sha256: "ab", uploaded_at: "" }],
   warnings: [],
   can_edit: false,
   payee_balance: { waiting_approval: "25000.00", approved_unpaid: "0.00", outstanding: "25000.00" },
@@ -69,11 +86,24 @@ const voucher: VoucherDetail = {
 
 const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
   "GET /api/v1/vouchers/waiting/": {
-    body: [{ ...voucher, voucher_type: { code: "ONL", name: "Online Payment" }, payee: { id: 3, name: "Ceylon Electricity Board" }, attachments: 1 }],
+    body: [
+      {
+        ...voucher,
+        voucher_type: { code: "ONL", name: "Online Payment" },
+        payee: { id: 3, name: "Ceylon Electricity Board" },
+        attachments: 1,
+      },
+    ],
   },
   "GET /api/v1/vouchers/9/": { body: voucher },
   "GET /api/v1/chart-of-accounts/": { body: [electricity] },
-  "GET /api/v1/divisions/": { body: [{ id: 1, code: "WS", name: "Workshop" }, { id: 2, code: "IM", name: "Moulding" }, { id: 3, code: "HO", name: "Head Office" }] },
+  "GET /api/v1/divisions/": {
+    body: [
+      { id: 1, code: "WS", name: "Workshop" },
+      { id: 2, code: "IM", name: "Moulding" },
+      { id: 3, code: "HO", name: "Head Office" },
+    ],
+  },
   "GET /api/v1/taxes/": { body: { components: [], codes: [] } },
   ...extra,
 });
@@ -104,9 +134,7 @@ test("the accountant codes an electricity bill split across divisions and approv
   fireEvent.change(within(split).getByLabelText("Line 1, part 2: division"), { target: { value: "IM" } });
   fireEvent.change(within(split).getByLabelText("Line 1, part 2: %"), { target: { value: "40" } });
   fireEvent.click(within(panel).getByRole("button", { name: "Save coding" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/coding/", expect.objectContaining({ method: "PATCH" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/coding/", expect.objectContaining({ method: "PATCH" })));
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PATCH")!;
   expect(JSON.parse(String(init!.body))).toEqual({
     lines: [
@@ -142,7 +170,9 @@ test("returning sends the reason", async () => {
 
   fireEvent.click(await screen.findByRole("button", { name: /WS261029001/ }));
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
-  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (return, reject)"), { target: { value: "Attach the meter reading" } });
+  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (return, reject)"), {
+    target: { value: "Attach the meter reading" },
+  });
   fireEvent.click(within(panel).getByRole("button", { name: "Return to Clerk" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
@@ -173,9 +203,7 @@ test("Approve saves the coding on the screen first", async () => {
   expect(within(panel).getByText("Coding changed and not saved yet.")).toBeInTheDocument();
   fireEvent.click(within(panel).getByRole("button", { name: "Approve" })); // without "Save coding"
 
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/approve/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/approve/", expect.objectContaining({ method: "POST" })));
   const order = calls.mock.calls.map(([url, init]) => `${init?.method ?? "GET"} ${String(url)}`);
   expect(order.indexOf("PATCH /api/v1/vouchers/9/coding/")).toBeGreaterThan(-1);
   expect(order.indexOf("PATCH /api/v1/vouchers/9/coding/")).toBeLessThan(order.indexOf("POST /api/v1/vouchers/9/approve/"));
@@ -219,9 +247,7 @@ test("once WHT has a rate the accountant keeps it from the payment (P2-12)", asy
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
   fireEvent.change(within(panel).getByLabelText("Withholding tax, line 1"), { target: { value: "WHT" } });
   fireEvent.click(within(panel).getByRole("button", { name: "Save coding" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/coding/", expect.objectContaining({ method: "PATCH" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/coding/", expect.objectContaining({ method: "PATCH" })));
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PATCH")!;
   expect(JSON.parse(String(init!.body)).lines[0].wht_component).toBe("WHT");
   expect(await within(panel).findByText(/23,750.00/)).toBeInTheDocument();

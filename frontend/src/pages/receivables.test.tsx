@@ -7,37 +7,79 @@ import ReceivablesPage from "./ReceivablesPage";
 import StatementPage from "./StatementPage";
 
 const row: AgingRow = {
-  customer_id: 5, code: "C0005", customer: "Lanka Tiles PLC", current: "0.00", d30: "55794.98", d60: "0.00",
-  d90: "0.00", over90: "0.00", total: "55794.98", ledger: "55794.98",
+  customer_id: 5,
+  code: "C0005",
+  customer: "Lanka Tiles PLC",
+  current: "0.00",
+  d30: "55794.98",
+  d60: "0.00",
+  d90: "0.00",
+  over90: "0.00",
+  total: "55794.98",
+  ledger: "55794.98",
 };
 
 const statement: Statement = {
   customer: { id: 5, code: "C0005", name: "Lanka Tiles PLC", credit_limit: null, payment_terms_days: 30 },
-  from: "2026-08-05", to: "2026-11-03", opening: "0.00", closing: "45794.98",
+  from: "2026-08-05",
+  to: "2026-11-03",
+  opening: "0.00",
+  closing: "45794.98",
   lines: [
-    { date: "2026-09-19", reference: "26SEP_W1_01", source_type: "tax_invoice", description: "Tax invoice 26SEP_W1_01", debit: "55794.98", credit: "0.00", balance: "55794.98" },
-    { date: "2026-11-03", reference: "RC26110001", source_type: "customer_receipt", description: "Receipt RC26110001", debit: "0.00", credit: "10000.00", balance: "45794.98" },
+    {
+      date: "2026-09-19",
+      reference: "26SEP_W1_01",
+      source_type: "tax_invoice",
+      description: "Tax invoice 26SEP_W1_01",
+      debit: "55794.98",
+      credit: "0.00",
+      balance: "55794.98",
+    },
+    {
+      date: "2026-11-03",
+      reference: "RC26110001",
+      source_type: "customer_receipt",
+      description: "Receipt RC26110001",
+      debit: "0.00",
+      credit: "10000.00",
+      balance: "45794.98",
+    },
   ],
   items: [
     {
       invoice: { id: 21, number: "26SEP_W1_01", invoice_date: "2026-09-19", due_date: "2026-10-19", total_amount: "55794.98" },
-      open: "45794.98", days_overdue: 15, bucket: "d30",
+      open: "45794.98",
+      days_overdue: 15,
+      bucket: "d30",
     },
   ],
   buckets: { current: "0.00", d30: "45794.98", d60: "0.00", d90: "0.00", over90: "0.00" },
-  overdue: "45794.98", advances_held: "0.00",
+  overdue: "45794.98",
+  advances_held: "0.00",
   credit: { owed: "45794.98", overdue: "45794.98", over_limit: false, on_hold: true },
   reminders: { is_on: false, every_days: 7, set_by: null, recipient: "accounts@lankatiles.lk", last_sent_on: null, can_manage: true },
-  can_email: true, emails: [],
+  can_email: true,
+  emails: [],
 };
 
 const hold: CreditHold = {
-  id: 3, document_type: "tax_invoice", document_label: "the invoice for order SO26110301", link: "/tax-invoices/22",
-  customer: { id: 5, code: "C0005", name: "Lanka Tiles PLC" }, amount_lkr: "83692.46", exposure_lkr: "129487.44",
-  credit_limit: null, overdue_lkr: "45794.98",
+  id: 3,
+  document_type: "tax_invoice",
+  document_label: "the invoice for order SO26110301",
+  link: "/tax-invoices/22",
+  customer: { id: 5, code: "C0005", name: "Lanka Tiles PLC" },
+  amount_lkr: "83692.46",
+  exposure_lkr: "129487.44",
+  credit_limit: null,
+  overdue_lkr: "45794.98",
   reasons: "Lanka Tiles PLC has 1 overdue invoice (LKR 45,794.98, the oldest 15 days past due).",
-  status: "waiting", requested_by: "Accountant", requested_at: "2026-11-03T10:00:00", decided_by: null, decided_at: null,
-  note: "", can_allow: true,
+  status: "waiting",
+  requested_by: "Accountant",
+  requested_at: "2026-11-03T10:00:00",
+  decided_by: null,
+  decided_at: null,
+  note: "",
+  can_allow: true,
 };
 
 test("the aging lists what each customer owes by age, with downloads", async () => {

@@ -27,8 +27,17 @@ const summary: VoucherSummary = {
 };
 
 const cheque: VoucherType = {
-  id: 1, code: "CHQ", name: "Cheque Payment", payment_method: "cheque", needs_payee: true,
-  payee_category: "", is_advance: false, notes: "", sort_order: 10, is_active: true, in_use: true,
+  id: 1,
+  code: "CHQ",
+  name: "Cheque Payment",
+  payment_method: "cheque",
+  needs_payee: true,
+  payee_category: "",
+  is_advance: false,
+  notes: "",
+  sort_order: 10,
+  is_active: true,
+  in_use: true,
 };
 
 const pending = {
@@ -117,10 +126,7 @@ test("the Director decides on the voucher's page; rejecting needs a comment", as
   expect(within(panel).getByRole("button", { name: "Reject" })).toBeDisabled();
   fireEvent.click(within(panel).getByRole("button", { name: "Approve cancellation" }));
   await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith(
-      "/api/v1/vouchers/cancellations/3/approve/",
-      expect.objectContaining({ method: "POST" }),
-    ),
+    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/cancellations/3/approve/", expect.objectContaining({ method: "POST" })),
   );
   expect(await within(panel).findByText(/Decided by Mewantha/)).toBeInTheDocument();
   expect(within(panel).queryByRole("button", { name: "Approve cancellation" })).not.toBeInTheDocument();
@@ -133,7 +139,9 @@ test("the requests list shows those waiting, with a link to decide", async () =>
   };
   mockApi({
     "GET /api/v1/vouchers/cancellations/?pending=1": { body: [row] },
-    "GET /api/v1/vouchers/cancellations/": { body: [row, { ...row, id: 2, status: "rejected", can_decide: false, decided_by: "Mewantha", decision_reason: "Pay it" }] },
+    "GET /api/v1/vouchers/cancellations/": {
+      body: [row, { ...row, id: 2, status: "rejected", can_decide: false, decided_by: "Mewantha", decision_reason: "Pay it" }],
+    },
   });
   renderAt("/vouchers/cancellations", <CancellationsPage />);
 

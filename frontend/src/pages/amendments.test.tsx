@@ -27,8 +27,17 @@ const summary: VoucherSummary = {
 };
 
 const cheque: VoucherType = {
-  id: 1, code: "CHQ", name: "Cheque Payment", payment_method: "cheque", needs_payee: true,
-  payee_category: "", is_advance: false, notes: "", sort_order: 10, is_active: true, in_use: true,
+  id: 1,
+  code: "CHQ",
+  name: "Cheque Payment",
+  payment_method: "cheque",
+  needs_payee: true,
+  payee_category: "",
+  is_advance: false,
+  notes: "",
+  sort_order: 10,
+  is_active: true,
+  in_use: true,
 };
 
 const detail = (over: Partial<VoucherDetail>): VoucherDetail => ({
@@ -100,12 +109,21 @@ test("the replaced voucher links to its amendment, and the amendment to the orig
   mockApi({
     ...formApi,
     "GET /api/v1/vouchers/1/": {
-      body: detail({ status: "amended", actions: ["resources", "print"], revisions: [{ id: 7, number: "WS261029001-R1", status: "submitted" }] }),
+      body: detail({
+        status: "amended",
+        actions: ["resources", "print"],
+        revisions: [{ id: 7, number: "WS261029001-R1", status: "submitted" }],
+      }),
     },
     "GET /api/v1/vouchers/7/": {
       body: detail({
-        id: 7, number: "WS261029001-R1", status: "draft", revision: 1, can_edit: true,
-        parent: { id: 1, number: "WS261029001" }, amendment_reason: "Corrected invoice",
+        id: 7,
+        number: "WS261029001-R1",
+        status: "draft",
+        revision: 1,
+        can_edit: true,
+        parent: { id: 1, number: "WS261029001" },
+        amendment_reason: "Corrected invoice",
       }),
     },
   });

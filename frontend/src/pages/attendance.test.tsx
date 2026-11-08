@@ -5,12 +5,26 @@ import { mockApi, renderAt } from "../test-utils";
 import AttendancePage from "./AttendancePage";
 
 const month: AttendanceMonth = {
-  month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" }, division: "WS", divisions: ["HO", "IM", "WS"], confirmed: false, confirmed_by: null,
-  confirmed_at: null, can_edit: true, month_ended: true,
+  month: "2026-10",
+  period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
+  division: "WS",
+  divisions: ["HO", "IM", "WS"],
+  confirmed: false,
+  confirmed_by: null,
+  confirmed_at: null,
+  can_edit: true,
+  month_ended: true,
   rows: [
     {
-      employee: { id: 7, number: "E001", name: "Kamal Perera" }, working_days: 26, days_worked: 24, hours_worked: "208:00",
-      late_days: 2, late: "0:25", early: "0:10", leave_days: "1.0", absent_days: 1,
+      employee: { id: 7, number: "E001", name: "Kamal Perera" },
+      working_days: 26,
+      days_worked: 24,
+      hours_worked: "208:00",
+      late_days: 2,
+      late: "0:25",
+      early: "0:10",
+      leave_days: "1.0",
+      absent_days: 1,
     },
   ],
 };
@@ -25,8 +39,28 @@ test("HR opens an employee's days and confirms the month", async () => {
     "GET /api/v1/attendance/": { body: month },
     "GET /api/v1/punch-sites/": { body: sites },
     "GET /api/v1/employees/7/attendance/?month=2026-10": {
-      body: { month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" }, days: [{ date: "2026-10-01", shift: "D", time_in: "08:10", time_out: "17:00", leave: "", worked: "8:50", late: 10, early: 0, remarks: "Phone punches", from_punches: true }],
-        punches: [{ at: "2026-10-01 08:10", kind: "in", site: "Colombo office", distance_m: 47 }, { at: "2026-10-01 17:00", kind: "out", site: "Colombo office", distance_m: 30 }] },
+      body: {
+        month: "2026-10",
+        period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
+        days: [
+          {
+            date: "2026-10-01",
+            shift: "D",
+            time_in: "08:10",
+            time_out: "17:00",
+            leave: "",
+            worked: "8:50",
+            late: 10,
+            early: 0,
+            remarks: "Phone punches",
+            from_punches: true,
+          },
+        ],
+        punches: [
+          { at: "2026-10-01 08:10", kind: "in", site: "Colombo office", distance_m: 47 },
+          { at: "2026-10-01 17:00", kind: "out", site: "Colombo office", distance_m: 30 },
+        ],
+      },
     },
     "POST /api/v1/attendance/confirm/": { body: { ok: true } },
   });
@@ -64,7 +98,12 @@ test("a confirmed month is reopened with a reason", async () => {
 
 test("HR previews a pay month's phone punches, then brings them in", async () => {
   const preview = {
-    month: "2026-10", period: month.period, punches: 7, days: 2, employees: 1, saved: false,
+    month: "2026-10",
+    period: month.period,
+    punches: 7,
+    days: 2,
+    employees: 1,
+    saved: false,
     notes: ["E001 2026-10-05: clocked in at 08:00 but never out; enter the day in the attendance sheet."],
     rows: [{ number: "E001", name: "Kamal Perera", date: "2026-10-01", time_in: "08:10", time_out: "17:00", shift: "G" }],
   };
@@ -109,9 +148,7 @@ test("HR adds a punch site and deactivates one", async () => {
     ),
   );
   fireEvent.click(screen.getByRole("button", { name: "Deactivate" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/punch-sites/1/", expect.objectContaining({ method: "PATCH" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/punch-sites/1/", expect.objectContaining({ method: "PATCH" })));
 });
 
 test("the fingerprint machine's file is checked like the template, with the days not brought in", async () => {
@@ -120,7 +157,13 @@ test("the fingerprint machine's file is checked like the template, with the days
     "GET /api/v1/punch-sites/": { body: sites },
     "POST /api/v1/attendance/import/": {
       body: {
-        rows: 3, employees: 1, months: ["2026-11"], leave_days: 0, errors: [], saved: false, source: "device",
+        rows: 3,
+        employees: 1,
+        months: ["2026-11"],
+        leave_days: 0,
+        errors: [],
+        saved: false,
+        source: "device",
         notes: ["E001 2026-10-22: only one punch (08:30); enter the day in the sheet."],
       },
     },

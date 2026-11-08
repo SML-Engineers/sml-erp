@@ -33,14 +33,37 @@ const figures: VoucherDashboard = {
   unpaid: { count: 1, total: "1000.00", remaining: "600.00" },
   paid_this_month: { count: 1, total: "400.00", from: "2026-10-01", to: "2026-10-29" },
   by_division: [
-    { code: "WS", name: "Workshop", pending: 2, pending_total: "1150.00", unpaid: { count: 1, total: "1000.00", remaining: "600.00" }, paid_this_month: "400.00" },
-    { code: "IM", name: "Moulding", pending: 1, pending_total: "300.00", unpaid: { count: 0, total: "0.00", remaining: "0.00" }, paid_this_month: "0.00" },
+    {
+      code: "WS",
+      name: "Workshop",
+      pending: 2,
+      pending_total: "1150.00",
+      unpaid: { count: 1, total: "1000.00", remaining: "600.00" },
+      paid_this_month: "400.00",
+    },
+    {
+      code: "IM",
+      name: "Moulding",
+      pending: 1,
+      pending_total: "300.00",
+      unpaid: { count: 0, total: "0.00", remaining: "0.00" },
+      paid_this_month: "0.00",
+    },
   ],
   oldest: [
     {
-      id: 7, number: "IM261012001", type: "Cheque Payment", division: "IM", payee: "CEB", level: 2,
-      waiting_for: "L2 Accountant", approvers: "Kumari", since: "2026-10-12T09:00:00Z", days: 17,
-      band: "15 days or more", total_amount: "300.00",
+      id: 7,
+      number: "IM261012001",
+      type: "Cheque Payment",
+      division: "IM",
+      payee: "CEB",
+      level: 2,
+      waiting_for: "L2 Accountant",
+      approvers: "Kumari",
+      since: "2026-10-12T09:00:00Z",
+      days: 17,
+      band: "15 days or more",
+      total_amount: "300.00",
     },
   ],
 };
@@ -60,18 +83,12 @@ test("every tile opens the list behind it", async () => {
   expect(within(board).getByRole("link", { name: /Waiting for my approval\s*2/ })).toHaveAttribute("href", "/vouchers/review");
   expect(within(board).getByRole("link", { name: /Returned to me\s*1/ })).toHaveAttribute("href", "/vouchers?status=returned");
   expect(within(board).getByRole("link", { name: /Approved, not yet paid\s*LKR 600.00/ })).toHaveAttribute("href", "/payments");
-  expect(within(board).getByRole("link", { name: /Paid this month/ })).toHaveAttribute(
-    "href",
-    "/payments?from=2026-10-01&to=2026-10-29",
-  );
+  expect(within(board).getByRole("link", { name: /Paid this month/ })).toHaveAttribute("href", "/payments?from=2026-10-01&to=2026-10-29");
   const levels = within(board).getByRole("table", { name: "Waiting by level and age" });
   expect(within(levels).getByRole("link", { name: "L2 Accountant" })).toHaveAttribute("href", "/vouchers/reports?tab=pending&level=2");
   expect(within(board).getByRole("link", { name: "IM261012001" })).toHaveAttribute("href", "/vouchers/7");
   const divisions = within(board).getByRole("table", { name: "By division" });
-  expect(within(divisions).getByRole("link", { name: /1 · 300.00/ })).toHaveAttribute(
-    "href",
-    "/vouchers/reports?tab=pending&division=IM",
-  );
+  expect(within(divisions).getByRole("link", { name: /1 · 300.00/ })).toHaveAttribute("href", "/vouchers/reports?tab=pending&division=IM");
 });
 
 test("choosing a division shows its figures and keeps it in the links", async () => {
@@ -103,9 +120,7 @@ test("the lists open with the filters the dashboard gave them", async () => {
     "GET /api/v1/vouchers/reports/pending/?level=2": { body: { rows: [], summary: [] } },
   });
   const { unmount } = renderAt("/vouchers?status=returned&division=WS", <VouchersPage me={accountant} />, "/vouchers");
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/?status=returned&division=WS", expect.anything()),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/?status=returned&division=WS", expect.anything()));
   expect(screen.getByRole("button", { name: "Division WS ✕" })).toBeInTheDocument();
   unmount();
 

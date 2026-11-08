@@ -11,11 +11,21 @@ function lastMonth(): string {
 }
 
 const item = (key: string, label: string, done: boolean) => ({
-  key, label, done, detail: done ? "Posted." : "Not done.", ticked_by: null, ticked_at: null, note: "",
+  key,
+  label,
+  done,
+  detail: done ? "Posted." : "Not done.",
+  ticked_by: null,
+  ticked_at: null,
+  note: "",
 });
 
 const checklist: Checklist = {
-  month: lastMonth(), is_closed: false, can_tick: true, can_close: false, ready: false,
+  month: lastMonth(),
+  is_closed: false,
+  can_tick: true,
+  can_close: false,
+  ready: false,
   items: [item("depreciation", "Depreciation posted", true), item("accruals", "Accruals and prepayments entered", false)],
 };
 const year: YearClose = { year: 2025, label: "2025-26", open_months: [], closed: false, can_close: false, history: [] };

@@ -31,9 +31,7 @@ test("shows the server's message when sign-in fails", async () => {
   fill("Password", "nope");
   fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The email, password or code is not correct.",
-  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("The email, password or code is not correct.");
 });
 
 test("asks for the two-factor code after the password", async () => {

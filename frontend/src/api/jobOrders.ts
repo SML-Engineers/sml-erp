@@ -1,4 +1,4 @@
-import { apiGet, apiSend } from "./client";
+import { API_BASE, apiGet, apiSend } from "./client";
 import type { OpenSalesLine, SalesLine } from "./productionOrders";
 
 /** Machining job orders and their material (P3-11). */
@@ -55,6 +55,21 @@ export interface JobMaterial {
   on_hand?: string;
 }
 
+/** P3-12: what each operation received, completed, rejected and passed on. */
+export interface JobStep {
+  seq: number;
+  name: string;
+  subcontract: boolean;
+  received: string;
+  completed: string;
+  rejected: string;
+  rework: string;
+  in_hand: string;
+  available: string;
+  finished: string;
+  card: string;
+}
+
 export interface JobIssueDoc {
   id: number;
   number: string;
@@ -88,6 +103,8 @@ export interface JobOrder extends JobRow {
   bom: { id: number; revision: number } | null;
   operations: JobOperation[];
   materials: JobMaterial[];
+  progress: JobStep[];
+  can_print_cards: boolean;
   issues: JobIssueDoc[];
   excess: JobExcessRow[];
   stores: { id: number; code: string; name: string }[];
@@ -140,3 +157,4 @@ export const getJobSalesLines = (q: string) => apiGet<{ results: OpenSalesLine[]
 export const getWaitingExcess = () => apiGet<{ results: WaitingExcess[] }>("/job-orders/waiting/");
 export const decideExcess = (id: number, action: "approve" | "reject", reason: string) =>
   apiSend<{ status: string }>("POST", `/job-orders/excess/${id}/decide/`, { action, reason });
+export const jobCardsUrl = (id: number) => `${API_BASE}/job-orders/${id}/cards/`;

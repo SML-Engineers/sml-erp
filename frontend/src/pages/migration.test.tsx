@@ -5,21 +5,44 @@ import { mockApi, renderAt } from "../test-utils";
 import MigrationPage from "./MigrationPage";
 
 const report: MigrationReport = {
-  as_at: "2026-10-31", accounts: 5, debits: "980000.00", credits: "986750.00", receivables: "150000.00", payables: "80000.00",
-  stock_in_trial_balance: "0.00", stock_in_item_list: null, customers: 1, suppliers: 1,
-  errors: ["The trial balance does not balance: debits 980,000.00, credits 986,750.00 (out by 6,750.00)."], warnings: [],
+  as_at: "2026-10-31",
+  accounts: 5,
+  debits: "980000.00",
+  credits: "986750.00",
+  receivables: "150000.00",
+  payables: "80000.00",
+  stock_in_trial_balance: "0.00",
+  stock_in_item_list: null,
+  customers: 1,
+  suppliers: 1,
+  errors: ["The trial balance does not balance: debits 980,000.00, credits 986,750.00 (out by 6,750.00)."],
+  warnings: [],
 };
 const waiting: OpeningDoc = {
-  id: 2, as_at: "2026-10-31", status: "awaiting_approval", report: { ...report, errors: [] }, created_by: "Accountant",
-  journal_entry: null, total_debit: "650000.00", total_credit: "650000.00",
+  id: 2,
+  as_at: "2026-10-31",
+  status: "awaiting_approval",
+  report: { ...report, errors: [] },
+  created_by: "Accountant",
+  journal_entry: null,
+  total_debit: "650000.00",
+  total_credit: "650000.00",
   lines: [{ account: "1010 Cash", party: "", description: "QuickBooks: Cash", debit: "500000.00", credit: "0.00" }],
-  can_send: false, can_approve: true, history: [{ action: "Submitted", by: "Accountant", at: "2026-11-05T09:00:00", reason: "" }],
+  can_send: false,
+  can_approve: true,
+  history: [{ action: "Submitted", by: "Accountant", at: "2026-11-05T09:00:00", reason: "" }],
 };
 
 test("the check lists what to correct, and the Director approves the opening balances", async () => {
   const calls = mockApi({
     "GET /api/v1/migration/": {
-      body: { can_enter: true, documents: [waiting], posted: false, open_invoices: { count: 0, total: "0.00" }, open_bills: { count: 0, total: "0.00" } },
+      body: {
+        can_enter: true,
+        documents: [waiting],
+        posted: false,
+        open_invoices: { count: 0, total: "0.00" },
+        open_bills: { count: 0, total: "0.00" },
+      },
     },
     "POST /api/v1/migration/": { body: { report, document: null } },
     "POST /api/v1/migration/2/approve/": { body: { ...waiting, status: "posted", can_approve: false } },
@@ -37,7 +60,13 @@ test("the check lists what to correct, and the Director approves the opening bal
 test("once posted, the open invoices are checked and brought over", async () => {
   const calls = mockApi({
     "GET /api/v1/migration/": {
-      body: { can_enter: true, documents: [], posted: true, open_invoices: { count: 0, total: "0.00" }, open_bills: { count: 0, total: "0.00" } },
+      body: {
+        can_enter: true,
+        documents: [],
+        posted: true,
+        open_invoices: { count: 0, total: "0.00" },
+        open_bills: { count: 0, total: "0.00" },
+      },
     },
     "POST /api/v1/migration/open-items/": { body: { receivables: { documents: 2, total: "150000.00", errors: [], warnings: [] } } },
   });

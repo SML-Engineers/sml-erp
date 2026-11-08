@@ -55,6 +55,7 @@ urlpatterns = [
     ),
     path("job-orders/<int:pk>/", v.JobOrderDetailView.as_view(), name="job-order"),
     path("job-orders/<int:pk>/lots/", v.JobOrderLotsView.as_view(), name="job-order-lots"),
+    path("job-orders/<int:pk>/cards/", v.JobCardsView.as_view(), name="job-order-cards"),
     path(
         "job-orders/<int:pk>/<str:action>/", v.JobOrderActionView.as_view(), name="job-order-action"
     ),

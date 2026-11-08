@@ -8,23 +8,60 @@ import StatutoryReturnsPage from "./StatutoryReturnsPage";
 import TaxTablesPage from "./TaxTablesPage";
 
 const totals = {
-  gross: "73325.00", epf_employee: "5400.00", epf_employer: "8100.00", etf: "2025.00", apit: "0.00",
-  deductions: "250.00", net: "67675.00", employees: 1,
+  gross: "73325.00",
+  epf_employee: "5400.00",
+  epf_employer: "8100.00",
+  etf: "2025.00",
+  apit: "0.00",
+  deductions: "250.00",
+  net: "67675.00",
+  employees: 1,
 };
 
 const run: PayrollRun = {
-  id: 4, division: "WS", month: "2026-10", period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
-  status: "draft", status_label: "Draft", created_by: "HR Officer", worked_out_at: "2026-11-06T09:00:00Z",
-  approved_at: null, number: "", journal: "", totals, statutory: { epf_employee: "8.00", epf_employer: "12.00", etf: "3.00" },
+  id: 4,
+  division: "WS",
+  month: "2026-10",
+  period: { month: "2026-10", start: "2026-09-21", end: "2026-10-20" },
+  status: "draft",
+  status_label: "Draft",
+  created_by: "HR Officer",
+  worked_out_at: "2026-11-06T09:00:00Z",
+  approved_at: null,
+  number: "",
+  journal: "",
+  totals,
+  statutory: { epf_employee: "8.00", epf_employer: "12.00", etf: "3.00" },
   gratuity: { liability: "198000.00", provided: "198000.00" },
-  labour: { cost: "83450.00", hours: "208.00", per_hour: "401.20", sections: [{ section: "Manual Milling", employees: 1, cost: "83450.00", hours: "208.00", per_hour: "401.20" }] },
-  returned: false, history: [], can_work_out: true, can_submit: true, can_approve: false, sees_people: true, can_email_payslips: false,
+  labour: {
+    cost: "83450.00",
+    hours: "208.00",
+    per_hour: "401.20",
+    sections: [{ section: "Manual Milling", employees: 1, cost: "83450.00", hours: "208.00", per_hour: "401.20" }],
+  },
+  returned: false,
+  history: [],
+  can_work_out: true,
+  can_submit: true,
+  can_approve: false,
+  sees_people: true,
+  can_email_payslips: false,
   lines: [
     {
       employee: { id: 7, number: "E001", name: "Kamal Perera", category: "shop_office" },
-      days_employed: 30, days_in_period: 30, day_rate: "2200.00", hourly_rate: "275.00", gross: "73325.00",
-      epf_earnings: "67500.00", apit_earnings: "73325.00", epf_employee: "5400.00", epf_employer: "8100.00",
-      etf: "2025.00", apit: "0.00", deductions: "250.00", net: "67675.00",
+      days_employed: 30,
+      days_in_period: 30,
+      day_rate: "2200.00",
+      hourly_rate: "275.00",
+      gross: "73325.00",
+      epf_earnings: "67500.00",
+      apit_earnings: "73325.00",
+      epf_employee: "5400.00",
+      epf_employer: "8100.00",
+      etf: "2025.00",
+      apit: "0.00",
+      deductions: "250.00",
+      net: "67675.00",
       items: [
         { code: "BASIC", name: "Basic salary", kind: "earning", amount: "60000.00", basis: "Monthly amount since January 2024" },
         { code: "OT_WORKING", name: "Overtime, working days", kind: "earning", amount: "825.00", basis: "2:00 h x 275.00 x 1.50" },
@@ -86,7 +123,14 @@ test("each figure shows where it came from, and HR types in an amount for the mo
 });
 
 test("the Director approves a payroll waiting for him", async () => {
-  const waiting = { ...run, status: "awaiting" as const, status_label: "Waiting for the Director", can_work_out: false, can_submit: false, can_approve: true };
+  const waiting = {
+    ...run,
+    status: "awaiting" as const,
+    status_label: "Waiting for the Director",
+    can_work_out: false,
+    can_submit: false,
+    can_approve: true,
+  };
   const calls = mockApi({
     "GET /api/v1/payroll/4/": { body: waiting },
     "POST /api/v1/payroll/4/approve/": {
@@ -115,8 +159,15 @@ test("the Accountant enters an APIT table", async () => {
   const tables: TaxTables = {
     tables: [
       {
-        id: 1, kind: "primary", kind_label: "Table 01: primary employment", effective_from: "2025-04-01",
-        reason: "IRD APIT Table 01", bands: [{ up_to: "150000.00", rate: "0.00", constant: "0.00" }, { up_to: null, rate: "36.00", constant: "94000.00" }],
+        id: 1,
+        kind: "primary",
+        kind_label: "Table 01: primary employment",
+        effective_from: "2025-04-01",
+        reason: "IRD APIT Table 01",
+        bands: [
+          { up_to: "150000.00", rate: "0.00", constant: "0.00" },
+          { up_to: null, rate: "36.00", constant: "94000.00" },
+        ],
       },
     ],
     statutory: [{ effective_from: "2024-01-01", epf_employee: "8.00", epf_employer: "12.00", etf: "3.00", reason: "EPF Act" }],
@@ -154,7 +205,16 @@ test("the Accountant enters an APIT table", async () => {
 });
 
 test("HR prints and emails the payslips of an approved payroll", async () => {
-  const approved = { ...run, status: "approved" as const, status_label: "Approved", can_work_out: false, can_submit: false, can_email_payslips: true, number: "PR261001", journal: "JE1" };
+  const approved = {
+    ...run,
+    status: "approved" as const,
+    status_label: "Approved",
+    can_work_out: false,
+    can_submit: false,
+    can_email_payslips: true,
+    number: "PR261001",
+    journal: "JE1",
+  };
   const calls = mockApi({
     "GET /api/v1/payroll/4/": { body: approved },
     "POST /api/v1/payroll/4/email-payslips/": { body: { sent: ["E001"], failed: [], no_email: ["E002"] } },
@@ -196,14 +256,32 @@ function lastMonthForTest() {
 
 test("HR records a loan and the Director approves one waiting for him", async () => {
   const waiting = {
-    id: 3, number: "", employee: { id: 7, number: "E001", name: "Kamal Perera" }, kind: "loan" as const,
-    kind_label: "Loan", amount: "240000.00", interest: "0.00", months: 24, instalment: "10000.00",
-    first_month: "2026-11", reason: "Housing", status: "awaiting" as const, status_label: "Waiting for the Director",
-    returned: false, recovered: "0.00", balance: "0.00", created_by: "HR", can_edit: false, can_submit: false,
-    can_withdraw: false, can_approve: true,
+    id: 3,
+    number: "",
+    employee: { id: 7, number: "E001", name: "Kamal Perera" },
+    kind: "loan" as const,
+    kind_label: "Loan",
+    amount: "240000.00",
+    interest: "0.00",
+    months: 24,
+    instalment: "10000.00",
+    first_month: "2026-11",
+    reason: "Housing",
+    status: "awaiting" as const,
+    status_label: "Waiting for the Director",
+    returned: false,
+    recovered: "0.00",
+    balance: "0.00",
+    created_by: "HR",
+    can_edit: false,
+    can_submit: false,
+    can_withdraw: false,
+    can_approve: true,
   };
   const calls = mockApi({
-    "GET /api/v1/staff-credits/": { body: { results: [waiting], employees: [{ id: 7, number: "E001", name: "Kamal Perera" }], first_month: "2026-11", can_record: true } },
+    "GET /api/v1/staff-credits/": {
+      body: { results: [waiting], employees: [{ id: 7, number: "E001", name: "Kamal Perera" }], first_month: "2026-11", can_record: true },
+    },
     "POST /api/v1/staff-credits/": { body: waiting },
     "POST /api/v1/staff-credits/3/approve/": { body: { ...waiting, status: "approved", can_approve: false } },
   });
@@ -219,14 +297,20 @@ test("HR records a loan and the Director approves one waiting for him", async ()
       "/api/v1/staff-credits/",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ employee: "7", kind: "loan", amount: "120000", interest: "0", months: "12", first_month: "2026-11", reason: "Medical" }),
+        body: JSON.stringify({
+          employee: "7",
+          kind: "loan",
+          amount: "120000",
+          interest: "0",
+          months: "12",
+          first_month: "2026-11",
+          reason: "Medical",
+        }),
       }),
     ),
   );
   fireEvent.click(screen.getByRole("button", { name: "Approve" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/staff-credits/3/approve/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/staff-credits/3/approve/", expect.objectContaining({ method: "POST" })));
 });
 
 test("the payroll shows what an hour of work cost", async () => {

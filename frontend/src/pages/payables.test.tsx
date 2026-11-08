@@ -13,16 +13,36 @@ const clerk: CurrentUser = {
 };
 
 const row: PayableRow = {
-  supplier_id: 3, code: "S0001", supplier: "Lanka Steel (Pvt) Ltd", current: "600.00", d30: "0.00", d60: "0.00",
-  d90: "0.00", over90: "0.00", total: "600.00",
+  supplier_id: 3,
+  code: "S0001",
+  supplier: "Lanka Steel (Pvt) Ltd",
+  current: "600.00",
+  d30: "0.00",
+  d60: "0.00",
+  d90: "0.00",
+  over90: "0.00",
+  total: "600.00",
 };
 
 const statement: SupplierStatementDetail = {
-  id: 4, supplier: { id: 3, code: "S0001", name: "Lanka Steel (Pvt) Ltd" }, currency: "LKR", from_date: null,
-  statement_date: "2026-11-03", closing_balance: "1100.00", status: "open", created_by: "Clerk", notes: "",
-  lines: [], checked_by: null, checked_at: null, check_note: "", can_edit: true, can_check: true,
+  id: 4,
+  supplier: { id: 3, code: "S0001", name: "Lanka Steel (Pvt) Ltd" },
+  currency: "LKR",
+  from_date: null,
+  statement_date: "2026-11-03",
+  closing_balance: "1100.00",
+  status: "open",
+  created_by: "Clerk",
+  notes: "",
+  lines: [],
+  checked_by: null,
+  checked_at: null,
+  check_note: "",
+  can_edit: true,
+  can_check: true,
   reconciliation: {
-    from: "2026-11-01", to: "2026-11-03",
+    from: "2026-11-01",
+    to: "2026-11-03",
     matched: [
       {
         line: { line_no: 1, date: "2026-11-03", reference: "inv 7", description: "Steel bars", debit: "1000.00", credit: "0.00" },
@@ -32,7 +52,9 @@ const statement: SupplierStatementDetail = {
     ],
     theirs_only: [{ line_no: 2, date: "2026-11-03", reference: "INV-99", description: "Steel plates", debit: "500.00", credit: "0.00" }],
     ours_only: [],
-    their_balance: "1100.00", our_balance: "600.00", difference: "500.00",
+    their_balance: "1100.00",
+    our_balance: "600.00",
+    difference: "500.00",
   },
 };
 
@@ -45,8 +67,16 @@ test("the aging lists what we owe and a supplier opens its items", async () => {
         rows: [row],
         items: [
           {
-            kind: "voucher", reference: "INV-7", document: "WS261103001", link: "/vouchers/9", division: "WS",
-            date: "2026-11-03", due_date: "2026-12-03", days_overdue: 0, total: "1000.00", open: "600.00",
+            kind: "voucher",
+            reference: "INV-7",
+            document: "WS261103001",
+            link: "/vouchers/9",
+            division: "WS",
+            date: "2026-11-03",
+            due_date: "2026-12-03",
+            days_overdue: 0,
+            total: "1000.00",
+            open: "600.00",
           },
         ],
       },

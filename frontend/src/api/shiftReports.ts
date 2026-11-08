@@ -1,10 +1,14 @@
 import { apiGet, apiSend } from "./client";
 
-/** Moulding shift reports entered by supervisors (P3-08). */
+/** Shift reports entered by supervisors: moulding runs (P3-08) or job card operations in a
+ * machining section (P3-12). */
+
+export type SectionType = "moulding" | "machining";
 
 export interface OpenShift {
   section: string;
   section_name: string;
+  section_type: SectionType;
   day: string;
   shift: string;
   shift_name: string;
@@ -16,6 +20,7 @@ export interface OpenShift {
 export interface ReportRow {
   id: number;
   section: string;
+  section_type: SectionType;
   day: string;
   shift: string;
   shift_name: string;
@@ -54,6 +59,32 @@ export interface Run extends Omit<RunValues, "start_counter" | "end_counter" | "
   rejects: { reason: string; quantity: number }[];
 }
 
+/** P3-12: work on one job card operation. */
+export interface JobWorkValues {
+  job: string;
+  operation: string;
+  machine: string;
+  operator: string;
+  start_time: string;
+  end_time: string;
+  completed: string;
+  rework: string;
+  setup: boolean;
+  notes: string;
+  rejects: { reason: string; quantity: string }[];
+}
+
+export interface JobWork extends Omit<JobWorkValues, "operation"> {
+  job_id: number;
+  description: string;
+  operation: number;
+  operation_name: string;
+  rejected: string;
+  minutes_per_piece: string;
+  standard_minutes: string;
+  standard_setup: string;
+}
+
 export interface DowntimeValues {
   machine: string;
   reason: string;
@@ -88,6 +119,7 @@ export interface Summary {
   regrind: string;
   people: number;
   overtime_hours: string;
+  machining: { completed: string; rejected: string; rework: string; minutes: number };
 }
 
 export interface ShiftReport extends ReportRow {
@@ -97,6 +129,7 @@ export interface ShiftReport extends ReportRow {
   closes_at: string;
   notes: string;
   runs: Run[];
+  operations: JobWork[];
   downtime: DowntimeValues[];
   materials: MaterialValues[];
   manpower: { machine: string; people: number; overtime_hours: string }[];
@@ -142,6 +175,13 @@ export interface ShiftReport extends ReportRow {
       quantity: string;
       minutes: number;
     }[];
+    jobs: {
+      id: number;
+      number: string;
+      item: string;
+      description: string;
+      operations: { seq: number; name: string; section: string; machine: string; in_hand: string; run_min: string }[];
+    }[];
     reject_reasons: { code: string; name: string }[];
     downtime_reasons: { code: string; name: string }[];
     operators: { number: string; name: string }[];
@@ -150,6 +190,7 @@ export interface ShiftReport extends ReportRow {
 
 export interface ReportValues {
   runs: RunValues[];
+  operations: JobWorkValues[];
   downtime: DowntimeValues[];
   materials: MaterialValues[];
   manpower: ManpowerValues[];

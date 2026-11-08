@@ -16,13 +16,31 @@ const executive: CurrentUser = {
 };
 
 const en8: Material = {
-  id: 3, code: "EN8-BAR", name: "EN8 steel bar", kind: "metal", form: "round_bar", grade: "080M40",
-  density: "7.850", notes: "", is_active: true, current_rate: "400.00", in_use: false,
+  id: 3,
+  code: "EN8-BAR",
+  name: "EN8 steel bar",
+  kind: "metal",
+  form: "round_bar",
+  grade: "080M40",
+  density: "7.850",
+  notes: "",
+  is_active: true,
+  current_rate: "400.00",
+  in_use: false,
 };
 
 const ws: DivisionRate = {
-  id: 1, division: "WS", effective_from: "2026-10-01", overhead_pct: "20.00", margin_pct: "25.00",
-  setup_rate: "1500.00", reason: "", created_by: "accountant@sml.lk", created_at: "", in_force: true, current: true,
+  id: 1,
+  division: "WS",
+  effective_from: "2026-10-01",
+  overhead_pct: "20.00",
+  margin_pct: "25.00",
+  setup_rate: "1500.00",
+  reason: "",
+  created_by: "accountant@sml.lk",
+  created_at: "",
+  in_force: true,
+  current: true,
 };
 
 const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
@@ -31,7 +49,12 @@ const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
   "GET /api/v1/costing/materials/3/rates/": {
     body: [{ id: 8, effective_from: "2026-10-01", rate: "400.00", reason: "", created_by: null, created_at: "", in_force: true }],
   },
-  "GET /api/v1/divisions/": { body: [{ id: 1, code: "WS", name: "Workshop" }, { id: 2, code: "IM", name: "Moulding" }] },
+  "GET /api/v1/divisions/": {
+    body: [
+      { id: 1, code: "WS", name: "Workshop" },
+      { id: 2, code: "IM", name: "Moulding" },
+    ],
+  },
   ...extra,
 });
 
@@ -58,9 +81,7 @@ test("the Accountant adds division rates from a date", async () => {
   fireEvent.change(within(form).getByLabelText("Default margin %"), { target: { value: "22.5" } });
   fireEvent.change(within(form).getByLabelText("Setup rate per hour (LKR)"), { target: { value: "1200" } });
   fireEvent.click(within(form).getByRole("button", { name: "Add" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/costing/division-rates/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/costing/division-rates/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/costing/division-rates/" && i?.method === "POST")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({ division: "IM", overhead_pct: "18", margin_pct: "22.5", setup_rate: "1200" });
 });

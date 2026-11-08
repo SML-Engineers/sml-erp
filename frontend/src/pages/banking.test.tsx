@@ -86,9 +86,7 @@ test("the accountant adds petty cash with a custodian and float", async () => {
   fireEvent.change(within(form).getByLabelText("Float (LKR)"), { target: { value: "25000" } });
   fireEvent.click(within(form).getByRole("button", { name: "Add account" }));
 
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/company-accounts/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/company-accounts/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "POST")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({
     kind: "petty_cash",
@@ -98,9 +96,7 @@ test("the accountant adds petty cash with a custodian and float", async () => {
 });
 
 test("the cashier sees the next cheque and records a spoiled one, but cannot add books", async () => {
-  const calls = mockApi(
-    api({ "POST /api/v1/company-accounts/1/cheques/": { status: 201, body: {} } }),
-  );
+  const calls = mockApi(api({ "POST /api/v1/company-accounts/1/cheques/": { status: 201, body: {} } }));
   renderAt("/bank-accounts", <BankAccountsPage me={cashier} />);
 
   fireEvent.click(await screen.findByRole("button", { name: "COM-CUR" }));

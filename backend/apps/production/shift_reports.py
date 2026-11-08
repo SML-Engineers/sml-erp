@@ -1,4 +1,5 @@
-"""Moulding shift reports, entered by the supervisor (backlog P3-08; spec 7.4, 7.5).
+"""Moulding shift reports, entered by the supervisor (backlog P3-08; spec 7.4, 7.5). A
+machining section's report has job card operations instead of runs (P3-12, `job_cards`).
 
 - One report per **moulding section, day and shift** (a night shift belongs to the day it
   starts), opened and kept by a supervisor of the section (shop floor, Enter; their own
@@ -38,9 +39,13 @@ from apps.masters.models import Machine, Section, Shift
 from apps.masters.services import section_scope
 from apps.payroll.models import Employee
 
-from . import plan
+from . import job_cards, plan
+from .job_cards import JobCardError
 from .models import (
     DowntimeEntry,
+    JobCardEntry,
+    JobCardReject,
+    JobOrder,
     ManpowerEntry,
     MaterialEntry,
     MouldingRun,
@@ -66,9 +71,12 @@ def can_enter(user: User) -> bool:
     return effective_access(user).has("shop_floor", "enter")
 
 
+REPORTED = (Section.Type.MOULDING, Section.Type.MACHINING)
+
+
 def sections(user: User):
-    """The moulding sections the user supervises (or may work in)."""
-    return section_scope(user).filter(section_type=Section.Type.MOULDING, is_active=True)
+    """The moulding and machining (P3-12) sections the user supervises (or may work in)."""
+    return section_scope(user).filter(section_type__in=REPORTED, is_active=True)
 
 
 def visible(user: User):
@@ -123,6 +131,7 @@ def open_shifts(user: User) -> list[dict]:
                     {
                         "section": section.code,
                         "section_name": section.name,
+                        "section_type": section.section_type,
                         "day": day,
                         "shift": shift.code,
                         "shift_name": shift.name,
@@ -146,7 +155,7 @@ def open_report(user: User, values: dict) -> ShiftReport:
         raise ShiftReportError("Only a supervisor enters shift reports.")
     section = sections(user).filter(code=_text(values.get("section")).upper()).first()
     if section is None:
-        raise ShiftReportError("Choose one of your moulding sections.")
+        raise ShiftReportError("Choose one of your sections.")
     shift = Shift.objects.filter(code=_text(values.get("shift")).upper(), is_active=True).first()
     if shift is None:
         raise ShiftReportError("Choose the shift.")
@@ -246,6 +255,15 @@ class _Lookups:
                 division=division, status=ProductionOrder.Status.RELEASED
             ).select_related("item", "mould", "bom")
         }
+        # P3-12: the released job orders of the division, for a machining section.
+        self.jobs = {}
+        if report.section.section_type == Section.Type.MACHINING:
+            self.jobs = {
+                j.number: j
+                for j in JobOrder.objects.filter(
+                    division=division, status=JobOrder.Status.RELEASED
+                ).select_related("item")
+            }
         reasons = ReasonCode.objects.filter(division=division, is_active=True)
         self.rejects = {r.code: r for r in reasons if r.kind == ReasonCode.Kind.REJECT}
         self.downtime = {r.code: r for r in reasons if r.kind == ReasonCode.Kind.DOWNTIME}
@@ -467,8 +485,24 @@ def save(user: User, report: ShiftReport, values: dict) -> ShiftReport:
         )
         _editable(user, report)
         look = _Lookups(report)
+        machining = report.section.section_type == Section.Type.MACHINING
+        if machining and _rows(values, "runs"):
+            raise ShiftReportError("A machining section enters job card operations, not runs.")
+        if not machining and _rows(values, "operations"):
+            raise ShiftReportError("A moulding section enters machine runs, not job cards.")
         runs = _runs(report, values, look)
         downtime = _downtime(report, values, look)
+        helpers = {"at": _at, "decimal": _decimal, "rows": _rows}
+        try:
+            work = job_cards.parse(report, values, look, helpers) if machining else []
+            job_cards.check_flow(report, work)
+        except JobCardError as error:
+            raise ShiftReportError(str(error)) from None
+        _overlaps(
+            work,
+            "work",
+            JobCardEntry.objects.exclude(report=report).select_related("report__shift"),
+        )
         others = MouldingRun.objects.exclude(report=report).select_related("report__shift")
         _overlaps(runs, "a run", others)
         stops = DowntimeEntry.objects.exclude(report=report).select_related("report__shift")
@@ -493,6 +527,7 @@ def save(user: User, report: ShiftReport, values: dict) -> ShiftReport:
             for d in downtime:
                 d.pop("label")
                 DowntimeEntry.objects.create(report=report, **d)
+            job_cards.store(report, work, downtime)
             MaterialEntry.objects.bulk_create(MaterialEntry(report=report, **m) for m in materials)
             ManpowerEntry.objects.bulk_create(ManpowerEntry(report=report, **p) for p in manpower)
             if "notes" in values:
@@ -505,12 +540,20 @@ def submit(user: User, report: ShiftReport) -> ShiftReport:
     with transaction.atomic():
         report = ShiftReport.objects.select_for_update().get(pk=report.pk)
         _editable(user, report)
-        if not report.runs.exists() and not report.downtime.exists():
-            raise ShiftReportError("Enter at least one run or downtime before submitting.")
+        if not (report.runs.exists() or report.job_entries.exists() or report.downtime.exists()):
+            raise ShiftReportError(
+                "Enter at least one run, job card or downtime before submitting."
+            )
         with audit_context("shift_report_submitted", f"{report.section.code} {report.day}"):
-            used = set(
-                RejectEntry.objects.filter(run__report=report).values_list("reason", flat=True)
-            ) | set(report.downtime.values_list("reason", flat=True))
+            used = (
+                set(RejectEntry.objects.filter(run__report=report).values_list("reason", flat=True))
+                | set(report.downtime.values_list("reason", flat=True))
+                | set(
+                    JobCardReject.objects.filter(entry__report=report).values_list(
+                        "reason", flat=True
+                    )
+                )
+            )
             ReasonCode.objects.filter(pk__in=used, first_used_at__isnull=True).update(
                 first_used_at=timezone.now()
             )
@@ -598,6 +641,7 @@ def row(report: ShiftReport) -> dict:
     return {
         "id": report.pk,
         "section": report.section.code,
+        "section_type": report.section.section_type,
         "day": report.day,
         "shift": report.shift.code,
         "shift_name": report.shift.name,
@@ -677,7 +721,8 @@ def payload(report: ShiftReport, user: User) -> dict:
             }
             for p in report.manpower.select_related("machine")
         ],
-        "summary": summary(report),
+        "summary": summary(report) | {"machining": job_cards.summary(report)},
+        "operations": job_cards.read(report),
         "editable": editable,
         "options": {
             "machines": [{"code": c, "name": m.name} for c, m in sorted(look.machines.items())],
@@ -703,6 +748,7 @@ def payload(report: ShiftReport, user: User) -> dict:
                 }
                 for e in planned
             ],
+            "jobs": job_cards.options(look),
             "reject_reasons": [{"code": c, "name": r.name} for c, r in look.rejects.items()],
             "downtime_reasons": [{"code": c, "name": r.name} for c, r in look.downtime.items()],
             "operators": [

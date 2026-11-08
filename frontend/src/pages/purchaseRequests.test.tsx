@@ -66,9 +66,7 @@ test("an item at its reorder level is one click from a purchase request", async 
   const table = await screen.findByRole("table", { name: "Reorder levels" });
   expect(within(table).getByText("At or below its reorder level")).toBeInTheDocument();
   fireEvent.click(within(table).getByRole("button", { name: "Raise a purchase request" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/reorder-levels/3/request/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/reorder-levels/3/request/", expect.objectContaining({ method: "POST" })));
 });
 
 test("the approver approves a purchase request", async () => {

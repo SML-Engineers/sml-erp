@@ -5,9 +5,24 @@ import { mockApi, renderAt } from "../test-utils";
 import RecurringJournalPage from "./RecurringJournalPage";
 
 const account = (id: number, number: string, full_name: string, account_type: string) => ({
-  id, number, name: full_name, full_name, depth: 0, parent: null, account_type, account_type_label: account_type, section: "assets",
-  detail_type: { id: 1, name: "x" }, description: "", default_division: null, default_tax_code: null, system_role: null,
-  is_active: true, merged_into: null, in_use: true, company_account: null,
+  id,
+  number,
+  name: full_name,
+  full_name,
+  depth: 0,
+  parent: null,
+  account_type,
+  account_type_label: account_type,
+  section: "assets",
+  detail_type: { id: 1, name: "x" },
+  description: "",
+  default_division: null,
+  default_tax_code: null,
+  system_role: null,
+  is_active: true,
+  merged_into: null,
+  in_use: true,
+  company_account: null,
 });
 
 const formApi = {
@@ -19,13 +34,38 @@ const formApi = {
 };
 
 const rent: RecurringJournal = {
-  id: 3, name: "Factory rent", narration: "Accrue factory rent", frequency: "monthly", day_of_month: 31,
-  start_date: "2026-11-01", end_date: null, next_date: "2026-11-30", reverse_next_month: true, is_active: true,
-  created_by: "Kumari Silva", amount: "150000.00",
+  id: 3,
+  name: "Factory rent",
+  narration: "Accrue factory rent",
+  frequency: "monthly",
+  day_of_month: 31,
+  start_date: "2026-11-01",
+  end_date: null,
+  next_date: "2026-11-30",
+  reverse_next_month: true,
+  is_active: true,
+  created_by: "Kumari Silva",
+  amount: "150000.00",
   made: [{ id: 9, number: "MJ26103101", entry_date: "2026-10-31", status: "posted" }],
   lines: [
-    { line_no: 1, account: { id: 1, number: "6220", name: "Factory rent", account_type: "expense" }, division: "WS", supplier: null, description: "", debit: "150000.00", credit: "0.00" },
-    { line_no: 2, account: { id: 2, number: "2170", name: "Accrued expenses", account_type: "other_current_liability" }, division: null, supplier: null, description: "", debit: "0.00", credit: "150000.00" },
+    {
+      line_no: 1,
+      account: { id: 1, number: "6220", name: "Factory rent", account_type: "expense" },
+      division: "WS",
+      supplier: null,
+      description: "",
+      debit: "150000.00",
+      credit: "0.00",
+    },
+    {
+      line_no: 2,
+      account: { id: 2, number: "2170", name: "Accrued expenses", account_type: "other_current_liability" },
+      division: null,
+      supplier: null,
+      description: "",
+      debit: "0.00",
+      credit: "150000.00",
+    },
   ],
 };
 
@@ -79,7 +119,10 @@ test("a template shows the journals it made and can be stopped", async () => {
   expect(within(made).getByRole("link", { name: "MJ26103101" })).toHaveAttribute("href", "/journals/manual/9");
   fireEvent.click(screen.getByRole("button", { name: "Stop making journals" }));
   await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/recurring-journals/3/active/", expect.objectContaining({ body: JSON.stringify({ active: false }) })),
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/recurring-journals/3/active/",
+      expect.objectContaining({ body: JSON.stringify({ active: false }) }),
+    ),
   );
   expect(await screen.findByRole("button", { name: "Start making journals again" })).toBeInTheDocument();
 });

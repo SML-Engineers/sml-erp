@@ -95,7 +95,14 @@ const machine = account({
   depth: 1,
   parent: 3,
 });
-const vehicles = account({ id: 5, number: "6230", name: "Vehicle repairs", full_name: "Repairs and maintenance:Vehicle repairs", depth: 1, parent: 3 });
+const vehicles = account({
+  id: 5,
+  number: "6230",
+  name: "Vehicle repairs",
+  full_name: "Repairs and maintenance:Vehicle repairs",
+  depth: 1,
+  parent: 3,
+});
 
 const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
   "GET /api/v1/chart-of-accounts/": { body: [cash, payable, repairs, machine, vehicles] },
@@ -148,9 +155,7 @@ test("the accountant adds a sub-account; only accounts of the same type can be i
   fireEvent.change(within(form).getByLabelText("Default division"), { target: { value: "WS" } });
   fireEvent.click(within(form).getByRole("button", { name: "Add account" }));
 
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/chart-of-accounts/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/chart-of-accounts/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "POST")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({
     account_type: "expense",
@@ -163,9 +168,7 @@ test("the accountant adds a sub-account; only accounts of the same type can be i
 });
 
 test("an account is merged into another of the same type, with a reason", async () => {
-  const calls = mockApi(
-    api({ "POST /api/v1/chart-of-accounts/5/merge/": { body: machine } }),
-  );
+  const calls = mockApi(api({ "POST /api/v1/chart-of-accounts/5/merge/": { body: machine } }));
   renderAt("/chart-of-accounts", <ChartOfAccountsPage me={accountant} />);
 
   fireEvent.click(await screen.findByRole("button", { name: "Vehicle repairs" }));

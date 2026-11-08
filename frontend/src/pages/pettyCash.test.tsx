@@ -5,8 +5,16 @@ import { mockApi, renderAt } from "../test-utils";
 import PettyCashPage from "./PettyCashPage";
 
 const box: PettyFloat = {
-  id: 4, code: "PC-WS", name: "Workshop petty cash", custodian: "Sunil", division: "WS", can_record: true,
-  float: "10000.00", spent: "0.00", not_on_voucher: "0.00", cash_in_hand: "10000.00",
+  id: 4,
+  code: "PC-WS",
+  name: "Workshop petty cash",
+  custodian: "Sunil",
+  division: "WS",
+  can_record: true,
+  float: "10000.00",
+  spent: "0.00",
+  not_on_voucher: "0.00",
+  cash_in_hand: "10000.00",
 };
 
 test("the custodian records an expense with its slip", async () => {
@@ -25,7 +33,5 @@ test("the custodian records an expense with its slip", async () => {
   const file = new File(["%PDF-1.4"], "slip.pdf", { type: "application/pdf" });
   fireEvent.change(within(form).getByLabelText("Slip (photo or PDF)"), { target: { files: [file] } });
   fireEvent.click(within(form).getByRole("button", { name: "Save the expense" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/petty-cash/4/expenses/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/petty-cash/4/expenses/", expect.objectContaining({ method: "POST" })));
 });

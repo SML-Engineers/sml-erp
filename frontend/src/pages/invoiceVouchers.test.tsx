@@ -8,12 +8,26 @@ import VoucherPage from "./VoucherPage";
 const clerk: CurrentUser = { ...sampleUser, access: { areas: { vouchers: ["enter", "view"] }, actions: [], divisions: "all" } };
 
 const cheque: VoucherType = {
-  id: 1, code: "CHQ", name: "Cheque Payment", payment_method: "cheque", needs_payee: true, payee_category: "", is_advance: false,
-  notes: "", sort_order: 10, is_active: true, in_use: true,
+  id: 1,
+  code: "CHQ",
+  name: "Cheque Payment",
+  payment_method: "cheque",
+  needs_payee: true,
+  payee_category: "",
+  is_advance: false,
+  notes: "",
+  sort_order: 10,
+  is_active: true,
+  in_use: true,
 };
 
 const paid: PaidInvoice = {
-  id: 5, number: "SI26110101", invoice_no: "INV-77", invoice_date: "2026-11-01", due_date: "2026-12-01", total_lkr: "12500.00",
+  id: 5,
+  number: "SI26110101",
+  invoice_no: "INV-77",
+  invoice_date: "2026-11-01",
+  due_date: "2026-12-01",
+  total_lkr: "12500.00",
   on_vouchers: "12500.00",
   lines: [
     {
@@ -27,12 +41,34 @@ const paid: PaidInvoice = {
 };
 
 const draft: VoucherDetail = {
-  id: 9, number: "IM261101001", status: "draft", voucher_type: cheque, division: "IM",
-  payee: { id: 3, code: "S0003", name: "Fasteners Lanka", category: "supplier" }, transfer_to: null, voucher_date: "2026-11-01",
-  description: "Inserts", total_amount: "0.00", created_by: "Clerk", created_by_id: 1, created_at: "2026-11-01T08:00:00Z",
-  submitted_at: null, revision: 0, amendment_reason: "", parent: null, revisions: [], lines: [], attachments: [], warnings: [],
-  can_edit: true, payee_balance: { waiting_approval: "0.00", approved_unpaid: "0.00", outstanding: "0.00" }, approvals: [],
-  waiting_level: null, waiting_for: null, can_act: false, uncoded_lines: [],
+  id: 9,
+  number: "IM261101001",
+  status: "draft",
+  voucher_type: cheque,
+  division: "IM",
+  payee: { id: 3, code: "S0003", name: "Fasteners Lanka", category: "supplier" },
+  transfer_to: null,
+  voucher_date: "2026-11-01",
+  description: "Inserts",
+  total_amount: "0.00",
+  created_by: "Clerk",
+  created_by_id: 1,
+  created_at: "2026-11-01T08:00:00Z",
+  submitted_at: null,
+  revision: 0,
+  amendment_reason: "",
+  parent: null,
+  revisions: [],
+  lines: [],
+  attachments: [],
+  warnings: [],
+  can_edit: true,
+  payee_balance: { waiting_approval: "0.00", approved_unpaid: "0.00", outstanding: "0.00" },
+  approvals: [],
+  waiting_level: null,
+  waiting_for: null,
+  can_act: false,
+  uncoded_lines: [],
 };
 
 const withInvoice: VoucherDetail = {
@@ -40,9 +76,19 @@ const withInvoice: VoucherDetail = {
   total_amount: "12500.00",
   lines: [
     {
-      line_no: 1, invoice_no: "INV-77", invoice_date: "2026-11-01", description: "Supplier invoice SI26110101", amount: "12500.00",
-      tax_code: null, tax_amount: "0.00", total: "12500.00", account: { id: 7, number: "2000", name: "Accounts payable" }, division: "IM",
-      job_ref: "", splits: [], supplier_invoice: paid,
+      line_no: 1,
+      invoice_no: "INV-77",
+      invoice_date: "2026-11-01",
+      description: "Supplier invoice SI26110101",
+      amount: "12500.00",
+      tax_code: null,
+      tax_amount: "0.00",
+      total: "12500.00",
+      account: { id: 7, number: "2000", name: "Accounts payable" },
+      division: "IM",
+      job_ref: "",
+      splits: [],
+      supplier_invoice: paid,
     },
   ],
 };
@@ -57,9 +103,19 @@ test("the clerk pays a matched supplier invoice from the voucher form", async ()
     "GET /api/v1/supplier-invoices/payable/?supplier=3&division=IM": {
       body: [
         {
-          id: 5, number: "SI26110101", invoice_no: "INV-77", invoice_date: "2026-11-01", due_date: "2026-12-01", status: "posted",
-          division: "IM", supplier: { id: 3, code: "S0003", name: "Fasteners Lanka" }, currency: "LKR", total_amount: "12500.00",
-          total_lkr: "12500.00", created_by: "Clerk", unpaid: "12500.00",
+          id: 5,
+          number: "SI26110101",
+          invoice_no: "INV-77",
+          invoice_date: "2026-11-01",
+          due_date: "2026-12-01",
+          status: "posted",
+          division: "IM",
+          supplier: { id: 3, code: "S0003", name: "Fasteners Lanka" },
+          currency: "LKR",
+          total_amount: "12500.00",
+          total_lkr: "12500.00",
+          created_by: "Clerk",
+          unpaid: "12500.00",
         },
       ],
     },

@@ -9,6 +9,7 @@ import ShiftReportPage from "./ShiftReportPage";
 const report: ShiftReport = {
   id: 9,
   section: "IM-MLD",
+  section_type: "moulding",
   section_name: "Moulding",
   day: "2026-11-08",
   shift: "G",
@@ -45,6 +46,7 @@ const report: ShiftReport = {
       rejects: [{ reason: "FLASH", quantity: 40 }],
     },
   ],
+  operations: [],
   downtime: [],
   materials: [],
   manpower: [],
@@ -61,6 +63,7 @@ const report: ShiftReport = {
     regrind: "0",
     people: 0,
     overtime_hours: "0",
+    machining: { completed: "0", rejected: "0", rework: "0", minutes: 0 },
   },
   editable: true,
   return_reason: "",
@@ -78,6 +81,7 @@ const report: ShiftReport = {
     plan: [
       { id: 3, machine: "IMM-250", order: 7, order_number: "MO26110001", item: "CAP-28", mould: "MD-001", quantity: "19200", minutes: 480 },
     ],
+    jobs: [],
     reject_reasons: [{ code: "FLASH", name: "Flash" }],
     downtime_reasons: [{ code: "POWER", name: "Power failure" }],
     operators: [{ number: "E010", name: "Kamal Perera" }],
@@ -96,6 +100,7 @@ test("the supervisor starts an open shift", async () => {
           {
             section: "IM-MLD",
             section_name: "Moulding",
+            section_type: "moulding",
             day: "2026-11-08",
             shift: "G",
             shift_name: "General",
@@ -313,4 +318,65 @@ test("a supervisor asks for a correction and the approver decides it", async () 
     ),
   );
   expect(await screen.findByText("Returned by the Production Manager: Correction: Counter misread")).toBeInTheDocument();
+});
+
+test("in a machining section the supervisor scans a job card and enters the work", async () => {
+  (window as unknown as { BarcodeDetector: unknown }).BarcodeDetector = class {
+    detect() {
+      return Promise.resolve([{ rawValue: "jo26110001/20" }]);
+    }
+  };
+  Object.defineProperty(navigator, "mediaDevices", {
+    configurable: true,
+    value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop: vi.fn() }] }) },
+  });
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+  const lathe: ShiftReport = {
+    ...report,
+    section: "M-LAT",
+    section_type: "machining",
+    section_name: "Manual lathes",
+    runs: [],
+    options: {
+      ...report.options,
+      machines: [{ code: "M-LAT-01", name: "Lathe 1" }],
+      plan: [],
+      orders: [],
+      reject_reasons: [{ code: "SURFACE", name: "Surface finish" }],
+      jobs: [
+        {
+          id: 7,
+          number: "JO26110001",
+          item: "SH-100",
+          description: "Drive shaft",
+          operations: [{ seq: 20, name: "Turn", section: "M-LAT", machine: "M-LAT-01", in_hand: "18", run_min: "12.25" }],
+        },
+      ],
+    },
+  };
+  const calls = mockApi({
+    "GET /api/v1/shift-reports/9/": { body: lathe },
+    "PUT /api/v1/shift-reports/9/": { body: lathe },
+  });
+  renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+  const cards = await screen.findByRole("region", { name: "Job cards worked on" });
+  expect(screen.queryByRole("region", { name: "Machine runs" })).not.toBeInTheDocument();
+  fireEvent.click(within(cards).getByRole("button", { name: "Add a job card" }));
+  await act(async () => {
+    fireEvent.click(within(cards).getByRole("button", { name: "Scan job card 1" }));
+  });
+  const card = within(cards).getByRole("group", { name: "Job card 1" });
+  await waitFor(() => expect(within(card).getByLabelText("Operation")).toHaveValue("20"));
+  expect(within(card).getByLabelText("Machine")).toHaveValue("M-LAT-01");
+  expect(within(card).getByText("Standard: 12.25 min a piece")).toBeInTheDocument();
+  fireEvent.change(within(card).getByLabelText("Start time"), { target: { value: "08:00" } });
+  fireEvent.change(within(card).getByLabelText("End time"), { target: { value: "10:00" } });
+  fireEvent.change(within(card).getByLabelText("Pieces completed"), { target: { value: "9" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/shift-reports/9/",
+      expect.objectContaining({ body: expect.stringContaining('"job":"JO26110001","operation":"20","machine":"M-LAT-01"') }),
+    ),
+  );
 });

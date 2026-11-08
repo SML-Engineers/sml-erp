@@ -15,24 +15,75 @@ const types: LeaveTypeList = {
     { value: "unlimited", label: "No balance kept" },
   ],
   results: [
-    { id: 1, code: "ANNUAL", name: "Annual leave", rule: "annual_soe", rule_label: "Annual leave rule (by quarter of joining)", days: "14.0", paid: true, wb_rule: "", wb_days: null, max_days: null, carry_forward_max: "0.0", is_active: true },
+    {
+      id: 1,
+      code: "ANNUAL",
+      name: "Annual leave",
+      rule: "annual_soe",
+      rule_label: "Annual leave rule (by quarter of joining)",
+      days: "14.0",
+      paid: true,
+      wb_rule: "",
+      wb_days: null,
+      max_days: null,
+      carry_forward_max: "0.0",
+      is_active: true,
+    },
   ],
 };
 const holidays: HolidayList = {
-  year, can_manage: true, kinds: [{ value: "public", label: "Public holiday" }, { value: "poya", label: "Full moon Poya day" }],
+  year,
+  can_manage: true,
+  kinds: [
+    { value: "public", label: "Public holiday" },
+    { value: "poya", label: "Full moon Poya day" },
+  ],
   results: [{ id: 3, date: `${year}-12-25`, name: "Christmas Day", kind: "public", kind_label: "Public holiday", can_remove: true }],
 };
 const people: EmployeeList = {
-  can_add: true, types: [], categories: [],
-  results: [{ id: 7, number: "E001", full_name: "Kamal Perera", designation: "", division: "WS", section: "", employment_type: "permanent", employment_type_label: "Permanent", category: "shop_office", category_label: "Shop and Office", join_date: "2024-01-15", is_active: true, bank_check_pending: false }],
-};
-const leave: LeaveList = {
-  year, can_record: true, types: types.results,
+  can_add: true,
+  types: [],
+  categories: [],
   results: [
     {
-      id: 9, employee: { id: 7, number: "E001", name: "Kamal Perera" }, leave_type: "ANNUAL", leave_type_name: "Annual leave",
-      start: `${year}-07-07`, end: `${year}-07-09`, half_day: false, days: "3.0", reason: "Family trip", status: "applied",
-      source: "applied", created_by: "Kamal", decided_by: null, decision_note: "", can_decide: true, can_cancel: true,
+      id: 7,
+      number: "E001",
+      full_name: "Kamal Perera",
+      designation: "",
+      division: "WS",
+      section: "",
+      employment_type: "permanent",
+      employment_type_label: "Permanent",
+      category: "shop_office",
+      category_label: "Shop and Office",
+      join_date: "2024-01-15",
+      is_active: true,
+      bank_check_pending: false,
+    },
+  ],
+};
+const leave: LeaveList = {
+  year,
+  can_record: true,
+  types: types.results,
+  results: [
+    {
+      id: 9,
+      employee: { id: 7, number: "E001", name: "Kamal Perera" },
+      leave_type: "ANNUAL",
+      leave_type_name: "Annual leave",
+      start: `${year}-07-07`,
+      end: `${year}-07-09`,
+      half_day: false,
+      days: "3.0",
+      reason: "Family trip",
+      status: "applied",
+      source: "applied",
+      created_by: "Kamal",
+      decided_by: null,
+      decision_note: "",
+      can_decide: true,
+      can_cancel: true,
     },
   ],
 };
@@ -92,7 +143,5 @@ test("HR records half a day of leave and approves leave applied for", async () =
   );
   fireEvent.click(screen.getByRole("button", { name: "Approve" }));
   fireEvent.click(screen.getByRole("button", { name: "Approve the leave" }));
-  await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/leave/9/approve/", expect.objectContaining({ method: "POST" })),
-  );
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/leave/9/approve/", expect.objectContaining({ method: "POST" })));
 });

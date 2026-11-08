@@ -63,6 +63,15 @@ const report: ShiftReport = {
     overtime_hours: "0",
   },
   editable: true,
+  return_reason: "",
+  approved_by: "",
+  approved_at: null,
+  stock_issue: "",
+  receipts: [],
+  corrections: [],
+  can_decide: false,
+  can_ask: false,
+  reopened_until: null,
   options: {
     machines: [{ code: "IMM-250", name: "Haitian 250 t" }],
     orders: [{ id: 7, number: "MO26110001", item: "CAP-28", mould: "MD-001" }],
@@ -203,4 +212,105 @@ test("scanning fills the field where the browser can read codes", async () => {
 test("no scan button where the browser cannot read codes", () => {
   renderAt("/", <ScanButton label="Scan the machine" onScan={vi.fn()} />);
   expect(screen.queryByRole("button", { name: "Scan the machine" })).not.toBeInTheDocument();
+});
+
+test("the Production Manager approves, and the stock it made is shown", async () => {
+  const submitted = { ...report, status: "submitted" as const, status_label: "Submitted", editable: false, can_decide: true };
+  const approved = {
+    ...submitted,
+    status: "approved" as const,
+    status_label: "Approved",
+    can_decide: false,
+    approved_by: "Pm",
+    stock_issue: "SI26110001",
+    receipts: [
+      {
+        order: "MO26110001",
+        item: "CAP-28",
+        is_regrind: false,
+        quantity: "3960",
+        material_value: "9619.20",
+        regrind_credit: "600.00",
+        value: "9019.20",
+        undone: false,
+      },
+      {
+        order: "",
+        item: "PP-H",
+        is_regrind: true,
+        quantity: "1.2",
+        material_value: "600.00",
+        regrind_credit: "0.00",
+        value: "600.00",
+        undone: false,
+      },
+    ],
+  };
+  const calls = mockApi({
+    "GET /api/v1/shift-reports/9/": { body: submitted },
+    "POST /api/v1/shift-reports/9/decide/": { body: approved },
+  });
+  renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+  const panel = await screen.findByRole("region", { name: "Approve or return" });
+  fireEvent.click(within(panel).getByRole("button", { name: "Approve the report" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/shift-reports/9/decide/",
+      expect.objectContaining({ body: JSON.stringify({ action: "approve", reason: "" }) }),
+    ),
+  );
+  const stock = await screen.findByRole("table", { name: "Put into stock" });
+  expect(within(stock).getByText("9,019.20")).toBeInTheDocument();
+  expect(screen.getByText(/stock issue SI26110001/)).toBeInTheDocument();
+  expect(screen.getByText(/Approved by Pm/)).toBeInTheDocument();
+});
+
+test("a supervisor asks for a correction and the approver decides it", async () => {
+  const approved = { ...report, status: "approved" as const, status_label: "Approved", editable: false, can_ask: true };
+  const asked = {
+    ...approved,
+    can_ask: false,
+    corrections: [
+      {
+        id: 4,
+        reason: "Counter misread",
+        status: "awaiting" as const,
+        status_label: "Waiting for approval",
+        requested_by: "Sup",
+        requested_at: "",
+        can_decide: false,
+      },
+    ],
+  };
+  const calls = mockApi({
+    "GET /api/v1/shift-reports/9/": { body: approved },
+    "POST /api/v1/shift-reports/9/corrections/": { body: asked, status: 201 },
+  });
+  const { unmount } = renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+  const panel = await screen.findByRole("region", { name: "Corrections" });
+  fireEvent.change(within(panel).getByLabelText("What needs correcting"), { target: { value: "Counter misread" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Ask for a correction" }));
+  expect(await within(panel).findByText(/“Counter misread” asked by Sup: Waiting for approval/)).toBeInTheDocument();
+  expect(calls).toHaveBeenCalledWith(
+    "/api/v1/shift-reports/9/corrections/",
+    expect.objectContaining({ body: JSON.stringify({ reason: "Counter misread" }) }),
+  );
+  unmount();
+  const toDecide = { ...asked, corrections: [{ ...asked.corrections[0], can_decide: true }] };
+  const decide = mockApi({
+    "GET /api/v1/shift-reports/9/": { body: toDecide },
+    "POST /api/v1/shift-reports/corrections/4/decide/": {
+      body: { ...approved, status: "returned", status_label: "Returned", return_reason: "Correction: Counter misread", can_ask: false },
+    },
+  });
+  renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+  const again = await screen.findByRole("region", { name: "Corrections" });
+  fireEvent.click(within(again).getByRole("button", { name: "Approve the correction" }));
+  await waitFor(() =>
+    expect(decide).toHaveBeenCalledWith(
+      "/api/v1/shift-reports/corrections/4/decide/",
+      expect.objectContaining({ body: JSON.stringify({ action: "approve", reason: "" }) }),
+    ),
+  );
+  expect(await screen.findByText("Returned by the Production Manager: Correction: Counter misread")).toBeInTheDocument();
 });

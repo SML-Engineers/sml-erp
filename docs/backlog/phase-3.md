@@ -260,7 +260,7 @@ Status: `[ ]` to do · `[x]` done
   other parts are counted when approved (P3-09); corrections after the grace period
   (P3-09); machining and support pages (P3-12).
 
-- [ ] **P3-09 Approving shift reports and corrections**
+- [x] **P3-09 Approving shift reports and corrections**
   The Production Manager approves or returns each submitted report (never their own).
   Approval: good quantity into finished stock, resin, masterbatch and packing backflushed
   for good and rejected quantity at their lot cost, regrind into stock at its credit value,
@@ -270,6 +270,34 @@ Status: `[ ]` to do · `[x]` done
   approval (owner, 7 Nov 2026); never the person who asked; the original stays on record.
   SML has a Production Manager (owner); the Director approves only while nobody holds the
   role.
+  Done: on the **Shift report** page. Submitting sends the report to the approval engine
+  ("shift_report", the Production Manager by default; the Admin can route it to the
+  Director under Settings → Approvals); never the person who submitted it. **Returning**
+  needs a reason; the supervisor corrects it (at any time) and submits again. **Approval**,
+  in one transaction: (1) **backflush** on one stock issue from the division's main store
+  to the section, at the weighted average cost: resin and masterbatch for everything moulded
+  (good and rejected), without the BOM's reject allowance since the actual rejects are
+  counted; packing and bought parts for the good pieces only; the run's material batch is
+  used for its material; customer-supplied material and services are not taken (Dr Raw
+  materials used, Cr inventory); a shortage stops the approval; (2) **regrind** into the
+  main store (lot RG + report) at its credit value (P3-05); (3) **good pieces** into the
+  main store (lot = the order's number) valued at the material they used less their share
+  of the regrind credit, a family mould's other parts too (shots × their cavities, sharing
+  the value by weight); Dr finished goods (the item's inventory account) and Dr the
+  regrind's inventory, Cr Raw materials used; labour and overhead are added by order
+  costing (P3-16); (4) each **mould's shot count** goes up. What went into stock is kept
+  as production receipts (never changed, database); the production order shows how much
+  has been made. The supervisor's own material issue and return lines stay a record for
+  the consumption report (P3-20). **Corrections:** after the entry time a supervisor of the
+  section asks for one (with a reason) for a late draft or an approved report, one at a
+  time; the report as it stood is kept with the request. Approval engine
+  "shift_correction": the **Production Manager or the Director**, or a person the Admin
+  gives the new action **"Approve corrections to shift reports"** (a sensitive grant the
+  Director confirms); never the person who asked. Approving reopens a late draft for one
+  more grace period, or, for an approved report, reverses the journals, the stock (refused
+  if the parts have been used or delivered) and the shot counts, marks the receipts
+  undone, and returns the report to the supervisor to correct and submit again. Requests
+  never change once decided (database). Approval engine: new `reopen` for this.
 
 - [ ] **P3-10 Mould maintenance**
   Preventive maintenance due when the shot count reaches the interval: alerts to the

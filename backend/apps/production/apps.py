@@ -24,11 +24,13 @@ class ProductionConfig(AppConfig):
             PlanEntry,
             ProductionOrder,
             ProductionOrderDue,
+            ProductionReceipt,
             ProductionSetting,
             ReasonCode,
             RejectEntry,
             Routing,
             RoutingOperation,
+            ShiftCorrection,
             ShiftReport,
         )
 
@@ -53,5 +55,7 @@ class ProductionConfig(AppConfig):
             DowntimeEntry,
             MaterialEntry,
             ManpowerEntry,
+            ProductionReceipt,
+            ShiftCorrection,
         ):
             register(model)

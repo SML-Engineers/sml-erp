@@ -151,6 +151,18 @@ DOCUMENT_TYPES = {
     "routing": DocumentType("Routing", min_approvals=1),
     # A bill of materials (P3-04): as routings, the Production Manager approves.
     "bom": DocumentType("Bill of materials", min_approvals=1),
+    # A submitted moulding shift report (P3-09): the Production Manager approves or returns
+    # it; approval moves stock and mould shot counts.
+    "shift_report": DocumentType("Shift report", min_approvals=1),
+    # A change to a shift report after its entry time (P3-09): the Production Manager, the
+    # Director, or a person the Admin gives "approve_production_corrections" to and the
+    # Director confirms (owner, 7 Nov 2026).
+    "shift_correction": DocumentType(
+        "Shift report correction",
+        min_approvals=1,
+        final_role="production_manager",
+        approver_action="approve_production_corrections",
+    ),
     "payroll_opening": DocumentType(
         "Opening payroll figures", min_approvals=1, final_role="director"
     ),
@@ -555,6 +567,29 @@ def send_down(user: User, document_type: str, document_id: int, reason: str):
         state.current_level = first
         state.save()
         _tell_approvers(state)
+        return state
+
+
+def reopen(user: User, document_type: str, document_id: int, reason: str):
+    """An approved document whose module has undone its effects through an approved
+    correction (e.g. a shift report, P3-09) goes back to its creator as returned, to be
+    corrected and submitted again. The module decides who may do this; the engine records
+    it with the reason."""
+    reason = (reason or "").strip()
+    if not reason:
+        raise ApprovalError("Give a reason for reopening the document.")
+    with audit_context("document_reopened", reason), transaction.atomic():
+        state = (
+            ApprovalState.objects.select_for_update()
+            .filter(document_type=document_type, document_id=document_id)
+            .first()
+        )
+        if state is None or state.status != ApprovalState.Status.APPROVED:
+            raise ApprovalError("Only an approved document is reopened.")
+        _log(state, user, state.route[-1]["level"], ApprovalLog.Action.RETURN, reason)
+        state.status = ApprovalState.Status.RETURNED
+        state.current_level = None
+        state.save()
         return state
 
 

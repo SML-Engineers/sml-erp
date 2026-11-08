@@ -5,6 +5,9 @@ import { useSearchParams } from "react-router";
 
 import { ApiError } from "../api/client";
 import {
+  askCorrection,
+  decideCorrection,
+  decideReport,
   getReport,
   getReports,
   openReport,
@@ -166,6 +169,8 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
         — {r.status_label}
       </p>
       {edit && <p className="muted small">{t("shiftReport.closes", { at: new Date(r.closes_at).toLocaleString() })}</p>}
+      {r.return_reason && r.status === "returned" && <p className="notice">{t("shiftReport.returned", { reason: r.return_reason })}</p>}
+      {r.approved_by && r.status === "approved" && <p className="notice">{t("shiftReport.approvedBy", { name: r.approved_by })}</p>}
       {edit && o.plan.length > 0 && (
         <section className="panel" aria-label={t("shiftReport.plan")}>
           <h2>{t("shiftReport.plan")}</h2>
@@ -359,6 +364,134 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
         </div>
         <ErrorLine error={save.error ?? submit.error} />
       </section>
+      <Approval report={r} onDone={done} />
+    </>
+  );
+}
+
+/** P3-09: the Production Manager's decision, what approval put into stock, and corrections. */
+function Approval({ report, onDone }: { report: ShiftReport; onDone: (r: ShiftReport) => void }) {
+  const { t } = useTranslation();
+  const [reason, setReason] = useState("");
+  const [ask, setAsk] = useState("");
+  const decide = useMutation({
+    mutationFn: (action: "approve" | "send_back") => decideReport(report.id, action, reason),
+    onSuccess: (r) => {
+      setReason("");
+      onDone(r);
+    },
+  });
+  const request = useMutation({
+    mutationFn: () => askCorrection(report.id, ask),
+    onSuccess: (r) => {
+      setAsk("");
+      onDone(r);
+    },
+  });
+  const fix = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: "approve" | "reject" }) => decideCorrection(id, action, reason),
+    onSuccess: (r) => {
+      setReason("");
+      onDone(r);
+    },
+  });
+  const pending = report.corrections.find((c) => c.can_decide);
+  return (
+    <>
+      {report.can_decide && (
+        <section className="panel" aria-label={t("shiftReport.decision")}>
+          <h2>{t("shiftReport.decision")}</h2>
+          <p className="muted">{t("shiftReport.decisionHelp")}</p>
+          <label className="wide">
+            {t("shiftReport.reasonOrComment")}
+            <input value={reason} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <div className="row-actions">
+            <button type="button" disabled={decide.isPending} onClick={() => decide.mutate("approve")}>
+              {t("shiftReport.approve")}
+            </button>
+            <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("send_back")}>
+              {t("shiftReport.sendBack")}
+            </button>
+          </div>
+          <ErrorLine error={decide.error} />
+        </section>
+      )}
+      {report.receipts.length > 0 && (
+        <section className="panel" aria-label={t("shiftReport.intoStock")}>
+          <h2>{t("shiftReport.intoStock")}</h2>
+          {report.stock_issue && <p className="muted">{t("shiftReport.backflush", { number: report.stock_issue })}</p>}
+          <div className="table-wrap">
+            <table aria-label={t("shiftReport.intoStock")}>
+              <thead>
+                <tr>
+                  <th>{t("shiftReport.item")}</th>
+                  <th className="num">{t("shiftReport.quantity")}</th>
+                  <th className="num">{t("shiftReport.materialValue")}</th>
+                  <th className="num">{t("shiftReport.regrindCredit")}</th>
+                  <th className="num">{t("shiftReport.value")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.receipts.map((x, i) => (
+                  <tr key={i} className={x.undone ? "muted" : undefined}>
+                    <td>
+                      {x.item} {x.is_regrind ? t("shiftReport.regrindLabel") : x.order}
+                      {x.undone && ` ${t("shiftReport.undone")}`}
+                    </td>
+                    <td className="num">{formatDecimal(x.quantity)}</td>
+                    <td className="num">{formatDecimal(x.material_value)}</td>
+                    <td className="num">{formatDecimal(x.regrind_credit)}</td>
+                    <td className="num">{formatDecimal(x.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+      {(report.corrections.length > 0 || report.can_ask) && (
+        <section className="panel" aria-label={t("shiftReport.corrections")}>
+          <h2>{t("shiftReport.corrections")}</h2>
+          {report.corrections.map((c) => (
+            <p key={c.id}>{t("shiftReport.correctionLine", { reason: c.reason, by: c.requested_by, status: c.status_label })}</p>
+          ))}
+          {pending && (
+            <>
+              <label className="wide">
+                {t("shiftReport.reasonOrComment")}
+                <input value={reason} onChange={(e) => setReason(e.target.value)} />
+              </label>
+              <div className="row-actions">
+                <button type="button" disabled={fix.isPending} onClick={() => fix.mutate({ id: pending.id, action: "approve" })}>
+                  {t("shiftReport.approveCorrection")}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={fix.isPending}
+                  onClick={() => fix.mutate({ id: pending.id, action: "reject" })}
+                >
+                  {t("shiftReport.rejectCorrection")}
+                </button>
+              </div>
+              <p className="muted small">{t("shiftReport.correctionHelp")}</p>
+            </>
+          )}
+          {report.can_ask && (
+            <div className="inline-form">
+              <label>
+                {t("shiftReport.whatToCorrect")}
+                <input value={ask} onChange={(e) => setAsk(e.target.value)} />
+              </label>
+              <button type="button" disabled={request.isPending} onClick={() => request.mutate()}>
+                {t("shiftReport.askCorrection")}
+              </button>
+            </div>
+          )}
+          <ErrorLine error={request.error ?? fix.error} />
+        </section>
+      )}
     </>
   );
 }

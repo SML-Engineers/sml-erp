@@ -16,7 +16,18 @@ from apps.core.permissions import AreaAccess
 from apps.inventory.models import Item
 from apps.masters.models import Machine
 
-from . import boms, labels, moulds, orders, plan, rates, reasons, routings, shift_reports
+from . import (
+    boms,
+    labels,
+    moulds,
+    orders,
+    plan,
+    rates,
+    reasons,
+    routings,
+    shift_approval,
+    shift_reports,
+)
 from .boms import BomError
 from .models import (
     Bom,
@@ -27,6 +38,7 @@ from .models import (
     ProductionSetting,
     ReasonCode,
     Routing,
+    ShiftCorrection,
 )
 from .moulds import ImportRefused, MouldError
 from .orders import OrderError
@@ -638,6 +650,10 @@ class _Reports(APIView):
     access_write_level = "view"
 
 
+def _report_body(report, user) -> dict:
+    return shift_reports.payload(report, user) | shift_approval.approval_fields(report, user)
+
+
 class ShiftReportListView(_Reports):
     def get(self, request):
         user = request.user
@@ -655,7 +671,7 @@ class ShiftReportListView(_Reports):
             report = shift_reports.open_report(request.user, request.data)
         except ShiftReportError as error:
             return _error(error)
-        return Response(shift_reports.payload(report, request.user), status=status.HTTP_201_CREATED)
+        return Response(_report_body(report, request.user), status=status.HTTP_201_CREATED)
 
 
 class ShiftReportDetailView(_Reports):
@@ -663,14 +679,14 @@ class ShiftReportDetailView(_Reports):
         return get_object_or_404(shift_reports.visible(request.user), pk=pk)
 
     def get(self, request, pk):
-        return Response(shift_reports.payload(self._report(request, pk), request.user))
+        return Response(_report_body(self._report(request, pk), request.user))
 
     def put(self, request, pk):
         try:
             report = shift_reports.save(request.user, self._report(request, pk), request.data)
         except ShiftReportError as error:
             return _error(error)
-        return Response(shift_reports.payload(report, request.user))
+        return Response(_report_body(report, request.user))
 
 
 class ShiftReportSubmitView(_Reports):
@@ -680,4 +696,43 @@ class ShiftReportSubmitView(_Reports):
             report = shift_reports.submit(request.user, report)
         except ShiftReportError as error:
             return _error(error)
-        return Response(shift_reports.payload(report, request.user))
+        return Response(_report_body(report, request.user))
+
+
+class ShiftReportDecideView(_Reports):
+    """P3-09: the Production Manager approves or returns a submitted report."""
+
+    def post(self, request, pk):
+        report = get_object_or_404(shift_reports.visible(request.user), pk=pk)
+        try:
+            report = shift_approval.decide(
+                request.user, report, request.data.get("action", ""), request.data.get("reason", "")
+            )
+        except ShiftReportError as error:
+            return _error(error)
+        return Response(_report_body(report, request.user))
+
+
+class ShiftCorrectionAskView(_Reports):
+    def post(self, request, pk):
+        report = get_object_or_404(shift_reports.visible(request.user), pk=pk)
+        try:
+            shift_approval.ask(request.user, report, request.data.get("reason", ""))
+        except ShiftReportError as error:
+            return _error(error)
+        return Response(_report_body(report, request.user), status=status.HTTP_201_CREATED)
+
+
+class ShiftCorrectionDecideView(_Reports):
+    def post(self, request, pk):
+        fix = get_object_or_404(
+            ShiftCorrection.objects.filter(report__in=shift_reports.visible(request.user)), pk=pk
+        )
+        try:
+            shift_approval.decide_fix(
+                request.user, fix, request.data.get("action", ""), request.data.get("reason", "")
+            )
+        except ShiftReportError as error:
+            return _error(error)
+        report = shift_reports.visible(request.user).get(pk=fix.report_id)
+        return Response(_report_body(report, request.user))

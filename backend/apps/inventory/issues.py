@@ -178,6 +178,22 @@ def issue(
 ) -> StockIssue:
     if not can_issue(user):
         raise StockError("Only the stores person issues material.")
+    return issue_for(
+        user, store=store, issue_date=issue_date, lines=lines, section=section, purpose=purpose
+    )
+
+
+def issue_for(
+    user: User,
+    *,
+    store,
+    issue_date,
+    lines: list[IssueLine],
+    section: Section | None = None,
+    purpose: str = "",
+) -> StockIssue:
+    """An issue made by another module that has checked who may do it, e.g. the material a
+    shift used, backflushed when the Production Manager approves its report (P3-09)."""
     store = main_store(user, store)
     issue_date = _day(issue_date)
     if not lines:

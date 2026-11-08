@@ -51,6 +51,7 @@ export interface Due {
 }
 
 export interface ProductionOrder extends OrderRow {
+  made: string;
   sales_line: SalesLine | null;
   dues: Due[];
   notes: string;

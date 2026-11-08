@@ -745,6 +745,24 @@ class ShiftReport(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     submitted_at = models.DateTimeField(null=True, blank=True)
+    # P3-09: the Production Manager's decision and what approval posted.
+    return_reason = models.CharField(max_length=300, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    stock_issue = models.ForeignKey(
+        "inventory.StockIssue", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    receipt_entry = models.ForeignKey(
+        "accounting.JournalEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    # A correction (P3-09) reopens a report whose entry time is over until this moment.
+    reopened_until = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-day", "shift__start_time", "section__code"]
@@ -897,3 +915,78 @@ class ManpowerEntry(models.Model):
 
     def __str__(self):
         return f"{self.report_id}: {self.people}"
+
+
+class ProductionReceipt(models.Model):
+    """What an approved shift report put into stock (P3-09), each with its stock movement:
+    the good pieces of a run's part (and of a family mould's other parts), valued at the
+    material they used less their share of the regrind credit (labour and overhead are added
+    by order costing, P3-16), and the regrind made, at its credit value."""
+
+    report = models.ForeignKey(ShiftReport, on_delete=models.PROTECT, related_name="receipts")
+    # The run is let go when a corrected report's runs are entered again (the receipt stays,
+    # undone, with its order and quantity).
+    run = models.ForeignKey(
+        MouldingRun, null=True, blank=True, on_delete=models.SET_NULL, related_name="receipts"
+    )
+    order = models.ForeignKey(
+        ProductionOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="receipts"
+    )
+    item = models.ForeignKey("inventory.Item", on_delete=models.PROTECT, related_name="+")
+    is_regrind = models.BooleanField(default=False)
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    material_value = models.DecimalField(max_digits=18, decimal_places=2)
+    regrind_credit = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    value = models.DecimalField(max_digits=18, decimal_places=2)
+    movement = models.OneToOneField(
+        "inventory.StockMovement",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="production_receipt",
+    )
+    undone = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["report", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=0, value__gte=0),
+                name="production_receipt_figures",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(is_regrind=True) | models.Q(order__isnull=False),
+                name="production_receipt_order",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.item_id} × {self.quantity}"
+
+
+class ShiftCorrection(models.Model):
+    """A request to change a shift report after its entry time (P3-09): approved by the
+    Production Manager, the Director, or a person the Admin gives the authority (the
+    Director confirming), never the person who asked. The original stays on record."""
+
+    class Status(models.TextChoices):
+        AWAITING = "awaiting", "Waiting for approval"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    report = models.ForeignKey(ShiftReport, on_delete=models.PROTECT, related_name="corrections")
+    reason = models.CharField(max_length=300)
+    original = models.JSONField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.AWAITING)
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    requested_at = models.DateTimeField(default=timezone.now)
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["report", "-requested_at"]
+
+    def __str__(self):
+        return f"{self.report_id}: {self.status}"

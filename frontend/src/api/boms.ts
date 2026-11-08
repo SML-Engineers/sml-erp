@@ -56,7 +56,7 @@ export interface Bom {
   outputs: BomOutput[];
   resin: { shot_g: string; per_piece_g: string; pieces_per_shot: number; family: boolean } | null;
   lines: BomLine[];
-  cost: { material: string; machine: string; per_unit: string; missing: string[] };
+  cost: { material: string; machine: string; labour: string; overhead: string; mould: string; per_unit: string; missing: string[] };
   returned_reason: string | null;
   can_edit: boolean;
   can_decide: boolean;

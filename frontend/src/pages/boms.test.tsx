@@ -21,7 +21,7 @@ const bom: Bom = {
     line({ component: "PP-H110", component_name: "PP homopolymer", quantity: "4.725", unit: "kg", issue_method: "backflush", standard_value: "2126.25" }),
     line({ seq: 20, line_type: "masterbatch", line_type_label: "Masterbatch", component: "MB-BLUE", component_name: "Blue masterbatch", quantity: "0.0945", unit: "kg", pct_of_resin: "2", issue_method: "backflush" }),
   ],
-  cost: { material: "2126.25", machine: "0.00", per_unit: "2.13", missing: ["MB-BLUE: no cost yet"] },
+  cost: { material: "2126.25", machine: "0.00", labour: "0.40", overhead: "0.10", mould: "0.25", per_unit: "2.88", missing: ["MB-BLUE: no cost yet"] },
   returned_reason: null, can_edit: false, can_decide: true,
 };
 const list: BomList = {
@@ -40,6 +40,7 @@ test("the Production Manager sees the resin worked out and approves the BOM", as
   const panel = screen.getByRole("region", { name: "BOM CAP-28 rev 1" });
   expect(within(panel).getByText(/37.80 g of resin a shot, 4.725 g a piece \(8 a shot, 5% reject allowance\)/)).toBeInTheDocument();
   expect(within(panel).getByText("MB-BLUE: no cost yet")).toBeInTheDocument();
+  expect(within(panel).getByText(/a unit: machine time LKR 0.00, labour LKR 0.40, overhead LKR 0.10, mould LKR 0.25/)).toBeInTheDocument();
   fireEvent.click(within(panel).getByRole("button", { name: "Approve" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/boms/7/approve/", expect.objectContaining({ method: "POST" })));
 });

@@ -122,6 +122,7 @@ export const MENU: MenuSection[] = [
       { label: "mould.title", path: "/moulds", area: "production_planning" },
       { label: "routing.title", path: "/routings", area: "production_planning" },
       { label: "bom.title", path: "/boms", area: "production_planning" },
+      { label: "costRate.title", path: "/cost-rates", area: "production_planning" },
     ],
   },
   {

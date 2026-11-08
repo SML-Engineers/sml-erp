@@ -233,7 +233,13 @@ function Detail({ bom: b, list, onOpen }: { bom: Bom; list: BomList; onOpen: (id
       <p>
         <strong>{t("bom.costPerUnit", { cost: formatDecimal(b.cost.per_unit) })}</strong>{" "}
         <span className="muted">
-          {t("bom.costSplit", { material: formatDecimal(b.cost.material), machine: formatDecimal(b.cost.machine) })}
+          {t("bom.costSplit", {
+            material: formatDecimal(b.cost.material),
+            machine: formatDecimal(b.cost.machine),
+            labour: formatDecimal(b.cost.labour),
+            overhead: formatDecimal(b.cost.overhead),
+            mould: formatDecimal(b.cost.mould),
+          })}
         </span>
       </p>
       {b.cost.missing.length > 0 && (

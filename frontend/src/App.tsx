@@ -81,6 +81,7 @@ import GratuityPage from "./pages/GratuityPage";
 import MouldsPage from "./pages/MouldsPage";
 import RoutingsPage from "./pages/RoutingsPage";
 import BomsPage from "./pages/BomsPage";
+import CostRatesPage from "./pages/CostRatesPage";
 import PayrollTakeoverPage from "./pages/PayrollTakeoverPage";
 import WorkRulesPage from "./pages/WorkRulesPage";
 import HolidaysPage from "./pages/HolidaysPage";
@@ -219,6 +220,7 @@ export default function App() {
         <Route path="moulds" element={<MouldsPage />} />
         <Route path="routings" element={<RoutingsPage />} />
         <Route path="boms" element={<BomsPage />} />
+        <Route path="cost-rates" element={<CostRatesPage />} />
         <Route path="payroll-returns" element={<StatutoryReturnsPage />} />
         <Route path="advances-loans" element={<AdvancesLoansPage />} />
         <Route path="my" element={<MyPage />} />

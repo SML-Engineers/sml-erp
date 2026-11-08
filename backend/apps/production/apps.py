@@ -13,6 +13,7 @@ class ProductionConfig(AppConfig):
             Bom,
             BomLine,
             BomOutput,
+            CostRate,
             Mould,
             MouldPart,
             ProductionSetting,
@@ -31,5 +32,6 @@ class ProductionConfig(AppConfig):
             Bom,
             BomLine,
             BomOutput,
+            CostRate,
         ):
             register(model)

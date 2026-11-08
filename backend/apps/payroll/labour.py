@@ -7,6 +7,8 @@
 - Cost per hour = cost / hours, for the division and for each section (sections hold the
   machines that job costing will charge). Shown on the payroll page; per section only to HR
   and the Director, as a section of one person would show their pay.
+- Sections carry their id as well as their name, so the production cost rates (P3-05) can
+  be kept per section.
 - `rate(division, month)` gives job costing the rate of a division's approved payroll for a
   pay month (None until it is approved).
 """
@@ -43,13 +45,15 @@ def cost(run: PayrollRun) -> dict:
         .annotate(total=Sum("worked_minutes"))
         .values_list("employee", "total")
     )
-    by_section: dict[str, dict] = defaultdict(lambda: {"employees": 0, "cost": ZERO, "minutes": 0})
+    by_section: dict[int | None, dict] = defaultdict(
+        lambda: {"name": "", "employees": 0, "cost": ZERO, "minutes": 0}
+    )
     total_cost, total_minutes = ZERO, 0
     for x in lines:
         paid = x.gross + x.epf_employer + x.etf
         worked = minutes.get(x.employee_id) or 0
-        name = x.employee.section.name if x.employee.section_id else "(no section)"
-        s = by_section[name]
+        s = by_section[x.employee.section_id]
+        s["name"] = x.employee.section.name if x.employee.section_id else "(no section)"
         s["employees"] += 1
         s["cost"] += paid
         s["minutes"] += worked
@@ -61,13 +65,14 @@ def cost(run: PayrollRun) -> dict:
         "per_hour": _per_hour(total_cost, total_minutes),
         "sections": [
             {
-                "section": name,
+                "section": s["name"],
+                "section_id": section_id,
                 "employees": s["employees"],
                 "cost": s["cost"],
                 "hours": _hours(s["minutes"]),
                 "per_hour": _per_hour(s["cost"], s["minutes"]),
             }
-            for name, s in sorted(by_section.items())
+            for section_id, s in sorted(by_section.items(), key=lambda pair: pair[1]["name"])
         ],
     }
 

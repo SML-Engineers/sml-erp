@@ -441,3 +441,111 @@ class BomOutput(models.Model):
 
     def __str__(self):
         return f"{self.item_id} x {self.cavities}"
+
+
+class CostRate(models.Model):
+    """A dated production cost rate kept by the Accountant (spec 7.7 `cost_rate`; backlog
+    P3-05; rule 11):
+
+    - **labour**: LKR per hour for a section (by default accepted from the latest approved
+      payroll's labour cost per hour, P2B-13);
+    - **overhead**: LKR per machine hour for a section, or for one machine (which then
+      beats its section's); 0 until set;
+    - **regrind**: LKR per kg of regrind of a material, overriding the owner's rule of 100%
+      of the material's cost;
+    - **mould**: LKR per shot for a company mould, the mould's cost ÷ its expected life in
+      shots (customer moulds are never amortised).
+
+    A rate in force never changes and is never deleted; a later rate replaces it (database).
+    """
+
+    class Kind(models.TextChoices):
+        LABOUR = "labour", "Labour per hour"
+        OVERHEAD = "overhead", "Overhead per machine hour"
+        REGRIND = "regrind", "Regrind credit per kg"
+        MOULD = "mould", "Mould amortisation per shot"
+
+    class Source(models.TextChoices):
+        MANUAL = "manual", "Entered"
+        PAYROLL = "payroll", "Accepted from the payroll"
+
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    section = models.ForeignKey(
+        "masters.Section", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    machine = models.ForeignKey(
+        "masters.Machine", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    material = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    mould = models.ForeignKey(
+        Mould, null=True, blank=True, on_delete=models.PROTECT, related_name="cost_rates"
+    )
+    effective_from = models.DateField()
+    rate = models.DecimalField("Rate (LKR)", max_digits=18, decimal_places=4)
+    # Mould amortisation: what the rate was worked out from.
+    mould_cost = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    life_shots = models.PositiveBigIntegerField(null=True, blank=True)
+    source = models.CharField(max_length=10, choices=Source.choices, default=Source.MANUAL)
+    payroll_run = models.ForeignKey(
+        "payroll.PayrollRun", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    reason = models.CharField(max_length=200)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["kind", "-effective_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["kind", "section", "machine", "material", "mould", "effective_from"],
+                name="production_costrate_once",
+                nulls_distinct=False,
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rate__gte=0), name="production_costrate_rate"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    kind="labour",
+                    section__isnull=False,
+                    machine__isnull=True,
+                    material__isnull=True,
+                    mould__isnull=True,
+                )
+                | models.Q(
+                    kind="overhead",
+                    section__isnull=False,
+                    material__isnull=True,
+                    mould__isnull=True,
+                )
+                | models.Q(
+                    kind="regrind",
+                    section__isnull=True,
+                    machine__isnull=True,
+                    material__isnull=False,
+                    mould__isnull=True,
+                )
+                | models.Q(
+                    kind="mould",
+                    section__isnull=True,
+                    machine__isnull=True,
+                    material__isnull=True,
+                    mould__isnull=False,
+                    mould_cost__gte=0,
+                    life_shots__gt=0,
+                ),
+                name="production_costrate_target",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(source="manual", payroll_run__isnull=True)
+                | models.Q(source="payroll", kind="labour", payroll_run__isnull=False),
+                name="production_costrate_source",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.kind} {self.effective_from} {self.rate}"

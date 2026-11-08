@@ -116,8 +116,8 @@ Status: `[ ]` to do · `[x]` done
   status Draft → Approved (Production Manager) → Obsolete. Copy, compare two revisions,
   Excel import and export, where-used, standard cost rolled up through all levels.
   Done: Production → **Bills of materials**. Kinds machining, moulding and general; a base
-  quantity (one unit or a batch; a moulding BOM is per 1000 pieces or, for a family mould,
-  per shot). Lines: raw material, masterbatch, bought-out part, sub-assembly (its own BOM,
+  quantity chosen by the Planner (one unit or a batch, e.g. 1000 pieces; for a family
+  mould, shots). Lines: raw material, masterbatch, bought-out part, sub-assembly (its own BOM,
   never in a loop), subcontract service (supplier and cost) and packing, each with
   quantity, scrap %, operation number, manual or backflush issue and customer-supplied.
   Machining calculator: leave the quantity blank and give the cut length (plus bar length,
@@ -134,7 +134,7 @@ Status: `[ ]` to do · `[x]` done
   anything without a cost is listed rather than guessed. Overhead and labour rates come
   with P3-05.
 
-- [ ] **P3-05 Production cost rates**
+- [x] **P3-05 Production cost rates**
   Dated rates (rule 11), maintained by the Accountant: labour rate per section (by default
   the latest approved payroll's labour cost per hour, P2B-13, which the Accountant accepts
   or overrides), overhead rate per machine hour (0 until set; P3-23 later works it out from
@@ -142,6 +142,27 @@ Status: `[ ]` to do · `[x]` done
   regrind is reused in the same part and in other parts), mould
   amortisation per shot for company moulds (mould cost ÷ expected life in shots). Machine
   hourly rates already exist (3A.1).
+  Done: Production → **Cost rates**. Dated rates (from today or later, with a reason; a rate
+  in force never changes or is deleted, a future one can be replaced or removed until its
+  date: database). Kept by the **Accountant** (anyone who can enter in Accounting, checked
+  in the service); the Production Planner, Manager and Director read them (area production
+  planning). **Labour** per section (LKR an hour): the page offers the latest approved
+  payroll's labour cost per hour for each section and the Accountant accepts it (one
+  section or all) or enters another; the accepted rate remembers its payroll. A section
+  with **fewer than three people** in the payroll is offered its **division's** rate, so a
+  rate never shows one or two people's pay, and the payroll figures are shown only to the
+  Accountant. With no rate, labour is listed as not costed. **Overhead** per machine hour
+  for a section or for one machine (the machine's own rate beats its section's); **0 until
+  set**. **Regrind** credit per kg: 100% of the material's stock average cost at the time,
+  unless the Accountant sets a dated value per kg for the material (raw materials in kg or
+  g). **Mould amortisation**: the mould's cost and expected life in shots give LKR a shot;
+  **company moulds only** (database); 0 until entered. The BOM standard cost now adds,
+  per unit, labour (routing run minutes × the section's labour rate) and overhead (run
+  minutes × the overhead rate of the machine, or the average over the section's machines)
+  to the machine time, plus the mould's amortisation (per shot over the pieces a shot
+  makes; a family mould's BOM is per shot). Setup time is costed on the orders (P3-16);
+  regrind credit is used when shift reports are approved (P3-09). Rates are kept in
+  `production_costrate` (spec 7.7 `cost_rate`).
 
 ## B. Moulding (first)
 

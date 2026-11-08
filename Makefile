@@ -32,7 +32,7 @@ makemigrations: env  ## Create migrations after changing models
 superuser: env  ## Create the first administrator account (asks for email and password)
 	$(COMPOSE) run --rm backend python manage.py createsuperuser
 
-demo: env  ## Load demo users, suppliers and vouchers (PC or test server only)
+demo: env  ## Load demo users and data for every module (PC or test server only)
 	$(COMPOSE) run --rm backend python manage.py load_demo_data
 
 shell: env  ## Open a Django shell

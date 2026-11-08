@@ -159,9 +159,10 @@ invoices and reports are sent from the mailbox set in **Settings → Document em
 
 **On the test server only**, you can load demo data so people can try every step at once:
 `docker compose -f deploy/docker-compose.prod.yml --env-file /srv/sml-erp/.env.production run --rm backend python manage.py load_demo_data`.
-It creates a Clerk, Accountant, Director and Cashier (all `@demo.sml.lk`, sharing one
-authenticator entry it prints), suppliers, a bank account and vouchers at every stage. It
-refuses to run on the production server.
+It creates demo users for every role (all `@demo.sml.lk`, sharing one authenticator entry it
+prints) and data at every stage: vouchers, quotations and sales orders, purchase orders
+through QC and supplier invoices, and production (staff on a roster, presses, a mould, an
+approved BOM, stock, orders and today's plan). It refuses to run on the production server.
 
 ## 9. Updates: one click in GitHub
 

@@ -3,15 +3,26 @@ services, never on production, each part once only."""
 
 import io
 import re
+from decimal import Decimal
 
 import pytest
 from django.core.management import CommandError, call_command
+from django.utils import timezone
 
 from apps.core import crypto
 from apps.core.models import User
-from apps.inventory.models import GoodsReceipt, IncomingInspection, InspectionPlan, Item
-from apps.masters.models import Customer
+from apps.inventory.models import (
+    GoodsReceipt,
+    IncomingInspection,
+    InspectionPlan,
+    Item,
+    OpeningStock,
+)
+from apps.masters.models import Customer, Machine, Section
 from apps.payments.models import SupplierPayment
+from apps.payroll.models import Employee
+from apps.production import plan, rates
+from apps.production.models import Bom, PlanEntry, ProductionOrder
 from apps.purchasing import reports
 from apps.purchasing.models import PurchaseOrder, SupplierInvoice
 from apps.sales.models import CustomerAdvance, Quotation, SalesOrder
@@ -42,11 +53,15 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
         "cashier@demo.sml.lk",
         "clerk@demo.sml.lk",
         "director@demo.sml.lk",
+        "hr@demo.sml.lk",
+        "planner@demo.sml.lk",
+        "productionmanager@demo.sml.lk",
         "purchasing@demo.sml.lk",
         "qc@demo.sml.lk",
         "sales@demo.sml.lk",
         "salesmanager@demo.sml.lk",
         "stores@demo.sml.lk",
+        "supervisor@demo.sml.lk",
     ]
     secret = re.search(r"Key: ([A-Z2-7]{32})", text).group(1)
     assert {crypto.decrypt(u.totp_secret_encrypted) for u in people} == {secret}
@@ -82,9 +97,12 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
     assert Customer.objects.count() == 3
     # Purchasing (P16-14): POs at every stage, a GRN waiting for QC, a posted and a held invoice.
     assert sorted(Item.objects.values_list("code", flat=True)) == [
+        "BAG-1K",
+        "CAP-38",
         "CNMG-120408",
         "EN8-40",
         "M8-INSERT",
+        "MB-WHT",
         "PP-H-25",
     ]
     assert InspectionPlan.objects.get().parameters.count() == 2
@@ -109,6 +127,28 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
     director = people.get(email="director@demo.sml.lk")
     assert reports.grni_ledger_balance() == "60000.00"  # 4,800 inserts at 12.50, held
     assert len(reports.held_invoices(director)) == 1
+    # Production (P3): staff on a roster, presses, mould, approved BOM, stock, rates, orders
+    # and today's plan, ready for the Supervisor's shift report.
+    supervisor = people.get(email="supervisor@demo.sml.lk")
+    section = Section.objects.get(code="IM-MLD")
+    assert list(section.supervisors.all()) == [supervisor]
+    assert Employee.objects.filter(section=section).count() == 4
+    presses = set(Machine.objects.filter(section=section).values_list("code", flat=True))
+    assert {"IMM-150", "IMM-250"} <= presses
+    bom = Bom.objects.get(item__code="CAP-38")
+    assert (bom.status, bom.mould.code) == ("approved", "MD-C38")
+    assert sorted(ProductionOrder.objects.values_list("status", "purpose")) == [
+        ("draft", "stock"),
+        ("released", "sales"),
+    ]
+    released = ProductionOrder.objects.get(status="released")
+    assert released.bom_lines.count() == 3 and released.dues.get().quantity == 20000
+    today = timezone.localdate()
+    assert PlanEntry.objects.filter(day=today, order=released).count() == 1
+    assert rates.labour_on(section) == Decimal("450")
+    assert OpeningStock.objects.get().status == "posted"
+    assert plan.board(people.get(email="planner@demo.sml.lk"), today.isoformat(), 1)["entries"]
+    assert "supervisor@demo.sml.lk" in text
     with pytest.raises(CommandError, match="already loaded"):
         call_command("load_demo_data", stdout=io.StringIO())
 
@@ -140,7 +180,7 @@ def test_a_pc_with_the_earlier_demo_gets_only_the_missing_part(settings, monkeyp
     monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
     out = io.StringIO()
     call_command("load_demo_data", stdout=out)
-    assert "Demo data loaded: purchasing." in out.getvalue()
+    assert "Demo data loaded: purchasing, production." in out.getvalue()
     assert Voucher.objects.count() == vouchers
     assert Customer.objects.count() == 3
     assert PurchaseOrder.objects.count() == 5

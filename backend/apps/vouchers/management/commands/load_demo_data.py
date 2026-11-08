@@ -9,10 +9,16 @@ approved, part-paid and paid. For sales (P15-12): customers, materials, machines
 rates, and quotations at every stage (draft, waiting for the Director, sent and expiring this
 week, won with an open sales order and an advance, lost). For purchasing (P16-14): a Purchasing
 Officer, a Stores Manager and a QC Inspector, items, an inspection plan, and purchase orders at
-every stage through goods receipt, QC and the supplier invoice. Everything goes through the
-normal services, so every business rule applies.
+every stage through goods receipt, QC and the supplier invoice. For production (P3): an HR and
+Payroll Officer, a Production Planner, a Supervisor and a Production Manager, moulding
+employees on a day roster, two presses with hourly rates, a mould, a cap with an approved
+moulding BOM, masterbatch and bags in stock, cost rates, a released production order for the
+won sales order and a draft one for stock, and the plan for today and tomorrow, so the
+Supervisor can enter today's shift report. Everything goes through the normal services, so
+every business rule applies.
 
-It refuses to run on a production server. Each part (vouchers, sales, purchasing) loads once per
+It refuses to run on a production server. Each part (vouchers, sales, purchasing, production)
+loads once per
 database: on a PC that already has the earlier demo data, running it again adds only the parts
 that are missing, with the same password and authenticator entry.
 """
@@ -29,6 +35,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
+from openpyxl import Workbook
 from reportlab.lib.pagesizes import A5
 from reportlab.pdfgen import canvas
 
@@ -73,9 +80,13 @@ PEOPLE = [
     ("purchasing", "Priyanka Gunawardena", "purchasing_officer", "purchasing"),
     ("stores", "Kamal Bandara", "store_supervisor", "purchasing"),
     ("qc", "Sanjeewa Dias", "qc_inspector", "purchasing"),
+    ("hr", "Nadeeka Herath", "hr_payroll_officer", "production"),
+    ("planner", "Asanka Weerasinghe", "production_planner", "production"),
+    ("supervisor", "Lasith Kumara", "production_supervisor", "production"),
+    ("productionmanager", "Thilini Abeysekara", "production_manager", "production"),
 ]
 # Each part is there once its first person is.
-PARTS = ("vouchers", "sales", "purchasing")
+PARTS = ("vouchers", "sales", "purchasing", "production")
 
 
 def invoice_pdf(title: str, lines: list[str]) -> SimpleUploadedFile:
@@ -120,6 +131,8 @@ class Command(BaseCommand):
                     self.sales(people)
                 if "purchasing" in missing:
                     self.purchasing(people)
+                if "production" in missing:
+                    self.production(people)
         except CommandError:
             raise
         except Exception as error:  # a clash with data already typed in on this PC
@@ -700,6 +713,171 @@ class Command(BaseCommand):
         )
         invoices.add_attachment(clerk, made, scan("PTL-7702"))
         invoices.match(clerk, made)
+
+    # --- Production (P3-01 to P3-10) ----------------------------------------------------------
+
+    def production(self, p: dict) -> None:
+        from apps.inventory import opening
+        from apps.masters import rosters
+        from apps.masters.models import Shift
+        from apps.payroll import employees
+        from apps.production import boms, moulds, plan, rates
+        from apps.production import orders as production_orders
+        from apps.sales.models import SalesOrder
+
+        hr, planner, supervisor = p["hr"], p["planner"], p["supervisor"]
+        manager, buyer = p["productionmanager"], p["purchasing"]
+        accountant, director = p["accountant"], p["director"]
+        today = timezone.localdate()
+        im = Division.objects.get(code="IM")
+        section = Section.objects.get(code="IM-MLD")
+
+        # The moulding section, its supervisor, two presses with hourly rates.
+        masters.update_section(section, {"supervisors": [supervisor.pk]}, reason="Demo data")
+        presses = [
+            masters.create_machine(
+                code=code,
+                section=section,
+                name=name,
+                clamping_force_t=Decimal(force),
+                reason="Demo data",
+            )
+            for code, name, force in (
+                ("IMM-250", "Haitian MA2500 250 t", "250"),
+                ("IMM-150", "Haitian MA1600 160 t", "160"),
+            )
+        ]
+        for machine, rate in zip(presses, ("2800", "2200"), strict=True):
+            masters.add_rate(
+                machine,
+                effective_from=today,
+                rate=Decimal(rate),
+                reason="Demo data",
+                user=accountant,
+            )
+
+        # Moulding staff on a day roster (crew A works the General shift).
+        for number, name in (
+            ("E101", "Ruwan Kumara"),
+            ("E102", "Saman Priyantha"),
+            ("E103", "Malini Rathnayake"),
+            ("E104", "Kasun Jayalath"),
+        ):
+            employees.create(
+                hr,
+                {
+                    "number": number,
+                    "full_name": name,
+                    "nic": f"1990{number[1:]}45678",
+                    "division": "IM",
+                    "section": "IM-MLD",
+                    "employment_type": "permanent",
+                    "join_date": "2024-01-15",
+                    "date_of_birth": "1990-05-01",
+                },
+            )
+        pattern = rosters.create_pattern(
+            name="Moulding days", days=[Shift.objects.get(code="G").pk], reason="Demo data"
+        )
+        crew = rosters.create_crew(division=im, code="A", name="Crew A", reason="Demo data")
+        rosters.create_assignment(
+            pattern=pattern, division=im, start_date=today, crews=[(crew, 0)], reason="Demo data"
+        )
+
+        # The cap, its masterbatch and bags; masterbatch and bags in stock (opening stock).
+        for values in (
+            {"code": "CAP-38", "name": "Cap 38 mm, PP, white", "category": "finished"},
+            {"code": "MB-WHT", "name": "White masterbatch", "category": "raw_material"},
+            {"code": "BAG-1K", "name": "Polybag for 1,000 caps", "category": "packing"},
+        ):
+            unit = "kg" if values["category"] == "raw_material" else "pcs"
+            items.create_item(
+                buyer,
+                values | {"unit": unit, "division": "IM", "inspection_required": False},
+            )
+        sheet = Workbook()
+        rows = sheet.active
+        rows.title = opening.SHEET
+        rows.append(opening.COLUMNS)
+        rows.append(["MB-WHT", "IM-MAIN", 50, 1500, "MB-0911"])
+        rows.append(["BAG-1K", "IM-MAIN", 500, 25, ""])
+        content = io.BytesIO()
+        sheet.save(content)
+        count, _ = opening.load(
+            accountant, None, content=content.getvalue(), count_date=today, notes="Demo data"
+        )
+        opening.submit(accountant, count)
+        opening.approve(director, count)
+
+        # The mould, the approved moulding BOM, and the cost rates.
+        moulds.create(
+            planner,
+            {
+                "code": "MD-C38",
+                "name": "Cap 38 mm, 8 cavities",
+                "parts": "CAP-38 x 8",
+                "cycle_time_s": "12",
+                "shot_weight_g": "44",
+                "runner_weight_g": "4",
+                "tonnage_t": "120",
+                "pm_interval_shots": "500000",
+                "machines": "IMM-250, IMM-150",
+            },
+        )
+        bom = boms.create(
+            planner,
+            {
+                "item": "CAP-38",
+                "kind": "moulding",
+                "mould": "MD-C38",
+                "base_quantity": "1000",
+                "reject_pct": "3",
+                "outputs": [{"item": "CAP-38", "cavities": 8, "part_weight_g": "5"}],
+                "lines": [
+                    {"line_type": "raw", "component": "PP-H-25"},
+                    {"line_type": "masterbatch", "component": "MB-WHT", "pct_of_resin": "2"},
+                    {"line_type": "packing", "component": "BAG-1K", "quantity": "1"},
+                ],
+            },
+        )
+        boms.submit(planner, bom)
+        boms.decide(manager, bom, "approve")
+        for values in (
+            {"kind": "labour", "section": "IM-MLD", "rate": "450", "reason": "Demo data"},
+            {"kind": "overhead", "section": "IM-MLD", "rate": "300", "reason": "Demo data"},
+            {
+                "kind": "mould",
+                "mould": "MD-C38",
+                "mould_cost": "1500000",
+                "life_shots": "1000000",
+                "reason": "Demo data",
+            },
+        ):
+            rates.add(accountant, values)
+
+        # Orders: the first call-off of the won Unilever order, released; one for stock.
+        line = SalesOrder.objects.get(customer_po="UL/PO/7781").lines.get()
+        released = production_orders.create(
+            planner,
+            {"item": "CAP-38", "quantity": "20000", "purpose": "sales", "sales_line": line.pk},
+        )
+        production_orders.release(planner, released)
+        production_orders.create(
+            planner,
+            {
+                "item": "CAP-38",
+                "quantity": "10000",
+                "due_date": (today + timedelta(days=30)).isoformat(),
+                "notes": "Stock for the next call-off",
+            },
+        )
+
+        # Today's and tomorrow's plan: the order on the 250 t press for the General shift.
+        for day in (today, today + timedelta(days=1)):
+            plan.add(
+                planner,
+                {"day": day.isoformat(), "shift": "G", "machine": "IMM-250", "order": released.pk},
+            )
 
     # --- The instructions ----------------------------------------------------------------------
 

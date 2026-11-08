@@ -9,9 +9,10 @@ class AssetsConfig(AppConfig):
     def ready(self):
         from apps.core.audit import register
 
-        from .models import AssetClass, AssetClassRate, DepreciationRun, FixedAsset
+        from .models import AssetClass, AssetClassRate, AssetTerms, DepreciationRun, FixedAsset
 
         register(AssetClass)
         register(AssetClassRate)
         register(FixedAsset)
         register(DepreciationRun)
+        register(AssetTerms)

@@ -391,7 +391,19 @@ Status: `[ ]` to do · `[x]` done
     months before it posted, and posts the cost out, the depreciation back, the money
     received and the gain or loss; the asset is not depreciated in the month it goes. Posted
     months, used rates, depreciated assets' cost and dates, and disposed assets never change
-    (database guards). Waiting for: the auditors' methods and rates.
+    (database guards).
+  - Change (owner, 8 Nov 2026): each class has default terms, all straight line: buildings 5%
+    / 20 years, plant and machinery 10% / 10 years (corrected by the owner the same day), moulds
+    and tooling the same as plant and machinery (our choice), motor vehicles 20% / 5, furniture
+    and fittings 25% / 4, office and computer equipment 25% / 4; land none. Every asset has its
+    own dated terms (method, rate, useful life), taken from its class unless the Accountant
+    enters different ones with a reason, and the **Director approves each asset's terms**
+    (Accounts → Fixed assets → Waiting for the Director) before it is depreciated; a month with
+    an asset without approved terms is refused, naming it. A change to a class's defaults also
+    needs the Director and applies only to assets registered after it. Assets registered
+    before are sent in one go with their class's defaults. For straight line the rate is
+    100 ÷ the life; either may be entered. New terms start after the last posted month; approved
+    or rejected terms never change (database). Defaults used for the 8 Nov questions 2, 3 and 5.
 
 ## F. Tax, currencies, budgets and closing
 

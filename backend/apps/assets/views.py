@@ -7,12 +7,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import approvals
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import CompanyAccount, Machine
 
 from . import services
-from .models import AssetClass, DepreciationRun
+from .models import Approval, AssetClass, AssetClassRate, AssetTerms, DepreciationRun
 from .services import AssetError
 
 
@@ -53,6 +54,7 @@ def _class(c: AssetClass) -> dict:
         else {
             "method": current.method,
             "rate": f"{current.rate.normalize():f}",
+            "life_years": current.life_years,
             "from": current.effective_from,
         },
         "rates": [
@@ -61,6 +63,8 @@ def _class(c: AssetClass) -> dict:
                 "effective_from": r.effective_from,
                 "method": r.method,
                 "rate": f"{r.rate.normalize():f}",
+                "life_years": r.life_years,
+                "status": r.status,
                 "reason": r.reason,
             }
             for r in c.rates.all()
@@ -86,6 +90,7 @@ class ClassRateView(_Assets):
                 effective_from=_day(request.data.get("effective_from")) or date.today(),
                 method=str(request.data.get("method") or ""),
                 rate=request.data.get("rate", ""),
+                life_years=request.data.get("life_years"),
                 reason=str(request.data.get("reason") or ""),
             )
         except AssetError as error:
@@ -120,7 +125,29 @@ def _asset(a) -> dict:
         "disposal_reason": a.disposal_reason,
         "shot_count": a.shot_count,
         "notes": a.notes,
+        "terms": _terms_now(a),
     }
+
+
+def _terms_row(t: AssetTerms) -> dict:
+    return {
+        "id": t.pk,
+        "effective_from": t.effective_from,
+        "method": t.method,
+        "rate": f"{t.rate.normalize():f}",
+        "life_years": t.life_years,
+        "status": t.status,
+        "reason": t.reason,
+    }
+
+
+def _terms_now(a) -> dict | None:
+    """The terms in force now, or the first ones still waiting."""
+    found = (
+        services.terms_on(a, date.today())
+        or a.terms.exclude(status=Approval.REJECTED).order_by("effective_from").first()
+    )
+    return None if found is None else _terms_row(found)
 
 
 class AssetListView(_Assets):
@@ -151,6 +178,10 @@ class AssetListView(_Assets):
                 serial_no=str(data.get("serial_no") or ""),
                 supplier=str(data.get("supplier") or ""),
                 notes=str(data.get("notes") or ""),
+                method=str(data.get("method") or ""),
+                rate=data.get("rate"),
+                life_years=data.get("life_years"),
+                terms_reason=str(data.get("terms_reason") or ""),
             )
         except AssetError as error:
             return _error(error)
@@ -171,6 +202,7 @@ class AssetDetailView(_Assets):
             }
             for line in found.depreciation.select_related("run").order_by("run__month_end")
         ]
+        body["all_terms"] = [_terms_row(t) for t in found.terms.all()]
         return Response(body)
 
     def patch(self, request, pk):
@@ -253,3 +285,124 @@ class RunActionView(_Assets):
         except AssetError as error:
             return _error(error)
         return Response(_run(run))
+
+
+class TermsView(_Assets):
+    """The Accountant proposes new depreciation terms for an asset."""
+
+    def post(self, request, pk):
+        found = get_object_or_404(services.visible(request.user), pk=pk)
+        data = request.data
+        try:
+            services.propose_terms(
+                request.user,
+                found,
+                effective_from=_day(data.get("effective_from")),
+                method=str(data.get("method") or ""),
+                rate=data.get("rate"),
+                life_years=data.get("life_years"),
+                reason=str(data.get("reason") or ""),
+            )
+        except AssetError as error:
+            return _error(error)
+        return Response(_asset(found), status=status.HTTP_201_CREATED)
+
+
+class SendAllView(_Assets):
+    def post(self, request):
+        try:
+            sent = services.send_all(request.user)
+        except AssetError as error:
+            return _error(error)
+        return Response({"sent": sent})
+
+
+class _Decisions(_Assets):
+    """The Director decides; the approval engine checks who may (accounting, view)."""
+
+    access_write_level = "view"
+
+
+def _can(user, document_type: str, pk: int) -> bool:
+    state = approvals.state_of(document_type, pk)
+    return state is not None and not approvals.why_not(user, state)
+
+
+class WaitingView(_Decisions):
+    """Class defaults and asset terms waiting for the Director."""
+
+    def get(self, request):
+        user = request.user
+        rates = AssetClassRate.objects.filter(status=Approval.AWAITING).select_related(
+            "asset_class", "set_by"
+        )
+        terms = AssetTerms.objects.filter(
+            status=Approval.AWAITING, asset__in=services.visible(user)
+        ).select_related("asset", "asset__asset_class", "created_by")
+        missing = (
+            services.visible(user)
+            .filter(status="active")
+            .exclude(terms__status__in=[Approval.APPROVED, Approval.AWAITING])
+            .distinct()
+            .count()
+        )
+        return Response(
+            {
+                "rates": [
+                    {
+                        "id": r.pk,
+                        "asset_class": r.asset_class.name,
+                        "effective_from": r.effective_from,
+                        "method": r.method,
+                        "rate": f"{r.rate.normalize():f}",
+                        "life_years": r.life_years,
+                        "reason": r.reason,
+                        "by": r.set_by.full_name if r.set_by_id else "",
+                        "can_decide": _can(user, "asset_class_rate", r.pk),
+                    }
+                    for r in rates
+                ],
+                "terms": [
+                    _terms_row(t)
+                    | {
+                        "asset": t.asset.code,
+                        "asset_name": t.asset.name,
+                        "asset_class": t.asset.asset_class.name,
+                        "cost": _m(t.asset.cost),
+                        "by": t.created_by.full_name,
+                        "can_decide": _can(user, "asset_terms", t.pk),
+                    }
+                    for t in terms
+                ],
+                "without_terms": missing,
+                "can_send_all": services.can_manage(user),
+            }
+        )
+
+
+class RateDecideView(_Decisions):
+    def post(self, request, pk):
+        found = get_object_or_404(AssetClassRate, pk=pk)
+        try:
+            services.decide_rate(
+                request.user, found, str(request.data.get("action") or ""),
+                str(request.data.get("reason") or ""),
+            )  # fmt: skip
+        except AssetError as error:
+            return _error(error)
+        return Response({"status": AssetClassRate.objects.get(pk=pk).status})
+
+
+class TermsDecideView(_Decisions):
+    def post(self, request, pk):
+        found = get_object_or_404(
+            AssetTerms.objects.filter(asset__in=services.visible(request.user)), pk=pk
+        )
+        try:
+            services.decide_terms(
+                request.user, found, str(request.data.get("action") or ""),
+                str(request.data.get("reason") or ""),
+            )  # fmt: skip
+        except AssetError as error:
+            return _error(error)
+        return Response({"status": AssetTerms.objects.get(pk=pk).status})

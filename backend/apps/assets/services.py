@@ -4,8 +4,15 @@
   cost, the first month to depreciate, a residual value, and, for a register brought in at
   go-live, the depreciation already charged. Registering posts nothing: the cost reached the
   books through the supplier's invoice or voucher (or the opening balances).
-- Each class has a dated method and annual rate (rule 11), agreed with the auditors. A month
-  is worked out with the rate in force at its end: straight line is (cost − residual) × rate
+- Each class has dated defaults (rule 11): method, annual rate and useful life (owner, 8 Nov
+  2026: straight line; buildings 5% / 20 years, plant and machinery 10% / 10, computers and
+  software 25% / 4, furniture and fittings 25% / 4, motor vehicles 20% / 5). The Accountant
+  changes them and the Director approves ("asset_class_rate").
+- Each asset has its own terms: a new asset takes its class's defaults, which the Accountant
+  may change for it, and the Director approves every asset's terms ("asset_terms"); a later
+  change is new terms from a later month. An asset is depreciated only with approved terms,
+  and a month cannot be worked out while an asset due waits for them. A month is worked out
+  with the terms in force at its end: straight line is (cost − residual) × rate
   ÷ 12; reducing balance is book value × rate ÷ 12; neither takes the book value below the
   residual value; land is not depreciated. A class with assets and no rate stops the month
   until the Accountant enters one.
@@ -28,15 +35,19 @@ from django.utils import timezone
 from apps.accounting import journal
 from apps.accounting.models import Account
 from apps.accounting.services import AccountingError
+from apps.core import approvals
 from apps.core.access import division_scope, effective_access
+from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import Division, User
 from apps.core.numbering import NumberSeriesError, allocate
 from apps.masters.models import CompanyAccount, Machine
 
 from .models import (
+    Approval,
     AssetClass,
     AssetClassRate,
+    AssetTerms,
     DepreciationLine,
     DepreciationRun,
     FixedAsset,
@@ -88,48 +99,254 @@ def _money(value, what: str, *, zero_ok: bool = True) -> Decimal:
 
 
 def rate_on(asset_class: AssetClass, day: date) -> AssetClassRate | None:
-    return asset_class.rates.filter(effective_from__lte=day).order_by("-effective_from").first()
+    """The class's approved defaults in force on the day."""
+    return (
+        asset_class.rates.filter(effective_from__lte=day, status=Approval.APPROVED)
+        .order_by("-effective_from")
+        .first()
+    )
 
 
-def add_rate(
-    user: User, asset_class: AssetClass, *, effective_from: date, method: str, rate, reason=""
-) -> AssetClassRate:
-    """A class's method and rate from a date; a posted month keeps the one it used."""
-    _accountant(user)
+def _terms(method: str, rate, life_years) -> tuple[str, Decimal, int | None]:
+    """Check a method, annual rate and useful life together. For straight line the rate is
+    100 ÷ the life; either may be given and the other is worked out."""
     if method not in Method.values:
         raise AssetError("Choose the method: straight line, reducing balance or none.")
+    text = str(rate if rate is not None else "").replace("%", "").strip()
     try:
-        rate = Decimal(str(rate).replace("%", "").strip() or "0")
+        rate = Decimal(text) if text else None
     except InvalidOperation:
         raise AssetError("The rate is not a number.") from None
-    if (
+    if rate is not None and (
         not rate.is_finite()
         or rate < 0
         or rate > HUNDRED
         or rate != rate.quantize(Decimal("0.0001"))
     ):
         raise AssetError("The rate is a percentage a year, from 0 to 100.")
-    if method != Method.NONE and rate == 0:
+    life_text = str(life_years if life_years is not None else "").strip()
+    try:
+        life = int(life_text) if life_text else None
+    except ValueError:
+        raise AssetError("The useful life is a whole number of years.") from None
+    if life is not None and not 1 <= life <= 100:
+        raise AssetError("The useful life is 1 to 100 years.")
+    if method == Method.NONE:
+        return method, ZERO, None
+    if method == Method.STRAIGHT_LINE:
+        if rate is None and life is None:
+            raise AssetError("Give the useful life in years (or the rate a year).")
+        if rate is None:
+            rate = (HUNDRED / life).quantize(Decimal("0.0001"), ROUND_HALF_UP)
+        elif life is None and rate and (HUNDRED / rate) == (HUNDRED / rate).to_integral_value():
+            life = int(HUNDRED / rate)
+        elif life is not None and abs(rate * life - HUNDRED) > Decimal("0.01") * life:
+            raise AssetError(
+                f"For straight line the rate is 100 ÷ the useful life: {life} years is "
+                f"{(HUNDRED / life).quantize(Decimal('0.01'))}% a year."
+            )
+    if not rate:
         raise AssetError("Give the rate (a percentage a year).")
+    return method, rate, life
+
+
+def _last_posted() -> DepreciationRun | None:
+    return DepreciationRun.objects.filter(status=DepreciationRun.Status.POSTED).first()
+
+
+def add_rate(
+    user: User,
+    asset_class: AssetClass,
+    *,
+    effective_from: date,
+    method: str,
+    rate=None,
+    reason="",
+    life_years=None,
+) -> AssetClassRate:
+    """New defaults for a class from a date, for the Director to approve; a posted month
+    keeps the one it used, and assets already registered keep their own terms."""
+    _accountant(user)
+    method, rate, life = _terms(method, rate, life_years)
     effective_from = month_start(effective_from)
-    last = DepreciationRun.objects.filter(status=DepreciationRun.Status.POSTED).first()
+    last = _last_posted()
     if last is not None and effective_from <= last.month_end:
         raise AssetError(
             f"Depreciation is posted to {last.month_end:%d/%m/%Y}; a new rate starts after it."
         )
     with audit_context("asset_rate_added", reason), transaction.atomic():
-        if AssetClassRate.objects.filter(
-            asset_class=asset_class, effective_from=effective_from
-        ).exists():
+        if (
+            AssetClassRate.objects.filter(asset_class=asset_class, effective_from=effective_from)
+            .exclude(status=Approval.REJECTED)
+            .exists()
+        ):
             raise AssetError(f"{asset_class.name} already has a rate from {effective_from}.")
-        return AssetClassRate.objects.create(
+        made = AssetClassRate.objects.create(
             asset_class=asset_class,
             effective_from=effective_from,
             method=method,
-            rate=rate if method != Method.NONE else ZERO,
+            rate=rate,
+            life_years=life,
+            status=Approval.AWAITING,
             reason=(reason or "").strip()[:2000],
             set_by=user,
         )
+        _submit(
+            user,
+            "asset_class_rate",
+            made.pk,
+            f"{asset_class.name} defaults from {effective_from:%d/%m/%Y}: {_label(made)}",
+            reason,
+        )
+        return made
+
+
+def _label(x) -> str:
+    if x.method == Method.NONE:
+        return "not depreciated"
+    life = f", {x.life_years} years" if x.life_years else ""
+    return f"{Method(x.method).label.split(' (')[0].lower()} {x.rate.normalize():f}%{life}"
+
+
+def _submit(user: User, document_type: str, pk: int, title: str, comment: str = "") -> None:
+    try:
+        approvals.submit(
+            user,
+            document_type,
+            pk,
+            created_by=user,
+            title=title[:200],
+            link="/fixed-assets",
+            comment=(comment or "").strip()[:500],
+        )
+    except ApprovalError as error:
+        raise AssetError(str(error)) from None
+
+
+def _decide(user, document_type: str, pk: int, action: str, reason: str) -> str:
+    """Approve or reject through the approval engine; the new status, or "" if more levels
+    are still to approve."""
+    try:
+        if action == "approve":
+            state = approvals.approve(user, document_type, pk, reason)
+            return Approval.APPROVED if state.status == state.Status.APPROVED else ""
+        if action == "reject":
+            approvals.reject(user, document_type, pk, reason)
+            return Approval.REJECTED
+    except ApprovalError as error:
+        raise AssetError(str(error)) from None
+    raise AssetError("Approve or reject.")
+
+
+def decide_rate(user: User, rate: AssetClassRate, action: str, reason: str = "") -> AssetClassRate:
+    with audit_context("asset_rate_decided", reason), transaction.atomic():
+        rate = AssetClassRate.objects.select_for_update().get(pk=rate.pk)
+        if rate.status != Approval.AWAITING:
+            raise AssetError("These defaults are not waiting for approval.")
+        status = _decide(user, "asset_class_rate", rate.pk, action, reason)
+        if status:
+            rate.status = status
+            rate.save(update_fields=["status"])
+        return rate
+
+
+# --- Each asset's terms ------------------------------------------------------------------------
+
+
+def terms_on(asset: FixedAsset, day: date) -> AssetTerms | None:
+    """The asset's approved terms in force on the day."""
+    return (
+        asset.terms.filter(effective_from__lte=day, status=Approval.APPROVED)
+        .order_by("-effective_from")
+        .first()
+    )
+
+
+def propose_terms(
+    user: User,
+    asset: FixedAsset,
+    *,
+    effective_from: date | None = None,
+    method: str = "",
+    rate=None,
+    life_years=None,
+    reason: str = "",
+) -> AssetTerms:
+    """The asset's method, rate and life from a month, for the Director to approve: its
+    class's defaults unless the Accountant gives others."""
+    _accountant(user)
+    if asset.status != FixedAsset.Status.ACTIVE:
+        raise AssetError(f"{asset.code} is disposed.")
+    first = not asset.terms.exclude(status=Approval.REJECTED).exists()
+    start = month_start(effective_from or asset.depreciation_from)
+    if start < asset.depreciation_from:
+        raise AssetError("The terms start in or after the month depreciation starts.")
+    last = _last_posted()
+    if not first and last is not None and start <= last.month_end:
+        raise AssetError(
+            f"Depreciation is posted to {last.month_end:%d/%m/%Y}; new terms start after it."
+        )
+    if not method:
+        default = rate_on(asset.asset_class, start)
+        if default is None:
+            raise AssetError(
+                f"{asset.asset_class.name} has no approved defaults: give the method and rate."
+            )
+        method, rate, life_years = default.method, default.rate, default.life_years
+    method, rate, life = _terms(method, rate, life_years)
+    with audit_context("asset_terms_proposed", reason), transaction.atomic():
+        if asset.terms.filter(status=Approval.AWAITING).exists():
+            raise AssetError(f"{asset.code} already has terms waiting for the Director.")
+        if asset.terms.filter(effective_from=start).exclude(status=Approval.REJECTED).exists():
+            raise AssetError(f"{asset.code} already has terms from {start:%d/%m/%Y}.")
+        made = AssetTerms.objects.create(
+            asset=asset,
+            effective_from=start,
+            method=method,
+            rate=rate,
+            life_years=life,
+            reason=(reason or "").strip()[:2000],
+            created_by=user,
+        )
+        _submit(
+            user,
+            "asset_terms",
+            made.pk,
+            f"{asset.code} {asset.name}: {_label(made)} from {start:%m/%Y}",
+            reason,
+        )
+        return made
+
+
+def decide_terms(user: User, terms: AssetTerms, action: str, reason: str = "") -> AssetTerms:
+    with audit_context("asset_terms_decided", reason), transaction.atomic():
+        terms = AssetTerms.objects.select_for_update().get(pk=terms.pk)
+        if terms.status != Approval.AWAITING:
+            raise AssetError("These terms are not waiting for approval.")
+        status = _decide(user, "asset_terms", terms.pk, action, reason)
+        if status:
+            terms.status = status
+            terms.decided_at = timezone.now()
+            terms.save(update_fields=["status", "decided_at"])
+        return terms
+
+
+def send_all(user: User) -> int:
+    """Assets registered before terms existed get their class's defaults, sent to the
+    Director (owner's default of 8 Nov 2026: they keep their values, approved once)."""
+    _accountant(user)
+    sent = 0
+    for asset in (
+        visible(user)
+        .filter(status=FixedAsset.Status.ACTIVE)
+        .exclude(terms__status__in=[Approval.APPROVED, Approval.AWAITING])
+        .select_related("asset_class")
+        .distinct()
+    ):
+        if rate_on(asset.asset_class, asset.depreciation_from) is not None:
+            propose_terms(user, asset, reason="Class defaults")
+            sent += 1
+    return sent
 
 
 # --- The register ------------------------------------------------------------------------
@@ -174,7 +391,13 @@ def register(
     serial_no: str = "",
     supplier: str = "",
     notes: str = "",
+    method: str = "",
+    rate=None,
+    life_years=None,
+    terms_reason: str = "",
 ) -> FixedAsset:
+    """Register an asset and send its depreciation terms (the class's defaults, or the method,
+    rate and life given) to the Director."""
     _accountant(user)
     if not isinstance(asset_class, AssetClass) or not asset_class.is_active:
         raise AssetError("Choose the asset class.")
@@ -208,7 +431,7 @@ def register(
             code = allocate("fixed_asset", on_date=timezone.localdate())
         except NumberSeriesError as error:
             raise AssetError(str(error)) from None
-        return FixedAsset.objects.create(
+        asset = FixedAsset.objects.create(
             code=code,
             name=name,
             asset_class=asset_class,
@@ -224,6 +447,15 @@ def register(
             notes=(notes or "").strip(),
             created_by=user,
         )
+        propose_terms(
+            user,
+            asset,
+            method=method,
+            rate=rate,
+            life_years=life_years,
+            reason=terms_reason or "Class defaults",
+        )
+        return asset
 
 
 def update(user: User, asset: FixedAsset, values: dict) -> FixedAsset:
@@ -243,7 +475,7 @@ def update(user: User, asset: FixedAsset, values: dict) -> FixedAsset:
 # --- Monthly depreciation ---------------------------------------------------------------------
 
 
-def amount_for(asset: FixedAsset, end: date, book: Decimal, rate: AssetClassRate) -> Decimal:
+def amount_for(asset: FixedAsset, end: date, book: Decimal, rate) -> Decimal:
     """One month's depreciation of the asset, its book value before it being `book`."""
     if rate.method == Method.NONE or end < asset.depreciation_from:
         return ZERO
@@ -293,11 +525,11 @@ def prepare(user: User, end: date) -> DepreciationRun:
         .select_related("asset_class")
         .order_by("code")
     )
-    missing = sorted({a.asset_class.name for a in assets if rate_on(a.asset_class, end) is None})
-    if missing:
+    waiting = [a.code for a in assets if terms_on(a, end) is None]
+    if waiting:
         raise AssetError(
-            "No depreciation method and rate for: " + ", ".join(missing) + ". The Accountant "
-            "enters them (as agreed with the auditors) under Fixed assets → Classes."
+            "No approved depreciation terms for: " + ", ".join(waiting) + ". The Director "
+            "approves each asset's method, rate and life (Fixed assets → Waiting for approval)."
         )
     with audit_context("depreciation_prepared"), transaction.atomic():
         run = DepreciationRun.objects.select_for_update().filter(month_end=end).first()
@@ -309,7 +541,7 @@ def prepare(user: User, end: date) -> DepreciationRun:
             run.lines.all().delete()
         total = ZERO
         for asset in assets:
-            rate = rate_on(asset.asset_class, end)
+            rate = terms_on(asset, end)
             book = book_value(asset)
             amount = amount_for(asset, end, book, rate)
             if amount <= 0:

@@ -223,6 +223,8 @@ def test_only_the_planner_changes_it_and_supervisors_see_their_sections(
         plan.add(supervisor, {})
     # A supervisor of another section sees nothing; of IM-MLD, today's and tomorrow's.
     assert as_user(supervisor).get(f"{URL}mine/").json()["entries"] == []
+    board = as_user(supervisor).get(f"{URL}?start={TODAY}&days=7").json()
+    assert (board["entries"], board["machines"], board["can_plan"]) == ([], [], False)
     Section.objects.get(code="IM-MLD").supervisors.add(supervisor)
     mine = as_user(supervisor).get(f"{URL}mine/").json()["entries"]
     assert [e["id"] for e in mine] == [put.pk]

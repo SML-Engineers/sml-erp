@@ -47,6 +47,13 @@ urlpatterns = [
     path("production-plan/copy/", v.PlanCopyView.as_view(), name="production-plan-copy"),
     path("production-plan/mine/", v.MyPlanView.as_view(), name="production-plan-mine"),
     path("production-plan/<int:pk>/", v.PlanEntryView.as_view(), name="production-plan-entry"),
+    path("shift-reports/", v.ShiftReportListView.as_view(), name="shift-reports"),
+    path("shift-reports/<int:pk>/", v.ShiftReportDetailView.as_view(), name="shift-report"),
+    path(
+        "shift-reports/<int:pk>/submit/",
+        v.ShiftReportSubmitView.as_view(),
+        name="shift-report-submit",
+    ),
     path("cost-rates/", v.CostRatesView.as_view(), name="cost-rates"),
     path("cost-rates/accept/", v.CostRatesAcceptView.as_view(), name="cost-rates-accept"),
     path("cost-rates/<int:pk>/", v.CostRateView.as_view(), name="cost-rate"),

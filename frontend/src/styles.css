@@ -1406,3 +1406,29 @@ ul.chips {
   padding: 0;
   margin: 0.5rem 0;
 }
+
+/* --- Shop floor (P3-08): large touch targets on phones and tablets --- */
+
+.shop-floor input,
+.shop-floor select {
+  font-size: 1.1rem;
+  min-height: 44px;
+}
+
+.shop-floor button {
+  min-height: 48px;
+  font-size: 1.05rem;
+}
+
+.shop-floor .run-card {
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.scan-view video {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 8px;
+}

@@ -1,0 +1,138 @@
+import { apiGet, apiSend } from "./client";
+
+/** Moulding shift reports entered by supervisors (P3-08). */
+
+export interface OpenShift {
+  section: string;
+  section_name: string;
+  day: string;
+  shift: string;
+  shift_name: string;
+  closes_at: string;
+  report: number | null;
+  status: string;
+}
+
+export interface ReportRow {
+  id: number;
+  section: string;
+  day: string;
+  shift: string;
+  shift_name: string;
+  status: "draft" | "submitted" | "returned" | "approved";
+  status_label: string;
+  created_by: string;
+  submitted_at: string | null;
+}
+
+export interface RunValues {
+  machine: string;
+  order: number | "";
+  plan_entry?: number | null;
+  material_lot: string;
+  operator: string;
+  start_time: string;
+  end_time: string;
+  start_counter: string;
+  end_counter: string;
+  rejects: { reason: string; quantity: string }[];
+}
+
+export interface Run extends Omit<RunValues, "start_counter" | "end_counter" | "rejects"> {
+  order_number: string;
+  item: string;
+  mould: string;
+  material: string;
+  start_counter: number;
+  end_counter: number;
+  shots: number;
+  cavities: number;
+  good_quantity: string;
+  actual_cycle_s: string;
+  standard_cycle_s: string;
+  planned_quantity: string;
+  rejects: { reason: string; quantity: number }[];
+}
+
+export interface DowntimeValues {
+  machine: string;
+  reason: string;
+  start_time: string;
+  end_time: string;
+  remarks: string;
+}
+
+export interface MaterialValues {
+  kind: "issue" | "return" | "regrind";
+  item: string;
+  lot_no: string;
+  quantity: string;
+}
+
+export interface ManpowerValues {
+  machine: string;
+  people: string;
+  overtime_hours: string;
+}
+
+export interface Summary {
+  shots: number;
+  made: number;
+  good: string;
+  rejects: number;
+  reject_pct: string;
+  rejects_by_reason: { reason: string; quantity: number }[];
+  downtime_minutes: number;
+  downtime_by_reason: { reason: string; minutes: number }[];
+  material: { item: string; used: string; unit: string; grams_per_good: string }[];
+  regrind: string;
+  people: number;
+  overtime_hours: string;
+}
+
+export interface ShiftReport extends ReportRow {
+  section_name: string;
+  shift_start: string;
+  shift_end: string;
+  closes_at: string;
+  notes: string;
+  runs: Run[];
+  downtime: DowntimeValues[];
+  materials: MaterialValues[];
+  manpower: { machine: string; people: number; overtime_hours: string }[];
+  summary: Summary;
+  editable: boolean;
+  options: {
+    machines: { code: string; name: string }[];
+    orders: { id: number; number: string; item: string; mould: string }[];
+    plan: {
+      id: number;
+      machine: string;
+      order: number;
+      order_number: string;
+      item: string;
+      mould: string;
+      quantity: string;
+      minutes: number;
+    }[];
+    reject_reasons: { code: string; name: string }[];
+    downtime_reasons: { code: string; name: string }[];
+    operators: { number: string; name: string }[];
+  };
+}
+
+export interface ReportValues {
+  runs: RunValues[];
+  downtime: DowntimeValues[];
+  materials: MaterialValues[];
+  manpower: ManpowerValues[];
+  notes: string;
+}
+
+export const reportsKey = ["shift-reports"] as const;
+export const getReports = () => apiGet<{ open: OpenShift[]; recent: ReportRow[]; can_enter: boolean }>("/shift-reports/");
+export const openReport = (values: { section: string; shift: string; day: string }) =>
+  apiSend<ShiftReport>("POST", "/shift-reports/", values);
+export const getReport = (id: number) => apiGet<ShiftReport>(`/shift-reports/${id}/`);
+export const saveReport = (id: number, values: ReportValues) => apiSend<ShiftReport>("PUT", `/shift-reports/${id}/`, values);
+export const submitReport = (id: number) => apiSend<ShiftReport>("POST", `/shift-reports/${id}/submit/`);

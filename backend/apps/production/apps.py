@@ -14,7 +14,11 @@ class ProductionConfig(AppConfig):
             BomLine,
             BomOutput,
             CostRate,
+            DowntimeEntry,
+            ManpowerEntry,
+            MaterialEntry,
             Mould,
+            MouldingRun,
             MouldPart,
             OrderBomLine,
             PlanEntry,
@@ -22,8 +26,10 @@ class ProductionConfig(AppConfig):
             ProductionOrderDue,
             ProductionSetting,
             ReasonCode,
+            RejectEntry,
             Routing,
             RoutingOperation,
+            ShiftReport,
         )
 
         for model in (
@@ -41,5 +47,11 @@ class ProductionConfig(AppConfig):
             ProductionOrderDue,
             OrderBomLine,
             PlanEntry,
+            ShiftReport,
+            MouldingRun,
+            RejectEntry,
+            DowntimeEntry,
+            MaterialEntry,
+            ManpowerEntry,
         ):
             register(model)

@@ -1,5 +1,6 @@
 """Printed quotation and email (backlog P15-07, spec 5.1, 3B)."""
 
+import re
 from datetime import timedelta
 from decimal import Decimal
 
@@ -186,9 +187,12 @@ def test_the_customers_copy_has_no_costing(approved, executive, accountant):
     masters.add_rate(grinder, effective_from=TODAY, rate="4321")
     costing.save(executive, q, 1, CostingInput(operations=[OperationInput(grinder, "97")]))
     figures = costing.results(q.lines.get().costing, q.lines.get(), q.exchange_rate)[0]
-    pdf = text(q)
+    # Only the words printed on the page: the file's own numbers (lengths, positions) may
+    # contain any digits by chance.
+    shown = b" ".join(re.findall(rb"\((.*?)\)\s*Tj", text(q)))
+    assert b"QUOTATION" in shown.upper()
     for secret in ("4,321.00", "4321", "17%", "23%", f"{figures['cost']:,.2f}", "Overhead"):
-        assert secret.encode() not in pdf, secret
+        assert secret.encode() not in shown, secret
 
 
 def test_an_export_quotation_shows_its_rate(executive, aluflex):

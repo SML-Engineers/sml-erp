@@ -1934,7 +1934,10 @@
       "issued": "Issued",
       "received": "Signed by the customer",
       "cancelled": "Cancelled"
-    }
+    },
+    "part": "Part from stock",
+    "partOf": "Part from stock, line {{n}}",
+    "stockValue": "Stock value"
   },
   "ti": {
     "title": "Tax invoices",
@@ -5152,6 +5155,36 @@
       "mould": "Mould amortisation",
       "subcontract": "Subcontract",
       "direct": "Direct expenses"
+    },
+    "ledger": {
+      "wip": "In the accounts as work in progress: {{amount}}.",
+      "completed": "Completed: {{quantity}} finished, {{amount}} moved from work in progress into finished goods (anything not finished went to cost of sales).",
+      "intoStock": "In the accounts: these costs are added to the stock value of the parts made (material is already there).",
+      "notPosted": "Not posted to the accounts: this job has no stock part, or makes a mould or tool. The costs are for information."
     }
+  },
+  "wip": {
+    "title": "Work in progress",
+    "help": "At month end: the cost of open jobs against the Work in progress account, the production costs charged to orders, and machine time charged to no order.",
+    "reconciled": "Work in progress agrees with the open jobs at {{date}}.",
+    "notReconciled": "Work in progress does not agree with the open jobs. Refresh the order costs, then check the difference.",
+    "none": "No work in progress.",
+    "division": "Division {{code}}",
+    "jobsOf": "Open jobs, division {{code}}",
+    "job": "Job",
+    "status": "Status",
+    "amount": "Amount",
+    "openJobs": "Open jobs",
+    "ledger": "Work in progress account",
+    "difference": "Difference",
+    "absorbed": "Production costs charged to orders",
+    "unabsorbed": "Machine time charged to no order",
+    "unabsorbedHelp": "Downtime in approved shift reports, at the machine's overhead rate. This cost stays in the month's expenses.",
+    "nothing": "Nothing this month.",
+    "divisionCol": "Division",
+    "element": "Cost",
+    "machine": "Machine",
+    "reason": "Reason",
+    "hours": "Hours"
   }
 }

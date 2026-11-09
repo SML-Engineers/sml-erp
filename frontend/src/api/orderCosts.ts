@@ -24,4 +24,12 @@ export interface OrderCosts {
     adjusts: boolean;
   }[];
   can_refresh: boolean;
+  /** P3-16 part 2: where the costs sit in the accounts. Absent in older answers. */
+  ledger?: {
+    posted: boolean;
+    note: "not_posted" | "into_stock" | "wip" | "completed";
+    wip?: string;
+    finished?: string;
+    finished_value?: string;
+  };
 }

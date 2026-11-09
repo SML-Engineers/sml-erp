@@ -18,6 +18,7 @@ class ProductionConfig(AppConfig):
             InterDivisionTransfer,
             JobCardEntry,
             JobCardReject,
+            JobCompletion,
             JobExcess,
             JobInspection,
             JobInspectionResult,
@@ -85,5 +86,6 @@ class ProductionConfig(AppConfig):
             JobInspectionResult,
             InterDivisionTransfer,
             OrderCost,
+            JobCompletion,
         ):
             register(model)

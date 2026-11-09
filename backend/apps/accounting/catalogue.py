@@ -86,6 +86,11 @@ SYSTEM_ROLES = {
     # a cost for the one it was done for; eliminated in the company total.
     "inter_division_income": "Inter-division sales",
     "inter_division_charges": "Inter-division charges",
+    # Order costing (P3-16): labour, machine time, overhead and mould wear charged to orders
+    # are credited here (against the costs in salaries and expenses); finished parts
+    # delivered are charged to cost of sales at their stock value.
+    "production_absorbed": "Production costs absorbed into orders",
+    "finished_goods_sold": "Cost of finished goods sold",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

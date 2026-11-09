@@ -28,6 +28,10 @@ export interface DNOrderLine {
   to_deliver: string;
   /** On this note; null when the line is not on it. */
   quantity: string | null;
+  /** P3-16: item code of the finished part taken out of stock ("" = none). */
+  item: string;
+  /** Stock value taken out when the note was issued, "0.00" before. */
+  cost: string;
   schedule: { due_date: string; quantity: string }[];
 }
 
@@ -74,7 +78,7 @@ export interface DNInput {
   driver: string;
   delivery_address: string;
   notes: string;
-  lines: { order_line: number; quantity: string }[];
+  lines: { order_line: number; quantity: string; item?: string }[];
 }
 
 export const dnKey = ["delivery-notes"];

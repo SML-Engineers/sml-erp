@@ -58,6 +58,7 @@ import PettyCashPage from "./pages/PettyCashPage";
 import StockWorkPage from "./pages/StockWorkPage";
 import FixedAssetsPage from "./pages/FixedAssetsPage";
 import TaxReportsPage from "./pages/TaxReportsPage";
+import WipReportPage from "./pages/WipReportPage";
 import RevaluationPage from "./pages/RevaluationPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import BudgetPage from "./pages/BudgetPage";
@@ -193,6 +194,7 @@ export default function App() {
         <Route path="stores-work" element={<StockWorkPage />} />
         <Route path="fixed-assets" element={<FixedAssetsPage />} />
         <Route path="tax-reports" element={<TaxReportsPage />} />
+        <Route path="wip-report" element={<WipReportPage />} />
         <Route path="revaluation" element={<RevaluationPage />} />
         <Route path="budgets" element={<BudgetsPage />} />
         <Route path="budgets/:id" element={<BudgetPage />} />

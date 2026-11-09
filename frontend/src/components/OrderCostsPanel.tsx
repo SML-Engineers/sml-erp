@@ -39,6 +39,15 @@ export default function OrderCostsPanel({ costs, onRefresh, busy }: { costs: Ord
       </p>
       {costs.not_costed.length > 0 && <p className="notice">{t("costs.notCosted", { sections: costs.not_costed.join(", ") })}</p>}
       {costs.out_of_date && <p className="notice">{t("costs.outOfDate")}</p>}
+      {costs.ledger && (
+        <p className="muted">
+          {costs.ledger.note === "wip" && t("costs.ledger.wip", { amount: formatDecimal(costs.ledger.wip ?? "0") })}
+          {costs.ledger.note === "completed" &&
+            t("costs.ledger.completed", { quantity: costs.ledger.finished, amount: formatDecimal(costs.ledger.finished_value ?? "0") })}
+          {costs.ledger.note === "into_stock" && t("costs.ledger.intoStock")}
+          {costs.ledger.note === "not_posted" && t("costs.ledger.notPosted")}
+        </p>
+      )}
       <div className="row-actions">
         <button type="button" className="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? t("costs.hideEntries") : t("costs.showEntries", { count: costs.entries.length })}

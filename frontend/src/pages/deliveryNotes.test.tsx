@@ -14,6 +14,8 @@ const caps = {
   delivered_before: "6000.000",
   to_deliver: "4000.000",
   quantity: null,
+  item: "CAP-PP-W",
+  cost: "0.00",
   schedule: [
     { due_date: "2026-11-03", quantity: "6000.000" },
     { due_date: "2026-12-03", quantity: "4000.000" },
@@ -27,6 +29,7 @@ const moulds = {
   ordered: "2.000",
   delivered_before: "0.000",
   to_deliver: "2.000",
+  item: "",
   schedule: [],
 };
 
@@ -77,6 +80,8 @@ test("the stores make a delivery note from the order's remaining quantities", as
   expect(within(table).getByText("4,000")).toBeInTheDocument(); // still to deliver
   fireEvent.change(within(form).getByLabelText("Vehicle no."), { target: { value: "LH-4521" } });
   fireEvent.change(within(form).getByLabelText("Delivered now, line 1"), { target: { value: "4000" } });
+  expect(within(form).getByLabelText("Part from stock, line 1")).toHaveValue("CAP-PP-W"); // from the production order
+  fireEvent.change(within(form).getByLabelText("Part from stock, line 2"), { target: { value: "mld-cap" } });
   fireEvent.click(within(form).getByRole("button", { name: "Make the draft delivery note" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/delivery-notes/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/delivery-notes/" && i?.method === "POST")!;
@@ -85,8 +90,8 @@ test("the stores make a delivery note from the order's remaining quantities", as
     vehicle_no: "LH-4521",
     delivery_address: "Grandpass, Colombo 14",
     lines: [
-      { order_line: 11, quantity: "4000" },
-      { order_line: 12, quantity: "" },
+      { order_line: 11, quantity: "4000", item: "CAP-PP-W" },
+      { order_line: 12, quantity: "", item: "mld-cap" },
     ],
   });
 });
@@ -97,6 +102,7 @@ test("an issued note is printed, then the signed copy is recorded", async () => 
     status: "issued",
     status_label: "Issued",
     issued_by: "Sunil",
+    lines: [{ ...caps, quantity: "4000.000", cost: "778.57" }, moulds],
     can_edit: false,
     can_receive: true,
     can_cancel: true,
@@ -120,6 +126,7 @@ test("an issued note is printed, then the signed copy is recorded", async () => 
   renderAt("/delivery-notes/8", <DeliveryNotePage />, "/delivery-notes/:id");
   const lines = await screen.findByRole("table", { name: "What is delivered" });
   expect(within(lines).queryByText("Cap mould")).not.toBeInTheDocument(); // not on this note
+  expect(within(lines).getByRole("row", { name: /Cap, PP, white/ })).toHaveTextContent("CAP-PP-W778.57"); // stock value taken out
   expect(screen.getByRole("link", { name: "Print for the customer to sign" })).toHaveAttribute("href", "/api/v1/delivery-notes/8/pdf/");
   fireEvent.change(screen.getByLabelText("Received by (name)"), { target: { value: "N. Perera" } });
   fireEvent.click(screen.getByRole("button", { name: "Record the customer's signature" }));

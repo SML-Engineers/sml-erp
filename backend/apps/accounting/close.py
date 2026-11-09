@@ -60,6 +60,7 @@ ITEMS = {
     "journals": "No manual journal of the month left as a draft or waiting for approval",
     "accruals": "Accruals and prepayments entered",
     "payroll": "Payroll of the month approved and posted for every division",
+    "order_costs": "Order costs up to date and Work in progress agreeing with the open jobs",
 }
 
 
@@ -193,6 +194,13 @@ def _payroll(start: date) -> tuple[bool, str]:
     return True, "Approved: " + ", ".join(divisions) + "."
 
 
+def _order_costs(start: date) -> tuple[bool, str]:
+    """P3-16: Work in progress per division agrees with the open jobs' costs."""
+    from apps.production import wip
+
+    return wip.check(start)
+
+
 def checklist(month: date) -> list[Item]:
     start = month.replace(day=1)
     end = month_end(start)
@@ -203,6 +211,7 @@ def checklist(month: date) -> list[Item]:
         "journals": _journals(start, end),
         "accruals": (False, "The Accountant ticks this once they are entered."),
         "payroll": _payroll(start),
+        "order_costs": _order_costs(start),
     }
     ticks = {}
     for tick in MonthEndTick.objects.filter(month=start).select_related("ticked_by"):

@@ -10,8 +10,9 @@
 - An issued note never changes (database guard). A mistake is corrected by cancelling it with
   a reason: its quantities are open on the order again. A note on a tax invoice cannot be
   cancelled (P2-05; also a database rule once the invoice is issued).
-- Finished-goods stock: none until Phase 3 (owner's question 4, the recommended default of
-  3 Nov 2026). A delivery note records what was delivered and posts nothing.
+- Finished-goods stock (P3-16): a line may take a finished part out of stock (by default
+  the part of the line's job or production order), at its stock value, charged to cost of
+  sales when the note is issued and brought back if it is cancelled (`inventory.finished`).
 """
 
 import hashlib
@@ -27,6 +28,8 @@ from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.models import User
 from apps.core.numbering import NumberSeriesError, allocate
+from apps.inventory import finished
+from apps.inventory.stock import StockError
 
 from .models import DeliveryNote, DeliveryNoteLine, SalesOrder, SalesOrderLine
 from .services import SalesError, _decimal
@@ -45,10 +48,14 @@ FILE_TYPES = {
 }
 
 
+DEFAULT = object()  # the part of the line's job or production order
+
+
 @dataclass
 class LineInput:
     order_line: SalesOrderLine
     quantity: object
+    item: object = DEFAULT  # an Item, None for no part, or DEFAULT
 
 
 # --- Who may do what ---------------------------------------------------------------------
@@ -197,7 +204,13 @@ def _fill(note: DeliveryNote, given: list[LineInput], *, check_remaining: bool) 
                 f"Line {line.line_no}: only {left[line.pk].normalize():f} {line.unit} is still "
                 f"to deliver."
             )
-        rows.append(DeliveryNoteLine(note=note, order_line=line, quantity=quantity))
+        item = finished.part_for(line) if g.item is DEFAULT else g.item
+        if item is not None:
+            try:
+                finished.check_part(item, f"Line {line.line_no}")
+            except StockError as error:
+                raise SalesError(str(error)) from None
+        rows.append(DeliveryNoteLine(note=note, order_line=line, quantity=quantity, item=item))
     note.lines.all().delete()
     DeliveryNoteLine.objects.bulk_create(rows)
 
@@ -266,11 +279,15 @@ def issue(user: User, note: DeliveryNote) -> DeliveryNote:
                 )
         if not note.lines.exists():
             raise SalesError("The delivery note has no lines.")
+        try:
+            finished.deliver(user, note)  # P3-16: the parts leave stock, at cost of sales
+        except StockError as error:
+            raise SalesError(str(error)) from None
         note.status = St.ISSUED
         note.issued_by = user
         note.issued_at = timezone.now()
         note.updated_at = note.issued_at
-        note.save(update_fields=["status", "issued_by", "issued_at", "updated_at"])
+        note.save(update_fields=["status", "issued_by", "issued_at", "updated_at", "cost_entry"])
         _move_order(order)
         return note
 
@@ -332,6 +349,11 @@ def cancel(user: User, note: DeliveryNote, reason: str) -> DeliveryNote:
                 "An issued delivery note is cancelled by the Sales Manager or the stores."
             )
         order = SalesOrder.objects.select_for_update().get(pk=note.order_id)
+        if note.status in COUNTED:
+            try:
+                finished.undeliver(user, note, reason)
+            except StockError as error:
+                raise SalesError(str(error)) from None
         note.status = St.CANCELLED
         note.cancel_reason = reason[:1000]
         note.updated_at = timezone.now()

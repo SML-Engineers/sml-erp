@@ -34,6 +34,7 @@ from . import (
     shift_reports,
     subcontract,
     transfers,
+    wip,
 )
 from .boms import BomError
 from .job_inspections import JobInspectionError
@@ -510,7 +511,21 @@ def _refresh(user, order) -> None:
     """P3-16: the Accountant brings an order's costs up to date."""
     if not costs.can_see(user) or not costs.summary(order, user)["can_refresh"]:
         raise JobError("The Accountant refreshes order costs.")
-    costs.sync(order)
+    try:
+        costs.sync(order)
+    except costs.CostError as error:
+        raise JobError(str(error)) from None
+
+
+class WipReportView(APIView):
+    """P3-16: the month-end WIP report: open jobs against the Work in progress account, and
+    machine time charged to no order."""
+
+    permission_classes = [AreaAccess]
+    access_area = "accounting"
+
+    def get(self, request):
+        return Response(wip.report(request.query_params.get("month")))
 
 
 class OrderCostsRefreshView(APIView):

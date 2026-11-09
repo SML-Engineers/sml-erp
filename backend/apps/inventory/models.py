@@ -479,6 +479,11 @@ class StockMovement(models.Model):
         PRODUCED = "produced", "Made in production"
         REGRIND = "regrind", "Regrind from production"
         UNDONE = "undone", "Production correction"
+        # P3-16: production costs added to finished parts' value (no quantity), finished
+        # parts delivered to the customer, and a cancelled delivery bringing them back.
+        COSTED = "costed", "Production cost added"
+        DELIVERED = "delivered", "Delivered to the customer"
+        UNDELIVERED = "undeliver", "Delivery cancelled"
 
     item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name="movements")
     store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="movements")
@@ -530,7 +535,7 @@ class StockMovement(models.Model):
         constraints = [
             models.CheckConstraint(
                 condition=~models.Q(quantity=0)
-                | (models.Q(kind="price_diff") & ~models.Q(value=0)),
+                | (models.Q(kind__in=["price_diff", "costed"]) & ~models.Q(value=0)),
                 name="inventory_movement_not_zero",
             )
         ]

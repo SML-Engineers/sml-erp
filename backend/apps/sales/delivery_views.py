@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.permissions import AreaAccess
+from apps.inventory import finished
+from apps.inventory.models import Item
 
 from . import deliveries, delivery_printing
 from .models import DeliveryNote, SalesOrder, SalesOrderLine, TaxInvoice
@@ -51,7 +53,7 @@ def _order_lines(order: SalesOrder, note: DeliveryNote | None) -> list[dict]:
     """Each line of the order: ordered, delivered by other notes, still to deliver, and the
     quantity on this note."""
     done = deliveries.delivered(order, besides=note)
-    here = {} if note is None else {x.order_line_id: x.quantity for x in note.lines.all()}
+    here = {} if note is None else {x.order_line_id: x for x in note.lines.select_related("item")}
     rows = []
     for line in order.lines.prefetch_related("schedule"):
         before = done.get(line.pk, 0)
@@ -65,7 +67,12 @@ def _order_lines(order: SalesOrder, note: DeliveryNote | None) -> list[dict]:
                 "ordered": str(line.quantity),
                 "delivered_before": f"{before:.3f}",
                 "to_deliver": f"{line.quantity - before:.3f}",
-                "quantity": f"{here[line.pk]:.3f}" if line.pk in here else None,
+                "quantity": f"{here[line.pk].quantity:.3f}" if line.pk in here else None,
+                # P3-16: the finished part leaving stock, and its stock value once issued.
+                "item": here[line.pk].item.code
+                if line.pk in here and here[line.pk].item_id
+                else ("" if line.pk in here else (getattr(finished.part_for(line), "code", ""))),
+                "cost": str(here[line.pk].cost) if line.pk in here else "0.00",
                 "schedule": [
                     {"due_date": d.due_date, "quantity": str(d.quantity)}
                     for d in line.schedule.all()
@@ -103,6 +110,9 @@ class LineIn(serializers.Serializer):
     order_line = serializers.IntegerField()
     # Empty for a line that is not on this note (the screen lists every order line).
     quantity = serializers.CharField(max_length=30, allow_blank=True)
+    # P3-16: the finished part leaving stock: its code, "" for none; left out, the part of
+    # the line's job or production order.
+    item = serializers.CharField(max_length=30, allow_blank=True, required=False)
 
 
 class NoteIn(serializers.Serializer):
@@ -125,7 +135,13 @@ def _lines(order: SalesOrder, rows) -> list[deliveries.LineInput]:
         line = by_id.get(row["order_line"])
         if line is None:
             raise SalesError("A line is not on this sales order.")
-        result.append(deliveries.LineInput(line, quantity))
+        item = deliveries.DEFAULT
+        if "item" in row:
+            code = (row["item"] or "").strip().upper()
+            item = Item.objects.filter(code=code).first() if code else None
+            if code and item is None:
+                raise SalesError(f"Line {line.line_no}: there is no item {code}.")
+        result.append(deliveries.LineInput(line, quantity, item))
     return result
 
 

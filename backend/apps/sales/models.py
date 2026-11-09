@@ -822,6 +822,11 @@ class DeliveryNote(models.Model):
     delivery_address = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    # P3-16: Dr cost of finished goods sold, Cr finished goods, for the parts it took out of
+    # stock; reversed if the note is cancelled.
+    cost_entry = models.ForeignKey(
+        "accounting.JournalEntry", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
     issued_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
@@ -852,6 +857,13 @@ class DeliveryNoteLine(models.Model):
         SalesOrderLine, on_delete=models.PROTECT, related_name="delivered"
     )
     quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    # P3-16: the finished part that leaves stock (from the line's job or production order,
+    # or chosen); none for tooling, services or parts not held in stock. Its stock value is
+    # charged to cost of sales when the note is issued.
+    item = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    cost = models.DecimalField(max_digits=18, decimal_places=2, default=0)
 
     class Meta:
         ordering = ["note", "order_line__line_no"]

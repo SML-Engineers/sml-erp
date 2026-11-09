@@ -44,6 +44,7 @@ urlpatterns = [
         name="production-order-action",
     ),
     path("order-costs/refresh/", v.OrderCostsRefreshView.as_view(), name="order-costs-refresh"),
+    path("wip-report/", v.WipReportView.as_view(), name="wip-report"),
     path("job-orders/", v.JobOrderListView.as_view(), name="job-orders"),
     path(
         "job-orders/sales-lines/", v.JobOrderSalesLinesView.as_view(), name="job-orders-sales-lines"

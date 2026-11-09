@@ -64,6 +64,10 @@ PAID = (Voucher.Status.DIRECTOR_APPROVED, Voucher.Status.PARTLY_PAID, Voucher.St
 SETUP_REASONS = ("SETUP", "MOULD-CHANGE")
 
 
+class CostError(Exception):
+    pass
+
+
 def can_see(user: User) -> bool:
     access = effective_access(user)
     return access.has("job_profitability", "view") or access.has("accounting", "view")
@@ -386,6 +390,12 @@ def sync(order) -> int:
                     )
                 )
         OrderCost.objects.bulk_create(made)
+        from . import wip  # part 2: and into the ledger
+
+        try:
+            wip.post_pending(order)
+        except wip.WipError as error:
+            raise CostError(str(error)) from None
         return len(made)
 
 
@@ -395,8 +405,10 @@ def sync_later(*orders) -> None:
     seen = {(type(o).__name__, o.pk): o for o in orders if o is not None}
 
     def run():
+        from . import wip
+
         for order in seen.values():
-            sync(type(order).objects.get(pk=order.pk))
+            wip.safe_sync(type(order).objects.get(pk=order.pk))
 
     transaction.on_commit(run)
 
@@ -502,4 +514,23 @@ def summary(order, user: User) -> dict | None:
             for e in entries[-300:]
         ],
         "can_refresh": effective_access(user).has("accounting", "enter"),
+        # Part 2: where the costs are in the ledger.
+        "ledger": _ledger(order),
+    }
+
+
+def _ledger(order) -> dict:
+    from . import wip
+
+    if not wip.in_ledger(order):
+        return {"posted": False, "note": "not_posted"}
+    if isinstance(order, ProductionOrder):
+        return {"posted": True, "note": "into_stock"}
+    done = getattr(order, "completion", None)
+    return {
+        "posted": True,
+        "note": "completed" if done else "wip",
+        "wip": str(wip.wip_of(order)),
+        "finished": f"{done.quantity.normalize():f}" if done else "",
+        "finished_value": str(done.value) if done else "",
     }

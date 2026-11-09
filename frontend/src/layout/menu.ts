@@ -108,6 +108,7 @@ export const MENU: MenuSection[] = [
       { label: "reval.title", path: "/revaluation", area: "accounting" },
       { label: "budget.title", path: "/budgets", area: "accounting" },
       { label: "close.title", path: "/month-end", area: "accounting" },
+      { label: "wip.title", path: "/wip-report", area: "accounting" },
       { label: "planner.title", path: "/cash-planner", area: "financial_reports" },
       { label: "mig.title", path: "/migration", area: "accounting" },
       { label: "par.title", path: "/parallel-run", area: "financial_reports" },

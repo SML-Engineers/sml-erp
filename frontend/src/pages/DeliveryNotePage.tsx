@@ -19,7 +19,7 @@ import {
   type DNDetail,
   type DNOrderLine,
 } from "../api/deliveryNotes";
-import { formatQuantity } from "../lib/decimal";
+import { compareDecimal, formatDecimal, formatQuantity } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -101,12 +101,13 @@ function NoteForm({ note, orderId, lines, address }: { note?: DNDetail; orderId?
   const [quantities, setQuantities] = useState<Record<number, string>>(
     Object.fromEntries(lines.map((l) => [l.id, l.quantity ? formatQuantity(l.quantity).replace(/,/g, "") : ""])),
   );
+  const [items, setItems] = useState<Record<number, string>>(Object.fromEntries(lines.map((l) => [l.id, l.item ?? ""])));
   const save = useMutation({
     mutationFn: () => {
       const input = {
         ...values,
         order: orderId,
-        lines: lines.map((l) => ({ order_line: l.id, quantity: quantities[l.id] ?? "" })),
+        lines: lines.map((l) => ({ order_line: l.id, quantity: quantities[l.id] ?? "", item: items[l.id] ?? "" })),
       };
       return note ? updateDeliveryNote(note.id, input) : createDeliveryNote(input);
     },
@@ -150,6 +151,7 @@ function NoteForm({ note, orderId, lines, address }: { note?: DNDetail; orderId?
               <th className="num">{t("dn.deliveredBefore")}</th>
               <th className="num">{t("dn.toDeliver")}</th>
               <th className="num">{t("dn.now")}</th>
+              <th>{t("dn.part")}</th>
             </tr>
           </thead>
           <tbody>
@@ -176,6 +178,15 @@ function NoteForm({ note, orderId, lines, address }: { note?: DNDetail; orderId?
                     aria-label={t("dn.nowOf", { n: l.line_no })}
                     value={quantities[l.id] ?? ""}
                     onChange={(e) => setQuantities((now) => ({ ...now, [l.id]: e.target.value }))}
+                  />
+                </td>
+                <td>
+                  <input
+                    size={12}
+                    maxLength={30}
+                    aria-label={t("dn.partOf", { n: l.line_no })}
+                    value={items[l.id] ?? ""}
+                    onChange={(e) => setItems((now) => ({ ...now, [l.id]: e.target.value }))}
                   />
                 </td>
               </tr>
@@ -241,6 +252,8 @@ function ReadOnly({ note }: { note: DNDetail }) {
               <th>{t("quotations.description")}</th>
               <th className="num">{t("dn.ordered")}</th>
               <th className="num">{t("dn.now")}</th>
+              <th>{t("dn.part")}</th>
+              <th className="num">{t("dn.stockValue")}</th>
             </tr>
           </thead>
           <tbody>
@@ -252,6 +265,8 @@ function ReadOnly({ note }: { note: DNDetail }) {
                   {formatQuantity(l.ordered)} {l.unit}
                 </td>
                 <td className="num">{formatQuantity(l.quantity ?? "0")}</td>
+                <td>{l.item || "–"}</td>
+                <td className="num">{l.cost && compareDecimal(l.cost, "0") !== 0 ? formatDecimal(l.cost) : "–"}</td>
               </tr>
             ))}
           </tbody>

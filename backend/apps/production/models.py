@@ -1577,6 +1577,28 @@ class OrderCost(models.Model):
     amount = models.DecimalField(max_digits=18, decimal_places=2)
     description = models.CharField(max_length=200)
     adjusts = models.BooleanField("Adjusts an earlier entry of the same source", default=False)
+
+    # P3-16 part 2, the ledger: where the cost went (Work in progress until a job is
+    # completed; a moulding order's finished parts; cost of sales once none are left in
+    # stock; or nowhere: a moulding order's material is in its parts already, and jobs
+    # without a stock part leave their costs where they are), the account it came out of,
+    # and the journal.
+    class Ledger(models.TextChoices):
+        NONE = "none", "Not posted"
+        WIP = "wip", "Work in progress"
+        FINISHED = "finished", "Finished goods"
+        SOLD = "sold", "Cost of finished goods sold"
+
+    ledger = models.CharField(max_length=10, choices=Ledger.choices, blank=True)
+    credit_account = models.ForeignKey(
+        "accounting.Account", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    credit_division = models.ForeignKey(
+        "core.Division", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -1592,3 +1614,31 @@ class OrderCost(models.Model):
 
     def __str__(self):
         return f"{self.job_id or self.production_order_id} {self.element} {self.amount}"
+
+
+class JobCompletion(models.Model):
+    """A job's finished parts received into stock when it is completed (backlog P3-16 part
+    2): its Work in progress moved to finished goods (Dr finished goods, Cr Work in
+    progress), lot = the job's number. Never changed or deleted (database)."""
+
+    job = models.OneToOneField(JobOrder, on_delete=models.PROTECT, related_name="completion")
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    value = models.DecimalField(max_digits=18, decimal_places=2)
+    movement = models.OneToOneField(
+        "inventory.StockMovement", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    journal_entry = models.ForeignKey(
+        "accounting.JournalEntry", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=0, value__gte=0),
+                name="production_completion_values",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job_id} {self.quantity} {self.value}"

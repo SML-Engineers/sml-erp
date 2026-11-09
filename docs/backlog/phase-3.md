@@ -428,7 +428,7 @@ Status: `[ ]` to do · `[x]` done
 
 ## D. Costing and profitability
 
-- [ ] **P3-16 Order costs and work in progress**
+- [x] **P3-16 Order costs and work in progress**
   Every approved cost posts an order cost entry (spec 7.7: material by lot, machine time,
   labour, setup and mould change, subcontract, direct expenses, rejects, mould
   amortisation, overhead) and the ledger: open orders' costs in Work in progress per
@@ -452,10 +452,28 @@ Status: `[ ]` to do · `[x]` done
     "Bring the costs up to date" and by `manage.py sync_order_costs`. Job and production
     order pages show costs by element, cost per good piece, the cost spent on rejects,
     sections without a labour rate, and every entry (job profitability or accounting view).
-  - Part 2 to do: the ledger (Work in progress per division, finished goods on completion,
-    cost of sales when invoiced, which needs sales lines linked to their part or order since
-    deliveries do not take stock out yet), the month-end WIP report reconciled with the WIP
-    account, unabsorbed machine time, the month-end checklist.
+  - Part 2 done (PR #181): the ledger. Cost entries are posted when brought up to date
+    (one journal per order, source "order_cost"), against the account the cost came from
+    (the item's expense account for issues, the voucher or invoice line's account, else
+    5090 Production costs absorbed into orders). Machining jobs with a stock part: Dr 1220
+    Work in progress of the job's division; on completion the WIP moves to the part's stock
+    (a production receipt, lot = job number) at the cost of the finished pieces, anything
+    not finished to 5005 Cost of finished goods sold; late costs go to the stock value if
+    stock is left, else to 5005. Moulding orders: material is already in the parts' stock
+    (P3-09); the other costs are added to the parts' stock value (a "costed" stock
+    movement on lot = order number). Mould and tool jobs and jobs without a stock part are
+    not posted (costs for information). **Deliveries now take finished parts out of
+    stock**: each delivery note line names its part (filled from the line's production
+    order or job, changeable while a draft); issuing the note takes the stock FIFO by lot
+    from the order division's main store at weighted average, Dr 5005 Cr the item's stock
+    account, and refuses when there is not enough stock; cancelling an issued note puts the
+    stock back into the same lots and reverses the entry. Cost of sales is therefore posted
+    at delivery, not at invoice (owner to confirm). The **Work in progress** report
+    (Accounts menu) shows per division each open job's WIP against the 1220 balance at the
+    month end, the difference, the production costs charged to orders, and downtime in
+    approved shift reports charged to no order at the machine's overhead rate (unabsorbed).
+    The month-end checklist has "Order costs up to date and Work in progress agreeing with
+    the open jobs".
 
 - [ ] **P3-17 Live order profitability**
   For every order: estimate (from the accepted quotation), actual to date, forecast at

@@ -40,7 +40,7 @@ from apps.inventory.stock import StockError
 from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
-from . import costs, job_cards, job_inspections, orders, routings, subcontract, transfers
+from . import costs, job_cards, job_inspections, orders, routings, subcontract, transfers, wip
 from .models import (
     Bom,
     BomLine,
@@ -440,9 +440,26 @@ def complete(user: User, job: JobOrder) -> JobOrder:
             f"{job.number} is on hold after a failed inspection: the Production Manager decides "
             "first."
         )
-    return _move(
-        user, job, "job_order_completed", St.COMPLETED, (St.RELEASED,), completed_at=timezone.now()
-    )
+    with transaction.atomic():
+        job = _move(
+            user,
+            job,
+            "job_order_completed",
+            St.COMPLETED,
+            (St.RELEASED,),
+            completed_at=timezone.now(),
+        )
+        # P3-16: its finished parts into stock at the job's Work in progress.
+        steps = job_cards.flow(job)
+        _finish(user, job, steps[-1]["finished"] if steps else ZERO)
+        return job
+
+
+def _finish(user: User, job: JobOrder, finished) -> None:
+    try:
+        wip.finish(user, job, finished)
+    except (wip.WipError, costs.CostError) as error:
+        raise JobError(str(error)) from None
 
 
 def close(user: User, job: JobOrder) -> JobOrder:
@@ -459,7 +476,11 @@ def cancel(user: User, job: JobOrder, reason: str) -> JobOrder:
         raise JobError("Give the reason for cancelling.")
     if net_issued(job):
         raise JobError(f"{job.number} has material issued: return it to stores first.")
-    return _move(user, job, "job_order_cancelled", St.CANCELLED, OPEN, end_reason=reason)
+    with transaction.atomic():
+        job = _move(user, job, "job_order_cancelled", St.CANCELLED, OPEN, end_reason=reason)
+        if job.released_at:
+            _finish(user, job, ZERO)  # P3-16: its Work in progress to cost of sales
+        return job
 
 
 # --- Material ------------------------------------------------------------------------------------

@@ -8,10 +8,11 @@ from decimal import Decimal as D
 
 import pytest
 from django.db import transaction
+from django.db.models import Sum
 from django.db.utils import DatabaseError
 
 from apps.accounting.models import Account
-from apps.inventory.models import Item
+from apps.inventory.models import Item, StockMovement
 from apps.masters.models import Section
 from apps.production import costs, orders, shift_approval, shift_reports
 from apps.production.models import CostRate, JobOrder, Mould, OrderCost, ProductionReceipt
@@ -168,6 +169,19 @@ def test_a_production_orders_costs_from_its_shift(
         "mould": D("50.00"),
         "setup": D("650.00"),
     }
+    # Part 2: the material is in the caps already; the rest is added to their stock value.
+    ledger = {e.element: e.ledger for e in OrderCost.objects.filter(production_order=order)}
+    assert ledger == {
+        "material": "none",
+        "labour": "finished",
+        "overhead": "finished",
+        "mould": "finished",
+        "setup": "finished",
+    }
+    added = StockMovement.objects.filter(kind="costed", lot_no=order.number).aggregate(
+        v=Sum("value")
+    )
+    assert added["v"] == D("2650.00")
     body = as_user(accountant).get(f"/api/v1/production-orders/{order.pk}/").json()["costs"]
     total = receipt.value + D("2650.00")
     assert (body["good"], body["rejected"], body["total"]) == ("3960", "40", str(total))

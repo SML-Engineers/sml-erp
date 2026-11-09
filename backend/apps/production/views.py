@@ -32,6 +32,7 @@ from . import (
     profit,
     rates,
     reasons,
+    reports,
     routings,
     shift_approval,
     shift_reports,
@@ -604,6 +605,45 @@ class OeeView(APIView):
             return Response(oee.report(request.user, start, end, q.get("section", "")))
         except oee.OeeError as error:
             return _error(error)
+
+
+class ProductionReportView(APIView):
+    """P3-20: the production reports (daily, rejects, downtime, jobs, material, moulds) for a
+    date range (this month by default) in the user's sections."""
+
+    permission_classes = [AreaAccess]
+    access_area = "production_approvals"
+
+    def get(self, request, kind):
+        today = timezone.localdate()
+        q = request.query_params
+        try:
+            start = date.fromisoformat(q.get("start") or today.replace(day=1).isoformat())
+            end = date.fromisoformat(q.get("end") or today.isoformat())
+        except ValueError:
+            return Response({"detail": "Give the dates as YYYY-MM-DD."}, status=400)
+        section = q.get("section", "")
+        user = request.user
+        try:
+            if kind == "daily":
+                body = reports.daily(user, start, end, section)
+            elif kind == "rejects":
+                body = reports.rejects(user, start, end, q.get("by") or "reason", section)
+            elif kind == "downtime":
+                body = reports.downtime(user, start, end, section)
+            elif kind == "jobs":
+                body = reports.jobs(user, start, end)
+            elif kind == "material":
+                body = reports.material(user, start, end, section)
+            elif kind == "moulds":
+                body = {"rows": reports.moulds_due(user)}
+            elif kind == "sections":
+                body = {"sections": reports.sections(user)}
+            else:
+                return Response({"detail": "Unknown report."}, status=404)
+        except reports.ReportError as error:
+            return _error(error)
+        return Response({"start": start, "end": end, **body})
 
 
 class WipReportView(APIView):

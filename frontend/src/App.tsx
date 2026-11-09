@@ -61,6 +61,7 @@ import TaxReportsPage from "./pages/TaxReportsPage";
 import WipReportPage from "./pages/WipReportPage";
 import OrderProfitsPage from "./pages/OrderProfitsPage";
 import OeePage from "./pages/OeePage";
+import ProductionReportsPage from "./pages/ProductionReportsPage";
 import RevaluationPage from "./pages/RevaluationPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import BudgetPage from "./pages/BudgetPage";
@@ -199,6 +200,7 @@ export default function App() {
         <Route path="wip-report" element={<WipReportPage />} />
         <Route path="order-profits" element={<OrderProfitsPage />} />
         <Route path="oee" element={<OeePage />} />
+        <Route path="production-reports" element={<ProductionReportsPage />} />
         <Route path="revaluation" element={<RevaluationPage />} />
         <Route path="budgets" element={<BudgetsPage />} />
         <Route path="budgets/:id" element={<BudgetPage />} />

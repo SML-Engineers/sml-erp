@@ -325,6 +325,11 @@ def profit_and_loss(
     )
     if division is not None:
         lines = lines.filter(division=division)
+    else:
+        # Work one division did for another at cost (P3-15, spec 3.1): a mould repair is
+        # income in the workshop and the same cost in moulding, so the company total leaves
+        # both out. A new mould is capitalised: its credit offsets the costs it was made of.
+        lines = lines.exclude(entry__source_type="inter_division_repair")
     totals = {
         row["account"]: (row["credits"] or Decimal("0")) - (row["debits"] or Decimal("0"))
         for row in lines.values("account").annotate(debits=Sum("debit"), credits=Sum("credit"))

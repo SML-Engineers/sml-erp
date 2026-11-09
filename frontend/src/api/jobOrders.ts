@@ -121,6 +121,27 @@ export interface JobInspectionRow {
   can_approve: boolean;
 }
 
+/** P3-15: a mould job transferred at cost to the mould's division. */
+export interface Transfer {
+  done: boolean;
+  kind?: "new_mould" | "repair";
+  kind_label: string;
+  date?: string;
+  from: string;
+  to: string;
+  material: string;
+  bills: string;
+  labour: string;
+  overhead: string;
+  hours?: string;
+  amount: string;
+  journal?: string;
+  asset?: string;
+  bill_lines?: string[];
+  why_not?: string;
+  can_post?: boolean;
+}
+
 export interface Bill {
   kind: "voucher" | "invoice";
   number: string;
@@ -171,6 +192,7 @@ export interface JobOrder extends JobRow {
   can_subcontract: boolean;
   inspections: JobInspectionRow[];
   on_hold: boolean;
+  transfer: Transfer | null;
   can_inspect: boolean;
   suppliers: { seq: number; supplier: string }[];
   dispatch?: { id: number; number: string };
@@ -211,7 +233,7 @@ export interface WaitingExcess {
 
 export type JobValues = Record<string, unknown>;
 export type JobAction =
-  "release" | "complete" | "close" | "cancel" | "issue" | "return" | "ask-more" | "send-out" | "receive-back" | "inspect";
+  "release" | "complete" | "close" | "cancel" | "issue" | "return" | "ask-more" | "send-out" | "receive-back" | "inspect" | "transfer";
 
 export const jobsKey = ["job-orders"] as const;
 export const getJobs = (q: string, status: string, purpose: string) =>

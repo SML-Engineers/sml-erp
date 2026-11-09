@@ -82,6 +82,10 @@ SYSTEM_ROLES = {
     # Gratuity (P2B-19): provided for by each approved payroll, paid on leaving by voucher.
     "gratuity_expense": "Gratuity",
     "gratuity_provision": "Provision for gratuity",
+    # Work between divisions at cost (P3-15, spec 3.1): income for the division that did it,
+    # a cost for the one it was done for; eliminated in the company total.
+    "inter_division_income": "Inter-division sales",
+    "inter_division_charges": "Inter-division charges",
 }
 SYSTEM_ROLE_CHOICES = list(SYSTEM_ROLES.items())
 

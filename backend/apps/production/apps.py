@@ -15,6 +15,7 @@ class ProductionConfig(AppConfig):
             BomOutput,
             CostRate,
             DowntimeEntry,
+            InterDivisionTransfer,
             JobCardEntry,
             JobCardReject,
             JobExcess,
@@ -81,5 +82,6 @@ class ProductionConfig(AppConfig):
             SubcontractReturn,
             JobInspection,
             JobInspectionResult,
+            InterDivisionTransfer,
         ):
             register(model)

@@ -405,10 +405,26 @@ Status: `[ ]` to do · `[x]` done
     the owner's 8 Nov answer for materials; first-article inspection is recorded but does
     not block later work.
 
-- [ ] **P3-15 Mould making and inter-division transfers**
+- [x] **P3-15 Mould making and inter-division transfers**
   A workshop job for a new company mould is capitalised to the mould's fixed asset; a
   repair is charged to the Plastic Injection Moulding division, both through an
   inter-division transfer (spec 3.1, 7.3) at cost.
+  - Done: a completed mould making or mould repair job (the mould chosen on the job, in
+    another division) shows "Transfer at cost" on its page; the Accountant posts it once.
+    Cost until P3-16: material issued less returned at its issue cost; supplier bills coded
+    to the job (approved or paid voucher lines not paying an invoice, and posted supplier
+    invoice lines of non-stock items, in LKR); labour and overhead for job card time in
+    approved shift reports at the section's labour rate and the machine's or section's
+    overhead rate that day (P3-05). New company mould: Dr Moulds and tooling (1530) in the
+    mould's division, Cr Inter-division sales (new 4800) in the workshop, the mould
+    registered as a fixed asset at that cost and linked, its depreciation terms sent to the
+    Director. Repair: Dr Inter-division charges (new 5080, Cost of sales) in the mould's
+    division, Cr 4800 in the workshop; repairs are left out of the company's total profit
+    and loss (spec 3.1 elimination), a capitalised mould stays in as it offsets its costs.
+    Refused: other jobs, not completed, already transferred, a customer's mould, a mould
+    already in the register, a mould of the workshop's own division, no cost. Transfers are
+    never changed or deleted (database). Our choices: at cost with no mark-up (spec allows
+    a set %, not asked for); the Accountant posts.
 
 ## D. Costing and profitability
 

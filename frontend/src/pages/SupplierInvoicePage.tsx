@@ -124,7 +124,7 @@ export default function SupplierInvoicePage() {
   );
 }
 
-type Row = { grn_line: number; bill: boolean; quantity: string; unit_price: string; tax_code: string };
+type Row = { grn_line: number; bill: boolean; quantity: string; unit_price: string; tax_code: string; order: string };
 
 function InvoiceForm({ invoice }: { invoice?: InvoiceDetail }) {
   const { t } = useTranslation();
@@ -149,7 +149,7 @@ function InvoiceForm({ invoice }: { invoice?: InvoiceDetail }) {
     Object.fromEntries(
       (invoice?.lines ?? []).map((l) => [
         l.grn_line,
-        { grn_line: l.grn_line, bill: true, quantity: l.quantity, unit_price: l.unit_price, tax_code: l.tax_code ?? "" },
+        { grn_line: l.grn_line, bill: true, quantity: l.quantity, unit_price: l.unit_price, tax_code: l.tax_code ?? "", order: l.order },
       ]),
     ),
   );
@@ -163,7 +163,13 @@ function InvoiceForm({ invoice }: { invoice?: InvoiceDetail }) {
         stated_total: values.stated_total || null,
         lines: Object.values(rows)
           .filter((r) => r.bill)
-          .map((r) => ({ grn_line: r.grn_line, quantity: r.quantity, unit_price: r.unit_price, tax_code: r.tax_code || null })),
+          .map((r) => ({
+            grn_line: r.grn_line,
+            quantity: r.quantity,
+            unit_price: r.unit_price,
+            tax_code: r.tax_code || null,
+            order: r.order,
+          })),
       };
       return invoice ? updateSupplierInvoice(invoice.id, input) : createSupplierInvoice({ ...input, supplier: Number(supplier), division });
     },
@@ -229,6 +235,7 @@ function InvoiceForm({ invoice }: { invoice?: InvoiceDetail }) {
                 <th className="num">{t("si.quantity")}</th>
                 <th className="num">{t("si.price")}</th>
                 <th>{t("si.tax")}</th>
+                <th>{t("si.order")}</th>
               </tr>
             </thead>
             <tbody>
@@ -239,6 +246,7 @@ function InvoiceForm({ invoice }: { invoice?: InvoiceDetail }) {
                   quantity: o.open_quantity,
                   unit_price: o.po_unit_price,
                   tax_code: o.po_tax_code ?? "",
+                  order: "",
                 });
                 return (
                   <tr key={o.grn_line}>
@@ -288,6 +296,16 @@ function InvoiceForm({ invoice }: { invoice?: InvoiceDetail }) {
                         onChange={(e) => setRow({ ...row, tax_code: e.target.value.toUpperCase() })}
                       />
                     </td>
+                    <td>
+                      <input
+                        aria-label={t("si.orderOf", { item: o.item.code })}
+                        value={row.order}
+                        maxLength={30}
+                        placeholder="JO… / MO…"
+                        disabled={!row.bill}
+                        onChange={(e) => setRow({ ...row, order: e.target.value.toUpperCase() })}
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -325,6 +343,7 @@ function ReadOnly({ invoice }: { invoice: InvoiceDetail }) {
               <th className="num">{t("si.price")}</th>
               <th className="num">{t("si.poPriceHeader")}</th>
               <th>{t("si.tax")}</th>
+              <th>{t("si.order")}</th>
               <th className="num">{t("vouchers.total")}</th>
             </tr>
           </thead>
@@ -347,6 +366,7 @@ function ReadOnly({ invoice }: { invoice: InvoiceDetail }) {
                 <td className={l.unit_price !== l.po_unit_price ? "num form-error" : "num"}>{formatDecimal(l.unit_price)}</td>
                 <td className="num">{formatDecimal(l.po_unit_price)}</td>
                 <td className={l.tax_code !== l.po_tax_code ? "form-error" : ""}>{l.tax_code ?? "—"}</td>
+                <td>{l.order || "—"}</td>
                 <td className="num">{formatDecimal(l.total)}</td>
               </tr>
             ))}
@@ -447,7 +467,12 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
       )}
       {invoice.can_reopen && (
         <p>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => reopenSupplierInvoice(invoice.id))}>
+          <button
+            type="button"
+            className="secondary"
+            disabled={act.isPending}
+            onClick={() => act.mutate(() => reopenSupplierInvoice(invoice.id))}
+          >
             {t("si.reopen")}
           </button>
         </p>
@@ -464,7 +489,12 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
             </button>
           )}
           {invoice.can_cancel && (
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => cancelSupplierInvoice(invoice.id, text))}>
+            <button
+              type="button"
+              className="secondary"
+              disabled={act.isPending}
+              onClick={() => act.mutate(() => cancelSupplierInvoice(invoice.id, text))}
+            >
               {t("si.cancel")}
             </button>
           )}
@@ -473,7 +503,12 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
               <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveInvoiceException(invoice.id, text))}>
                 {t("si.approve")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnInvoiceException(invoice.id, text))}>
+              <button
+                type="button"
+                className="secondary"
+                disabled={act.isPending}
+                onClick={() => act.mutate(() => returnInvoiceException(invoice.id, text))}
+              >
                 {t("salesOrders.sendBack")}
               </button>
             </>

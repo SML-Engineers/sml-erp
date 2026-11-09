@@ -76,9 +76,14 @@ def test_the_accountant_sees_the_queue_and_must_code_before_approving(
     submitted.lines.update(division=None)
     with pytest.raises(VoucherError, match="account and division before approving: line 1"):
         services.approve(accountant, submitted)
-    code(accountant, submitted, account=acc("6210"), division=div("IM"), job_ref="JOB-145")
+    # P3-13: the job reference is a job or production order number that exists.
+    with pytest.raises(
+        VoucherError, match="Line 1: There is no job order or production order JOB-145"
+    ):
+        code(accountant, submitted, account=acc("6210"), division=div("IM"), job_ref="JOB-145")
+    code(accountant, submitted, account=acc("6210"), division=div("IM"))
     line = submitted.lines.get()
-    assert (line.account.number, line.division.code, line.job_ref) == ("6210", "IM", "JOB-145")
+    assert (line.account.number, line.division.code, line.job_ref) == ("6210", "IM", "")
     voucher = services.approve(accountant, submitted, comment="coded")
     assert voucher.status == "accountant_approved"
     assert list(services.waiting(director)) == [voucher]

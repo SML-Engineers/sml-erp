@@ -164,8 +164,23 @@ class VoucherLine(models.Model):
     division = models.ForeignKey(
         "core.Division", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
-    # Job or production order the cost belongs to (unused until Phase 3).
+    # The job or production order the cost belongs to (spec 7.7), coded by the Accountant:
+    # the number as typed, and the order it names (P3-13).
     job_ref = models.CharField(max_length=50, blank=True)
+    job = models.ForeignKey(
+        "production.JobOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="voucher_lines",
+    )
+    production_order = models.ForeignKey(
+        "production.ProductionOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="voucher_lines",
+    )
     # A matched supplier invoice this line pays (P16-11): its account is Accounts payable and
     # what the vouchers that still count pay on it never exceeds the invoice (database guard).
     supplier_invoice = models.ForeignKey(
@@ -199,6 +214,10 @@ class VoucherLine(models.Model):
             models.UniqueConstraint(fields=["voucher", "line_no"], name="vouchers_line_unique_no"),
             models.CheckConstraint(condition=models.Q(amount__gt=0), name="vouchers_line_amount"),
             models.CheckConstraint(condition=models.Q(tax_amount__gte=0), name="vouchers_line_tax"),
+            models.CheckConstraint(
+                condition=models.Q(job__isnull=True) | models.Q(production_order__isnull=True),
+                name="vouchers_line_one_order",
+            ),
             models.CheckConstraint(
                 condition=models.Q(wht_amount__gte=0)
                 & models.Q(wht_amount__lte=models.F("amount")),

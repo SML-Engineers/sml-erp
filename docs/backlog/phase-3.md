@@ -366,11 +366,24 @@ Status: `[ ]` to do · `[x]` done
     pieces stay in hand at the operation until completed or rejected; until P3-13, a
     subcontract operation passes on what it received.
 
-- [ ] **P3-13 Subcontract operations**
+- [x] **P3-13 Subcontract operations**
   Parts sent out to a supplier for an operation and received back against the job (with
   the quantity checked), and the supplier's bill coded to the job: a new optional job or
   production order field on voucher lines and supplier invoice lines, filled by the
   Accountant (spec 7.7).
+  - Done: on a released job (Production → Job orders), the Planner or the stores person sends
+    parts out for a subcontract operation on a numbered note (SC{YY}{MM}{NNNN}, printed A5
+    for the gate and the supplier, with a QR code): the routing's supplier or another, never
+    more than the operation received from the one before less what is already out or back.
+    Parts come back counted against their note: good, and rejected with the reason; never
+    more than is still out (service and database). Good parts go on to the next operation
+    (P3-12 now uses them in place of the stand-in); the job's progress shows what is at the
+    supplier. Notes and receipts are never changed or deleted (database). Voucher lines (the
+    Accountant's coding) and supplier invoice lines now take a job or production order
+    number, checked to exist and to be released or completed, kept as the order itself
+    (one at most, database); the job shows the bills coded to it. Costing reads them in
+    P3-16. Our choices: the Planner or stores sends and receives; a draft, closed or
+    cancelled order takes no bills.
 
 - [ ] **P3-14 Inspection on jobs**
   First-article, in-process and final inspection against the job with measurements, using

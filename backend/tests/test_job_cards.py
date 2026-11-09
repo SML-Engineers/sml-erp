@@ -131,11 +131,9 @@ def test_the_supervisor_scans_cards_and_parts_flow_from_operation_to_operation(
         "available": "1",
     }
     assert (flow[20]["received"], flow[20]["in_hand"], flow[20]["available"]) == ("18", "1", "15")
-    assert (flow[30]["subcontract"], flow[30]["finished"], flow[30]["card"]) == (
-        True,
-        "15",
-        f"{job.number}/30",
-    )
+    # The plating is sent out: it finishes the parts only when they come back (P3-13).
+    assert (flow[30]["subcontract"], flow[30]["in_hand"], flow[30]["finished"]) == (True, "15", "0")
+    assert flow[30]["card"] == f"{job.number}/30"
     # The first operation never does more than the job's quantity.
     with pytest.raises(ShiftReportError, match=r"more than the job's quantity \(20\)"):
         save(

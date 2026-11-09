@@ -30,6 +30,7 @@ from . import (
     routings,
     shift_approval,
     shift_reports,
+    subcontract,
 )
 from .boms import BomError
 from .jobs import JobError
@@ -46,6 +47,7 @@ from .models import (
     ReasonCode,
     Routing,
     ShiftCorrection,
+    SubcontractDispatch,
 )
 from .moulds import ImportRefused, MouldError
 from .orders import OrderError
@@ -54,6 +56,7 @@ from .rates import RateError
 from .reasons import ReasonError
 from .routings import RoutingError
 from .shift_reports import ShiftReportError
+from .subcontract import SubcontractError
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -839,9 +842,18 @@ class JobOrderActionView(_Jobs):
                 return Response(body | {"stock_issue": made.number}, status=status.HTTP_201_CREATED)
             elif action == "ask-more":
                 jobs.ask_more(request.user, job, d)
+            elif action == "send-out":
+                made = subcontract.send_out(request.user, job, d)
+                body = jobs.payload(job, request.user)
+                return Response(
+                    body | {"dispatch": {"id": made.pk, "number": made.number}},
+                    status=status.HTTP_201_CREATED,
+                )
+            elif action == "receive-back":
+                subcontract.receive_back(request.user, job, d)
             else:
                 return _error("Unknown action.", status.HTTP_404_NOT_FOUND)
-        except JobError as error:
+        except (JobError, SubcontractError) as error:
             return _error(error)
         return Response(jobs.payload(job, request.user))
 
@@ -893,4 +905,19 @@ class JobCardsView(_Jobs):
             return _error("Job cards are printed for a released job.")
         response = HttpResponse(job_cards.render(job), content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="job-cards-{job.number}.pdf"'
+        return response
+
+
+class SubcontractNoteView(_Jobs):
+    """P3-13: the note that goes with parts sent out to a supplier."""
+
+    def get(self, request, pk):
+        dispatch = get_object_or_404(
+            SubcontractDispatch.objects.filter(job__in=jobs.visible(request.user)).select_related(
+                "job__item", "operation", "supplier"
+            ),
+            pk=pk,
+        )
+        response = HttpResponse(subcontract.render(dispatch), content_type="application/pdf")
+        response["Content-Disposition"] = f'inline; filename="{dispatch.number}.pdf"'
         return response

@@ -186,6 +186,21 @@ class SupplierInvoiceLine(models.Model):
     po_tax_code = models.ForeignKey(
         "accounting.TaxCode", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
+    # The job or production order the cost belongs to (P3-13; spec 7.7), if any.
+    job = models.ForeignKey(
+        "production.JobOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="invoice_lines",
+    )
+    production_order = models.ForeignKey(
+        "production.ProductionOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="invoice_lines",
+    )
 
     class Meta:
         ordering = ["invoice", "line_no"]
@@ -193,6 +208,10 @@ class SupplierInvoiceLine(models.Model):
             models.UniqueConstraint(fields=["invoice", "line_no"], name="purchasing_si_line_no"),
             models.CheckConstraint(
                 condition=models.Q(quantity__gt=0), name="purchasing_si_line_quantity"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(job__isnull=True) | models.Q(production_order__isnull=True),
+                name="purchasing_si_line_one_order",
             ),
         ]
 

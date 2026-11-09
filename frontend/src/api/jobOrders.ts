@@ -65,9 +65,36 @@ export interface JobStep {
   rejected: string;
   rework: string;
   in_hand: string;
+  at_supplier: string;
   available: string;
   finished: string;
   card: string;
+}
+
+/** P3-13: parts sent out to a supplier and what came back. */
+export interface Dispatch {
+  id: number;
+  number: string;
+  operation: number;
+  operation_name: string;
+  supplier: string;
+  supplier_name: string;
+  quantity: string;
+  sent_on: string;
+  expected_on: string | null;
+  notes: string;
+  out: string;
+  returns: { received_on: string; good: string; rejected: string; reason: string; by: string }[];
+}
+
+export interface Bill {
+  kind: "voucher" | "invoice";
+  number: string;
+  line_no: number;
+  supplier: string;
+  description: string;
+  amount: string;
+  status: string;
 }
 
 export interface JobIssueDoc {
@@ -105,6 +132,11 @@ export interface JobOrder extends JobRow {
   materials: JobMaterial[];
   progress: JobStep[];
   can_print_cards: boolean;
+  subcontract: Dispatch[];
+  bills: Bill[];
+  can_subcontract: boolean;
+  suppliers: { seq: number; supplier: string }[];
+  dispatch?: { id: number; number: string };
   issues: JobIssueDoc[];
   excess: JobExcessRow[];
   stores: { id: number; code: string; name: string }[];
@@ -141,7 +173,7 @@ export interface WaitingExcess {
 }
 
 export type JobValues = Record<string, unknown>;
-export type JobAction = "release" | "complete" | "close" | "cancel" | "issue" | "return" | "ask-more";
+export type JobAction = "release" | "complete" | "close" | "cancel" | "issue" | "return" | "ask-more" | "send-out" | "receive-back";
 
 export const jobsKey = ["job-orders"] as const;
 export const getJobs = (q: string, status: string, purpose: string) =>
@@ -158,3 +190,4 @@ export const getWaitingExcess = () => apiGet<{ results: WaitingExcess[] }>("/job
 export const decideExcess = (id: number, action: "approve" | "reject", reason: string) =>
   apiSend<{ status: string }>("POST", `/job-orders/excess/${id}/decide/`, { action, reason });
 export const jobCardsUrl = (id: number) => `${API_BASE}/job-orders/${id}/cards/`;
+export const dispatchNoteUrl = (id: number) => `${API_BASE}/job-orders/sent/${id}/note/`;

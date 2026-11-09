@@ -114,12 +114,17 @@ const job: JobOrder = {
       rejected: "1",
       rework: "1",
       in_hand: "1",
+      at_supplier: "0",
       available: "18",
       finished: "0",
       card: "JO26110001/10",
     },
   ],
   can_print_cards: true,
+  subcontract: [],
+  bills: [],
+  can_subcontract: false,
+  suppliers: [],
 };
 
 test("Stores issues material by lot and takes back what was not used", async () => {
@@ -241,4 +246,81 @@ test("the Planner makes a mould repair job and changes its operations while a dr
       expect.objectContaining({ method: "PATCH", body: expect.stringContaining('"name":"Weld and polish","section":"M-LAT"') }),
     ),
   );
+});
+
+test("parts go out to the plater and are counted back; the bills coded to the job show", async () => {
+  const plating = {
+    seq: 30,
+    name: "Hard chrome plating",
+    section: "",
+    machine: "",
+    setup_min: "0",
+    run_min: "0",
+    subcontract: true,
+    supplier: "S0100",
+    subcontract_cost: "450",
+    notes: "",
+  };
+  const withSub: JobOrder = {
+    ...job,
+    operations: [...job.operations, plating],
+    can_subcontract: true,
+    subcontract: [
+      {
+        id: 4,
+        number: "SC26110001",
+        operation: 30,
+        operation_name: "Hard chrome plating",
+        supplier: "S0100",
+        supplier_name: "Ceylon Platers",
+        quantity: "10",
+        sent_on: "2026-11-09",
+        expected_on: null,
+        notes: "",
+        out: "10",
+        returns: [],
+      },
+    ],
+    bills: [
+      {
+        kind: "voucher",
+        number: "WS261109001",
+        line_no: 1,
+        supplier: "Ceylon Platers",
+        description: "Plating",
+        amount: "4500.00",
+        status: "Draft",
+      },
+    ],
+  };
+  const calls = mockApi({
+    "GET /api/v1/job-orders/waiting/": { body: { results: [] } },
+    "GET /api/v1/job-orders/?q=&status=open&purpose=": { body: list },
+    "GET /api/v1/job-orders/7/": { body: withSub },
+    "POST /api/v1/job-orders/7/send-out/": { status: 201, body: withSub },
+    "POST /api/v1/job-orders/7/receive-back/": { body: withSub },
+  });
+  renderAt("/job-orders?job=7", <JobOrdersPage />, "/job-orders");
+  const sub = await screen.findByRole("region", { name: "Sent out to suppliers" });
+  expect(within(sub).getByRole("link", { name: "Print the note" })).toHaveAttribute("href", "/api/v1/job-orders/sent/4/note/");
+  fireEvent.change(within(sub).getByLabelText("Pieces sent"), { target: { value: "5" } });
+  fireEvent.click(within(sub).getByRole("button", { name: "Send out and make the note" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/job-orders/7/send-out/",
+      expect.objectContaining({ body: expect.stringContaining('"operation":"30","quantity":"5"') }),
+    ),
+  );
+  const back = within(sub).getByRole("group", { name: "Received back from SC26110001" });
+  fireEvent.change(within(back).getByLabelText("Good pieces"), { target: { value: "8" } });
+  fireEvent.change(within(back).getByLabelText("Rejected pieces"), { target: { value: "1" } });
+  fireEvent.change(within(back).getByLabelText("Reason for the rejects"), { target: { value: "Pitting" } });
+  fireEvent.click(within(back).getByRole("button", { name: "Record what came back" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/job-orders/7/receive-back/",
+      expect.objectContaining({ body: expect.stringContaining('"good":"8","rejected":"1","reason":"Pitting","dispatch":4') }),
+    ),
+  );
+  expect(screen.getByRole("region", { name: "Supplier bills coded to this job" })).toHaveTextContent("Voucher WS261109001 line 1");
 });

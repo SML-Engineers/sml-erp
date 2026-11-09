@@ -49,6 +49,9 @@ urlpatterns = [
     ),
     path("job-orders/waiting/", v.JobExcessWaitingView.as_view(), name="job-orders-waiting"),
     path(
+        "job-orders/sent/<int:pk>/note/", v.SubcontractNoteView.as_view(), name="subcontract-note"
+    ),
+    path(
         "job-orders/excess/<int:pk>/decide/",
         v.JobExcessDecideView.as_view(),
         name="job-excess-decide",

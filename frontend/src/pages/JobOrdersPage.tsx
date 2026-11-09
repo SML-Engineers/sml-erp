@@ -14,8 +14,10 @@ import {
   getJobSalesLines,
   getWaitingExcess,
   jobAction,
+  dispatchNoteUrl,
   jobCardsUrl,
   jobsKey,
+  type Dispatch,
   type JobAction,
   type JobIssueDoc,
   type JobOrder,
@@ -370,6 +372,8 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
         </div>
       )}
       <ErrorLine error={act.error} />
+      {(j.can_subcontract || j.subcontract.length > 0) && <Subcontract job={j} onSaved={saved} />}
+      {j.bills.length > 0 && <Bills job={j} />}
       {j.can_issue && <Issue job={j} onSaved={saved} />}
       {j.can_ask_more && <AskMore job={j} onSaved={saved} />}
       <Excess job={j} onDecided={() => void queryClient.invalidateQueries({ queryKey: key })} />
@@ -422,6 +426,7 @@ function Progress({ job }: { job: JobOrder }) {
             <th className="num">{t("job.rejected")}</th>
             <th className="num">{t("job.rework")}</th>
             <th className="num">{t("job.inHand")}</th>
+            <th className="num">{t("job.atSupplier")}</th>
             <th className="num">{t("job.available")}</th>
           </tr>
         </thead>
@@ -430,13 +435,14 @@ function Progress({ job }: { job: JobOrder }) {
             <tr key={s.seq}>
               <td>
                 {s.seq} {s.name}
-                {s.subcontract && <span className="muted small"> {t("job.subcontractPasses")}</span>}
+                {s.subcontract && <span className="muted small"> ({t("job.atSupplier").toLowerCase()})</span>}
               </td>
               <td className="num">{formatDecimal(s.received)}</td>
               <td className="num">{formatDecimal(s.completed)}</td>
               <td className="num">{formatDecimal(s.rejected)}</td>
               <td className="num">{formatDecimal(s.rework)}</td>
               <td className="num">{formatDecimal(s.in_hand)}</td>
+              <td className="num">{s.subcontract ? formatDecimal(s.at_supplier) : ""}</td>
               <td className="num">
                 {s.finished !== "0" ? `${t("job.finished")} ${formatDecimal(s.finished)}` : formatDecimal(s.available)}
               </td>
@@ -844,5 +850,146 @@ function IssueDoc({ job, doc, onSaved }: { job: JobOrder; doc: JobIssueDoc; onSa
       )}
       <ErrorLine error={save.error} />
     </div>
+  );
+}
+
+/** P3-13: parts sent out to a supplier for an operation, and counted back. */
+function Subcontract({ job, onSaved }: { job: JobOrder; onSaved: (j: JobOrder) => void }) {
+  const { t } = useTranslation();
+  const ops = job.operations.filter((o) => o.subcontract);
+  const [values, setValues] = useState({ operation: String(ops[0]?.seq ?? ""), quantity: "", expected_on: "", supplier: "", notes: "" });
+  const send = useMutation({
+    mutationFn: () => jobAction(job.id, "send-out", { ...values, sent_on: today() }),
+    onSuccess: (j) => {
+      setValues({ ...values, quantity: "", notes: "" });
+      onSaved(j);
+    },
+  });
+  const set = (key: keyof typeof values) => (e: { target: { value: string } }) => setValues({ ...values, [key]: e.target.value });
+  return (
+    <section className="panel" aria-label={t("job.subcontract")}>
+      <h3>{t("job.subcontract")}</h3>
+      <p className="muted">{t("job.subcontractHelp")}</p>
+      {job.subcontract.map((d) => (
+        <Sent key={d.id} job={job} dispatch={d} onSaved={onSaved} />
+      ))}
+      {job.can_subcontract && ops.length > 0 && (
+        <div className="form-grid" role="group" aria-label={t("job.sendOut")}>
+          <label>
+            {t("job.operationSent")}
+            <select value={values.operation} onChange={set("operation")}>
+              {ops.map((o) => (
+                <option key={o.seq} value={o.seq}>
+                  {o.seq} {o.name} ({o.supplier})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("job.quantitySent")}
+            <input inputMode="decimal" value={values.quantity} onChange={set("quantity")} />
+          </label>
+          <label>
+            {t("job.expectedOn")}
+            <input type="date" value={values.expected_on} onChange={set("expected_on")} />
+          </label>
+          <label>
+            {t("job.supplierCode")}
+            <input value={values.supplier} onChange={set("supplier")} />
+          </label>
+          <label className="wide">
+            {t("job.reason")}
+            <input value={values.notes} onChange={set("notes")} />
+          </label>
+          <div className="wide row-actions">
+            <button type="button" disabled={send.isPending} onClick={() => send.mutate()}>
+              {t("job.sendIt")}
+            </button>
+          </div>
+          <div className="wide">
+            <ErrorLine error={send.error} />
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Sent({ job, dispatch, onSaved }: { job: JobOrder; dispatch: Dispatch; onSaved: (j: JobOrder) => void }) {
+  const { t } = useTranslation();
+  const [values, setValues] = useState({ good: "", rejected: "", reason: "" });
+  const receive = useMutation({
+    mutationFn: () => jobAction(job.id, "receive-back", { ...values, dispatch: dispatch.id, received_on: today() }),
+    onSuccess: (j) => {
+      setValues({ good: "", rejected: "", reason: "" });
+      onSaved(j);
+    },
+  });
+  const set = (key: keyof typeof values) => (e: { target: { value: string } }) => setValues({ ...values, [key]: e.target.value });
+  const label = t("job.receiveBack", { number: dispatch.number });
+  return (
+    <div className="run-card">
+      <p>
+        <strong>
+          {t("job.sentLine", {
+            number: dispatch.number,
+            quantity: formatDecimal(dispatch.quantity),
+            supplier: dispatch.supplier_name,
+            op: dispatch.operation,
+            date: dispatch.sent_on,
+            out: formatDecimal(dispatch.out),
+          })}
+        </strong>{" "}
+        <a href={dispatchNoteUrl(dispatch.id)} target="_blank" rel="noreferrer">
+          {t("job.note")}
+        </a>
+      </p>
+      {dispatch.returns.map((r, i) => (
+        <p key={i} className="muted small">
+          {t("job.backLine", { date: r.received_on, good: formatDecimal(r.good), rejected: formatDecimal(r.rejected), reason: r.reason })}
+        </p>
+      ))}
+      {job.can_subcontract && Number(dispatch.out) > 0 && (
+        <div className="inline-form" role="group" aria-label={label}>
+          <label>
+            {t("job.good")}
+            <input inputMode="decimal" value={values.good} onChange={set("good")} />
+          </label>
+          <label>
+            {t("job.rejectedBack")}
+            <input inputMode="decimal" value={values.rejected} onChange={set("rejected")} />
+          </label>
+          <label>
+            {t("job.rejectReason")}
+            <input value={values.reason} onChange={set("reason")} />
+          </label>
+          <button type="button" disabled={receive.isPending} onClick={() => receive.mutate()}>
+            {t("job.receiveIt")}
+          </button>
+          <ErrorLine error={receive.error} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Bills({ job }: { job: JobOrder }) {
+  const { t } = useTranslation();
+  return (
+    <section className="panel" aria-label={t("job.bills")}>
+      <h3>{t("job.bills")}</h3>
+      {job.bills.map((b) => (
+        <p key={`${b.kind}-${b.number}-${b.line_no}`}>
+          {t("job.billLine", {
+            kind: t(`job.kinds.${b.kind}`),
+            number: b.number,
+            line: b.line_no,
+            supplier: b.supplier,
+            amount: formatDecimal(b.amount),
+            status: b.status,
+          })}
+        </p>
+      ))}
+    </section>
   );
 }

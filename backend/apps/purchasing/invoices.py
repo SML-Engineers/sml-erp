@@ -71,6 +71,7 @@ class LineInput:
     quantity: object
     unit_price: object
     tax_code: TaxCode | None = None
+    order: str = ""  # P3-13: the job or production order the cost belongs to
 
 
 # --- Who may do what ---------------------------------------------------------------------
@@ -248,6 +249,12 @@ def _fill(invoice: SupplierInvoice, lines: list[LineInput]) -> None:
         except InvoiceError as error:
             raise InvoiceError(where + str(error)) from None
         amount = (quantity * price).quantize(CENT, ROUND_HALF_UP)
+        from apps.production.links import OrderNotFound, order_for
+
+        try:
+            job, production_order, _ = order_for(given.order)
+        except OrderNotFound as error:
+            raise InvoiceError(where + str(error)) from None
         tax = Decimal("0")
         if given.tax_code is not None:
             try:
@@ -268,6 +275,8 @@ def _fill(invoice: SupplierInvoice, lines: list[LineInput]) -> None:
                 total=amount + tax,
                 po_unit_price=grn_line.po_line.unit_price,
                 po_tax_code=grn_line.po_line.tax_code,
+                job=job,
+                production_order=production_order,
             )
         )
     invoice.currency = currency

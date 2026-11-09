@@ -1310,3 +1310,69 @@ class JobCardReject(models.Model):
 
     def __str__(self):
         return f"{self.entry_id} {self.reason_id} {self.quantity}"
+
+
+class SubcontractDispatch(models.Model):
+    """Parts of a job sent out to a supplier for a subcontract operation (backlog P3-13; spec
+    7.2), numbered from the number series ("SC") with a printed note. Never changed or
+    deleted (database); a mistake is put right by receiving the parts back."""
+
+    number = models.CharField(max_length=30, unique=True)
+    job = models.ForeignKey(JobOrder, on_delete=models.PROTECT, related_name="dispatches")
+    operation = models.ForeignKey(JobOperation, on_delete=models.PROTECT, related_name="dispatches")
+    supplier = models.ForeignKey("masters.Supplier", on_delete=models.PROTECT, related_name="+")
+    quantity = models.DecimalField(max_digits=18, decimal_places=3)
+    sent_on = models.DateField()
+    expected_on = models.DateField(null=True, blank=True)
+    notes = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["job", "sent_on", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="production_dispatch_quantity"
+            ),
+        ]
+
+    def __str__(self):
+        return self.number
+
+
+class SubcontractReturn(models.Model):
+    """Parts received back from the supplier against a dispatch, counted: good, and rejected
+    (with the reason). Together never more than is still out (service and database). Never
+    changed or deleted (database)."""
+
+    dispatch = models.ForeignKey(
+        SubcontractDispatch, on_delete=models.PROTECT, related_name="returns"
+    )
+    received_on = models.DateField()
+    good = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    rejected = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    reason = models.CharField(max_length=300, blank=True)
+    notes = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["dispatch", "received_on", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(good__gte=0, rejected__gte=0)
+                & (models.Q(good__gt=0) | models.Q(rejected__gt=0)),
+                name="production_subreturn_quantities",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rejected=0) | ~models.Q(reason=""),
+                name="production_subreturn_reason",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.dispatch_id} back {self.good}+{self.rejected}"

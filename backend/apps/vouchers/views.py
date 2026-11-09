@@ -195,6 +195,7 @@ def _detail(v: Voucher, user) -> dict:
                     },
                     "division": line.division.code if line.division else None,
                     "job_ref": line.job_ref,
+                    "order_linked": bool(line.job_id or line.production_order_id),
                     "supplier_invoice": _invoice(line.supplier_invoice),
                     "advance_order": None
                     if line.advance_order is None

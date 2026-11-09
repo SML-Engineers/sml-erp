@@ -42,6 +42,7 @@ const draft: InvoiceDetail = {
       amount: "13000.00",
       tax_amount: "0.00",
       total: "13000.00",
+      order: "",
     },
   ],
   attachments: [],
@@ -83,6 +84,7 @@ test("the clerk ticks the GRN line and types the invoice as printed", async () =
   fireEvent.change(within(form).getByLabelText("Total printed on the invoice"), { target: { value: "13000" } });
   fireEvent.click(await within(form).findByRole("checkbox", { name: "Bill M6-INSERT of GRN26110101" }));
   fireEvent.change(within(form).getByLabelText("Price, M6-INSERT"), { target: { value: "13.00" } });
+  fireEvent.change(within(form).getByLabelText("Job or production order for M6-INSERT"), { target: { value: "jo26110001" } });
   fireEvent.click(within(form).getByRole("button", { name: "Save the invoice" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/supplier-invoices/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/supplier-invoices/" && i?.method === "POST")!;
@@ -91,7 +93,7 @@ test("the clerk ticks the GRN line and types the invoice as printed", async () =
     division: "IM",
     invoice_no: "INV-77",
     stated_total: "13000",
-    lines: [{ grn_line: 40, quantity: "1000.000", unit_price: "13.00", tax_code: null }],
+    lines: [{ grn_line: 40, quantity: "1000.000", unit_price: "13.00", tax_code: null, order: "JO26110001" }],
   });
 });
 

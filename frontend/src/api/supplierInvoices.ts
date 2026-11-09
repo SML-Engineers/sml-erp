@@ -44,6 +44,7 @@ export interface InvoiceLine {
   amount: string;
   tax_amount: string;
   total: string;
+  order: string; // P3-13: the job or production order the cost belongs to
 }
 
 export interface InvoiceDetail extends InvoiceSummary {
@@ -78,7 +79,7 @@ export interface InvoiceInput {
   invoice_date: string;
   stated_total: string | null;
   notes: string;
-  lines: { grn_line: number; quantity: string; unit_price: string; tax_code: string | null }[];
+  lines: { grn_line: number; quantity: string; unit_price: string; tax_code: string | null; order: string }[];
 }
 
 export const siKey = ["supplier-invoices"];

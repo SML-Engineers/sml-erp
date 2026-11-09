@@ -5110,6 +5110,18 @@
     "deviationHelp": "A deviation on a failed critical check goes to the Director.",
     "decidedLine": "{{decision}} {{quantity}} — {{reason}} ({{by}})",
     "directorApprove": "Approve the deviation",
-    "directorReturn": "Return it to the Production Manager"
+    "directorReturn": "Return it to the Production Manager",
+    "transfer": "Transfer at cost to the mould's division",
+    "transferHelp": "When the job is completed, the Accountant transfers it at cost: a new company mould becomes a fixed asset of the mould's division; a repair is charged to it. The workshop records the same amount as inter-division sales.",
+    "transferRoute": "{{kind}}: {{from}} to {{to}}",
+    "costMaterial": "Material issued less returned",
+    "costBills": "Supplier bills coded to the job",
+    "costLabour": "Labour ({{hours}} hours of job card time)",
+    "costOverhead": "Overhead for that time",
+    "costTotal": "Total at cost",
+    "transferNotes": "Notes (optional)",
+    "transferIt": "Post the transfer",
+    "transferred": "Transferred on {{date}}: journal {{journal}}",
+    "assetMade": "Fixed asset {{asset}} registered; its depreciation terms are waiting for the Director."
   }
 }

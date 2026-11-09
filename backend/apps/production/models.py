@@ -1477,3 +1477,68 @@ class JobInspectionResult(models.Model):
 
     def __str__(self):
         return f"{self.inspection_id} {self.name} #{self.piece}"
+
+
+class InterDivisionTransfer(models.Model):
+    """A workshop job done for another division, transferred at cost (backlog P3-15; spec
+    3.1, 7.3): a **new company mould** is capitalised to the mould's fixed asset (Dr the
+    moulds' cost account), a **mould repair** is charged to the mould's division (Dr
+    Inter-division charges); Cr Inter-division sales in the workshop. One per job, posted
+    by the Accountant when the job is completed, with the cost it is made of; never changed
+    or deleted (database). Repairs are eliminated in the company total."""
+
+    class Kind(models.TextChoices):
+        NEW_MOULD = "new_mould", "New mould capitalised"
+        REPAIR = "repair", "Mould repair charged"
+
+    job = models.OneToOneField(JobOrder, on_delete=models.PROTECT, related_name="transfer")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    mould = models.ForeignKey(Mould, on_delete=models.PROTECT, related_name="transfers")
+    from_division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    to_division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    transfer_date = models.DateField()
+    material = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    bills = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    labour = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    overhead = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    fixed_asset = models.OneToOneField(
+        "assets.FixedAsset", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    journal_entry = models.OneToOneField(
+        "accounting.JournalEntry", on_delete=models.PROTECT, related_name="+"
+    )
+    notes = models.CharField(max_length=300, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-transfer_date", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    amount__gt=0, material__gte=0, bills__gte=0, labour__gte=0, overhead__gte=0
+                )
+                & models.Q(
+                    amount=models.F("material")
+                    + models.F("bills")
+                    + models.F("labour")
+                    + models.F("overhead")
+                ),
+                name="production_transfer_amounts",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(kind="new_mould", fixed_asset__isnull=False)
+                | models.Q(kind="repair", fixed_asset__isnull=True),
+                name="production_transfer_asset",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(from_division=models.F("to_division")),
+                name="production_transfer_divisions",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job_id} {self.kind} {self.amount}"

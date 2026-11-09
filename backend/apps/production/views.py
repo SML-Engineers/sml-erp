@@ -32,6 +32,7 @@ from . import (
     shift_approval,
     shift_reports,
     subcontract,
+    transfers,
 )
 from .boms import BomError
 from .job_inspections import JobInspectionError
@@ -60,6 +61,7 @@ from .reasons import ReasonError
 from .routings import RoutingError
 from .shift_reports import ShiftReportError
 from .subcontract import SubcontractError
+from .transfers import TransferError
 
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -856,9 +858,11 @@ class JobOrderActionView(_Jobs):
                 subcontract.receive_back(request.user, job, d)
             elif action == "inspect":
                 job_inspections.start(request.user, job, d)
+            elif action == "transfer":
+                transfers.post(request.user, job, d.get("notes", ""))
             else:
                 return _error("Unknown action.", status.HTTP_404_NOT_FOUND)
-        except (JobError, SubcontractError, JobInspectionError) as error:
+        except (JobError, SubcontractError, JobInspectionError, TransferError) as error:
             return _error(error)
         return Response(jobs.payload(job, request.user))
 

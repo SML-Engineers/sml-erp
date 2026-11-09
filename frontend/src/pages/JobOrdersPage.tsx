@@ -19,6 +19,7 @@ import {
   jobCardsUrl,
   jobsKey,
   type Dispatch,
+  type Transfer,
   type JobAction,
   type JobInspectionRow,
   type JobIssueDoc,
@@ -380,6 +381,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
       )}
       <ErrorLine error={act.error} />
       {(j.can_inspect || j.inspections.length > 0) && <Inspections job={j} onSaved={saved} />}
+      {j.transfer && <TransferPanel job={j} transfer={j.transfer} onSaved={saved} />}
       {(j.can_subcontract || j.subcontract.length > 0) && <Subcontract job={j} onSaved={saved} />}
       {j.bills.length > 0 && <Bills job={j} />}
       {j.can_issue && <Issue job={j} onSaved={saved} />}
@@ -1274,5 +1276,68 @@ function Inspection({ inspection: i, onSaved }: { inspection: JobInspectionRow; 
       )}
       <ErrorLine error={act.error} />
     </div>
+  );
+}
+
+/** P3-15: a mould job transferred at cost: capitalised (new mould) or charged (repair). */
+function TransferPanel({ job, transfer: x, onSaved }: { job: JobOrder; transfer: Transfer; onSaved: (j: JobOrder) => void }) {
+  const { t } = useTranslation();
+  const [notes, setNotes] = useState("");
+  const post = useMutation({ mutationFn: () => jobAction(job.id, "transfer", { notes }), onSuccess: onSaved });
+  const rows: [string, string][] = [
+    [t("job.costMaterial"), x.material],
+    [t("job.costBills"), x.bills],
+    [t("job.costLabour", { hours: x.hours ?? "" }), x.labour],
+    [t("job.costOverhead"), x.overhead],
+  ];
+  return (
+    <section className="panel" aria-label={t("job.transfer")}>
+      <h3>{t("job.transfer")}</h3>
+      <p className="muted">{t("job.transferHelp")}</p>
+      <p>
+        <strong>{t("job.transferRoute", { kind: x.kind_label, from: x.from, to: x.to || "—" })}</strong>
+      </p>
+      <table aria-label={t("job.costTotal")}>
+        <tbody>
+          {rows.map(([label, value]) => (
+            <tr key={label}>
+              <td>{label}</td>
+              <td className="num">{formatDecimal(value)}</td>
+            </tr>
+          ))}
+          <tr>
+            <td>
+              <strong>{t("job.costTotal")}</strong>
+            </td>
+            <td className="num">
+              <strong>{formatDecimal(x.amount)}</strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {x.bill_lines && x.bill_lines.length > 0 && <p className="muted small">{x.bill_lines.join("; ")}</p>}
+      {x.done ? (
+        <>
+          <p className="notice">{t("job.transferred", { date: x.date, journal: x.journal })}</p>
+          {x.asset && <p className="notice">{t("job.assetMade", { asset: x.asset })}</p>}
+        </>
+      ) : (
+        <>
+          {x.why_not && <p className="muted">{x.why_not}</p>}
+          {x.can_post && (
+            <div className="inline-form">
+              <label>
+                {t("job.transferNotes")}
+                <input value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </label>
+              <button type="button" disabled={post.isPending} onClick={() => post.mutate()}>
+                {t("job.transferIt")}
+              </button>
+            </div>
+          )}
+          <ErrorLine error={post.error} />
+        </>
+      )}
+    </section>
   );
 }

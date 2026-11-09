@@ -40,7 +40,7 @@ from apps.inventory.stock import StockError
 from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
-from . import job_cards, job_inspections, orders, routings, subcontract
+from . import job_cards, job_inspections, orders, routings, subcontract, transfers
 from .models import (
     Bom,
     BomLine,
@@ -832,6 +832,8 @@ def payload(job: JobOrder, user: User) -> dict:
         # P3-14: inspections, and whether a failed one holds the job.
         "inspections": job_inspections.rows(job, user),
         "on_hold": job_cards.held(job),
+        # P3-15: a mould job transferred at cost to the mould's division.
+        "transfer": transfers.payload(job, user),
         "can_inspect": job_inspections.can_inspect(user) and job.status == St.RELEASED,
         "suppliers": [
             {"seq": o.seq, "supplier": o.supplier.code if o.supplier_id else ""}

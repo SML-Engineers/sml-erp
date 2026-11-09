@@ -128,6 +128,7 @@ const job: JobOrder = {
   inspections: [],
   on_hold: false,
   can_inspect: false,
+  transfer: null,
 };
 
 test("Stores issues material by lot and takes back what was not used", async () => {
@@ -403,4 +404,53 @@ test("QC enters the measurements; a failed inspection holds the job and the Prod
       expect.objectContaining({ body: JSON.stringify({ decision: "rework", quantity: "3", reason: "Oversize: another pass" }) }),
     ),
   );
+});
+
+test("the Accountant transfers a completed mould repair at cost", async () => {
+  const repair: JobOrder = {
+    ...job,
+    purpose: "mould_repair",
+    purpose_label: "Mould repair",
+    mould: "MD-001",
+    status: "completed",
+    status_label: "Completed",
+    can_issue: false,
+    can_return: false,
+    can_ask_more: false,
+    transfer: {
+      done: false,
+      kind_label: "Mould repair charged",
+      from: "WS",
+      to: "IM",
+      material: "324.00",
+      bills: "25000.00",
+      labour: "1200.00",
+      overhead: "800.00",
+      hours: "2.00",
+      amount: "27324.00",
+      bill_lines: ["WS261109001 line 1: 25,000.00"],
+      why_not: "",
+      can_post: true,
+    },
+  };
+  const calls = mockApi({
+    "GET /api/v1/job-orders/waiting/": { body: { results: [] } },
+    "GET /api/v1/job-orders/?q=&status=open&purpose=": { body: list },
+    "GET /api/v1/job-orders/7/": { body: repair },
+    "POST /api/v1/job-orders/7/transfer/": {
+      body: { ...repair, transfer: { ...repair.transfer!, done: true, date: "2026-11-09", journal: "JE26110042", can_post: false } },
+    },
+  });
+  renderAt("/job-orders?job=7", <JobOrdersPage />, "/job-orders");
+  const panel = await screen.findByRole("region", { name: "Transfer at cost to the mould's division" });
+  expect(within(panel).getByRole("table", { name: "Total at cost" })).toHaveTextContent("27,324.00");
+  fireEvent.change(within(panel).getByLabelText("Notes (optional)"), { target: { value: "Cavity 3 rewelded" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Post the transfer" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/job-orders/7/transfer/",
+      expect.objectContaining({ body: JSON.stringify({ notes: "Cavity 3 rewelded" }) }),
+    ),
+  );
+  expect(await within(panel).findByText("Transferred on 2026-11-09: journal JE26110042")).toBeInTheDocument();
 });

@@ -5249,6 +5249,47 @@
     "cycleValue": "{{actual}} / {{standard}}",
     "materialPerPiece": "Material per good piece",
     "costPer1000": "Cost per 1,000",
-    "marginPer1000": "Margin per 1,000"
+    "marginPer1000": "Margin per 1,000",
+    "closed": "Closed"
+  },
+  "closeReport": {
+    "title": "Final report",
+    "byDelivery": "Closed by the last delivery ({{name}}, {{at}})",
+    "byHand": "Closed by {{name}} on {{at}}",
+    "pieces": "{{good}} good and {{rejected}} rejected of {{quantity}}",
+    "revenueBasis": {
+      "invoices": "at the invoices' rates",
+      "order": "at the sales order's price and rate"
+    },
+    "variances": "Estimate against actual",
+    "estimate": "Estimate for the good pieces",
+    "variance": "Variance",
+    "total": "Total",
+    "rows": {
+      "material": "Material",
+      "machine": "Machine time",
+      "setup": "Setup and mould changes",
+      "rejects": "Rejects",
+      "outside": "Subcontract, direct expenses and packing"
+    },
+    "materialPrice": "of which material price (paid more or less per kg than quoted)",
+    "materialUsage": "of which material usage (more or less kg per piece)",
+    "basisQuotation": "Estimate from the accepted quotation's costing, for the good pieces made; a minus is cheaper than quoted.",
+    "basisOther": "No quotation costing: the total is compared with the BOM's standard cost.",
+    "actuals": "Actual {{kg}} kg a piece (quoted {{quotedKg}}), {{hours}} machine hours per 1,000, setup {{setup}} h (quoted {{quotedSetup}}).",
+    "cycle": "Cycle {{actual}} s against the mould's {{standard}} s."
+  },
+  "partActuals": {
+    "title": "Actuals for quoting",
+    "help": "What closed orders of a part really took, to price the next quotation on real figures.",
+    "item": "Part (item code)",
+    "show": "Show",
+    "none": "No closed orders of {{item}} yet.",
+    "table": "Closed orders of {{item}}",
+    "kg": "kg a piece",
+    "hours": "Machine hours per 1,000",
+    "setup": "Setup hours",
+    "cycle": "Cycle (s)",
+    "average": "Average"
   }
 }

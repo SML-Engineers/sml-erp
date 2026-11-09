@@ -18,6 +18,7 @@ from apps.masters.models import Machine
 
 from . import (
     boms,
+    closing,
     costs,
     job_cards,
     job_inspections,
@@ -562,6 +563,25 @@ class MouldingProfitView(APIView):
         except profit.ProfitError as error:
             return _error(error)
         return Response({"start": start, "end": end, "rows": rows})
+
+
+class PartActualsView(APIView):
+    """P3-18: what closed orders of a part actually took (kg and machine hours per piece,
+    setup hours, cycle time), for the next quotation."""
+
+    permission_classes = [AreaAccess]
+    access_area = "job_profitability"
+    access_also_area = "accounting"
+
+    def get(self, request):
+        code = (request.query_params.get("item") or "").strip().upper()
+        item = Item.objects.filter(code=code).first()
+        if item is None:
+            return Response(
+                {"detail": f"There is no item {code}." if code else "Give the part's item code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(closing.part_actuals(item))
 
 
 class WipReportView(APIView):

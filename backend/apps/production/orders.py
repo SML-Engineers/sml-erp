@@ -383,21 +383,44 @@ def _move(user: User, order: ProductionOrder, event: str, to: str, before: tuple
         return order
 
 
+def _close_report(order: ProductionOrder, user: User) -> dict | None:
+    from . import closing
+
+    return closing.payload(order) if costs.can_see(user) else None
+
+
 def complete(user: User, order: ProductionOrder) -> ProductionOrder:
-    return _move(
-        user,
-        order,
-        "production_order_completed",
-        St.COMPLETED,
-        (St.RELEASED,),
-        completed_at=timezone.now(),
-    )
+    from . import closing
+
+    with transaction.atomic():
+        order = _move(
+            user,
+            order,
+            "production_order_completed",
+            St.COMPLETED,
+            (St.RELEASED,),
+            completed_at=timezone.now(),
+        )
+        # P3-18: an order whose sales line is already delivered in full closes now.
+        closing.close_if_delivered(user, order)
+        order.refresh_from_db()
+        return order
 
 
 def close(user: User, order: ProductionOrder) -> ProductionOrder:
-    return _move(
-        user, order, "production_order_closed", St.CLOSED, (St.COMPLETED,), closed_at=timezone.now()
-    )
+    from . import closing
+
+    with transaction.atomic():
+        order = _move(
+            user,
+            order,
+            "production_order_closed",
+            St.CLOSED,
+            (St.COMPLETED,),
+            closed_at=timezone.now(),
+        )
+        closing.record(user, order)  # P3-18: the final report
+        return order
 
 
 def cancel(user: User, order: ProductionOrder, reason: str) -> ProductionOrder:
@@ -632,6 +655,7 @@ def payload(order: ProductionOrder, user: User) -> dict:
         # P3-16: what the order has cost so far.
         "costs": costs.summary(order, user) if order.status != St.DRAFT else None,
         "profit": profit.detail(order, user) if order.status != St.DRAFT else None,
+        "close_report": _close_report(order, user),
     }
 
 

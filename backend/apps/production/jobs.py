@@ -41,6 +41,7 @@ from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
 from . import (
+    closing,
     costs,
     job_cards,
     job_inspections,
@@ -462,6 +463,9 @@ def complete(user: User, job: JobOrder) -> JobOrder:
         # P3-16: its finished parts into stock at the job's Work in progress.
         steps = job_cards.flow(job)
         _finish(user, job, steps[-1]["finished"] if steps else ZERO)
+        # P3-18: a job whose sales line is already delivered in full closes now.
+        closing.close_if_delivered(user, job)
+        job.refresh_from_db()
         return job
 
 
@@ -475,9 +479,12 @@ def _finish(user: User, job: JobOrder, finished) -> None:
 def close(user: User, job: JobOrder) -> JobOrder:
     if JobExcess.objects.filter(job=job, status=JobExcess.Status.AWAITING).exists():
         raise JobError(f"{job.number} has a request to issue more waiting for approval.")
-    return _move(
-        user, job, "job_order_closed", St.CLOSED, (St.COMPLETED,), closed_at=timezone.now()
-    )
+    with transaction.atomic():
+        job = _move(
+            user, job, "job_order_closed", St.CLOSED, (St.COMPLETED,), closed_at=timezone.now()
+        )
+        closing.record(user, job)  # P3-18: the final report
+        return job
 
 
 def cancel(user: User, job: JobOrder, reason: str) -> JobOrder:
@@ -870,6 +877,7 @@ def payload(job: JobOrder, user: User) -> dict:
         # P3-16: what the job has cost so far, by element, with each entry's source.
         "costs": costs.summary(job, user) if job.status != St.DRAFT else None,
         "profit": profit.detail(job, user) if job.status != St.DRAFT else None,
+        "close_report": closing.payload(job) if costs.can_see(user) else None,
         "can_inspect": job_inspections.can_inspect(user) and job.status == St.RELEASED,
         "suppliers": [
             {"seq": o.seq, "supplier": o.supplier.code if o.supplier_id else ""}

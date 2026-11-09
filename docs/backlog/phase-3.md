@@ -501,11 +501,28 @@ Status: `[ ]` to do · `[x]` done
   production order pages show the figures, alerts and the day-by-day forecast margin; each
   cost entry names its source document (shift report, voucher, supplier invoice) with a link.
 
-- [ ] **P3-18 Closing an order and variances**
+- [x] **P3-18 Closing an order and variances**
   Closed when the last quantity is delivered; final report of estimate against actual by
   element with the variances (material price and usage, machine time, setup, rejects,
   subcontract and direct expenses). Closed orders feed the quotation rate tables: average
   actual cycle and setup times and material usage per part.
+  Done (PR #184): `production/closing.py`. A completed job or production order for a sales
+  line closes by itself when the line's last quantity is delivered (on issuing the
+  delivery note, or on completion if delivery came first); orders for stock and internal
+  work are closed by the Planner as before. Closing keeps an `OrderClose` report
+  (insert-only): revenue = good pieces (up to the order quantity) at the average LKR price
+  of the line's issued tax invoices, at their invoice-date rates (the sales order's price
+  and rate before any invoice); estimate from the accepted quotation's costing flexed to
+  the good pieces (setup and per-order extras once): material, machine time (quoted
+  machining + overhead against labour, machine overhead and mould wear), setup, rejects
+  (quoted allowance against the cost spent on the rejected pieces, the other rows taking
+  the good pieces' share), subcontract, direct and packing; material split into price and
+  usage where the kilograms are known (job issues by weight; moulding resin and masterbatch
+  backflushed). Without a quotation costing: actuals by element and the total against the
+  BOM's standard cost. The report also keeps kg and machine hours per good piece, setup
+  hours and the moulding cycle time; **Actuals for quoting** on the Order profitability
+  page averages them over a part's last 10 closed orders. Closed orders are listed on the
+  dashboard ("Closed"); job and production order pages show the final report.
 
 ## E. Reports and the shop floor
 

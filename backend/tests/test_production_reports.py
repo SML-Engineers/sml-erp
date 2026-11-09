@@ -7,6 +7,7 @@ from decimal import Decimal as D
 
 import pytest
 
+from apps.accounting import report_builder as rb
 from apps.masters.models import Section
 from apps.production import jobs, reports, shift_approval, shift_reports
 from apps.production.models import CostRate, Mould, ProductionReceipt
@@ -142,3 +143,42 @@ def test_the_reports_page_answers_by_kind(manager, planner, week):  # noqa: F811
     assert client.get(f"{URL}nothing/").status_code == 404
     assert client.get(f"{URL}daily/?start={TODAY}&end=2000-01-01").status_code == 400
     assert as_user(planner).get(f"{URL}downtime/").status_code == 200
+
+
+def test_moulding_runs_and_downtime_in_the_report_builder(manager, week):  # noqa: F811
+    runs = rb.run(
+        manager,
+        rb.parse(
+            manager,
+            {
+                "source": "moulding_runs",
+                "columns": ["machine", "good", "rejected", "shots", "hours"],
+            },
+        ),
+    )
+    line = runs["rows"][0]["cells"]
+    assert (line["machine"], line["good"], line["rejected"], line["shots"], line["hours"]) == (
+        "IMM-250",
+        "3960",
+        "40",
+        "500",
+        "2",
+    )
+    by_month = rb.run(
+        manager,
+        rb.parse(
+            manager,
+            {
+                "source": "moulding_runs",
+                "columns": ["machine", "good"],
+                "group_by": "machine",
+                "period": "month",
+                "measure": "good",
+            },
+        ),
+    )
+    assert by_month["rows"][0]["cells"]["total"] == "3960"
+    stops = rb.run(
+        manager, rb.parse(manager, {"source": "downtime", "columns": ["reason", "hours"]})
+    )
+    assert stops["rows"][0]["cells"]["hours"] == "6"

@@ -10,6 +10,27 @@ function day(d: Date): string {
 const now = new Date();
 const start = day(new Date(now.getFullYear(), now.getMonth(), 1));
 const end = day(now);
+const yearStart = `${now.getFullYear()}-01-01`;
+const closedMocks = {
+  [`GET /api/v1/order-profits/closed/margins/?by=customer&start=${yearStart}&end=${end}`]: {
+    body: {
+      by: "customer",
+      rows: [
+        { key: "Unilever Sri Lanka", name: "", orders: 1, revenue: "7200.00", cost: "3080.00", margin: "4120.00", margin_pct: "133.77" },
+      ],
+      total: { revenue: "7200.00", cost: "3080.00", margin: "4120.00", margin_pct: "133.77" },
+      without_revenue: 1,
+    },
+  },
+  [`GET /api/v1/order-profits/closed/accuracy/?start=${yearStart}&end=${end}`]: {
+    body: {
+      orders: 1,
+      rows: [{ key: "material", label: "Material", estimate: "5400.00", actual: "972.00", variance: "-4428.00", variance_pct: "-82.00" }],
+      material_price: "-1728.00",
+      material_usage: "-2700.00",
+    },
+  },
+};
 
 const figures = {
   quantity: "20",
@@ -77,6 +98,7 @@ const caps: ProfitRow = {
 
 test("the dashboard shows open orders worst first, filtered and by status", async () => {
   mockApi({
+    ...closedMocks,
     "GET /api/v1/order-profits/?state=open": { body: { state: "open", counts: { red: 1, amber: 0, green: 1 }, orders: [caps, shafts] } },
     "GET /api/v1/order-profits/?state=open&division=WS": {
       body: { state: "open", counts: { red: 0, amber: 0, green: 1 }, orders: [shafts] },
@@ -126,6 +148,7 @@ test("the dashboard shows open orders worst first, filtered and by status", asyn
 
 test("actuals of a part's closed orders, for quoting", async () => {
   mockApi({
+    ...closedMocks,
     "GET /api/v1/order-profits/?state=open": { body: { state: "open", counts: { red: 0, amber: 0, green: 0 }, orders: [] } },
     [`GET /api/v1/order-profits/moulding/?start=${start}&end=${end}`]: { body: { start, end, rows: [] } },
     "GET /api/v1/order-profits/part/?item=SH-100": {
@@ -155,4 +178,18 @@ test("actuals of a part's closed orders, for quoting", async () => {
   const table = await within(panel).findByRole("table", { name: "Closed orders of SH-100" });
   expect(within(table).getByRole("row", { name: /JO26110001/ })).toHaveTextContent("JO26110001180.5000100.000.00–133.77%");
   expect(within(table).getByRole("row", { name: /Average/ })).toHaveTextContent("Average0.5000100.000.00–");
+});
+
+test("closed orders by customer and the estimate accuracy", async () => {
+  mockApi({
+    ...closedMocks,
+    "GET /api/v1/order-profits/?state=open": { body: { state: "open", counts: { red: 0, amber: 0, green: 0 }, orders: [] } },
+    [`GET /api/v1/order-profits/moulding/?start=${start}&end=${end}`]: { body: { start, end, rows: [] } },
+  });
+  renderAt("/order-profits", <OrderProfitsPage />);
+  const margins = await screen.findByRole("table", { name: "Margin by Customer" });
+  expect(within(margins).getByRole("row", { name: /Unilever/ })).toHaveTextContent("Unilever Sri Lanka17,200.003,080.004,120.00133.77%");
+  expect(screen.getByText(/1 closed order for stock or internal work has no revenue/)).toBeInTheDocument();
+  const accuracy = await screen.findByRole("table", { name: "Estimate accuracy" });
+  expect(within(accuracy).getByRole("row", { name: /^Material 5/ })).toHaveTextContent("5,400.00972.00-4,428.00 (-82.00%)");
 });

@@ -567,6 +567,38 @@ class MouldingProfitView(APIView):
         return Response({"start": start, "end": end, "rows": rows})
 
 
+class ClosedProfitView(APIView):
+    """P3-20: closed orders' margin by order, customer, part, mould or division, and the
+    estimate accuracy by element, for a date range (this year by default)."""
+
+    permission_classes = [AreaAccess]
+    access_area = "job_profitability"
+    access_also_area = "accounting"
+
+    def get(self, request, kind):
+        today = timezone.localdate()
+        q = request.query_params
+        try:
+            start = date.fromisoformat(q.get("start") or today.replace(month=1, day=1).isoformat())
+            end = date.fromisoformat(q.get("end") or today.isoformat())
+        except ValueError:
+            return Response({"detail": "Give the dates as YYYY-MM-DD."}, status=400)
+        if end < start:
+            return Response({"detail": "The end date is before the start."}, status=400)
+        if not costs.can_see(request.user):
+            return Response({"detail": "You do not have access to order costs."}, status=403)
+        try:
+            if kind == "margins":
+                body = closing.margins(request.user, start, end, q.get("by") or "customer")
+            elif kind == "accuracy":
+                body = closing.accuracy(request.user, start, end)
+            else:
+                return Response({"detail": "Unknown report."}, status=404)
+        except profit.ProfitError as error:
+            return _error(error)
+        return Response({"start": start, "end": end, **body})
+
+
 class PartActualsView(APIView):
     """P3-18: what closed orders of a part actually took (kg and machine hours per piece,
     setup hours, cycle time), for the next quotation."""

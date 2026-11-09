@@ -1,9 +1,11 @@
 """Fixed asset register, depreciation and disposals (backlog P2-19)."""
 
-from datetime import timedelta
+import importlib
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
+from django.apps import apps as django_apps
 from django.db import transaction
 from django.db.utils import DatabaseError
 from django.utils import timezone
@@ -97,9 +99,11 @@ def test_the_classes_carry_the_owners_defaults(accountant, director):
         "PLANT": ("straight_line", D("10"), 10),
         "MOULDS": ("straight_line", D("10"), 10),
         "VEHICLES": ("straight_line", D("20"), 5),
-        "FURNITURE": ("straight_line", D("25"), 4),
-        "COMPUTERS": ("straight_line", D("25"), 4),
+        "FURNITURE": ("straight_line", D("20"), 5),
+        "COMPUTERS": ("straight_line", D("20"), 5),
     }
+    # The owner's amended defaults (9 Nov 2026) hold for assets bought long ago too.
+    assert services.rate_on(cls("COMPUTERS"), date(2015, 6, 1)).rate == D("20")
     # A new asset takes its class's defaults and waits for the Director.
     lathe = services.register(
         accountant,
@@ -382,3 +386,27 @@ def test_approvals_through_the_api(accountant, director):
         format="json",
     )
     assert decided.json()["status"] == "rejected"
+
+
+def test_amended_defaults_start_after_months_already_posted(accountant):
+    """Owner, 9 Nov 2026: if depreciation was already posted with the old default, those
+    months keep it and the amended rate starts the month after."""
+    amend = importlib.import_module("apps.assets.migrations.0004_owner_rates_amended").amend
+    furniture = cls("FURNITURE")
+    old = services.rate_on(furniture, TODAY)
+    AssetClassRate.objects.filter(pk=old.pk).update(rate=D("25"), life_years=4)  # as on 8 Nov
+    rate(accountant)
+    buy(accountant)
+    services.post(accountant, services.prepare(accountant, M1))  # last month but one posted
+    amend(django_apps, None)
+    before = services.rate_on(furniture, M1)
+    after = services.rate_on(furniture, M2)
+    assert (before.rate, before.life_years) == (D("25"), 4)
+    assert (after.effective_from, after.rate, after.life_years, after.status) == (
+        M2,
+        D("20"),
+        5,
+        "approved",
+    )
+    amend(django_apps, None)  # run again: nothing more
+    assert furniture.rates.count() == 2

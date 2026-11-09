@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 
 import { meQueryKey, signIn, verifyCode, type SignInResponse } from "../api/auth";
 import { ApiError } from "../api/client";
+import LanguageSwitch from "../components/LanguageSwitch";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -44,6 +45,7 @@ export default function LoginPage() {
   return (
     <main className="auth-card">
       <h1>{t("app.name")}</h1>
+      <LanguageSwitch />
       <form onSubmit={submit} noValidate>
         {step === "password" ? (
           <>

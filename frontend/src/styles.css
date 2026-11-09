@@ -1466,3 +1466,17 @@ ul.chips {
   height: 100%;
   background: #2e7d32;
 }
+
+/* P3-21: the language choice, in the side menu and on the sign-in page. */
+.language-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+:lang(si) body,
+html:lang(si) {
+  font-family: "Noto Sans Sinhala", "Iskoola Pota", system-ui, sans-serif;
+}

@@ -19,6 +19,7 @@ import {
   type ProductionOrder,
 } from "../api/productionOrders";
 import OrderCostsPanel from "../components/OrderCostsPanel";
+import OrderProfitPanel from "../components/OrderProfitPanel";
 import { formatDecimal } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -311,6 +312,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
       {o.short && <p className="notice">{o.can_request ? t("prodOrder.shortCanRequest") : t("prodOrder.shortTold")}</p>}
       {request && <p className="notice">{t("prodOrder.requested", { number: request })}</p>}
       {o.can_edit && <EditDraft order={o} onSaved={(d) => queryClient.setQueryData(key, d)} />}
+      {o.profit && <OrderProfitPanel profit={o.profit} />}
       {o.costs && <OrderCostsPanel costs={o.costs} busy={act.isPending} onRefresh={() => act.mutate({ action: "refresh-costs" })} />}
       <div className="row-actions">
         {o.can_release && (

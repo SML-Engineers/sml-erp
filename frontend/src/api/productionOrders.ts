@@ -1,5 +1,6 @@
 import { apiGet, apiSend } from "./client";
 import type { OrderCosts } from "./orderCosts";
+import type { OrderProfit } from "./orderProfits";
 
 /** Moulding production orders (P3-06). */
 
@@ -72,6 +73,8 @@ export interface ProductionOrder extends OrderRow {
   can_cancel: boolean;
   can_request: boolean;
   costs: OrderCosts | null;
+  /** P3-17: null for a draft or for people who do not see costs. */
+  profit?: OrderProfit | null;
   purchase_request?: { id: number; number: string };
 }
 

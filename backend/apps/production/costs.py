@@ -405,10 +405,11 @@ def sync_later(*orders) -> None:
     seen = {(type(o).__name__, o.pk): o for o in orders if o is not None}
 
     def run():
-        from . import wip
+        from . import profit, wip
 
         for order in seen.values():
             wip.safe_sync(type(order).objects.get(pk=order.pk))
+            profit.safe_check(type(order).objects.get(pk=order.pk))
 
     transaction.on_commit(run)
 
@@ -483,6 +484,10 @@ def summary(order, user: User) -> dict | None:
     good, rejected = _rejected(order)
     made = good + rejected
     want = want_job(order) if isinstance(order, JobOrder) else want_order(order)
+    from .profit import source_links
+
+    shown = entries[-300:]
+    docs = source_links(e.source for e in shown)
     return {
         "elements": [
             {"element": value, "label": label, "amount": str(_money(by[value]))}
@@ -510,8 +515,11 @@ def summary(order, user: User) -> dict | None:
                 "rate": f"{e.rate.normalize():f}" if e.rate is not None else "",
                 "amount": str(e.amount),
                 "adjusts": e.adjusts,
+                # P3-17: the source document to open.
+                "document": docs.get(e.source, {}).get("label", ""),
+                "link": docs.get(e.source, {}).get("link", ""),
             }
-            for e in entries[-300:]
+            for e in shown
         ],
         "can_refresh": effective_access(user).has("accounting", "enter"),
         # Part 2: where the costs are in the ledger.

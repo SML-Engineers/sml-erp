@@ -475,13 +475,31 @@ Status: `[ ]` to do · `[x]` done
     The month-end checklist has "Order costs up to date and Work in progress agreeing with
     the open jobs".
 
-- [ ] **P3-17 Live order profitability**
+- [x] **P3-17 Live order profitability**
   For every order: estimate (from the accepted quotation), actual to date, forecast at
   completion, forecast margin, % complete, red/amber/green. Order dashboard with filters;
   drill-down to every cost line and its source document; alerts to the Production Manager
   and Director (cost overrun, margin below minimum, reject % over limit); daily snapshot of
   each open order; moulding view per machine and mould (cycle time, material per good
   piece, rejects, margin per 1,000 pieces).
+  Done (PR #182): `production/profit.py`. **Estimate**: cost per piece from the accepted
+  quotation's costing at the quoted quantity (tooling left out), else the BOM's standard
+  cost, × the order quantity. **Revenue**: the sales line's net price (after discounts) in
+  LKR at the sales order's rate × good pieces; orders for stock and internal jobs have none.
+  **Forecast**: cost so far + remaining pieces × the estimate per piece (or the cost per
+  good piece so far without an estimate); margin % on cost, as on quotations. **Status**:
+  red for a forecast loss or cost over the estimate (for the good pieces) by more than the
+  overrun limit; amber for a margin below the minimum or rejects over the limit (limits
+  from the production settings in force; a blank minimum = the quotation limits' minimum
+  for the division, 1% without one). **Alerts** (`order_profit_alert`) to the Production
+  Manager and the Director of the division, once per order and kind (`ProfitAlert`,
+  insert-only), checked after each cost sync and in the evening snapshot. **Daily snapshot**
+  (`OrderProfitSnapshot`, one per open order per day, insert-only) by the Celery task at
+  22:50. **Order profitability** page (Production menu; job profitability or accounting
+  access): open or completed orders worst first, filters by division, customer, section,
+  due date and status; the moulding view per machine and mould for a date range. Job and
+  production order pages show the figures, alerts and the day-by-day forecast margin; each
+  cost entry names its source document (shift report, voucher, supplier invoice) with a link.
 
 - [ ] **P3-18 Closing an order and variances**
   Closed when the last quantity is delivered; final report of estimate against actual by

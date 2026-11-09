@@ -1642,3 +1642,85 @@ class JobCompletion(models.Model):
 
     def __str__(self):
         return f"{self.job_id} {self.quantity} {self.value}"
+
+
+class OrderProfitSnapshot(models.Model):
+    """P3-17: an open order's profitability at the end of a day (spec 7.7
+    `order_profit_snapshot`), so its forecast margin can be charted over the life of the
+    order. One per order per day; never changed or deleted (database)."""
+
+    job = models.ForeignKey(
+        JobOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="snapshots"
+    )
+    production_order = models.ForeignKey(
+        ProductionOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="snapshots"
+    )
+    day = models.DateField()
+    cost = models.DecimalField(max_digits=18, decimal_places=2)
+    earned = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    value = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    complete_pct = models.DecimalField(max_digits=6, decimal_places=2)
+    forecast_cost = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    forecast_margin = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    margin_pct = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=5)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["day", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(job__isnull=False, production_order__isnull=True)
+                | models.Q(job__isnull=True, production_order__isnull=False),
+                name="production_snapshot_one_order",
+            ),
+            models.UniqueConstraint(fields=["job", "day"], name="production_snapshot_job_day"),
+            models.UniqueConstraint(
+                fields=["production_order", "day"], name="production_snapshot_order_day"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job or self.production_order} on {self.day}"
+
+
+class ProfitAlert(models.Model):
+    """P3-17: an alert sent to the Production Manager and the Director about an order: cost
+    overrun, margin below the minimum or rejects over the limit. Sent once per order and kind;
+    never changed or deleted (database)."""
+
+    class Kind(models.TextChoices):
+        OVERRUN = "overrun", "Cost overrun"
+        MARGIN = "margin", "Margin below the minimum"
+        REJECTS = "rejects", "Rejects over the limit"
+
+    job = models.ForeignKey(
+        JobOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="profit_alerts"
+    )
+    production_order = models.ForeignKey(
+        ProductionOrder,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="profit_alerts",
+    )
+    kind = models.CharField(max_length=8, choices=Kind.choices)
+    detail = models.CharField(max_length=300)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(job__isnull=False, production_order__isnull=True)
+                | models.Q(job__isnull=True, production_order__isnull=False),
+                name="production_alert_one_order",
+            ),
+            models.UniqueConstraint(fields=["job", "kind"], name="production_alert_job_kind"),
+            models.UniqueConstraint(
+                fields=["production_order", "kind"], name="production_alert_order_kind"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job or self.production_order}: {self.get_kind_display()}"

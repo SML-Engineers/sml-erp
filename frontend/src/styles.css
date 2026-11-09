@@ -1432,3 +1432,19 @@ ul.chips {
   max-width: 420px;
   border-radius: 8px;
 }
+
+/* P3-17: red, amber and green order status. Colour is never the only sign: the word is shown. */
+.tag.rag-red {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.tag.rag-amber {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.tag.rag-green {
+  background: #ecfdf3;
+  color: #027a48;
+}

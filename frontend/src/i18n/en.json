@@ -5161,7 +5161,8 @@
       "completed": "Completed: {{quantity}} finished, {{amount}} moved from work in progress into finished goods (anything not finished went to cost of sales).",
       "intoStock": "In the accounts: these costs are added to the stock value of the parts made (material is already there).",
       "notPosted": "Not posted to the accounts: this job has no stock part, or makes a mould or tool. The costs are for information."
-    }
+    },
+    "document": "Source document"
   },
   "wip": {
     "title": "Work in progress",
@@ -5186,5 +5187,68 @@
     "machine": "Machine",
     "reason": "Reason",
     "hours": "Hours"
+  },
+  "profit": {
+    "title": "Profitability",
+    "pageTitle": "Order profitability",
+    "help": "Every open job order and production order: what it was quoted at, what it has cost so far and what it will cost when finished, at today's rates. Red: a loss is forecast or the cost is over the estimate by more than the limit. Amber: the margin is below the minimum or the rejects are over the limit.",
+    "figures": "Estimate, actual and forecast",
+    "estimate": "Estimate",
+    "actual": "Actual to date",
+    "forecast": "Forecast at completion",
+    "revenue": "Revenue",
+    "cost": "Cost",
+    "margin": "Margin",
+    "forecastMargin": "Forecast margin",
+    "complete": "{{pct}}% complete ({{good}} of {{quantity}} good)",
+    "basis": {
+      "quotation": "estimate {{unit}} a piece from the quotation",
+      "bom": "estimate {{unit}} a piece from the BOM's standard cost",
+      "none": "no estimate yet: the forecast uses the cost per good piece so far"
+    },
+    "limits": "cost over estimate {{overrun}} (limit {{overrunLimit}}), rejects {{rejects}} (limit {{rejectLimit}}), minimum margin {{minimum}}",
+    "alerts": "Alerts sent",
+    "trend": "Forecast margin day by day ({{count}} days)",
+    "trendTable": "Forecast margin day by day",
+    "completeCol": "Complete",
+    "status": "Status",
+    "rag": {
+      "red": "Red",
+      "amber": "Amber",
+      "green": "Green"
+    },
+    "flags": {
+      "overrun": "cost over estimate",
+      "margin": "margin below minimum",
+      "rejects": "rejects over limit"
+    },
+    "show": "Show",
+    "open": "Open orders",
+    "completed": "Completed, not closed",
+    "all": "All",
+    "customer": "Customer",
+    "section": "Section",
+    "dueBy": "Due by",
+    "orders": "Orders",
+    "byStatus": "Show by status",
+    "none": "No orders match.",
+    "order": "Order",
+    "due": "Due",
+    "value": "Order value",
+    "costToDate": "Cost to date",
+    "forStock": "For stock",
+    "moulding": "Moulding by machine and mould",
+    "mouldingHelp": "From approved shift reports: cycle time against the mould's standard, material and cost per good piece, and the margin on 1,000 good pieces (orders for stock have no price).",
+    "from": "From",
+    "to": "To",
+    "mouldingTable": "Moulding by machine and mould",
+    "mould": "Mould",
+    "goodPieces": "Good pieces",
+    "rejects": "Rejects",
+    "cycle": "Cycle time, actual / standard (s)",
+    "cycleValue": "{{actual}} / {{standard}}",
+    "materialPerPiece": "Material per good piece",
+    "costPer1000": "Cost per 1,000",
+    "marginPer1000": "Margin per 1,000"
   }
 }

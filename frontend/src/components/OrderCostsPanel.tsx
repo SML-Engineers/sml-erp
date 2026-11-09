@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 
 import type { OrderCosts } from "../api/orderCosts";
 import { formatDecimal } from "../lib/decimal";
@@ -69,6 +70,7 @@ export default function OrderCostsPanel({ costs, onRefresh, busy }: { costs: Ord
                 <th className="num">{t("costs.quantity")}</th>
                 <th className="num">{t("costs.rate")}</th>
                 <th className="num">{t("costs.amount")}</th>
+                <th>{t("costs.document")}</th>
               </tr>
             </thead>
             <tbody>
@@ -80,6 +82,7 @@ export default function OrderCostsPanel({ costs, onRefresh, busy }: { costs: Ord
                   <td className="num">{e.quantity && `${formatDecimal(e.quantity)} ${e.unit}`}</td>
                   <td className="num">{e.rate && formatDecimal(e.rate)}</td>
                   <td className="num">{formatDecimal(e.amount)}</td>
+                  <td>{e.link ? <Link to={e.link}>{e.document}</Link> : e.document}</td>
                 </tr>
               ))}
             </tbody>

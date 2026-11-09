@@ -1542,3 +1542,53 @@ class InterDivisionTransfer(models.Model):
 
     def __str__(self):
         return f"{self.job_id} {self.kind} {self.amount}"
+
+
+class OrderCost(models.Model):
+    """One cost of a job order or a moulding production order (backlog P3-16; spec 7.7 "Where
+    each cost comes from"), collected from what was approved: material, labour, overhead,
+    setup and mould change, mould amortisation, subcontract and direct bills. Each entry
+    names its source (e.g. an issue line, a job card, a moulding run, a voucher line) and
+    keeps the rate it used. Insert-only (database): when a source changes or is undone, an
+    adjusting entry with the same source is added, so the history stays."""
+
+    class Element(models.TextChoices):
+        MATERIAL = "material", "Material"
+        LABOUR = "labour", "Labour"
+        OVERHEAD = "overhead", "Machine time and overhead"
+        SETUP = "setup", "Setup and mould change"
+        MOULD = "mould", "Mould amortisation"
+        SUBCONTRACT = "subcontract", "Subcontract"
+        DIRECT = "direct", "Direct expenses"
+
+    job = models.ForeignKey(
+        JobOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="costs"
+    )
+    production_order = models.ForeignKey(
+        ProductionOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="costs"
+    )
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    element = models.CharField(max_length=12, choices=Element.choices)
+    day = models.DateField()
+    source = models.CharField(max_length=60)
+    quantity = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    unit = models.CharField(max_length=10, blank=True)
+    rate = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    description = models.CharField(max_length=200)
+    adjusts = models.BooleanField("Adjusts an earlier entry of the same source", default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["day", "id"]
+        indexes = [models.Index(fields=["source"], name="production_ordercost_source")]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(job__isnull=False, production_order__isnull=True)
+                | models.Q(job__isnull=True, production_order__isnull=False),
+                name="production_ordercost_one_order",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job_id or self.production_order_id} {self.element} {self.amount}"

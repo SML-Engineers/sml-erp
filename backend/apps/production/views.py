@@ -18,6 +18,7 @@ from apps.masters.models import Machine
 
 from . import (
     boms,
+    costs,
     job_cards,
     job_inspections,
     jobs,
@@ -505,6 +506,24 @@ class CostRateView(_Rates):
         return Response(rates.overview(request.user))
 
 
+def _refresh(user, order) -> None:
+    """P3-16: the Accountant brings an order's costs up to date."""
+    if not costs.can_see(user) or not costs.summary(order, user)["can_refresh"]:
+        raise JobError("The Accountant refreshes order costs.")
+    costs.sync(order)
+
+
+class OrderCostsRefreshView(APIView):
+    """P3-16: bring every open order's costs up to date (also run at month end)."""
+
+    permission_classes = [AreaAccess]
+    access_area = "accounting"
+    access_write_level = "enter"
+
+    def post(self, request):
+        return Response({"entries": costs.sync_open(request.user)})
+
+
 class _Orders(APIView):
     """P3-06: production planning works the orders; the stores person and purchasing read
     them to raise purchase requests for shortages. The services check who does what."""
@@ -566,6 +585,11 @@ class ProductionOrderActionView(_Orders):
                 order = orders.close(request.user, order)
             elif action == "cancel":
                 order = orders.cancel(request.user, order, request.data.get("reason", ""))
+            elif action == "refresh-costs":
+                try:
+                    _refresh(request.user, order)
+                except JobError as error:
+                    raise OrderError(str(error)) from None
             elif action == "purchase-request":
                 made = orders.raise_request(request.user, order)
                 body = orders.payload(order, request.user)
@@ -860,6 +884,8 @@ class JobOrderActionView(_Jobs):
                 job_inspections.start(request.user, job, d)
             elif action == "transfer":
                 transfers.post(request.user, job, d.get("notes", ""))
+            elif action == "refresh-costs":
+                _refresh(request.user, job)
             else:
                 return _error("Unknown action.", status.HTTP_404_NOT_FOUND)
         except (JobError, SubcontractError, JobInspectionError, TransferError) as error:

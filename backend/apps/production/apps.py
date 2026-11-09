@@ -32,6 +32,7 @@ class ProductionConfig(AppConfig):
             MouldMaintenance,
             MouldPart,
             OrderBomLine,
+            OrderCost,
             PlanEntry,
             ProductionOrder,
             ProductionOrderDue,
@@ -83,5 +84,6 @@ class ProductionConfig(AppConfig):
             JobInspection,
             JobInspectionResult,
             InterDivisionTransfer,
+            OrderCost,
         ):
             register(model)

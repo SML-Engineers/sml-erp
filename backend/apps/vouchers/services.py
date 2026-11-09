@@ -613,6 +613,13 @@ def remove_attachment(user: User, attachment: VoucherAttachment) -> None:
 # --- Submitting and following the approval ----------------------------------------------
 
 
+def _order_costs(voucher: Voucher) -> None:
+    """Lines coded to a job or production order change its costs (P3-16)."""
+    from apps.production import costs
+
+    costs.for_voucher(voucher)
+
+
 STATUS_FROM_ENGINE = {
     ApprovalState.Status.APPROVED: Voucher.Status.DIRECTOR_APPROVED,
     ApprovalState.Status.RETURNED: Voucher.Status.RETURNED,
@@ -636,6 +643,7 @@ def sync_status(voucher: Voucher) -> Voucher:
     if voucher.status != status:
         voucher.status = status
         voucher.save(update_fields=["status", "updated_at"])
+        _order_costs(voucher)
         if status == Voucher.Status.REJECTED:
             _restore_parent(voucher)
     return voucher
@@ -1332,6 +1340,7 @@ def _restore_parent(voucher: Voucher) -> None:
     if parent.status == Voucher.Status.AMENDED:
         parent.status = Voucher.Status.DIRECTOR_APPROVED
         parent.save(update_fields=["status", "updated_at"])
+        _order_costs(parent)
 
 
 def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
@@ -1361,6 +1370,7 @@ def amend(user: User, voucher: Voucher, reason: str) -> Voucher:
         # The original stops counting first, so its invoices can move to the amendment.
         voucher.status = Voucher.Status.AMENDED
         voucher.save(update_fields=["status", "updated_at"])
+        _order_costs(voucher)
         amendment = Voucher.objects.create(
             number=f"{base}-R{revision}",
             voucher_type=voucher.voucher_type,
@@ -1500,6 +1510,7 @@ def decide_cancellation(
         if approve:
             voucher.status = Voucher.Status.CANCELLED
             voucher.save(update_fields=["status", "updated_at"])
+            _order_costs(voucher)
         return request
 
 

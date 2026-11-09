@@ -52,7 +52,7 @@ from apps.inventory import items as item_master
 from apps.inventory.models import Item, StockMovement
 from apps.inventory.stock import StockError, _store
 
-from . import maintenance, rates, shift_reports
+from . import costs, maintenance, rates, shift_reports
 from .models import (
     BomLine,
     Mould,
@@ -305,6 +305,7 @@ def _post(user: User, report: ShiftReport) -> None:
         report.stock_issue = document
         report.receipt_entry = entry
         report.save()
+        costs.for_report(report)  # P3-16: the orders' costs
 
 
 def _receipt_entry(user, report, receipts):
@@ -466,6 +467,7 @@ def _apply(user: User, fix: ShiftCorrection) -> None:
         if report.status != St.APPROVED:
             raise ShiftReportError("The report is no longer approved or a draft.")
         _undo(user, report, fix.reason)
+        costs.for_report(report)
         try:
             approvals.reopen(user, DOC, report.pk, f"Correction approved: {fix.reason}")
         except ApprovalError as error:

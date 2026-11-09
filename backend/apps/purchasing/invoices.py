@@ -690,6 +690,9 @@ def _post(user: User, invoice: SupplierInvoice) -> None:
     invoice.rate_date = lookup.rate_date
     invoice.status = St.POSTED
     invoice.posted_at = timezone.now()
+    from apps.production import costs  # P3-16: lines coded to an order are its costs
+
+    costs.for_invoice(invoice)
     invoice.save(
         update_fields=[
             "journal_entry",

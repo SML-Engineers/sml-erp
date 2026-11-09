@@ -5123,5 +5123,35 @@
     "transferIt": "Post the transfer",
     "transferred": "Transferred on {{date}}: journal {{journal}}",
     "assetMade": "Fixed asset {{asset}} registered; its depreciation terms are waiting for the Director."
+  },
+  "costs": {
+    "title": "Costs so far",
+    "byElement": "Costs by element",
+    "total": "Total cost so far",
+    "pieces": "{{good}} good pieces, {{rejected}} rejected",
+    "perGood": "{{amount}} a good piece",
+    "onRejects": "{{amount}} spent on the rejected pieces",
+    "notCosted": "Labour is not costed yet for {{sections}}: the Accountant sets its labour rate (Production cost rates).",
+    "outOfDate": "Some costs are not brought up to date yet; the Accountant can refresh them.",
+    "showEntries_one": "Show the {{count}} entry",
+    "showEntries_other": "Show the {{count}} entries",
+    "hideEntries": "Hide the entries",
+    "refresh": "Bring the costs up to date",
+    "entries": "Cost entries",
+    "day": "Date",
+    "element": "Element",
+    "source": "Where it comes from",
+    "quantity": "Quantity",
+    "rate": "Rate",
+    "amount": "Amount",
+    "elements": {
+      "material": "Material",
+      "labour": "Labour",
+      "overhead": "Machine time and overhead",
+      "setup": "Setup and mould change",
+      "mould": "Mould amortisation",
+      "subcontract": "Subcontract",
+      "direct": "Direct expenses"
+    }
   }
 }

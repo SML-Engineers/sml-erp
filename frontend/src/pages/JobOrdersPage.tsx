@@ -27,6 +27,7 @@ import {
   type JobPurpose,
   type JobValues,
 } from "../api/jobOrders";
+import OrderCostsPanel from "../components/OrderCostsPanel";
 import { formatDecimal } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -382,6 +383,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
       <ErrorLine error={act.error} />
       {(j.can_inspect || j.inspections.length > 0) && <Inspections job={j} onSaved={saved} />}
       {j.transfer && <TransferPanel job={j} transfer={j.transfer} onSaved={saved} />}
+      {j.costs && <OrderCostsPanel costs={j.costs} busy={act.isPending} onRefresh={() => act.mutate({ action: "refresh-costs" })} />}
       {(j.can_subcontract || j.subcontract.length > 0) && <Subcontract job={j} onSaved={saved} />}
       {j.bills.length > 0 && <Bills job={j} />}
       {j.can_issue && <Issue job={j} onSaved={saved} />}

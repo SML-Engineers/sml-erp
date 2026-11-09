@@ -40,7 +40,7 @@ from apps.inventory.stock import StockError
 from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
-from . import job_cards, job_inspections, orders, routings, subcontract, transfers
+from . import costs, job_cards, job_inspections, orders, routings, subcontract, transfers
 from .models import (
     Bom,
     BomLine,
@@ -550,6 +550,7 @@ def issue(user: User, job: JobOrder, values: dict) -> StockIssue:
             raise JobError(str(error)) from None
         with audit_context("job_material_issued", job.number):
             JobIssue.objects.create(job=job, stock_issue=document)
+        costs.sync_later(job)  # P3-16
         return document
 
 
@@ -589,6 +590,7 @@ def give_back(user: User, job: JobOrder, values: dict) -> StockIssue:
             raise JobError(str(error)) from None
         with audit_context("job_material_returned", job.number):
             JobIssue.objects.create(job=job, stock_issue=document)
+        costs.sync_later(job)
         return document
 
 
@@ -834,6 +836,8 @@ def payload(job: JobOrder, user: User) -> dict:
         "on_hold": job_cards.held(job),
         # P3-15: a mould job transferred at cost to the mould's division.
         "transfer": transfers.payload(job, user),
+        # P3-16: what the job has cost so far, by element, with each entry's source.
+        "costs": costs.summary(job, user) if job.status != St.DRAFT else None,
         "can_inspect": job_inspections.can_inspect(user) and job.status == St.RELEASED,
         "suppliers": [
             {"seq": o.seq, "supplier": o.supplier.code if o.supplier_id else ""}

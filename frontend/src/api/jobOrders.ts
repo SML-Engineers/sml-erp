@@ -1,4 +1,5 @@
 import { API_BASE, apiGet, apiSend } from "./client";
+import type { OrderCosts } from "./orderCosts";
 import type { OpenSalesLine, SalesLine } from "./productionOrders";
 
 /** Machining job orders and their material (P3-11). */
@@ -193,6 +194,7 @@ export interface JobOrder extends JobRow {
   inspections: JobInspectionRow[];
   on_hold: boolean;
   transfer: Transfer | null;
+  costs: OrderCosts | null;
   can_inspect: boolean;
   suppliers: { seq: number; supplier: string }[];
   dispatch?: { id: number; number: string };
@@ -233,7 +235,18 @@ export interface WaitingExcess {
 
 export type JobValues = Record<string, unknown>;
 export type JobAction =
-  "release" | "complete" | "close" | "cancel" | "issue" | "return" | "ask-more" | "send-out" | "receive-back" | "inspect" | "transfer";
+  | "release"
+  | "complete"
+  | "close"
+  | "cancel"
+  | "issue"
+  | "return"
+  | "ask-more"
+  | "send-out"
+  | "receive-back"
+  | "inspect"
+  | "transfer"
+  | "refresh-costs";
 
 export const jobsKey = ["job-orders"] as const;
 export const getJobs = (q: string, status: string, purpose: string) =>

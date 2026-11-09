@@ -40,7 +40,17 @@ from apps.inventory.stock import StockError
 from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
-from . import costs, job_cards, job_inspections, orders, routings, subcontract, transfers, wip
+from . import (
+    costs,
+    job_cards,
+    job_inspections,
+    orders,
+    profit,
+    routings,
+    subcontract,
+    transfers,
+    wip,
+)
 from .models import (
     Bom,
     BomLine,
@@ -859,6 +869,7 @@ def payload(job: JobOrder, user: User) -> dict:
         "transfer": transfers.payload(job, user),
         # P3-16: what the job has cost so far, by element, with each entry's source.
         "costs": costs.summary(job, user) if job.status != St.DRAFT else None,
+        "profit": profit.detail(job, user) if job.status != St.DRAFT else None,
         "can_inspect": job_inspections.can_inspect(user) and job.status == St.RELEASED,
         "suppliers": [
             {"seq": o.seq, "supplier": o.supplier.code if o.supplier_id else ""}

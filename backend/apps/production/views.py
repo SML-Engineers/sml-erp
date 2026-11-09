@@ -27,6 +27,7 @@ from . import (
     moulds,
     orders,
     plan,
+    profit,
     rates,
     reasons,
     routings,
@@ -515,6 +516,52 @@ def _refresh(user, order) -> None:
         costs.sync(order)
     except costs.CostError as error:
         raise JobError(str(error)) from None
+
+
+class OrderProfitView(APIView):
+    """P3-17: the order dashboard: every open order's estimate, actual and forecast with a
+    red, amber or green status; filters by division, customer, section and due date."""
+
+    permission_classes = [AreaAccess]
+    access_area = "job_profitability"
+    access_also_area = "accounting"
+
+    def get(self, request):
+        q = request.query_params
+        filters = {k: q.get(k, "") for k in ("state", "division", "customer", "section", "due_by")}
+        try:
+            return Response(profit.dashboard(request.user, filters))
+        except profit.ProfitError as error:
+            return _error(error)
+
+
+class MouldingProfitView(APIView):
+    """P3-17: per machine and mould: cycle time, material per good piece, rejects and the
+    margin per 1,000 pieces, from `start` to `end` (this month by default)."""
+
+    permission_classes = [AreaAccess]
+    access_area = "job_profitability"
+    access_also_area = "accounting"
+
+    def get(self, request):
+        today = timezone.localdate()
+        try:
+            start = date.fromisoformat(request.query_params.get("start") or "")
+        except ValueError:
+            start = today.replace(day=1)
+        try:
+            end = date.fromisoformat(request.query_params.get("end") or "")
+        except ValueError:
+            end = today
+        if end < start:
+            return Response(
+                {"detail": "The end date is before the start."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            rows = profit.moulding_view(request.user, start, end)
+        except profit.ProfitError as error:
+            return _error(error)
+        return Response({"start": start, "end": end, "rows": rows})
 
 
 class WipReportView(APIView):

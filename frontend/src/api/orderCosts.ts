@@ -22,6 +22,9 @@ export interface OrderCosts {
     rate: string;
     amount: string;
     adjusts: boolean;
+    /** P3-17: the source document and where to open it ("" when there is no page for it). */
+    document?: string;
+    link?: string;
   }[];
   can_refresh: boolean;
   /** P3-16 part 2: where the costs sit in the accounts. Absent in older answers. */

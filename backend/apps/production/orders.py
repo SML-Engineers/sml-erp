@@ -38,7 +38,7 @@ from apps.purchasing.models import PurchaseOrderLine, PurchaseRequestLine
 from apps.purchasing.orders import PurchasingError
 from apps.sales.models import SalesOrder, SalesOrderLine
 
-from . import costs
+from . import costs, profit
 from .models import (
     Bom,
     BomLine,
@@ -631,6 +631,7 @@ def payload(order: ProductionOrder, user: User) -> dict:
         "can_request": purchase_requests.can_raise(user) and order.status in OPEN,
         # P3-16: what the order has cost so far.
         "costs": costs.summary(order, user) if order.status != St.DRAFT else None,
+        "profit": profit.detail(order, user) if order.status != St.DRAFT else None,
     }
 
 

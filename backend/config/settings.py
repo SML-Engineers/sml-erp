@@ -213,6 +213,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.core.tasks.tidy_old_notifications",
         "schedule": crontab(hour=1, minute=10),
     },
+    "snapshot-order-profits": {
+        "task": "apps.production.tasks.snapshot_order_profits",
+        "schedule": crontab(hour=22, minute=50),
+    },
 }
 
 # --- Email ------------------------------------------------------------------------------

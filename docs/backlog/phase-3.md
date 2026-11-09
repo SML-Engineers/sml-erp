@@ -547,6 +547,20 @@ Status: `[ ]` to do · `[x]` done
   and cost per job; on-time delivery; material consumption against standard and regrind
   use; moulds approaching maintenance. Production as a report builder source; profitability
   reports (spec 7.7: margin by order, customer, part, mould, division; estimate accuracy).
+  - Split in two (as P3-16). Part 1 done (PR #186): `production/reports.py`, Production →
+    **Production reports** (production reports access, the user's sections), from approved
+    shift reports: daily production by day, section, machine and shift (good, rejected,
+    reject %, run and stopped hours, moulding runs and machining job cards); rejects by
+    reason, part, mould or machine (made, reject %, share of all rejects); downtime by reason
+    and machine, largest first with the running total (Pareto), planned stops marked;
+    machining jobs due in the dates: routing estimate (setup + run minutes × quantity, own
+    operations) against job card hours, estimated against actual cost (only for those who
+    see costs) and on-time delivery (completed by the due date; open jobs past due counted);
+    moulding material issued less returned by the supervisors against the backflushed
+    standard, regrind made and issued; moulds at 90% or more of their maintenance interval.
+  - Part 2 to do: production as a report builder source; profitability reports (margin by
+    order, customer, part, mould, division for any period; most and least profitable
+    customers and parts; estimate accuracy of closed orders by element).
 
 - [ ] **P3-21 Shop-floor languages and offline entry**
   The supervisor pages in Sinhala and Tamil (translations supplied or approved by the

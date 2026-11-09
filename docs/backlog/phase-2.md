@@ -308,6 +308,10 @@ Status: `[ ]` to do · `[x]` done
     "COMBANK-PDF", built from the layout notes of 2 Nov 2026 and marked "not yet checked"
     until a real file imports correctly (the PDF itself is not kept). New library: pypdf, to
     read PDF text. The other banks' templates are added when their exports arrive.
+  - Owner, 9 Nov 2026: the banks give statements **only as PDF**; PDF reading (as built) is
+    agreed. Next step: the Accountant imports a real Commercial Bank statement on the owner's
+    PC to confirm "COMBANK-PDF"; each other bank's template is added (on the page, or by us
+    from a redacted sample kept outside the repository) when its statement arrives.
 
 - [x] **P2-16 Bank reconciliation** (spec 6, 7A)
   Imported lines matched to payments, receipts, deposits and transfers (amount, date, cheque
@@ -395,7 +399,8 @@ Status: `[ ]` to do · `[x]` done
   - Change (owner, 8 Nov 2026): each class has default terms, all straight line: buildings 5%
     / 20 years, plant and machinery 10% / 10 years (corrected by the owner the same day), moulds
     and tooling the same as plant and machinery (our choice), motor vehicles 20% / 5, furniture
-    and fittings 25% / 4, office and computer equipment 25% / 4; land none. Every asset has its
+    and fittings 25% / 4, office and computer equipment 25% / 4; land none (furniture and computers
+    amended by the owner on 9 Nov 2026 to 20% / 5 years, PR #183). Every asset has its
     own dated terms (method, rate, useful life), taken from its class unless the Accountant
     enters different ones with a reason, and the **Director approves each asset's terms**
     (Accounts → Fixed assets → Waiting for the Director) before it is depreciated; a month with

@@ -45,6 +45,7 @@ urlpatterns = [
     ),
     path("order-costs/refresh/", v.OrderCostsRefreshView.as_view(), name="order-costs-refresh"),
     path("wip-report/", v.WipReportView.as_view(), name="wip-report"),
+    path("oee/", v.OeeView.as_view(), name="oee"),
     path("order-profits/", v.OrderProfitView.as_view(), name="order-profits"),
     path("order-profits/moulding/", v.MouldingProfitView.as_view(), name="order-profits-moulding"),
     path("order-profits/part/", v.PartActualsView.as_view(), name="order-profits-part"),

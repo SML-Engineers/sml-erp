@@ -1448,3 +1448,21 @@ ul.chips {
   background: #ecfdf3;
   color: #027a48;
 }
+
+/* P3-19: a small OEE bar next to the percentage (the number is always shown). */
+.oee-bar {
+  display: inline-block;
+  width: 60px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 4px;
+  background: var(--color-border);
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.oee-bar > span {
+  display: block;
+  height: 100%;
+  background: #2e7d32;
+}

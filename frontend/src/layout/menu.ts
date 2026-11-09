@@ -130,6 +130,7 @@ export const MENU: MenuSection[] = [
       { label: "bom.title", path: "/boms", area: "production_planning" },
       { label: "costRate.title", path: "/cost-rates", area: "production_planning" },
       { label: "profit.pageTitle", path: "/order-profits", area: "job_profitability", alsoArea: "accounting" },
+      { label: "oee.title", path: "/oee", area: "production_approvals" },
     ],
   },
   {

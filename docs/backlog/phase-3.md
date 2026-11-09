@@ -541,7 +541,7 @@ Status: `[ ]` to do · `[x]` done
   Machines compared for a date range and section; each machine by month, day (with a bar)
   and shift. Retired machines are left out.
 
-- [ ] **P3-20 Production reports**
+- [x] **P3-20 Production reports**
   Spec 7.6: daily production by section, machine and shift; reject % by reason, part,
   mould and machine; downtime by reason and machine (Pareto); actual against estimated time
   and cost per job; on-time delivery; material consumption against standard and regrind
@@ -558,9 +558,15 @@ Status: `[ ]` to do · `[x]` done
     see costs) and on-time delivery (completed by the due date; open jobs past due counted);
     moulding material issued less returned by the supervisors against the backflushed
     standard, regrind made and issued; moulds at 90% or more of their maintenance interval.
-  - Part 2 to do: production as a report builder source; profitability reports (margin by
-    order, customer, part, mould, division for any period; most and least profitable
-    customers and parts; estimate accuracy of closed orders by element).
+  - Part 2 done (PR #187): five new report builder sources: moulding runs (good, rejected,
+    shots, run hours, cycle), downtime (hours, reason), job card entries (completed,
+    rejected, hours), all from approved shift reports in the person's sections; order costs
+    and closed orders (revenue, cost, margin, variance), only for those who see order costs.
+    Three new ready-made reports. On the Order profitability page, **Closed orders**: closed
+    in the dates, margin by customer, part, mould, division or order, most profitable first
+    (orders for stock or internal work have no revenue and are counted apart); **estimate
+    accuracy**: estimate against actual by element over the orders estimated from a
+    quotation, with the variance and its %, and the material price and usage totals.
 
 - [ ] **P3-21 Shop-floor languages and offline entry**
   The supervisor pages in Sinhala and Tamil (translations supplied or approved by the

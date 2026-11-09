@@ -100,6 +100,86 @@ def _payroll_lines(user: User) -> QuerySet:
     )
 
 
+def _hours():
+    """Hours between started_at and ended_at, for a source's rows (P3-20)."""
+    from django.db.models import DecimalField, DurationField, ExpressionWrapper
+    from django.db.models.functions import Cast, Extract
+
+    span = ExpressionWrapper(F("ended_at") - F("started_at"), output_field=DurationField())
+    return Cast(Extract(span, "epoch") / 3600, DecimalField(max_digits=12, decimal_places=2))
+
+
+def _moulding_runs(user: User) -> QuerySet:
+    from django.db.models import IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+
+    from apps.masters.services import section_scope
+    from apps.production.models import MouldingRun, RejectEntry
+
+    rejected = (
+        RejectEntry.objects.filter(run=OuterRef("pk"))
+        .values("run")
+        .annotate(t=Sum("quantity"))
+        .values("t")
+    )
+    return MouldingRun.objects.filter(
+        report__status="approved", report__section__in=section_scope(user)
+    ).annotate(
+        hours=_hours(),
+        shot_count=F("end_counter") - F("start_counter"),
+        rejected=Coalesce(Subquery(rejected, output_field=IntegerField()), 0),
+    )
+
+
+def _downtime(user: User) -> QuerySet:
+    from apps.masters.services import section_scope
+    from apps.production.models import DowntimeEntry
+
+    return DowntimeEntry.objects.filter(
+        report__status="approved", report__section__in=section_scope(user)
+    ).annotate(hours=_hours())
+
+
+def _job_cards(user: User) -> QuerySet:
+    from apps.masters.services import section_scope
+    from apps.production.models import JobCardEntry
+
+    return JobCardEntry.objects.filter(
+        report__status="approved", report__section__in=section_scope(user)
+    ).annotate(hours=_hours())
+
+
+def _order_costs(user: User) -> QuerySet:
+    from django.db.models.functions import Coalesce
+
+    from apps.production.models import OrderCost
+
+    return OrderCost.objects.filter(division__in=division_scope(user)).annotate(
+        order_number=Coalesce("job__number", "production_order__number"),
+        part=Coalesce("job__item__code", "production_order__item__code"),
+    )
+
+
+def _closed_orders(user: User) -> QuerySet:
+    from django.db.models.functions import Coalesce
+
+    from apps.production.models import OrderClose
+
+    return OrderClose.objects.filter(division__in=division_scope(user)).annotate(
+        order_number=Coalesce("job__number", "production_order__number"),
+        customer=Coalesce(
+            "job__sales_line__order__customer__name",
+            "production_order__sales_line__order__customer__name",
+        ),
+    )
+
+
+def _sees_costs(user: User) -> bool:
+    from apps.production import costs
+
+    return costs.can_see(user)
+
+
 def _sees_payroll(user: User) -> bool:
     from apps.payroll import employees
 
@@ -226,6 +306,102 @@ SOURCES = {
         allowed=_sees_payroll,
     ),
 }
+# P3-20: production sources. Shift-report figures in the person's sections; money only for
+# those who see order costs.
+PRODUCTION_SOURCES = {
+    "moulding_runs": Source(
+        "moulding_runs",
+        "Moulding runs (approved shift reports)",
+        "production_approvals",
+        "report__day",
+        (
+            Field("date", "Day", "report__day", "date"),
+            Field("section", "Section", "report__section__code"),
+            Field("shift", "Shift", "report__shift__code"),
+            Field("machine", "Machine", "machine__code"),
+            Field("mould", "Mould", "mould__code"),
+            Field("order", "Production order", "order__number"),
+            Field("part", "Part", "order__item__code"),
+            Field("good", "Good pieces", "good_quantity", "number"),
+            Field("rejected", "Rejected pieces", "rejected", "number"),
+            Field("shots", "Shots", "shot_count", "number"),
+            Field("hours", "Run hours", "hours", "number"),
+            Field("cycle", "Actual cycle (s)", "actual_cycle_s", "number"),
+        ),
+        division_field="report__section__division__code",
+    ),
+    "downtime": Source(
+        "downtime",
+        "Downtime (approved shift reports)",
+        "production_approvals",
+        "report__day",
+        (
+            Field("date", "Day", "report__day", "date"),
+            Field("section", "Section", "report__section__code"),
+            Field("shift", "Shift", "report__shift__code"),
+            Field("machine", "Machine", "machine__code"),
+            Field("reason", "Reason", "reason__name"),
+            Field("hours", "Hours", "hours", "number"),
+            Field("remarks", "Remarks", "remarks"),
+        ),
+        division_field="report__section__division__code",
+    ),
+    "job_cards": Source(
+        "job_cards",
+        "Job card entries (approved shift reports)",
+        "production_approvals",
+        "report__day",
+        (
+            Field("date", "Day", "report__day", "date"),
+            Field("section", "Section", "report__section__code"),
+            Field("machine", "Machine", "machine__code"),
+            Field("job", "Job", "job__number"),
+            Field("part", "Part", "job__item__code"),
+            Field("operation", "Operation", "operation__name"),
+            Field("completed", "Completed", "completed", "number"),
+            Field("rejected", "Rejected", "rejected", "number"),
+            Field("hours", "Hours", "hours", "number"),
+        ),
+        division_field="report__section__division__code",
+    ),
+    "order_costs": Source(
+        "order_costs",
+        "Order costs (job and production orders)",
+        "job_profitability",
+        "day",
+        (
+            Field("date", "Day", "day", "date"),
+            Field("division", "Division", "division__code"),
+            Field("order", "Order", "order_number"),
+            Field("part", "Part", "part"),
+            Field("element", "Cost element", "element"),
+            Field("description", "Source", "description"),
+            Field("quantity", "Quantity", "quantity", "number"),
+            Field("amount", "Amount (LKR)", "amount", "money"),
+        ),
+        allowed=_sees_costs,
+    ),
+    "closed_orders": Source(
+        "closed_orders",
+        "Closed orders (final reports)",
+        "job_profitability",
+        "closed_at",
+        (
+            Field("date", "Closed", "closed_at", "date"),
+            Field("division", "Division", "division__code"),
+            Field("order", "Order", "order_number"),
+            Field("customer", "Customer", "customer"),
+            Field("part", "Part", "item__code"),
+            Field("revenue", "Revenue (LKR)", "revenue", "money"),
+            Field("cost", "Cost (LKR)", "cost", "money"),
+            Field("margin", "Margin (LKR)", "margin", "money"),
+            Field("variance", "Variance from estimate (LKR)", "variance", "money"),
+        ),
+        allowed=_sees_costs,
+    ),
+}
+SOURCES.update(PRODUCTION_SOURCES)
+
 QUERIES = {
     "journal_lines": _journal_lines,
     "vouchers": _vouchers,
@@ -233,6 +409,11 @@ QUERIES = {
     "supplier_invoices": _supplier_invoices,
     "stock_movements": _stock,
     "payroll_lines": _payroll_lines,
+    "moulding_runs": _moulding_runs,
+    "downtime": _downtime,
+    "job_cards": _job_cards,
+    "order_costs": _order_costs,
+    "closed_orders": _closed_orders,
 }
 
 # Ready-made reports to start from.
@@ -293,6 +474,32 @@ PRESETS = [
             "group_by": "division",
             "period": "month",
             "measure": "gross",
+        },
+    },
+    {
+        "name": "Good pieces by machine, by month",
+        "definition": {
+            "source": "moulding_runs",
+            "columns": ["machine", "good"],
+            "group_by": "machine",
+            "period": "month",
+            "measure": "good",
+        },
+    },
+    {
+        "name": "Downtime hours by reason",
+        "definition": {
+            "source": "downtime",
+            "columns": ["date", "machine", "reason", "hours"],
+            "group_by": "reason",
+        },
+    },
+    {
+        "name": "Margin of closed orders by customer",
+        "definition": {
+            "source": "closed_orders",
+            "columns": ["customer", "order", "revenue", "cost", "margin"],
+            "group_by": "customer",
         },
     },
 ]

@@ -397,3 +397,135 @@ def part_actuals(item: Item, limit: int = 10) -> dict:
             "cycle_s": avg("cycle_s", "0.01"),
         },
     }
+
+
+# --- Profitability reports (P3-20 part 2) -----------------------------------------------------
+
+GROUPS = ("order", "customer", "part", "mould", "division")
+
+
+def _closed(user: User, start, end):
+    from apps.core.access import division_scope
+
+    return (
+        OrderClose.objects.filter(
+            division__in=division_scope(user),
+            closed_at__date__gte=start,
+            closed_at__date__lte=end,
+        )
+        .select_related(
+            "division",
+            "item",
+            "job__sales_line__order__customer",
+            "production_order__sales_line__order__customer",
+            "production_order__mould",
+        )
+        .order_by("closed_at", "id")
+    )
+
+
+def _group_key(c: OrderClose, by: str) -> tuple[str, str] | None:
+    order = c.job or c.production_order
+    if by == "order":
+        return order.number, order.item.code if order.item_id else ""
+    if by == "customer":
+        line = order.sales_line
+        return (line.order.customer.name, "") if line is not None else None
+    if by == "part":
+        return (c.item.code, c.item.name) if c.item_id else None
+    if by == "mould":
+        mould = getattr(order, "mould", None)
+        return (mould.code, mould.name) if mould is not None else None
+    return c.division.code, ""
+
+
+def margins(user: User, start, end, by: str = "customer") -> dict:
+    """Closed orders in the dates with revenue, grouped: revenue, cost, margin and margin %
+    on cost, most profitable first. Orders for stock or internal work have no revenue and
+    are counted apart."""
+    if by not in GROUPS:
+        raise profit.ProfitError("Group by order, customer, part, mould or division.")
+    groups: dict[str, dict] = {}
+    without = 0
+    for c in _closed(user, start, end):
+        if c.revenue is None:
+            without += 1
+            continue
+        key = _group_key(c, by)
+        if key is None:
+            continue
+        g = groups.setdefault(
+            key[0], {"key": key[0], "name": key[1], "orders": 0, "revenue": ZERO, "cost": ZERO}
+        )
+        g["orders"] += 1
+        g["revenue"] += c.revenue
+        g["cost"] += c.cost
+    rows = []
+    for g in groups.values():
+        margin = g["revenue"] - g["cost"]
+        rows.append(
+            {
+                **g,
+                "revenue": _m(g["revenue"]),
+                "cost": _m(g["cost"]),
+                "margin": _m(margin),
+                "margin_pct": _m(margin / g["cost"] * HUNDRED) if g["cost"] else None,
+            }
+        )
+    rows.sort(key=lambda r: (-Decimal(r["margin"]), r["key"]))
+    revenue = sum((Decimal(r["revenue"]) for r in rows), ZERO)
+    cost = sum((Decimal(r["cost"]) for r in rows), ZERO)
+    return {
+        "by": by,
+        "rows": rows,
+        "total": {
+            "revenue": _m(revenue),
+            "cost": _m(cost),
+            "margin": _m(revenue - cost),
+            "margin_pct": _m((revenue - cost) / cost * HUNDRED) if cost else None,
+        },
+        "without_revenue": without,
+    }
+
+
+def accuracy(user: User, start, end) -> dict:
+    """How far closed orders' actual costs were from their quotations, by element: the
+    estimate and actual added up over the orders estimated from a quotation, the variance
+    and its % of the estimate (positive: costlier than quoted)."""
+    rows: dict[str, dict] = {}
+    count = 0
+    price = usage = ZERO
+    for c in _closed(user, start, end):
+        r = c.report
+        if r.get("basis") != "quotation":
+            continue
+        count += 1
+        for x in r.get("rows", []):
+            if x.get("estimate") is None:
+                continue
+            g = rows.setdefault(
+                x["key"], {"key": x["key"], "label": x["label"], "estimate": ZERO, "actual": ZERO}
+            )
+            g["estimate"] += Decimal(x["estimate"])
+            g["actual"] += Decimal(x["actual"])
+        price += Decimal(r.get("material_price") or 0)
+        usage += Decimal(r.get("material_usage") or 0)
+    out = []
+    for g in rows.values():
+        variance = g["actual"] - g["estimate"]
+        out.append(
+            {
+                "key": g["key"],
+                "label": g["label"],
+                "estimate": _m(g["estimate"]),
+                "actual": _m(g["actual"]),
+                "variance": _m(variance),
+                "variance_pct": _m(variance / g["estimate"] * HUNDRED) if g["estimate"] else None,
+            }
+        )
+    return {
+        "orders": count,
+        "rows": out,
+        "material_price": _m(price),
+        "material_usage": _m(usage),
+    }

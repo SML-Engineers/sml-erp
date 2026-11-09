@@ -4,7 +4,16 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 import { ApiError } from "../api/client";
-import { getMouldingProfits, getOrderProfits, getPartActuals, orderProfitsKey, type Rag } from "../api/orderProfits";
+import {
+  getClosedMargins,
+  getEstimateAccuracy,
+  getMouldingProfits,
+  getOrderProfits,
+  getPartActuals,
+  orderProfitsKey,
+  type MarginGroup,
+  type Rag,
+} from "../api/orderProfits";
 import { RagTag } from "../components/OrderProfitPanel";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 
@@ -161,6 +170,7 @@ export default function OrderProfitsPage() {
           )}
         </section>
       )}
+      <ClosedOrdersPanel />
       <PartActualsPanel />
       <section className="panel" aria-label={t("profit.moulding")}>
         <h2>{t("profit.moulding")}</h2>
@@ -289,6 +299,136 @@ function PartActualsPanel() {
             </table>
           </div>
         ))}
+    </section>
+  );
+}
+
+/** P3-20: closed orders' margin grouped as chosen (most profitable first) and how far the
+ * quotations were from the actual costs. */
+function ClosedOrdersPanel() {
+  const { t } = useTranslation();
+  const now = new Date();
+  const [by, setBy] = useState<MarginGroup>("customer");
+  const [start, setStart] = useState(`${now.getFullYear()}-01-01`);
+  const [end, setEnd] = useState(today());
+  const margins = useQuery({ queryKey: [...orderProfitsKey, "margins", by, start, end], queryFn: () => getClosedMargins(by, start, end) });
+  const accuracy = useQuery({ queryKey: [...orderProfitsKey, "accuracy", start, end], queryFn: () => getEstimateAccuracy(start, end) });
+  const m = margins.data;
+  const a = accuracy.data;
+  return (
+    <section className="panel" aria-label={t("closedOrders.title")}>
+      <h2>{t("closedOrders.title")}</h2>
+      <p className="muted">{t("closedOrders.help")}</p>
+      <div className="toolbar">
+        <label>
+          {t("profit.from")}
+          <input type="date" value={start} onChange={(e) => e.target.value && setStart(e.target.value)} />
+        </label>
+        <label>
+          {t("profit.to")}
+          <input type="date" value={end} onChange={(e) => e.target.value && setEnd(e.target.value)} />
+        </label>
+        <label>
+          {t("prodReports.groupBy")}
+          <select value={by} onChange={(e) => setBy(e.target.value as MarginGroup)}>
+            {(["customer", "part", "mould", "division", "order"] as MarginGroup[]).map((g) => (
+              <option key={g} value={g}>
+                {t(`closedOrders.by.${g}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <ErrorLine error={margins.error ?? accuracy.error} />
+      {m &&
+        (m.rows.length === 0 ? (
+          <p className="muted">{t("closedOrders.none")}</p>
+        ) : (
+          <div className="table-wrap">
+            <table aria-label={t("closedOrders.marginBy", { by: t(`closedOrders.by.${m.by}`) })}>
+              <thead>
+                <tr>
+                  <th>{t(`closedOrders.by.${m.by}`)}</th>
+                  <th className="num">{t("closedOrders.orders")}</th>
+                  <th className="num">{t("profit.revenue")}</th>
+                  <th className="num">{t("profit.cost")}</th>
+                  <th className="num">{t("profit.margin")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {m.rows.map((r) => (
+                  <tr key={r.key}>
+                    <td>
+                      {r.key}
+                      {r.name && <div className="muted">{r.name}</div>}
+                    </td>
+                    <td className="num">{r.orders}</td>
+                    <td className="num">{money(r.revenue)}</td>
+                    <td className="num">{money(r.cost)}</td>
+                    <td className="num">
+                      {money(r.margin)}
+                      {r.margin_pct !== null && <div className="muted">{r.margin_pct}%</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colSpan={2}>{t("closeReport.total")}</th>
+                  <td className="num">{money(m.total.revenue)}</td>
+                  <td className="num">{money(m.total.cost)}</td>
+                  <td className="num">
+                    {money(m.total.margin)}
+                    {m.total.margin_pct !== null && <div className="muted">{m.total.margin_pct}%</div>}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        ))}
+      {m && m.without_revenue > 0 && <p className="muted">{t("closedOrders.withoutRevenue", { count: m.without_revenue })}</p>}
+      {a && a.orders > 0 && (
+        <>
+          <h3>{t("closedOrders.accuracy")}</h3>
+          <p className="muted">{t("closedOrders.accuracyHelp", { count: a.orders })}</p>
+          <div className="table-wrap">
+            <table aria-label={t("closedOrders.accuracy")}>
+              <thead>
+                <tr>
+                  <th />
+                  <th className="num">{t("closeReport.estimate")}</th>
+                  <th className="num">{t("profit.actual")}</th>
+                  <th className="num">{t("closeReport.variance")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {a.rows.map((r) => (
+                  <tr key={r.key}>
+                    <th>{t(`closeReport.rows.${r.key}`)}</th>
+                    <td className="num">{money(r.estimate)}</td>
+                    <td className="num">{money(r.actual)}</td>
+                    <td className="num">
+                      {money(r.variance)} {r.variance_pct !== null && `(${r.variance_pct}%)`}
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  <td>{t("closeReport.materialPrice")}</td>
+                  <td />
+                  <td />
+                  <td className="num">{money(a.material_price)}</td>
+                </tr>
+                <tr>
+                  <td>{t("closeReport.materialUsage")}</td>
+                  <td />
+                  <td />
+                  <td className="num">{money(a.material_usage)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </section>
   );
 }

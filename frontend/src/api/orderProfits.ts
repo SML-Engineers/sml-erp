@@ -118,3 +118,25 @@ export function getOrderProfits(filters: { state?: string; division?: string; du
 
 export const getMouldingProfits = (start: string, end: string) =>
   apiGet<{ start: string; end: string; rows: MouldingProfitRow[] }>(`/order-profits/moulding/?start=${start}&end=${end}`);
+
+/** P3-20: closed orders' margins and the estimate accuracy. */
+export type MarginGroup = "order" | "customer" | "part" | "mould" | "division";
+
+export interface ClosedMargins {
+  by: MarginGroup;
+  rows: { key: string; name: string; orders: number; revenue: string; cost: string; margin: string; margin_pct: string | null }[];
+  total: { revenue: string; cost: string; margin: string; margin_pct: string | null };
+  without_revenue: number;
+}
+
+export interface EstimateAccuracy {
+  orders: number;
+  rows: { key: string; label: string; estimate: string; actual: string; variance: string; variance_pct: string | null }[];
+  material_price: string;
+  material_usage: string;
+}
+
+export const getClosedMargins = (by: MarginGroup, start: string, end: string) =>
+  apiGet<ClosedMargins>(`/order-profits/closed/margins/?by=${by}&start=${start}&end=${end}`);
+export const getEstimateAccuracy = (start: string, end: string) =>
+  apiGet<EstimateAccuracy>(`/order-profits/closed/accuracy/?start=${start}&end=${end}`);

@@ -54,6 +54,11 @@ urlpatterns = [
     path("order-profits/", v.OrderProfitView.as_view(), name="order-profits"),
     path("order-profits/moulding/", v.MouldingProfitView.as_view(), name="order-profits-moulding"),
     path("order-profits/part/", v.PartActualsView.as_view(), name="order-profits-part"),
+    path(
+        "order-profits/closed/<str:kind>/",
+        v.ClosedProfitView.as_view(),
+        name="order-profits-closed",
+    ),
     path("job-orders/", v.JobOrderListView.as_view(), name="job-orders"),
     path(
         "job-orders/sales-lines/", v.JobOrderSalesLinesView.as_view(), name="job-orders-sales-lines"

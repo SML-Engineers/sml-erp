@@ -5382,5 +5382,24 @@
       "due": "Due",
       "approaching": "Approaching"
     }
+  },
+  "closedOrders": {
+    "title": "Closed orders",
+    "help": "Orders closed in the dates: their margin grouped as you choose, most profitable first (the least profitable are at the bottom), and how far the quotations were from the actual costs.",
+    "by": {
+      "customer": "Customer",
+      "part": "Part",
+      "mould": "Mould",
+      "division": "Division",
+      "order": "Order"
+    },
+    "marginBy": "Margin by {{by}}",
+    "orders": "Orders",
+    "none": "No closed orders with revenue in these dates.",
+    "withoutRevenue_one": "{{count}} closed order for stock or internal work has no revenue and is left out.",
+    "withoutRevenue_other": "{{count}} closed orders for stock or internal work have no revenue and are left out.",
+    "accuracy": "Estimate accuracy",
+    "accuracyHelp_one": "Over {{count}} closed order estimated from a quotation. A plus means it cost more than quoted.",
+    "accuracyHelp_other": "Over {{count}} closed orders estimated from a quotation. A plus means it cost more than quoted."
   }
 }

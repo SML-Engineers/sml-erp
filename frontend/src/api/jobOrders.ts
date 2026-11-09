@@ -87,6 +87,40 @@ export interface Dispatch {
   returns: { received_on: string; good: string; rejected: string; reason: string; by: string }[];
 }
 
+/** P3-14: an inspection of the job, its checks per piece, and the decision. */
+export interface JobInspectionRow {
+  id: number;
+  stage: "first_article" | "in_process" | "final";
+  stage_label: string;
+  operation: number;
+  operation_name: string;
+  pieces: number;
+  status: "draft" | "passed" | "on_hold" | "deviation_requested" | "decided";
+  status_label: string;
+  inspector: string;
+  inspected_at: string | null;
+  notes: string;
+  checks: {
+    position: number;
+    name: string;
+    kind: "number" | "pass_fail";
+    minimum: string;
+    maximum: string;
+    unit: string;
+    critical: boolean;
+    pieces: { piece: number; value: string; passed: boolean | null; within_limits: boolean | null; notes: string }[];
+  }[];
+  failed: string[];
+  decision: "" | "rework" | "scrap" | "deviation";
+  decision_label: string;
+  decision_quantity: string;
+  decision_reason: string;
+  decided_by: string;
+  can_enter: boolean;
+  can_decide: boolean;
+  can_approve: boolean;
+}
+
 export interface Bill {
   kind: "voucher" | "invoice";
   number: string;
@@ -135,6 +169,9 @@ export interface JobOrder extends JobRow {
   subcontract: Dispatch[];
   bills: Bill[];
   can_subcontract: boolean;
+  inspections: JobInspectionRow[];
+  on_hold: boolean;
+  can_inspect: boolean;
   suppliers: { seq: number; supplier: string }[];
   dispatch?: { id: number; number: string };
   issues: JobIssueDoc[];
@@ -173,7 +210,8 @@ export interface WaitingExcess {
 }
 
 export type JobValues = Record<string, unknown>;
-export type JobAction = "release" | "complete" | "close" | "cancel" | "issue" | "return" | "ask-more" | "send-out" | "receive-back";
+export type JobAction =
+  "release" | "complete" | "close" | "cancel" | "issue" | "return" | "ask-more" | "send-out" | "receive-back" | "inspect";
 
 export const jobsKey = ["job-orders"] as const;
 export const getJobs = (q: string, status: string, purpose: string) =>
@@ -191,3 +229,5 @@ export const decideExcess = (id: number, action: "approve" | "reject", reason: s
   apiSend<{ status: string }>("POST", `/job-orders/excess/${id}/decide/`, { action, reason });
 export const jobCardsUrl = (id: number) => `${API_BASE}/job-orders/${id}/cards/`;
 export const dispatchNoteUrl = (id: number) => `${API_BASE}/job-orders/sent/${id}/note/`;
+export const inspectionAction = (id: number, action: "save" | "finish" | "decide" | "director", body: JobValues) =>
+  apiSend<JobOrder>("POST", `/job-orders/inspections/${id}/${action}/`, body);

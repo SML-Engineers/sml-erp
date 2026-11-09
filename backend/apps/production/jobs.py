@@ -40,7 +40,7 @@ from apps.inventory.stock import StockError
 from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
-from . import job_cards, orders, routings, subcontract
+from . import job_cards, job_inspections, orders, routings, subcontract
 from .models import (
     Bom,
     BomLine,
@@ -435,6 +435,11 @@ def _move(user: User, job: JobOrder, event: str, to: str, before: tuple, **more)
 
 
 def complete(user: User, job: JobOrder) -> JobOrder:
+    if job_cards.held(job):
+        raise JobError(
+            f"{job.number} is on hold after a failed inspection: the Production Manager decides "
+            "first."
+        )
     return _move(
         user, job, "job_order_completed", St.COMPLETED, (St.RELEASED,), completed_at=timezone.now()
     )
@@ -821,7 +826,13 @@ def payload(job: JobOrder, user: User) -> dict:
         # P3-13: parts sent out to suppliers and back, and the bills coded to the job.
         "subcontract": subcontract.rows(job),
         "bills": subcontract.bills(job),
-        "can_subcontract": subcontract.can_move(user) and job.status == St.RELEASED,
+        "can_subcontract": subcontract.can_move(user)
+        and job.status == St.RELEASED
+        and not job_cards.held(job),
+        # P3-14: inspections, and whether a failed one holds the job.
+        "inspections": job_inspections.rows(job, user),
+        "on_hold": job_cards.held(job),
+        "can_inspect": job_inspections.can_inspect(user) and job.status == St.RELEASED,
         "suppliers": [
             {"seq": o.seq, "supplier": o.supplier.code if o.supplier_id else ""}
             for o in job.operations.filter(subcontract=True).select_related("supplier")

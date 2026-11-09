@@ -18,6 +18,8 @@ class ProductionConfig(AppConfig):
             JobCardEntry,
             JobCardReject,
             JobExcess,
+            JobInspection,
+            JobInspectionResult,
             JobIssue,
             JobMaterial,
             JobOperation,
@@ -77,5 +79,7 @@ class ProductionConfig(AppConfig):
             MouldMaintenance,
             SubcontractDispatch,
             SubcontractReturn,
+            JobInspection,
+            JobInspectionResult,
         ):
             register(model)

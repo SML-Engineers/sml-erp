@@ -155,6 +155,11 @@ DOCUMENT_TYPES = {
     "bom": DocumentType("Bill of materials", min_approvals=1),
     # Issuing more material to a job than it allows (P3-11): the Production Manager approves.
     "job_excess": DocumentType("Material over the job's allowance", min_approvals=1),
+    # Job parts accepted under deviation after a failed critical check (P3-14): the
+    # Production Manager asks, the Director approves.
+    "job_deviation": DocumentType(
+        "Job parts accepted under deviation", min_approvals=1, final_role="director"
+    ),
     # A submitted moulding shift report (P3-09): the Production Manager approves or returns
     # it; approval moves stock and mould shot counts.
     "shift_report": DocumentType("Shift report", min_approvals=1),

@@ -1,6 +1,6 @@
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { OrderCosts } from "./orderCosts";
-import type { OrderProfit } from "./orderProfits";
+import type { CloseReport, OrderProfit } from "./orderProfits";
 import type { OpenSalesLine, SalesLine } from "./productionOrders";
 
 /** Machining job orders and their material (P3-11). */
@@ -198,6 +198,8 @@ export interface JobOrder extends JobRow {
   costs: OrderCosts | null;
   /** P3-17: null for a draft or for people who do not see costs. */
   profit?: OrderProfit | null;
+  /** P3-18: the final report once closed. */
+  close_report?: CloseReport | null;
   can_inspect: boolean;
   suppliers: { seq: number; supplier: string }[];
   dispatch?: { id: number; number: string };

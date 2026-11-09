@@ -123,3 +123,36 @@ test("the dashboard shows open orders worst first, filtered and by status", asyn
   const moulding = await screen.findByRole("table", { name: "Moulding by machine and mould" });
   expect(moulding).toHaveTextContent("IMM-250MD-001PO261100033,96040 (1.00%)10.80 / 12.000.66001,329.29For stock");
 });
+
+test("actuals of a part's closed orders, for quoting", async () => {
+  mockApi({
+    "GET /api/v1/order-profits/?state=open": { body: { state: "open", counts: { red: 0, amber: 0, green: 0 }, orders: [] } },
+    [`GET /api/v1/order-profits/moulding/?start=${start}&end=${end}`]: { body: { start, end, rows: [] } },
+    "GET /api/v1/order-profits/part/?item=SH-100": {
+      body: {
+        item: "SH-100",
+        name: "Drive shaft",
+        orders: [
+          {
+            number: "JO26110001",
+            closed_at: "2026-11-09T10:00:00Z",
+            good: "18",
+            margin_pct: "133.77",
+            kg_per_piece: "0.5000",
+            hours_per_1000: "100.00",
+            setup_hours: "0.00",
+            cycle_s: null,
+          },
+        ],
+        average: { kg_per_piece: "0.5000", hours_per_1000: "100.00", setup_hours: "0.00", cycle_s: null },
+      },
+    },
+  });
+  renderAt("/order-profits", <OrderProfitsPage />);
+  const panel = await screen.findByRole("region", { name: "Actuals for quoting" });
+  fireEvent.change(within(panel).getByLabelText("Part (item code)"), { target: { value: "sh-100" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Show" }));
+  const table = await within(panel).findByRole("table", { name: "Closed orders of SH-100" });
+  expect(within(table).getByRole("row", { name: /JO26110001/ })).toHaveTextContent("JO26110001180.5000100.000.00–133.77%");
+  expect(within(table).getByRole("row", { name: /Average/ })).toHaveTextContent("Average0.5000100.000.00–");
+});

@@ -28,6 +28,7 @@ import {
   type JobValues,
 } from "../api/jobOrders";
 import OrderCostsPanel from "../components/OrderCostsPanel";
+import OrderClosePanel from "../components/OrderClosePanel";
 import OrderProfitPanel from "../components/OrderProfitPanel";
 import { formatDecimal } from "../lib/decimal";
 
@@ -384,6 +385,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
       <ErrorLine error={act.error} />
       {(j.can_inspect || j.inspections.length > 0) && <Inspections job={j} onSaved={saved} />}
       {j.transfer && <TransferPanel job={j} transfer={j.transfer} onSaved={saved} />}
+      {j.close_report && <OrderClosePanel report={j.close_report} />}
       {j.profit && <OrderProfitPanel profit={j.profit} />}
       {j.costs && <OrderCostsPanel costs={j.costs} busy={act.isPending} onRefresh={() => act.mutate({ action: "refresh-costs" })} />}
       {(j.can_subcontract || j.subcontract.length > 0) && <Subcontract job={j} onSaved={saved} />}

@@ -1724,3 +1724,47 @@ class ProfitAlert(models.Model):
 
     def __str__(self):
         return f"{self.job or self.production_order}: {self.get_kind_display()}"
+
+
+class OrderClose(models.Model):
+    """P3-18: the final report of a closed job or production order (spec 7.7 "At
+    completion"): revenue, cost and margin in LKR, and estimate against actual by element
+    with the variances, as they stood when it closed. Never changed or deleted (database)."""
+
+    job = models.OneToOneField(
+        JobOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="close_report"
+    )
+    production_order = models.OneToOneField(
+        ProductionOrder,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="close_report",
+    )
+    division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
+    item = models.ForeignKey(
+        "inventory.Item", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    revenue = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    cost = models.DecimalField(max_digits=18, decimal_places=2)
+    margin = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    variance = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    automatic = models.BooleanField("Closed by the last delivery", default=False)
+    report = models.JSONField()
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    closed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-closed_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(job__isnull=False, production_order__isnull=True)
+                | models.Q(job__isnull=True, production_order__isnull=False),
+                name="production_close_one_order",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Close report of {self.job or self.production_order}"

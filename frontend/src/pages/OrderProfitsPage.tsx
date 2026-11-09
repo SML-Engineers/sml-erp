@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 import { ApiError } from "../api/client";
-import { getMouldingProfits, getOrderProfits, orderProfitsKey, type Rag } from "../api/orderProfits";
+import { getMouldingProfits, getOrderProfits, getPartActuals, orderProfitsKey, type Rag } from "../api/orderProfits";
 import { RagTag } from "../components/OrderProfitPanel";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 
@@ -63,6 +63,7 @@ export default function OrderProfitsPage() {
           <select value={state} onChange={(e) => setState(e.target.value)}>
             <option value="open">{t("profit.open")}</option>
             <option value="completed">{t("profit.completed")}</option>
+            <option value="closed">{t("profit.closed")}</option>
           </select>
         </label>
         <label>
@@ -160,6 +161,7 @@ export default function OrderProfitsPage() {
           )}
         </section>
       )}
+      <PartActualsPanel />
       <section className="panel" aria-label={t("profit.moulding")}>
         <h2>{t("profit.moulding")}</h2>
         <p className="muted">{t("profit.mouldingHelp")}</p>
@@ -216,5 +218,77 @@ export default function OrderProfitsPage() {
           ))}
       </section>
     </main>
+  );
+}
+
+/** P3-18: what closed orders of a part actually took, for the next quotation. */
+function PartActualsPanel() {
+  const { t } = useTranslation();
+  const [code, setCode] = useState("");
+  const [asked, setAsked] = useState("");
+  const found = useQuery({ queryKey: [...orderProfitsKey, "part", asked], queryFn: () => getPartActuals(asked), enabled: asked !== "" });
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    setAsked(code.trim().toUpperCase());
+  }
+  const d = found.data;
+  return (
+    <section className="panel" aria-label={t("partActuals.title")}>
+      <h2>{t("partActuals.title")}</h2>
+      <p className="muted">{t("partActuals.help")}</p>
+      <form className="toolbar" onSubmit={submit}>
+        <label>
+          {t("partActuals.item")}
+          <input value={code} maxLength={30} onChange={(e) => setCode(e.target.value)} />
+        </label>
+        <button type="submit" disabled={!code.trim()}>
+          {t("partActuals.show")}
+        </button>
+      </form>
+      <ErrorLine error={found.error} />
+      {d &&
+        (d.orders.length === 0 ? (
+          <p className="muted">{t("partActuals.none", { item: d.item })}</p>
+        ) : (
+          <div className="table-wrap">
+            <table aria-label={t("partActuals.table", { item: d.item })}>
+              <thead>
+                <tr>
+                  <th>{t("profit.order")}</th>
+                  <th className="num">{t("profit.goodPieces")}</th>
+                  <th className="num">{t("partActuals.kg")}</th>
+                  <th className="num">{t("partActuals.hours")}</th>
+                  <th className="num">{t("partActuals.setup")}</th>
+                  <th className="num">{t("partActuals.cycle")}</th>
+                  <th className="num">{t("profit.margin")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.orders.map((o) => (
+                  <tr key={o.number}>
+                    <td>{o.number}</td>
+                    <td className="num">{formatQuantity(o.good)}</td>
+                    <td className="num">{o.kg_per_piece ?? "–"}</td>
+                    <td className="num">{o.hours_per_1000 ?? "–"}</td>
+                    <td className="num">{o.setup_hours ?? "–"}</td>
+                    <td className="num">{o.cycle_s ?? "–"}</td>
+                    <td className="num">{o.margin_pct === null ? "–" : `${o.margin_pct}%`}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colSpan={2}>{t("partActuals.average")}</th>
+                  <td className="num">{d.average.kg_per_piece ?? "–"}</td>
+                  <td className="num">{d.average.hours_per_1000 ?? "–"}</td>
+                  <td className="num">{d.average.setup_hours ?? "–"}</td>
+                  <td className="num">{d.average.cycle_s ?? "–"}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        ))}
+    </section>
   );
 }

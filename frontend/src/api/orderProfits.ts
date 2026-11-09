@@ -54,8 +54,41 @@ export interface ProfitRow extends ProfitFigures {
   sections: string[];
 }
 
+/** P3-18: the final report kept when an order closes. */
+export interface CloseReport {
+  basis: "quotation" | "bom" | "";
+  quantity: string;
+  good: string;
+  rejected: string;
+  revenue: string | null;
+  revenue_basis: "invoices" | "order" | "";
+  cost: string;
+  margin: string | null;
+  margin_pct: string | null;
+  estimate_cost: string | null;
+  variance: string | null;
+  rows: { key: string; label: string; estimate: string | null; actual: string; variance: string | null }[];
+  material_price: string | null;
+  material_usage: string | null;
+  actuals: { kg_per_piece: string | null; hours_per_1000: string | null; setup_hours: string | null; cycle_s: string | null };
+  quoted: { kg_per_piece: string | null; setup_hours: string | null; cycle_s: string | null };
+  standard_cycle_s: string | null;
+  automatic: boolean;
+  closed_by: string;
+  closed_at: string;
+}
+
+export interface PartActuals {
+  item: string;
+  name: string;
+  orders: ({ number: string; closed_at: string; good: string; margin_pct: string | null } & CloseReport["actuals"])[];
+  average: CloseReport["actuals"];
+}
+
+export const getPartActuals = (item: string) => apiGet<PartActuals>(`/order-profits/part/?item=${encodeURIComponent(item)}`);
+
 export interface ProfitDashboard {
-  state: "open" | "completed";
+  state: "open" | "completed" | "closed";
   counts: Record<Rag, number>;
   orders: ProfitRow[];
 }

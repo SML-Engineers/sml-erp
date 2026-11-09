@@ -279,7 +279,7 @@ def _row(order, setting) -> dict:
 
 
 def _orders(user: User, state: str):
-    statuses = OPEN if state != "completed" else DONE
+    statuses = {"completed": ("completed",), "closed": ("closed",)}.get(state, OPEN)
     scope = division_scope(user)
     jobs = JobOrder.objects.filter(status__in=statuses, division__in=scope).select_related(
         "division", "item", "bom", "sales_line__order__customer", "sales_line__quotation_line"

@@ -1,6 +1,6 @@
 import { apiGet, apiSend } from "./client";
 import type { OrderCosts } from "./orderCosts";
-import type { OrderProfit } from "./orderProfits";
+import type { CloseReport, OrderProfit } from "./orderProfits";
 
 /** Moulding production orders (P3-06). */
 
@@ -75,6 +75,8 @@ export interface ProductionOrder extends OrderRow {
   costs: OrderCosts | null;
   /** P3-17: null for a draft or for people who do not see costs. */
   profit?: OrderProfit | null;
+  /** P3-18: the final report once closed. */
+  close_report?: CloseReport | null;
   purchase_request?: { id: number; number: string };
 }
 

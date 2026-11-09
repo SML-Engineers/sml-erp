@@ -288,6 +288,10 @@ def issue(user: User, note: DeliveryNote) -> DeliveryNote:
         note.issued_at = timezone.now()
         note.updated_at = note.issued_at
         note.save(update_fields=["status", "issued_by", "issued_at", "updated_at", "cost_entry"])
+        # P3-18: completed orders of lines now delivered in full are closed.
+        from apps.production import closing
+
+        closing.after_delivery(user, note)
         _move_order(order)
         return note
 

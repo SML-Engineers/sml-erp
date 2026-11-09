@@ -129,6 +129,7 @@ const job: JobOrder = {
   on_hold: false,
   can_inspect: false,
   transfer: null,
+  costs: null,
 };
 
 test("Stores issues material by lot and takes back what was not used", async () => {

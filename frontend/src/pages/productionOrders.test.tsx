@@ -81,6 +81,7 @@ const order: ProductionOrder = {
   can_close: false,
   can_cancel: true,
   can_request: true,
+  costs: null,
 };
 
 test("an order shows its due dates and what it is short of; the stores raise a request", async () => {

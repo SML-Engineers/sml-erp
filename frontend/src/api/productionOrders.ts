@@ -1,4 +1,5 @@
 import { apiGet, apiSend } from "./client";
+import type { OrderCosts } from "./orderCosts";
 
 /** Moulding production orders (P3-06). */
 
@@ -70,6 +71,7 @@ export interface ProductionOrder extends OrderRow {
   can_close: boolean;
   can_cancel: boolean;
   can_request: boolean;
+  costs: OrderCosts | null;
   purchase_request?: { id: number; number: string };
 }
 
@@ -104,7 +106,7 @@ export interface OrderWhereUsed {
   needing: { id: number; number: string; item: string; required: string; unit: string }[];
 }
 
-export type OrderAction = "release" | "complete" | "close" | "cancel" | "purchase-request";
+export type OrderAction = "release" | "complete" | "close" | "cancel" | "purchase-request" | "refresh-costs";
 
 export const ordersKey = ["production-orders"] as const;
 export const getOrders = (q: string, status: string) =>

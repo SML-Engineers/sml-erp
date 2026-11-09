@@ -435,6 +435,27 @@ Status: `[ ]` to do · `[x]` done
   division; on completion to finished goods, then cost of sales when invoiced. Month-end
   WIP report reconciled with the WIP account; machine time charged to no order reported as
   unabsorbed overhead. On the month-end checklist.
+  - Part 1 done (PR #180): order costs. Every job order and production order collects
+    insert-only cost entries (`OrderCost`, each naming its source) from what is approved:
+    material (job issues by lot less returns; moulding backflush per approved shift report
+    at the good pieces' material value less the regrind credit); labour (job card hours,
+    less the machine's downtime in them, × the section's labour rate; moulding run hours ×
+    the people on the machine, at least 1); machine time and overhead (hours × the
+    machine's or section's overhead rate); setup and mould change (job card setup up to the
+    routing's setup minutes; SETUP and MOULD-CHANGE downtime charged to the order run next
+    on the machine); mould amortisation (shots × the mould's rate); subcontract and direct
+    bills (approved or paid voucher lines not paying an invoice, posted supplier invoice
+    lines of non-stock items; subcontract when the supplier was sent the job's parts). Rates
+    in force on the day (P3-05). A changed or undone source (a corrected shift report, a
+    cancelled or amended voucher) gets an adjusting entry. Costs are brought up to date when
+    issues, shift reports, vouchers and supplier invoices are approved, by the Accountant's
+    "Bring the costs up to date" and by `manage.py sync_order_costs`. Job and production
+    order pages show costs by element, cost per good piece, the cost spent on rejects,
+    sections without a labour rate, and every entry (job profitability or accounting view).
+  - Part 2 to do: the ledger (Work in progress per division, finished goods on completion,
+    cost of sales when invoiced, which needs sales lines linked to their part or order since
+    deliveries do not take stock out yet), the month-end WIP report reconciled with the WIP
+    account, unabsorbed machine time, the month-end checklist.
 
 - [ ] **P3-17 Live order profitability**
   For every order: estimate (from the accepted quotation), actual to date, forecast at

@@ -33,6 +33,7 @@ EVENTS = {
     "reorder_alert": "An item's stock fell to its reorder level",
     "material_shortage": "A released production order is short of material",
     "mould_maintenance_due": "A mould is near or at its preventive maintenance",
+    "job_on_hold": "A job failed an inspection and waits for my decision",
 }
 
 log = logging.getLogger(__name__)

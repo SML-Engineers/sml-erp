@@ -39,6 +39,7 @@ from apps.payroll.models import Employee
 from .models import (
     JobCardEntry,
     JobCardReject,
+    JobInspection,
     JobOperation,
     JobOrder,
     ShiftReport,
@@ -93,11 +94,31 @@ def _sent_back(job: JobOrder) -> dict[int, dict[str, Decimal]]:
     return out
 
 
+def _decided(job: JobOrder) -> dict[int, dict[str, Decimal]]:
+    """Per operation id: pieces sent back for rework and scrapped after inspections (P3-14)."""
+    out: dict[int, dict[str, Decimal]] = {}
+    rows = (
+        JobInspection.objects.filter(job=job, status="decided", decision__in=["rework", "scrap"])
+        .values("operation_id", "decision")
+        .annotate(q=Sum("decision_quantity"))
+    )
+    for r in rows:
+        t = out.setdefault(r["operation_id"], {"rework": ZERO, "scrap": ZERO})
+        t[r["decision"]] += r["q"]
+    return out
+
+
+def held(job: JobOrder) -> bool:
+    """A failed inspection holds the job until the Production Manager decides (P3-14)."""
+    return job.inspections.filter(status__in=["on_hold", "deviation_requested"]).exists()
+
+
 def flow(job: JobOrder, totals: dict | None = None) -> list[dict]:
     """Per operation in order: received (released by the one before), completed, rejected,
     rework, in hand, at the supplier (subcontract) and available for the next operation."""
     totals = totals if totals is not None else _totals(job)
     away = _sent_back(job)
+    fixed = _decided(job)
     blank = {"completed": ZERO, "rejected": ZERO, "rework": ZERO}
     out = []
     received = job.quantity
@@ -113,6 +134,17 @@ def flow(job: JobOrder, totals: dict | None = None) -> list[dict]:
             t = totals.get(op.pk, blank)
             in_hand = received - t["completed"] - t["rejected"]
             at_supplier = ZERO
+        # P3-14: pieces the Production Manager sent back for rework or scrapped after an
+        # inspection are no longer completed here.
+        f = fixed.get(op.pk)
+        if f:
+            t = {
+                "completed": t["completed"] - f["rework"] - f["scrap"],
+                "rejected": t["rejected"] + f["scrap"],
+                "rework": t["rework"] + f["rework"],
+            }
+            if not op.subcontract:
+                in_hand = received - t["completed"] - t["rejected"]
         nxt = ops[n + 1] if n + 1 < len(ops) else None
         used_next = ZERO
         if nxt is not None:
@@ -191,6 +223,11 @@ def parse(report: ShiftReport, values: dict, look, helpers) -> list[dict]:
         machine = look.machine(r.get("machine"))
         label = f"line {n} ({machine.code})"
         job, op = _job(look, r.get("job"))
+        if held(job):
+            raise JobCardError(
+                f"{job.number} is on hold after a failed inspection: the Production Manager "
+                "decides first."
+            )
         if r.get("operation") not in (None, ""):
             try:
                 op = job.operations.get(seq=int(str(r.get("operation")).strip()))

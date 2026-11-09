@@ -13,12 +13,14 @@ import {
   getJobs,
   getJobSalesLines,
   getWaitingExcess,
+  inspectionAction,
   jobAction,
   dispatchNoteUrl,
   jobCardsUrl,
   jobsKey,
   type Dispatch,
   type JobAction,
+  type JobInspectionRow,
   type JobIssueDoc,
   type JobOrder,
   type JobPurpose,
@@ -319,6 +321,11 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
         {j.bom && <> · {t("job.bomRev", { revision: j.bom.revision })}</>}
       </p>
       {j.end_reason && <p className="notice">{t("prodOrder.cancelled", { reason: j.end_reason })}</p>}
+      {j.on_hold && (
+        <p className="notice form-error" role="status">
+          {t("job.onHold")}
+        </p>
+      )}
       {done && <p className="notice">{t("job.posted", { number: done })}</p>}
       {j.can_edit ? (
         <EditLines job={j} onSaved={saved} />
@@ -372,6 +379,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
         </div>
       )}
       <ErrorLine error={act.error} />
+      {(j.can_inspect || j.inspections.length > 0) && <Inspections job={j} onSaved={saved} />}
       {(j.can_subcontract || j.subcontract.length > 0) && <Subcontract job={j} onSaved={saved} />}
       {j.bills.length > 0 && <Bills job={j} />}
       {j.can_issue && <Issue job={j} onSaved={saved} />}
@@ -991,5 +999,280 @@ function Bills({ job }: { job: JobOrder }) {
         </p>
       ))}
     </section>
+  );
+}
+
+/** P3-14: QC inspects the job; a failed inspection holds it until the Production Manager decides. */
+function Inspections({ job, onSaved }: { job: JobOrder; onSaved: (j: JobOrder) => void }) {
+  const { t } = useTranslation();
+  const [values, setValues] = useState({ stage: "first_article", operation: String(job.operations[0]?.seq ?? ""), pieces: "1" });
+  const [check, setCheck] = useState({ name: "", minimum: "", maximum: "", unit: "" });
+  const start = useMutation({
+    mutationFn: () => jobAction(job.id, "inspect", { ...values, checks: check.name ? [{ ...check, kind: "number" }] : [] }),
+    onSuccess: (j) => {
+      setCheck({ name: "", minimum: "", maximum: "", unit: "" });
+      onSaved(j);
+    },
+  });
+  const set = (key: keyof typeof values) => (e: { target: { value: string } }) => setValues({ ...values, [key]: e.target.value });
+  const setC = (key: keyof typeof check) => (e: { target: { value: string } }) => setCheck({ ...check, [key]: e.target.value });
+  const drafting = job.inspections.some((i) => i.status === "draft");
+  return (
+    <section className="panel" aria-label={t("job.inspections")}>
+      <h3>{t("job.inspections")}</h3>
+      <p className="muted">{t("job.inspectionsHelp")}</p>
+      {job.inspections.map((i) => (
+        <Inspection key={i.id} inspection={i} onSaved={onSaved} />
+      ))}
+      {job.can_inspect && !drafting && (
+        <div className="form-grid" role="group" aria-label={t("job.startInspection")}>
+          <label>
+            {t("job.stage")}
+            <select value={values.stage} onChange={set("stage")}>
+              {(["first_article", "in_process", "final"] as const).map((s) => (
+                <option key={s} value={s}>
+                  {t(`job.stages.${s}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {values.stage !== "final" && (
+            <label>
+              {t("job.afterOperation")}
+              <select value={values.operation} onChange={set("operation")}>
+                {job.operations.map((o) => (
+                  <option key={o.seq} value={o.seq}>
+                    {o.seq} {o.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            {t("job.piecesChecked")}
+            <input inputMode="numeric" value={values.pieces} onChange={set("pieces")} />
+          </label>
+          <fieldset className="wide inline-form">
+            <legend>{t("job.extraCheck")}</legend>
+            <label>
+              {t("job.checkName")}
+              <input value={check.name} onChange={setC("name")} />
+            </label>
+            <label>
+              {t("job.minimum")}
+              <input inputMode="decimal" value={check.minimum} onChange={setC("minimum")} />
+            </label>
+            <label>
+              {t("job.maximum")}
+              <input inputMode="decimal" value={check.maximum} onChange={setC("maximum")} />
+            </label>
+            <label>
+              {t("job.unit")}
+              <input value={check.unit} onChange={setC("unit")} />
+            </label>
+          </fieldset>
+          <div className="wide row-actions">
+            <button type="button" disabled={start.isPending} onClick={() => start.mutate()}>
+              {t("job.start")}
+            </button>
+          </div>
+          <div className="wide">
+            <ErrorLine error={start.error} />
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Inspection({ inspection: i, onSaved }: { inspection: JobInspectionRow; onSaved: (j: JobOrder) => void }) {
+  const { t } = useTranslation();
+  const key = (position: number, piece: number) => `${position}-${piece}`;
+  const [entered, setEntered] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      i.checks.flatMap((c) =>
+        c.pieces.map((p) => [
+          key(c.position, p.piece),
+          c.kind === "number" ? p.value : p.passed === null ? "" : p.passed ? "pass" : "fail",
+        ]),
+      ),
+    ),
+  );
+  const [decision, setDecision] = useState({ decision: "rework", quantity: "", reason: "" });
+  const [comment, setComment] = useState("");
+  const body = () => ({
+    results: i.checks.flatMap((c) =>
+      c.pieces.map((p) => {
+        const v = entered[key(c.position, p.piece)] ?? "";
+        return c.kind === "number"
+          ? { position: c.position, piece: p.piece, value: v }
+          : { position: c.position, piece: p.piece, passed: v === "" ? "" : v === "pass" };
+      }),
+    ),
+  });
+  const act = useMutation({
+    mutationFn: ({ action, payload }: { action: "save" | "finish" | "decide" | "director"; payload: JobValues }) =>
+      inspectionAction(i.id, action, payload),
+    onSuccess: onSaved,
+  });
+  const pieces = i.checks[0]?.pieces.map((p) => p.piece) ?? [];
+  return (
+    <div
+      className="run-card"
+      role="group"
+      aria-label={t("job.inspectionTitle", { stage: i.stage_label, op: i.operation, status: i.status_label })}
+    >
+      <p>
+        <strong>{t("job.inspectionTitle", { stage: i.stage_label, op: i.operation, status: i.status_label })}</strong>{" "}
+        <span className="muted small">{t("job.inspectedBy", { name: i.inspector })}</span>
+      </p>
+      <div className="table-wrap">
+        <table aria-label={t("job.inspectionTitle", { stage: i.stage_label, op: i.operation, status: i.status_label })}>
+          <thead>
+            <tr>
+              <th>{t("job.checkName")}</th>
+              {pieces.map((n) => (
+                <th key={n}>{t("job.piece", { n })}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {i.checks.map((c) => (
+              <tr key={c.position}>
+                <td>
+                  {c.name}
+                  {c.critical && <strong className="small"> ({t("job.critical")})</strong>}
+                  {c.kind === "number" && (
+                    <div className="muted small">{t("job.limits", { min: c.minimum || "—", max: c.maximum || "—", unit: c.unit })}</div>
+                  )}
+                </td>
+                {c.pieces.map((p) => {
+                  const k = key(c.position, p.piece);
+                  const label = t("job.resultOf", { check: c.name, n: p.piece });
+                  const bad = p.within_limits === false;
+                  return (
+                    <td key={p.piece} className={bad ? "form-error" : undefined}>
+                      {i.can_enter ? (
+                        c.kind === "number" ? (
+                          <input
+                            aria-label={label}
+                            inputMode="decimal"
+                            value={entered[k] ?? ""}
+                            onChange={(e) => setEntered({ ...entered, [k]: e.target.value })}
+                          />
+                        ) : (
+                          <select
+                            aria-label={label}
+                            value={entered[k] ?? ""}
+                            onChange={(e) => setEntered({ ...entered, [k]: e.target.value })}
+                          >
+                            <option value="">—</option>
+                            <option value="pass">{t("job.pass")}</option>
+                            <option value="fail">{t("job.fail")}</option>
+                          </select>
+                        )
+                      ) : c.kind === "number" ? (
+                        p.value || "—"
+                      ) : p.passed === null ? (
+                        "—"
+                      ) : p.passed ? (
+                        t("job.pass")
+                      ) : (
+                        t("job.fail")
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {i.failed.length > 0 && i.status !== "draft" && (
+        <p className="form-error">{t("job.failedChecks", { checks: i.failed.join(", ") })}</p>
+      )}
+      {i.can_enter && (
+        <div className="row-actions">
+          <button
+            type="button"
+            className="secondary"
+            disabled={act.isPending}
+            onClick={() => act.mutate({ action: "save", payload: body() })}
+          >
+            {t("job.saveResults")}
+          </button>
+          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "finish", payload: body() })}>
+            {t("job.finish")}
+          </button>
+        </div>
+      )}
+      {i.decision && (
+        <p className="muted">
+          {t("job.decidedLine", {
+            decision: i.decision_label,
+            quantity: i.decision === "deviation" ? "" : formatDecimal(i.decision_quantity),
+            reason: i.decision_reason,
+            by: i.decided_by,
+          })}
+        </p>
+      )}
+      {!i.decision && i.decision_reason && <p className="muted">{i.decision_reason}</p>}
+      {i.can_decide && (
+        <div className="inline-form" role="group" aria-label={t("job.decide")}>
+          <label>
+            {t("job.decision")}
+            <select value={decision.decision} onChange={(e) => setDecision({ ...decision, decision: e.target.value })}>
+              {(["rework", "scrap", "deviation"] as const).map((d) => (
+                <option key={d} value={d}>
+                  {t(`job.decisions.${d}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {decision.decision !== "deviation" && (
+            <label>
+              {t("job.piecesAffected")}
+              <input
+                inputMode="decimal"
+                value={decision.quantity}
+                onChange={(e) => setDecision({ ...decision, quantity: e.target.value })}
+              />
+            </label>
+          )}
+          <label>
+            {t("job.decisionReasonInput")}
+            <input value={decision.reason} onChange={(e) => setDecision({ ...decision, reason: e.target.value })} />
+          </label>
+          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "decide", payload: decision })}>
+            {t("job.decideIt")}
+          </button>
+          {decision.decision === "deviation" && <p className="muted small">{t("job.deviationHelp")}</p>}
+        </div>
+      )}
+      {i.can_approve && (
+        <div className="inline-form">
+          <label>
+            {t("job.decisionReason")}
+            <input value={comment} onChange={(e) => setComment(e.target.value)} />
+          </label>
+          <button
+            type="button"
+            disabled={act.isPending}
+            onClick={() => act.mutate({ action: "director", payload: { action: "approve", reason: comment } })}
+          >
+            {t("job.directorApprove")}
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            disabled={act.isPending}
+            onClick={() => act.mutate({ action: "director", payload: { action: "reject", reason: comment } })}
+          >
+            {t("job.directorReturn")}
+          </button>
+        </div>
+      )}
+      <ErrorLine error={act.error} />
+    </div>
   );
 }

@@ -1376,3 +1376,104 @@ class SubcontractReturn(models.Model):
 
     def __str__(self):
         return f"{self.dispatch_id} back {self.good}+{self.rejected}"
+
+
+class JobInspection(models.Model):
+    """QC's inspection of a job (backlog P3-14; spec 7.2): first-article, in-process or final,
+    after one of its operations, with measurements on the pieces checked. The checks are
+    copied from the part's inspection plan (Phase 1.6) when it starts, and the inspector may
+    add more. A failed inspection **holds the job** until the Production Manager decides:
+    rework or scrap a number of pieces, or accept under deviation (the Director approves
+    when a critical check failed). Decided inspections never change (database)."""
+
+    class Stage(models.TextChoices):
+        FIRST_ARTICLE = "first_article", "First article"
+        IN_PROCESS = "in_process", "In process"
+        FINAL = "final", "Final"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Being inspected"
+        PASSED = "passed", "Passed"
+        ON_HOLD = "on_hold", "Failed: job on hold"
+        DEVIATION_REQUESTED = "deviation_requested", "Deviation waiting for the Director"
+        DECIDED = "decided", "Decided"
+
+    class Decision(models.TextChoices):
+        REWORK = "rework", "Rework"
+        SCRAP = "scrap", "Scrap"
+        DEVIATION = "deviation", "Accept under deviation"
+
+    job = models.ForeignKey(JobOrder, on_delete=models.PROTECT, related_name="inspections")
+    operation = models.ForeignKey(
+        JobOperation, on_delete=models.PROTECT, related_name="inspections"
+    )
+    stage = models.CharField(max_length=15, choices=Stage.choices)
+    plan = models.ForeignKey(
+        "inventory.InspectionPlan",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    pieces = models.PositiveSmallIntegerField("Pieces checked", default=1)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    notes = models.TextField(blank=True)
+    inspector = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    inspected_at = models.DateTimeField(null=True, blank=True)
+    decision = models.CharField(max_length=10, choices=Decision.choices, blank=True)
+    decision_quantity = models.DecimalField(max_digits=18, decimal_places=3, default=0)
+    decision_reason = models.CharField(max_length=300, blank=True)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["job", "created_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(pieces__gte=1, pieces__lte=50, decision_quantity__gte=0),
+                name="production_jobinspection_figures",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(status="decided") | ~models.Q(decision=""),
+                name="production_jobinspection_decided",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.job_id} {self.stage} {self.operation_id}"
+
+
+class JobInspectionResult(models.Model):
+    """One check on one piece, copied from the plan (or added by the inspector)."""
+
+    inspection = models.ForeignKey(JobInspection, on_delete=models.CASCADE, related_name="results")
+    position = models.PositiveSmallIntegerField()
+    piece = models.PositiveSmallIntegerField(default=1)
+    name = models.CharField(max_length=100)
+    kind = models.CharField(
+        max_length=10, choices=[("number", "Measured"), ("pass_fail", "Pass or fail")]
+    )
+    minimum = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    maximum = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    unit = models.CharField(max_length=20, blank=True)
+    critical = models.BooleanField(default=False)
+    value = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    passed = models.BooleanField(null=True, blank=True)
+    within_limits = models.BooleanField(null=True, blank=True)
+    notes = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["inspection", "position", "piece"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["inspection", "position", "piece"], name="production_jobresult_once"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.inspection_id} {self.name} #{self.piece}"

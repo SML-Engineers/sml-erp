@@ -5067,6 +5067,49 @@
     "kinds": {
       "voucher": "Voucher",
       "invoice": "Supplier invoice"
-    }
+    },
+    "onHold": "On hold: an inspection failed. No work is entered, nothing is sent out and the job is not completed until the Production Manager decides.",
+    "inspections": "Inspections",
+    "inspectionsHelp": "First-article, in-process and final inspections by QC, with the checks of the part's inspection plan measured on each piece checked.",
+    "startInspection": "Start an inspection",
+    "stage": "Stage",
+    "stages": {
+      "first_article": "First article",
+      "in_process": "In process",
+      "final": "Final"
+    },
+    "afterOperation": "After operation",
+    "piecesChecked": "Pieces checked",
+    "extraCheck": "Extra check (optional)",
+    "checkName": "Check",
+    "minimum": "Minimum",
+    "maximum": "Maximum",
+    "unit": "Unit",
+    "start": "Start",
+    "inspectionTitle": "{{stage}} after op {{op}} — {{status}}",
+    "inspectedBy": "by {{name}}",
+    "piece": "Piece {{n}}",
+    "pass": "Pass",
+    "fail": "Fail",
+    "limits": "{{min}} to {{max}} {{unit}}",
+    "critical": "critical",
+    "resultOf": "{{check}}, piece {{n}}",
+    "saveResults": "Save results",
+    "finish": "Finish the inspection",
+    "failedChecks": "Out of limits: {{checks}}",
+    "decide": "Production Manager's decision",
+    "decision": "Decision",
+    "decisions": {
+      "rework": "Rework",
+      "scrap": "Scrap",
+      "deviation": "Accept under deviation"
+    },
+    "piecesAffected": "Pieces",
+    "decisionReasonInput": "Reason",
+    "decideIt": "Decide",
+    "deviationHelp": "A deviation on a failed critical check goes to the Director.",
+    "decidedLine": "{{decision}} {{quantity}} — {{reason}} ({{by}})",
+    "directorApprove": "Approve the deviation",
+    "directorReturn": "Return it to the Production Manager"
   }
 }

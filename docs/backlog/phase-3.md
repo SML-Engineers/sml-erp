@@ -385,10 +385,25 @@ Status: `[ ]` to do · `[x]` done
     P3-16. Our choices: the Planner or stores sends and receives; a draft, closed or
     cancelled order takes no bills.
 
-- [ ] **P3-14 Inspection on jobs**
+- [x] **P3-14 Inspection on jobs**
   First-article, in-process and final inspection against the job with measurements, using
   the inspection plans of Phase 1.6 (parameters, limits); a failed inspection holds the job
   until the Production Manager decides (rework, scrap, accept under deviation).
+  - Done: on a released job (Production → Job orders, Inspections), the QC Inspector starts a
+    first-article, in-process (after an operation) or final (after the last operation)
+    inspection on 1 to 50 pieces; the checks are copied from the part's inspection plan
+    (Phase 1.6, item or category) and the inspector may add more (needed when there is no
+    plan). Results per check and piece; one inspection at a time per job. Finished with all
+    results entered: within limits it passes; otherwise the job is on hold (no job card
+    work, nothing sent out, not completed) and the division's Production Managers are told
+    ("job_on_hold"). The Production Manager, never the inspector, decides with a reason:
+    rework N pieces (back at the operation, no longer completed there), scrap N pieces
+    (rejected at the operation), or accept under deviation; a deviation on a failed critical
+    check goes to the Director ("job_deviation", reminder after 1 day), who approves it or
+    returns it (back on hold). Passed and decided inspections never change, results only
+    while inspecting, nothing is deleted (database). Our choices: the Director rule follows
+    the owner's 8 Nov answer for materials; first-article inspection is recorded but does
+    not block later work.
 
 - [ ] **P3-15 Mould making and inter-division transfers**
   A workshop job for a new company mould is capitalised to the mould's fixed asset; a

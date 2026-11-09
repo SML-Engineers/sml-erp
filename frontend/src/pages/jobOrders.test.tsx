@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
-import type { JobList, JobOrder } from "../api/jobOrders";
+import type { JobInspectionRow, JobList, JobOrder } from "../api/jobOrders";
 import { mockApi, renderAt } from "../test-utils";
 import JobOrdersPage from "./JobOrdersPage";
 
@@ -125,6 +125,9 @@ const job: JobOrder = {
   bills: [],
   can_subcontract: false,
   suppliers: [],
+  inspections: [],
+  on_hold: false,
+  can_inspect: false,
 };
 
 test("Stores issues material by lot and takes back what was not used", async () => {
@@ -323,4 +326,81 @@ test("parts go out to the plater and are counted back; the bills coded to the jo
     ),
   );
   expect(screen.getByRole("region", { name: "Supplier bills coded to this job" })).toHaveTextContent("Voucher WS261109001 line 1");
+});
+
+test("QC enters the measurements; a failed inspection holds the job and the Production Manager decides", async () => {
+  const check = (value: string, within: boolean | null) => ({ piece: 1, value, passed: null, within_limits: within, notes: "" });
+  const draftInspection: JobInspectionRow = {
+    id: 11,
+    stage: "in_process",
+    stage_label: "In process",
+    operation: 10,
+    operation_name: "Turn",
+    pieces: 1,
+    status: "draft",
+    status_label: "Being inspected",
+    inspector: "Qc",
+    inspected_at: null,
+    notes: "",
+    checks: [
+      {
+        position: 1,
+        name: "Diameter",
+        kind: "number",
+        minimum: "49.98",
+        maximum: "50",
+        unit: "mm",
+        critical: true,
+        pieces: [check("", null)],
+      },
+    ],
+    failed: [],
+    decision: "",
+    decision_label: "",
+    decision_quantity: "0",
+    decision_reason: "",
+    decided_by: "",
+    can_enter: true,
+    can_decide: false,
+    can_approve: false,
+  };
+  const failed: JobInspectionRow = {
+    ...draftInspection,
+    status: "on_hold",
+    status_label: "Failed: job on hold",
+    checks: [{ ...draftInspection.checks[0], pieces: [check("50.02", false)] }],
+    failed: ["Diameter"],
+    can_enter: false,
+    can_decide: true,
+  };
+  const calls = mockApi({
+    "GET /api/v1/job-orders/waiting/": { body: { results: [] } },
+    "GET /api/v1/job-orders/?q=&status=open&purpose=": { body: list },
+    "GET /api/v1/job-orders/7/": {
+      body: { ...job, can_issue: false, can_return: false, can_ask_more: false, inspections: [draftInspection] },
+    },
+    "POST /api/v1/job-orders/inspections/11/finish/": { body: { ...job, on_hold: true, inspections: [failed] } },
+    "POST /api/v1/job-orders/inspections/11/decide/": { body: { ...job, inspections: [] } },
+  });
+  renderAt("/job-orders?job=7", <JobOrdersPage />, "/job-orders");
+  const panel = await screen.findByRole("region", { name: "Inspections" });
+  fireEvent.change(within(panel).getByLabelText("Diameter, piece 1"), { target: { value: "50.02" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Finish the inspection" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/job-orders/inspections/11/finish/",
+      expect.objectContaining({ body: JSON.stringify({ results: [{ position: 1, piece: 1, value: "50.02" }] }) }),
+    ),
+  );
+  expect(await screen.findByRole("status")).toHaveTextContent("On hold: an inspection failed.");
+  const decide = await screen.findByRole("group", { name: "Production Manager's decision" });
+  fireEvent.change(within(decide).getByLabelText("Pieces"), { target: { value: "3" } });
+  fireEvent.change(within(decide).getByLabelText("Reason"), { target: { value: "Oversize: another pass" } });
+  fireEvent.click(within(decide).getByRole("button", { name: "Decide" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/job-orders/inspections/11/decide/",
+      expect.objectContaining({ body: JSON.stringify({ decision: "rework", quantity: "3", reason: "Oversize: another pass" }) }),
+    ),
+  );
 });

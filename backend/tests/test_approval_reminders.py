@@ -141,6 +141,7 @@ def test_the_admin_sets_the_reminders(admin, accountant):
         ("routing", True, 1),
         ("bom", True, 1),
         ("job_excess", True, 1),
+        ("job_deviation", True, 1),
         ("shift_report", True, 1),
         ("shift_correction", True, 1),
         ("asset_terms", True, 2),

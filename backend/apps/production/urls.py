@@ -56,6 +56,11 @@ urlpatterns = [
         v.JobExcessDecideView.as_view(),
         name="job-excess-decide",
     ),
+    path(
+        "job-orders/inspections/<int:pk>/<str:action>/",
+        v.JobInspectionActionView.as_view(),
+        name="job-inspection-action",
+    ),
     path("job-orders/<int:pk>/", v.JobOrderDetailView.as_view(), name="job-order"),
     path("job-orders/<int:pk>/lots/", v.JobOrderLotsView.as_view(), name="job-order-lots"),
     path("job-orders/<int:pk>/cards/", v.JobCardsView.as_view(), name="job-order-cards"),

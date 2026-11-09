@@ -19,6 +19,7 @@ from apps.masters.models import Machine
 from . import (
     boms,
     job_cards,
+    job_inspections,
     jobs,
     labels,
     maintenance,
@@ -33,6 +34,7 @@ from . import (
     subcontract,
 )
 from .boms import BomError
+from .job_inspections import JobInspectionError
 from .jobs import JobError
 from .maintenance import MaintenanceError
 from .models import (
@@ -40,6 +42,7 @@ from .models import (
     BomLine,
     CostRate,
     JobExcess,
+    JobInspection,
     JobOrder,
     Mould,
     ProductionOrder,
@@ -851,9 +854,11 @@ class JobOrderActionView(_Jobs):
                 )
             elif action == "receive-back":
                 subcontract.receive_back(request.user, job, d)
+            elif action == "inspect":
+                job_inspections.start(request.user, job, d)
             else:
                 return _error("Unknown action.", status.HTTP_404_NOT_FOUND)
-        except (JobError, SubcontractError) as error:
+        except (JobError, SubcontractError, JobInspectionError) as error:
             return _error(error)
         return Response(jobs.payload(job, request.user))
 
@@ -921,3 +926,33 @@ class SubcontractNoteView(_Jobs):
         response = HttpResponse(subcontract.render(dispatch), content_type="application/pdf")
         response["Content-Disposition"] = f'inline; filename="{dispatch.number}.pdf"'
         return response
+
+
+class JobInspectionActionView(_Jobs):
+    """P3-14: the QC Inspector enters and finishes; the Production Manager decides; the
+    Director approves a deviation on a failed critical check."""
+
+    access_also_area = "quality"
+
+    def post(self, request, pk, action):
+        inspection = get_object_or_404(
+            JobInspection.objects.filter(job__in=jobs.visible(request.user)), pk=pk
+        )
+        d = request.data
+        try:
+            if action == "save":
+                job_inspections.save(request.user, inspection, d)
+            elif action == "finish":
+                job_inspections.save(request.user, inspection, d)
+                job_inspections.finish(request.user, inspection)
+            elif action == "decide":
+                job_inspections.decide(request.user, inspection, d)
+            elif action == "director":
+                job_inspections.director_decides(
+                    request.user, inspection, d.get("action", ""), d.get("reason", "")
+                )
+            else:
+                return _error("Unknown action.", status.HTTP_404_NOT_FOUND)
+        except JobInspectionError as error:
+            return _error(error)
+        return Response(jobs.payload(inspection.job, request.user))

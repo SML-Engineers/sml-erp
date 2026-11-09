@@ -104,6 +104,11 @@ def send_out(user: User, job: JobOrder, values: dict) -> SubcontractDispatch:
             raise SubcontractError(
                 f"Parts are sent out for a released job; {job.number} is {job.status}."
             )
+        if job_cards.held(job):
+            raise SubcontractError(
+                f"{job.number} is on hold after a failed inspection: the Production Manager "
+                "decides first."
+            )
         try:
             op = job.operations.select_related("supplier").get(
                 seq=int(_text(values.get("operation")))

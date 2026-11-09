@@ -526,10 +526,20 @@ Status: `[ ]` to do · `[x]` done
 
 ## E. Reports and the shop floor
 
-- [ ] **P3-19 OEE**
+- [x] **P3-19 OEE**
   Per moulding machine and shift, day, month: availability (run time ÷ planned time from
   the roster; off days and planned stops not counted as lost), performance (standard
   cycle ÷ actual), quality (good ÷ total); OEE = A × P × Q. Trend and comparison by machine.
+  Done (PR #185): `production/oee.py`, Production → **Machine OEE** (production reports
+  access). From approved shift reports: planned time = the shift's working minutes on every
+  shift the roster runs for the section that day (the section's own roster replaces the
+  division's) and on any other shift worked; planned stops (planned downtime reasons) come
+  off it. Availability = run time (runs less downtime inside them) ÷ (planned − planned
+  stops); a rostered shift with no run is all lost. Performance = mould standard cycle ×
+  shots ÷ run time. Quality = good ÷ shots × cavities. Days, months and the range add the
+  minutes and pieces before the ratios. Over 100% is shown as it is (a wrong standard shows).
+  Machines compared for a date range and section; each machine by month, day (with a bar)
+  and shift. Retired machines are left out.
 
 - [ ] **P3-20 Production reports**
   Spec 7.6: daily production by section, machine and shift; reject % by reason, part,

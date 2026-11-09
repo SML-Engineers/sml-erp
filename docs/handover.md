@@ -42,7 +42,7 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | Built. **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137) and stays unticked until the owner's sign-off. |
 | 2b Payroll and people | phase-2b.md | Built except **P2B-18** (Commercial Bank file), which waits for the bank's format. |
-| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance; #172 QC deviation approver (all merged). #173 production demo data; #174 asset depreciation terms; #175 P3-11 job orders; #176 P3-12 job cards; #177 P3-13 subcontract; #178 P3-14 inspection; #179 P3-15 mould transfers (all merged). #180 P3-16 part 1 order costs; #181 P3-16 part 2 WIP and cost of sales (merged). #182 P3-17 live order profitability; #183 depreciation defaults amended (merged). **P3-18 closing and variances** in PR #184. Next: P3-19 OEE. |
+| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance; #172 QC deviation approver (all merged). #173 production demo data; #174 asset depreciation terms; #175 P3-11 job orders; #176 P3-12 job cards; #177 P3-13 subcontract; #178 P3-14 inspection; #179 P3-15 mould transfers (all merged). #180 P3-16 part 1 order costs; #181 P3-16 part 2 WIP and cost of sales (merged). #182 P3-17 live order profitability; #183 depreciation defaults amended (merged). #184 P3-18 closing and variances (merged). **P3-19 OEE** in PR #185. Next: P3-20 production reports. |
 
 Latest migration per app (new migrations continue from these): accounting `0026_wip_ledger`,
 assets `0004_owner_rates_amended`, banking `0004_petty_cash`, core `0027_company_epf_etf`, inventory
@@ -50,7 +50,7 @@ assets `0004_owner_rates_amended`, banking `0004_petty_cash`, core `0027_company
 `0017_fingerprint`, **production `0039_order_close_guard`**, purchasing `0009_order_on_lines`, sales
 `0019_wip_ledger`, vouchers `0012_order_on_lines`.
 
-The last row of spec section 8.4 is **"Closing an order and variances (P3-18)"**; the rows run in task
+The last row of spec section 8.4 is **"Machine OEE (P3-19)"**; the rows run in task
 order.
 
 ## 3. How we work with the owner (keep doing exactly this)
@@ -146,7 +146,7 @@ and "critical", inventory migration 0013; PR #172). His list of pending decision
 | Staff UAT and parallel month; auditors' and owner's sign-off | P1-12, P15-12, P16-14, P2-29 | `docs/uat-scripts.md` (sent to him as SML-ERP-test-scripts.md) and the Parallel run page are ready |
 | Commercial Bank bulk transfer file format | P2B-18 | Waits for the bank |
 | Auditors' depreciation methods and rates (P2-19 built with editable classes) | Go-live | He said "soon" |
-| Bank statement exports in Excel/CSV per bank (P2-15 built with templates) | Go-live | Asked |
+| Bank statements, PDF only (owner, 9 Nov): a real Commercial Bank import to confirm COMBANK-PDF; other banks' samples (P2-15 built with templates) | Go-live | Asked |
 | Hostinger VPS, Backblaze B2, GitHub Team, make the repository private | Go-live | Later |
 
 **Pending decisions** sent to the owner on 8 Nov 2026 as a list with defaults (if he does
@@ -157,6 +157,14 @@ labour accepted not automatic, Planner releases orders, sales line limit, plan w
 never block, resin for good and rejected without the BOM allowance, material-only value
 until P3-16, corrections refused once parts are used, maintenance cost history only).
 Do not ask these again.
+
+**Owner's answers of 9 Nov 2026** (to the questions sent on 8 Nov): plant and machinery
+10 years (no answer, default); per-asset terms with the Director's approval, class defaults
+changed only with the Director's approval: agreed (built in #174); assets already entered
+keep their values: agreed; bank statements only as PDF, PDF reading agreed (already built in
+P2-15 with pypdf, see phase-2.md); all modules live together on 1 April 2027: agreed. The
+default depreciation rates were amended the same day (#183): furniture and computers 20% /
+5 years. Do not ask these again.
 
 Things he or his staff do in the ERP (no code): Admin enters W1/I1/H1 and the company TIN;
 tax rates (Director confirms); grants of Issue tax invoices / Approve credit notes; give

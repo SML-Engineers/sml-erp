@@ -26,6 +26,7 @@ from . import (
     labels,
     maintenance,
     moulds,
+    oee,
     orders,
     plan,
     profit,
@@ -582,6 +583,27 @@ class PartActualsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(closing.part_actuals(item))
+
+
+class OeeView(APIView):
+    """P3-19: OEE per moulding machine for a date range (this month by default): totals to
+    compare machines, with each machine's months, days and shifts."""
+
+    permission_classes = [AreaAccess]
+    access_area = "production_approvals"
+
+    def get(self, request):
+        today = timezone.localdate()
+        q = request.query_params
+        try:
+            start = date.fromisoformat(q.get("start") or today.replace(day=1).isoformat())
+            end = date.fromisoformat(q.get("end") or today.isoformat())
+        except ValueError:
+            return Response({"detail": "Give the dates as YYYY-MM-DD."}, status=400)
+        try:
+            return Response(oee.report(request.user, start, end, q.get("section", "")))
+        except oee.OeeError as error:
+            return _error(error)
 
 
 class WipReportView(APIView):

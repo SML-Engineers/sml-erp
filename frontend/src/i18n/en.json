@@ -5291,5 +5291,27 @@
     "setup": "Setup hours",
     "cycle": "Cycle (s)",
     "average": "Average"
+  },
+  "oee": {
+    "title": "Machine OEE",
+    "help": "How well each moulding machine was used, from approved shift reports and the roster. Availability: run time out of the planned time (off days and planned stops not counted as lost). Performance: the mould's standard cycle against the actual. Quality: good pieces out of all moulded. OEE = availability × performance × quality. Choose a machine to see it day by day and shift by shift.",
+    "availability": "Availability",
+    "performance": "Performance",
+    "quality": "Quality",
+    "oee": "OEE",
+    "compare": "Machines compared",
+    "none": "No moulding machines to show.",
+    "plannedH": "Planned (h)",
+    "runH": "Run (h)",
+    "lostH": "Stopped, unplanned (h)",
+    "stopsH": "Planned stops (h)",
+    "machineTitle": "{{machine}} by day",
+    "byMonth": "{{machine}} by month",
+    "byDay": "{{machine}} by day",
+    "byShift": "By shift ({{count}})",
+    "shiftTable": "{{machine}} by shift",
+    "month": "Month",
+    "day": "Day",
+    "shift": "Shift"
   }
 }

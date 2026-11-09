@@ -136,9 +136,17 @@ def _detail(i: SupplierInvoice, user) -> dict:
                 "amount": str(line.amount),
                 "tax_amount": str(line.tax_amount),
                 "total": str(line.total),
+                "order": (line.job or line.production_order).number
+                if (line.job_id or line.production_order_id)
+                else "",
             }
             for line in i.lines.select_related(
-                "grn_line__receipt__purchase_order", "item", "tax_code", "po_tax_code"
+                "grn_line__receipt__purchase_order",
+                "item",
+                "tax_code",
+                "po_tax_code",
+                "job",
+                "production_order",
             )
         ],
         "attachments": [
@@ -184,6 +192,8 @@ class LineIn(serializers.Serializer):
     tax_code = serializers.CharField(
         max_length=20, required=False, allow_blank=True, allow_null=True
     )
+    # P3-13: the job or production order the cost belongs to.
+    order = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
 
 
 class InvoiceIn(serializers.Serializer):
@@ -205,7 +215,11 @@ def _lines(rows) -> list[LineInput]:
             tax = TaxCode.objects.filter(code=code).first()
             if tax is None:
                 raise InvoiceError(f"Line {n}: there is no tax code {code}.")
-        result.append(LineInput(row["grn_line"], row["quantity"], row["unit_price"], tax))
+        result.append(
+            LineInput(
+                row["grn_line"], row["quantity"], row["unit_price"], tax, row.get("order") or ""
+            )
+        )
     return result
 
 

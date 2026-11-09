@@ -203,9 +203,9 @@ def test_the_scan_on_the_invoice_is_enough_and_coding_stays_payable(
     voucher = voucher_for(clerk, supplier, pays(invoice, "12500.00"))
     services.submit(clerk, voucher)  # no scan on the voucher: it is on the invoice
     expense = Account.objects.filter(account_type="expense", is_active=True).first()
-    services.code_lines(accountant, voucher, [CodingInput(1, account=expense, job_ref="J-1")])
+    services.code_lines(accountant, voucher, [CodingInput(1, account=expense)])
     line = voucher.lines.get()
-    assert line.account.system_role == "accounts_payable" and line.job_ref == "J-1"
+    assert line.account.system_role == "accounts_payable" and line.job_ref == ""
     assert services.uncoded_lines(voucher) == []
     voucher = services.approve(accountant, voucher)
     assert voucher.status == Voucher.Status.ACCOUNTANT_APPROVED

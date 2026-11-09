@@ -1092,12 +1092,12 @@
     "noScan": "No scan attached.",
     "coding": "Coding",
     "account": "Account",
-    "job": "Job / order",
+    "job": "Job / production order no.",
     "accountOf": "Account, line {{n}}",
     "divisionOf": "Division, line {{n}}",
     "taxCodeOf": "Tax code, line {{n}}",
     "taxOf": "Tax, line {{n}}",
-    "jobOf": "Job or order, line {{n}}",
+    "jobOf": "Job or production order number, line {{n}}",
     "split": "Split across divisions",
     "splitOf": "Split of line {{n}}",
     "byPercent": "By percentage",
@@ -2540,7 +2540,9 @@
     "setOffs": "Advances set off",
     "setOff": "Advance of LKR {{amount}} set off ({{journal}}) from voucher",
     "advancesWaiting": "LKR {{amount}} paid in advance on these purchase orders is not yet set off.",
-    "setOffNow": "Set off advances"
+    "setOffNow": "Set off advances",
+    "order": "Job / production order",
+    "orderOf": "Job or production order for {{item}}"
   },
   "rtn": {
     "title": "Supplier returns",
@@ -5043,6 +5045,28 @@
     "available": "Ready for next",
     "finished": "Finished",
     "printCards": "Print job cards",
-    "subcontractPasses": "sent out (recorded when back, P3-13)"
+    "atSupplier": "At supplier",
+    "subcontract": "Sent out to suppliers",
+    "subcontractHelp": "Parts for an operation done by a supplier (e.g. plating) go out on a numbered note and are counted when they come back: good pieces go on to the next operation.",
+    "sendOut": "Send parts out",
+    "operationSent": "Operation",
+    "quantitySent": "Pieces sent",
+    "expectedOn": "Expected back",
+    "supplierCode": "Supplier (if not the routing's)",
+    "sendIt": "Send out and make the note",
+    "note": "Print the note",
+    "sentLine": "{{number}}: {{quantity}} to {{supplier}} for op {{op}} on {{date}} — {{out}} still out",
+    "backLine": "{{date}}: {{good}} good, {{rejected}} rejected {{reason}}",
+    "receiveBack": "Received back from {{number}}",
+    "good": "Good pieces",
+    "rejectedBack": "Rejected pieces",
+    "rejectReason": "Reason for the rejects",
+    "receiveIt": "Record what came back",
+    "bills": "Supplier bills coded to this job",
+    "billLine": "{{kind}} {{number}} line {{line}}: {{supplier}} — {{amount}} ({{status}})",
+    "kinds": {
+      "voucher": "Voucher",
+      "invoice": "Supplier invoice"
+    }
   }
 }

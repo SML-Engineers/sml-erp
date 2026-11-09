@@ -40,6 +40,8 @@ class ProductionConfig(AppConfig):
             RoutingOperation,
             ShiftCorrection,
             ShiftReport,
+            SubcontractDispatch,
+            SubcontractReturn,
         )
 
         for model in (
@@ -73,5 +75,7 @@ class ProductionConfig(AppConfig):
             ProductionReceipt,
             ShiftCorrection,
             MouldMaintenance,
+            SubcontractDispatch,
+            SubcontractReturn,
         ):
             register(model)

@@ -9,8 +9,9 @@
 - **Checks:** the job is released and of the section's division; the operation is the
   job's and done here (a subcontract operation comes back through P3-13); times fall in the
   shift and never overlap on a machine (database too); **completed + rejected never exceed
-  what the previous operation released** (its completed pieces; the job's quantity for the
-  first operation). Pieces sent for rework stay at the operation until they are completed
+  what the previous operation released** (its completed pieces, or for a subcontract
+  operation the good pieces back from the supplier, P3-13; the job's quantity for the first
+  operation). Pieces sent for rework stay at the operation until they are completed
   or rejected.
 - **Worked out:** minutes per piece (the entry's time less the machine's downtime in it,
   over completed + rejected) against the routing's standard; per operation: received,
@@ -35,7 +36,14 @@ from apps.core.models import Company
 from apps.inventory.labels import _fit, _qr
 from apps.payroll.models import Employee
 
-from .models import JobCardEntry, JobCardReject, JobOperation, JobOrder, ShiftReport
+from .models import (
+    JobCardEntry,
+    JobCardReject,
+    JobOperation,
+    JobOrder,
+    ShiftReport,
+    SubcontractDispatch,
+)
 
 ZERO = Decimal("0")
 
@@ -73,36 +81,60 @@ def _totals(job: JobOrder, *, but: ShiftReport | None = None) -> dict[int, dict[
     return out
 
 
+def _sent_back(job: JobOrder) -> dict[int, dict[str, Decimal]]:
+    """Per subcontract operation id: sent out, good back and rejected back (P3-13)."""
+    out: dict[int, dict[str, Decimal]] = {}
+    for d in SubcontractDispatch.objects.filter(job=job).prefetch_related("returns"):
+        t = out.setdefault(d.operation_id, {"sent": ZERO, "good": ZERO, "rejected": ZERO})
+        t["sent"] += d.quantity
+        for r in d.returns.all():
+            t["good"] += r.good
+            t["rejected"] += r.rejected
+    return out
+
+
 def flow(job: JobOrder, totals: dict | None = None) -> list[dict]:
     """Per operation in order: received (released by the one before), completed, rejected,
-    rework, in hand and available for the next operation."""
+    rework, in hand, at the supplier (subcontract) and available for the next operation."""
     totals = totals if totals is not None else _totals(job)
+    away = _sent_back(job)
+    blank = {"completed": ZERO, "rejected": ZERO, "rework": ZERO}
     out = []
     received = job.quantity
     ops = list(job.operations.order_by("seq"))
     for n, op in enumerate(ops):
-        t = totals.get(op.pk, {"completed": ZERO, "rejected": ZERO, "rework": ZERO})
-        # Until P3-13 records parts back from a supplier, a subcontract operation passes on
-        # what it received.
-        completed = received if op.subcontract else t["completed"]
+        if op.subcontract:
+            # P3-13: good parts back from the supplier go on; rejected ones are lost here.
+            a = away.get(op.pk, {"sent": ZERO, "good": ZERO, "rejected": ZERO})
+            t = {"completed": a["good"], "rejected": a["rejected"], "rework": ZERO}
+            in_hand = received - a["sent"]
+            at_supplier = a["sent"] - a["good"] - a["rejected"]
+        else:
+            t = totals.get(op.pk, blank)
+            in_hand = received - t["completed"] - t["rejected"]
+            at_supplier = ZERO
         nxt = ops[n + 1] if n + 1 < len(ops) else None
         used_next = ZERO
-        if nxt is not None and not nxt.subcontract:
-            u = totals.get(nxt.pk, {"completed": ZERO, "rejected": ZERO})
-            used_next = u["completed"] + u["rejected"]
+        if nxt is not None:
+            if nxt.subcontract:
+                used_next = away.get(nxt.pk, {"sent": ZERO})["sent"]
+            else:
+                u = totals.get(nxt.pk, blank)
+                used_next = u["completed"] + u["rejected"]
         out.append(
             {
                 "operation": op,
                 "received": received,
-                "completed": completed,
-                "rejected": ZERO if op.subcontract else t["rejected"],
-                "rework": ZERO if op.subcontract else t["rework"],
-                "in_hand": ZERO if op.subcontract else received - t["completed"] - t["rejected"],
-                "available": max(completed - used_next, ZERO) if nxt is not None else ZERO,
-                "finished": completed if nxt is None else ZERO,
+                "completed": t["completed"],
+                "rejected": t["rejected"],
+                "rework": t["rework"],
+                "in_hand": in_hand,
+                "at_supplier": at_supplier,
+                "available": max(t["completed"] - used_next, ZERO) if nxt is not None else ZERO,
+                "finished": t["completed"] if nxt is None else ZERO,
             }
         )
-        received = completed
+        received = t["completed"]
     return out
 
 
@@ -117,6 +149,7 @@ def progress(job: JobOrder) -> list[dict]:
             "rejected": _n(f["rejected"]),
             "rework": _n(f["rework"]),
             "in_hand": _n(f["in_hand"]),
+            "at_supplier": _n(f["at_supplier"]),
             "available": _n(f["available"]),
             "finished": _n(f["finished"]),
             "card": card_code(job, f["operation"]),

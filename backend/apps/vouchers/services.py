@@ -472,15 +472,18 @@ def save(
         coding = {}
         if voucher.pk is not None:
             coding = {
-                line.line_no: (line.account_id, line.division_id, line.job_ref, line.wht_component)
+                line.line_no: (line.account_id, line.division_id, line, line.wht_component)
                 for line in voucher.lines.select_related("wht_component")
             }
         for line in new_lines:
             if line.line_no not in coding:
                 continue
-            account_id, division_id, job_ref, wht = coding[line.line_no]
+            account_id, division_id, old_line, wht = coding[line.line_no]
             if not (line.supplier_invoice_id or line.advance_order_id):
-                line.account_id, line.division_id, line.job_ref = account_id, division_id, job_ref
+                line.account_id, line.division_id = account_id, division_id
+                line.job_ref = old_line.job_ref
+                line.job_id = old_line.job_id
+                line.production_order_id = old_line.production_order_id
                 line.division_id = line.division_id or voucher.division_id
             if wht is not None and not line.advance_order_id and voucher.payee_id:
                 # The WHT the Accountant chose stays, worked out again on the new amount.
@@ -819,6 +822,16 @@ def _split(total: Decimal, splits: list[SplitInput], where: str) -> list[Voucher
     return parts
 
 
+def _set_order(line: VoucherLine, text, where: str) -> None:
+    """The job or production order the line's cost belongs to (P3-13; spec 7.7)."""
+    from apps.production.links import OrderNotFound, order_for
+
+    try:
+        line.job, line.production_order, line.job_ref = order_for(text)
+    except OrderNotFound as error:
+        raise VoucherError(f"{where}: {error}") from None
+
+
 def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Voucher:
     """The approver at the waiting level (the Accountant at L2) sets each line's account,
     division or division split, tax and job reference. The amounts stay as entered."""
@@ -840,8 +853,17 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
             if line.supplier_invoice_id or line.advance_order_id:
                 # Pays a matched supplier invoice (Accounts payable) or an advance on a PO
                 # (Advances to suppliers): the account is fixed, no tax (P16-11, P16-11a).
-                line.job_ref = (coding.job_ref or "").strip()[:50]
-                line.save(update_fields=["job_ref", "wht_component", "wht_rate", "wht_amount"])
+                _set_order(line, coding.job_ref, where)
+                line.save(
+                    update_fields=[
+                        "job_ref",
+                        "job",
+                        "production_order",
+                        "wht_component",
+                        "wht_rate",
+                        "wht_amount",
+                    ]
+                )
                 continue
             if coding.account is not None:
                 _check_account(voucher, coding.account, where)
@@ -858,7 +880,7 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
             else:
                 line.tax_amount = _money(coding.tax_amount, f"{where} tax", positive=False)
             line.tax_code = coding.tax_code
-            line.job_ref = (coding.job_ref or "").strip()[:50]
+            _set_order(line, coding.job_ref, where)
             line.splits.all().delete()
             if coding.splits:
                 parts = _split(line.amount + line.tax_amount, list(coding.splits), where)
@@ -1258,6 +1280,7 @@ def revise(
             if line.supplier_invoice_id or line.advance_order_id:
                 continue
             line.account_id, line.job_ref = before.account_id, before.job_ref
+            line.job_id, line.production_order_id = before.job_id, before.production_order_id
             splits = list(before.splits.all())
             if before.total == line.total and splits:
                 line.division_id = None

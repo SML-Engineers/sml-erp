@@ -40,7 +40,7 @@ from apps.inventory.stock import StockError
 from apps.masters.models import Supplier
 from apps.sales.models import SalesOrderLine
 
-from . import job_cards, orders, routings
+from . import job_cards, orders, routings, subcontract
 from .models import (
     Bom,
     BomLine,
@@ -818,6 +818,14 @@ def payload(job: JobOrder, user: User) -> dict:
         # P3-12: what each operation received, completed, rejected and passed on.
         "progress": job_cards.progress(job) if job.status != St.DRAFT else [],
         "can_print_cards": job.status in (St.RELEASED, St.COMPLETED),
+        # P3-13: parts sent out to suppliers and back, and the bills coded to the job.
+        "subcontract": subcontract.rows(job),
+        "bills": subcontract.bills(job),
+        "can_subcontract": subcontract.can_move(user) and job.status == St.RELEASED,
+        "suppliers": [
+            {"seq": o.seq, "supplier": o.supplier.code if o.supplier_id else ""}
+            for o in job.operations.filter(subcontract=True).select_related("supplier")
+        ],
         "issues": _issues(job),
         "excess": _excess(job, user),
         "stores": [

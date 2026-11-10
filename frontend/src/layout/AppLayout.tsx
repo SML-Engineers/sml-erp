@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } from "react-router";
 
 import { signOut, type CurrentUser } from "../api/auth";
+import LanguageSwitch from "../components/LanguageSwitch";
 import NotificationBell from "../components/NotificationBell";
 import { pageAllowed, visibleMenu } from "./menu";
 
@@ -46,6 +47,7 @@ export default function AppLayout({ user }: { user: CurrentUser }) {
       <nav id="side-menu" className="sidebar" aria-label={t("layout.mainMenu")}>
         <div className="sidebar-user">
           <strong>{t("layout.welcome", { name: user.full_name })}</strong>
+          <LanguageSwitch />
         </div>
         {sections.map((section) => (
           <div key={section.label} className="menu-section">

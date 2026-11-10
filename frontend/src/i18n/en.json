@@ -301,7 +301,8 @@
     "closeMenu": "Close menu",
     "notifications": "Notifications",
     "welcome": "Welcome, {{name}}",
-    "changePassword": "Change password"
+    "changePassword": "Change password",
+    "language": "Language"
   },
   "table": {
     "show": "Show",

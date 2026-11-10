@@ -558,6 +558,8 @@ Status: `[ ]` to do · `[x]` done
     see costs) and on-time delivery (completed by the due date; open jobs past due counted);
     moulding material issued less returned by the supervisors against the backflushed
     standard, regrind made and issued; moulds at 90% or more of their maintenance interval.
+  - Owner, 10 Nov 2026: on-time for machining jobs = completed by the due date (delivery
+    note dates not used): confirmed.
   - Part 2 done (PR #187): five new report builder sources: moulding runs (good, rejected,
     shots, run hours, cycle), downtime (hours, reason), job card entries (completed,
     rejected, hours), all from approved shift reports in the person's sections; order costs
@@ -572,6 +574,17 @@ Status: `[ ]` to do · `[x]` done
   The supervisor pages in Sinhala and Tamil (translations supplied or approved by the
   owner), and offline entry: saved on the device and synced when Wi-Fi returns, with a
   visible sync status and conflicts shown, never silently overwritten.
+  - Owner, 8 Nov 2026: Sinhala by machine translation, written by us; **no Tamil**; a staff
+    member who reads Sinhala checks it before go-live.
+  - Split in two. Part 1 done (PR #188): Sinhala (`frontend/src/i18n/si.json`, about 250
+    texts) for the shift report (moulding and machining job cards, approval and
+    corrections), the production plan, the menu, sign-in, notifications, scanning and the
+    shared tables; a **Language** choice on the sign-in page and in the side menu, kept on the
+    device (a supervisor's phone stays in Sinhala). Anything not yet translated shows in
+    English; names entered in the system (machines, reasons, items) and messages from the
+    server stay as entered / in English. A test checks every Sinhala text has its English one
+    with the same placeholders.
+  - Part 2 to do: offline entry of the shift report.
 
 - [ ] **P3-23 Overhead and machine-hour rates from past data**
   Asked for by the owner (7 Nov 2026): the overhead rate and the rate per machine hour

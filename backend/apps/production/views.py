@@ -899,6 +899,13 @@ class ShiftReportDetailView(_Reports):
     def put(self, request, pk):
         try:
             report = shift_reports.save(request.user, self._report(request, pk), request.data)
+        except shift_reports.ShiftReportConflict as error:
+            # P3-21: the current report goes back so the supervisor can compare.
+            current = self._report(request, pk)
+            return Response(
+                {"detail": str(error), "current": _report_body(current, request.user)},
+                status=status.HTTP_409_CONFLICT,
+            )
         except ShiftReportError as error:
             return _error(error)
         return Response(_report_body(report, request.user))

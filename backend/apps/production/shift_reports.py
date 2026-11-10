@@ -67,6 +67,14 @@ class ShiftReportError(Exception):
     pass
 
 
+class ShiftReportConflict(ShiftReportError):
+    """P3-21: the report was saved elsewhere after the copy this save was made on."""
+
+
+def version_of(report: ShiftReport) -> str:
+    return report.updated_at.isoformat()
+
+
 def can_enter(user: User) -> bool:
     return effective_access(user).has("shop_floor", "enter")
 
@@ -484,6 +492,13 @@ def save(user: User, report: ShiftReport, values: dict) -> ShiftReport:
             .get(pk=report.pk)
         )
         _editable(user, report)
+        # P3-21: a save made offline names the version it started from; if the report was
+        # saved since, it is refused (never silently overwritten) and the supervisor chooses.
+        base = values.get("base_version")
+        if base and str(base) != version_of(report):
+            raise ShiftReportConflict(
+                "This report was saved by someone else after your copy: compare and choose."
+            )
         look = _Lookups(report)
         machining = report.section.section_type == Section.Type.MACHINING
         if machining and _rows(values, "runs"):
@@ -532,7 +547,8 @@ def save(user: User, report: ShiftReport, values: dict) -> ShiftReport:
             ManpowerEntry.objects.bulk_create(ManpowerEntry(report=report, **p) for p in manpower)
             if "notes" in values:
                 report.notes = str(values.get("notes") or "")[:2000]
-                report.save(update_fields=["notes"])
+            report.updated_at = timezone.now()
+            report.save(update_fields=["notes", "updated_at"])
         return report
 
 
@@ -724,6 +740,7 @@ def payload(report: ShiftReport, user: User) -> dict:
         "summary": summary(report) | {"machining": job_cards.summary(report)},
         "operations": job_cards.read(report),
         "editable": editable,
+        "version": version_of(report),
         "options": {
             "machines": [{"code": c, "name": m.name} for c, m in sorted(look.machines.items())],
             "orders": [

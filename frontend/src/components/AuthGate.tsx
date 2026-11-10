@@ -4,6 +4,21 @@ import { useTranslation } from "react-i18next";
 import { Navigate, useLocation } from "react-router";
 
 import { getMe, meQueryKey, type CurrentUser } from "../api/auth";
+import { isNetworkError, keepMe, keptMe } from "../lib/offline";
+
+/** P3-21: without a connection, the sign-in last confirmed on this device opens the screens;
+ * the server still checks every request when it is reached. */
+async function meOrKept() {
+  try {
+    const me = await getMe();
+    keepMe(me);
+    return me;
+  } catch (error) {
+    const kept = isNetworkError(error) ? keptMe() : null;
+    if (!kept) throw error;
+    return kept;
+  }
+}
 
 interface Props {
   children: (user: CurrentUser) => ReactNode;
@@ -20,7 +35,7 @@ export const REQUIREMENT_PAGES = {
 export default function AuthGate({ children, allowPending = false }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
-  const me = useQuery({ queryKey: meQueryKey, queryFn: getMe, retry: false });
+  const me = useQuery({ queryKey: meQueryKey, queryFn: meOrKept, retry: false });
 
   if (me.isPending) return <p className="page-message">{t("common.loading")}</p>;
   if (me.isError) return <p className="page-message">{t("home.unreachable")}</p>;

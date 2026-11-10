@@ -6,6 +6,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } fro
 import { signOut, type CurrentUser } from "../api/auth";
 import LanguageSwitch from "../components/LanguageSwitch";
 import NotificationBell from "../components/NotificationBell";
+import { forgetDevice } from "../lib/offline";
 import { pageAllowed, visibleMenu } from "./menu";
 
 /** Pages inside the layout read the signed-in user from here. */
@@ -108,6 +109,7 @@ function UserMenu({ user }: { user: CurrentUser }) {
 
   async function handleSignOut() {
     await signOut().catch(() => undefined);
+    forgetDevice(); // P3-21: the sign-in and report copies kept for offline use go too
     queryClient.clear();
     navigate("/login", { replace: true });
   }

@@ -570,7 +570,7 @@ Status: `[ ]` to do · `[x]` done
     accuracy**: estimate against actual by element over the orders estimated from a
     quotation, with the variance and its %, and the material price and usage totals.
 
-- [ ] **P3-21 Shop-floor languages and offline entry**
+- [x] **P3-21 Shop-floor languages and offline entry**
   The supervisor pages in Sinhala and Tamil (translations supplied or approved by the
   owner), and offline entry: saved on the device and synced when Wi-Fi returns, with a
   visible sync status and conflicts shown, never silently overwritten.
@@ -584,7 +584,20 @@ Status: `[ ]` to do · `[x]` done
     English; names entered in the system (machines, reasons, items) and messages from the
     server stay as entered / in English. A test checks every Sinhala text has its English one
     with the same placeholders.
-  - Part 2 to do: offline entry of the shift report.
+  - Part 2 done (PR #189): offline shift report entry (`frontend/src/lib/offline.ts`). A
+    save that cannot reach the server is kept on the phone (browser storage) with the
+    report's version it was made on, and a status line says so; it is sent when the report
+    is opened with a connection and whenever the connection returns ("Send now" too).
+    Shift reports carry a version (`updated_at`, production 0040); a save naming an older
+    version is refused (409, with the current report) and the supervisor sees both side by
+    side and chooses "Keep my version" (sent without the version) or "Keep the saved
+    version": never silently overwritten. Submitting waits for a connection and for the
+    kept save to be sent. The last copy of each open report and the signed-in user are kept
+    on the device so the page opens without Wi-Fi (the server checks everything when
+    reached); a service worker (`frontend/public/sw.js`, hand-written, no library) keeps the
+    app's own files, never the API, and only in the built app on the servers. Signing out
+    clears the kept sign-in and report copies (saves not yet sent stay). Starting a new
+    shift's report still needs a connection (it is created when the shift opens).
 
 - [ ] **P3-23 Overhead and machine-hour rates from past data**
   Asked for by the owner (7 Nov 2026): the overhead rate and the rate per machine hour

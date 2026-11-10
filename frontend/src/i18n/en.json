@@ -4890,7 +4890,19 @@
     "removeWork": "Remove this job card",
     "addWork": "Add a job card",
     "workWorked": "{{minutes}} min a piece (standard {{standard}})",
-    "jobTotals": "{{completed}} completed, {{rejected}} rejected, {{rework}} for rework in {{minutes}} minutes"
+    "jobTotals": "{{completed}} completed, {{rejected}} rejected, {{rework}} for rework in {{minutes}} minutes",
+    "offline": "No connection. Saves are kept on this phone and sent when the connection returns.",
+    "fromCopy": "No connection: showing the copy kept on this phone at {{at}}.",
+    "keptOnPhone": "Saved on this phone at {{at}}, not sent yet.",
+    "sending": "Sending the save kept on this phone…",
+    "sendFailed": "Could not send yet; it is still kept on this phone.",
+    "sendNow": "Send now",
+    "conflictTitle": "This report was changed elsewhere",
+    "conflictHelp": "Someone saved this report after the copy your phone saved on. Nothing has been overwritten: choose which version to keep. Your version stays on this phone until you choose.",
+    "conflictMine": "Your version (on this phone)",
+    "conflictTheirs": "The saved version",
+    "keepMine": "Keep my version",
+    "keepTheirs": "Keep the saved version"
   },
   "mouldMaint": {
     "title": "Mould maintenance",

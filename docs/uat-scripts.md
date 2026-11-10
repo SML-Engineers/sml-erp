@@ -97,6 +97,71 @@ How to use these scripts:
 | X4 | Audit log: find the voucher from C1 and see every change and approval. | All there, with who, when and from where. Nothing can be edited. | | |
 | X5 | Try to open a voucher, a payment or the ledger as Admin. | Not available: the Admin is kept apart from money. | | |
 
+## 7A. Production (P3-22)
+
+Moulding first, then machining. With the demo data, sign in as `planner@`, `supervisor@`
+(moulding), `wssupervisor@` (workshop), `productionmanager@`, `stores@`, `qc@`, `sales@` and
+`accountant@demo.sml.lk`. The demo has the cap CAP-38 (mould MD-C38 on IMM-250, an order
+planned for today) and the drive shaft SH-600 (job for Lanka Tea Machinery, bar issued).
+
+### Production Planner
+
+| # | Steps | Expected | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| PL1 | Production → Moulds: open MD-C38; print its QR label. Import your own mould list from Excel. | Label prints; rows with a missing part, cycle time or shot weight are listed and nothing is saved until fixed. | | |
+| PL2 | Routings and BOMs: copy SH-600's routing to a new part; send it to the Production Manager. | It waits for approval; the original is unchanged. | | |
+| PL3 | Production orders: make an order for CAP-38 for stock; release it. | Released with its BOM copied; any material short shows a purchase request button. | | |
+| PL4 | Production plan: move today's run to IMM-150; plan more than the shift can make. | The move saves; the overload shows a red warning but is allowed. | | |
+| PL5 | Job orders: make an internal job (tools) with two operations; release it; print the A5 job card 📱. | Card prints with a QR code per operation. | | |
+
+### Moulding Supervisor 📱
+
+| # | Steps | Expected | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| MS1 | On your phone: side menu → Language → සිංහල. Production → Shift report → start today's IM-MLD General shift. | Screens in Sinhala; the planned run is listed. | | |
+| MS2 | Enter the planned run (scan the machine and mould QR labels), counters, 20 FLASH rejects, a 15-minute power cut, the resin batch issued and 2 people. Save. | The summary shows shots, good pieces, reject % and the cycle time against standard. | | |
+| MS3 | Turn Wi-Fi off. Change the rejects and press Save. Close the browser and open the report again. Turn Wi-Fi on. | "Saved on this phone, not sent yet" appears; the page opens without Wi-Fi; on Wi-Fi it is sent by itself. | | |
+| MS4 | While your phone is offline, have someone change the same report on a PC; then go back online. | Both versions are shown; nothing is overwritten until you choose. | | |
+| MS5 | Enter a run that overlaps another on the same machine, or a counter lower than the last. | Refused with the reason. | | |
+| MS6 | Submit the report. | It goes to the Production Manager; you can no longer change it. | | |
+
+### Workshop Supervisor 📱
+
+| # | Steps | Expected | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| WS1 | Shift report for M-BSW: scan the SH-600 job card, operation 10; 10 cut in 30 minutes. Submit. | Saved; the job's progress shows 10 cut. | | |
+| WS2 | C-LAT: operation 20, 12 completed. | Refused: only 10 were released by the operation before. | | |
+| WS3 | C-LAT: operation 20, 9 completed, 1 rejected (DIMENSION). Submit. | Saved; the reject is on the job. | | |
+
+### Production Manager
+
+| # | Steps | Expected | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| PM1 | Approve the moulding report from MS6. | Good caps go into stock, resin, masterbatch and bags are used, the mould's shots go up. | | |
+| PM2 | Return one report with a reason; after the grace period, approve a correction someone asks for. | Returned to the supervisor; the correction reverses and reopens it, keeping the old one on record. | | |
+| PM3 | Approve your own submitted report (if you entered one). | Refused: never your own. | | |
+| PM4 | Production → Machine OEE and Production reports: look at today. | Availability, performance, quality and OEE per machine; rejects and downtime by reason. | | |
+| PM5 | Decide on a job held by a failed inspection (rework, scrap or accept under deviation). | The job moves on; a critical deviation goes to the Director. | | |
+
+### QC and Stores
+
+| # | Steps | Expected | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| Q1 | QC: first-article inspection on the SH-600 job with one result out of limits. | The job is on hold; the Production Manager is told. | | |
+| Q2 | Stores: issue more bar to the job than its BOM allows. | Needs the Production Manager's approval. | | |
+| Q3 | Planner completes the SH-600 job; Sales makes the delivery note; Stores issues it. | The shafts leave stock at their cost; issuing more than is in stock is refused. | | |
+| Q4 | Deliver the last of the order. | The job closes by itself with its final report. | | |
+
+### Accountant and Director
+
+| # | Steps | Expected | Pass/Fail | Notes |
+| --- | --- | --- | --- | --- |
+| AC1 | Production → Cost rates: set labour and overhead rates for a section from today. | In force from today; earlier days keep the old rates. | | |
+| AC2 | Open the SH-600 job: Costs and Profitability panels; press "Bring the costs up to date". | Material, labour, machine time by element; every line opens its shift report or voucher. | | |
+| AC3 | Order profitability: open orders red/amber/green; a closed order's final report and variances. | Figures agree with the job page; the Director and Production Manager got any alert once. | | |
+| AC4 | Accounts → Work in progress at month end; the month-end checklist. | Open jobs agree with the Work in progress account; the checklist item is ticked. | | |
+| AC5 | Report builder: "Margin of closed orders by customer" and "Downtime hours by reason". | Both run; planners cannot see the money sources. | | |
+
 ---
 
 ## 8. Parallel run (one month in both systems)

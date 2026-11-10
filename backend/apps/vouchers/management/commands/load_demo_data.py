@@ -14,8 +14,12 @@ Payroll Officer, a Production Planner, a Supervisor and a Production Manager, mo
 employees on a day roster, two presses with hourly rates, a mould, a cap with an approved
 moulding BOM, masterbatch and bags in stock, cost rates, a released production order for the
 won sales order and a draft one for stock, and the plan for today and tomorrow, so the
-Supervisor can enter today's shift report. Everything goes through the normal services, so
-every business rule applies.
+Supervisor can enter today's shift report. For machining (P3-22 preparation): a Workshop
+supervisor for the bandsaw and CNC lathe sections, a bandsaw, a drive shaft with an approved
+routing (cut, turn) and BOM, EN8 bar in stock, cost rates, a won quotation with its costing,
+the confirmed sales order, and a released job with its bar issued, so the Workshop supervisor
+can scan the job card in today's shift report. Everything goes through the normal services,
+so every business rule applies.
 
 It refuses to run on a production server. Each part (vouchers, sales, purchasing, production)
 loads once per
@@ -84,9 +88,10 @@ PEOPLE = [
     ("planner", "Asanka Weerasinghe", "production_planner", "production"),
     ("supervisor", "Lasith Kumara", "production_supervisor", "production"),
     ("productionmanager", "Thilini Abeysekara", "production_manager", "production"),
+    ("wssupervisor", "Nuwan Silva", "production_supervisor", "machining"),
 ]
 # Each part is there once its first person is.
-PARTS = ("vouchers", "sales", "purchasing", "production")
+PARTS = ("vouchers", "sales", "purchasing", "production", "machining")
 
 
 def invoice_pdf(title: str, lines: list[str]) -> SimpleUploadedFile:
@@ -133,6 +138,8 @@ class Command(BaseCommand):
                     self.purchasing(people)
                 if "production" in missing:
                     self.production(people)
+                if "machining" in missing:
+                    self.machining(people)
         except CommandError:
             raise
         except Exception as error:  # a clash with data already typed in on this PC
@@ -878,6 +885,206 @@ class Command(BaseCommand):
                 planner,
                 {"day": day.isoformat(), "shift": "G", "machine": "IMM-250", "order": released.pk},
             )
+
+    # --- Machining (P3-22 preparation) ----------------------------------------------------------
+
+    def machining(self, p: dict) -> None:
+        from apps.inventory import opening
+        from apps.inventory.models import StockMovement, Store
+        from apps.masters.models import Customer, Machine, Material
+        from apps.production import boms, jobs, rates, routings
+        from apps.sales import costing as quotation_costing
+        from apps.sales.costing import CostingInput, OperationInput
+
+        planner, manager, buyer = p["planner"], p["productionmanager"], p["purchasing"]
+        accountant, director, executive = p["accountant"], p["director"], p["sales"]
+        supervisor, stores = p["wssupervisor"], p["stores"]
+        today = timezone.localdate()
+
+        # The Workshop supervisor's sections, and a bandsaw with its hourly rate.
+        for code in ("M-BSW", "C-LAT"):
+            masters.update_section(
+                Section.objects.get(code=code), {"supervisors": [supervisor.pk]}, reason="Demo data"
+            )
+        saw = masters.create_machine(
+            code="M-BSW-01",
+            section=Section.objects.get(code="M-BSW"),
+            name="Bandsaw 1",
+            reason="Demo data",
+        )
+        masters.add_rate(
+            saw, effective_from=today, rate=Decimal("1200"), reason="Demo data", user=accountant
+        )
+
+        # The drive shaft and its bar; 300 kg of bar in stock (opening stock).
+        items.create_item(
+            buyer,
+            {
+                "code": "SH-600",
+                "name": "Drive shaft, EN8, 45 dia x 600",
+                "category": "finished",
+                "unit": "pcs",
+                "division": "WS",
+                "inspection_required": False,
+            },
+        )
+        items.create_item(
+            buyer,
+            {
+                "code": "EN8-45",
+                "name": "EN8 round bar, 45 mm",
+                "category": "raw_material",
+                "unit": "kg",
+                "division": "WS",
+                "inspection_required": False,
+            },
+        )
+        sheet = Workbook()
+        rows = sheet.active
+        rows.title = opening.SHEET
+        rows.append(opening.COLUMNS)
+        rows.append(["EN8-45", "WS-MAIN", 300, 480, "H-0912"])
+        content = io.BytesIO()
+        sheet.save(content)
+        count, _ = opening.load(
+            accountant, None, content=content.getvalue(), count_date=today, notes="Demo data"
+        )
+        opening.submit(accountant, count)
+        opening.approve(director, count)
+
+        # The approved routing and BOM, and the sections' cost rates.
+        routing = routings.create(
+            planner,
+            {
+                "item": "SH-600",
+                "drawing_revision": "A",
+                "operations": [
+                    {
+                        "seq": 10,
+                        "name": "Cut to length",
+                        "machine": "M-BSW-01",
+                        "setup_min": "10",
+                        "run_min": "2",
+                    },
+                    {
+                        "seq": 20,
+                        "name": "Turn and face",
+                        "machine": "C-LAT-01",
+                        "setup_min": "30",
+                        "run_min": "12",
+                    },
+                ],
+            },
+        )
+        routings.submit(planner, routing)
+        routings.decide(manager, routing, "approve")
+        bom = boms.create(
+            planner,
+            {
+                "item": "SH-600",
+                "kind": "machining",
+                "lines": [
+                    {
+                        "seq": 10,
+                        "line_type": "raw",
+                        "component": "EN8-45",
+                        "quantity": "7.6",
+                        "scrap_pct": "5",
+                        "operation_seq": 10,
+                    }
+                ],
+            },
+        )
+        boms.submit(planner, bom)
+        boms.decide(manager, bom, "approve")
+        for section, labour, overhead in (("M-BSW", "350", "250"), ("C-LAT", "500", "900")):
+            for kind, rate in (("labour", labour), ("overhead", overhead)):
+                rates.add(
+                    accountant,
+                    {"kind": kind, "section": section, "rate": rate, "reason": "Demo data"},
+                )
+
+        # Won: 30 shafts for Lanka Tea Machinery, costed, and the sales order confirmed.
+        tea = Customer.objects.get(name="Lanka Tea Machinery (Pvt) Ltd")
+        q = quotations.save(
+            executive,
+            None,
+            customer=tea,
+            division=Division.objects.get(code="WS"),
+            lines=[
+                QuoteLine(
+                    description="Drive shaft SH-600, EN8, 45 dia x 600",
+                    quantity="30",
+                    unit_price="9500",
+                )
+            ],
+        )
+        quotation_costing.save(
+            executive,
+            q,
+            1,
+            CostingInput(
+                material=Material.objects.get(code="EN8"),
+                weight_kg="7.6",
+                setup_hours="1",
+                overhead_pct="15",
+                margin_pct="20",
+                operations=[
+                    OperationInput(machine=saw, minutes="2", description="Cut"),
+                    OperationInput(
+                        machine=Machine.objects.get(code="C-LAT-01"),
+                        minutes="12",
+                        description="Turn",
+                    ),
+                ],
+            ),
+        )
+        workflow.submit(executive, q)
+        q = workflow.approve(director, q, "Prices checked")
+        q = workflow.mark_sent(executive, q)
+        q = workflow.record_outcome(executive, q, accepted=True, reason="price")
+        order = orders.from_quotation(executive, q)
+        line = order.lines.get()
+        orders.save(
+            executive,
+            order,
+            customer_po="LTM/PO/3310",
+            po_date=today,
+            lines=[
+                OrderLine(
+                    quantity="30",
+                    quotation_line=line.quotation_line,
+                    schedule=[Delivery(today + timedelta(days=10), "30")],
+                )
+            ],
+        )
+        order = orders.confirm(executive, order)
+
+        # The released job, with its bar issued for the first 10 shafts (the opening lot).
+        bar_lot = (
+            StockMovement.objects.filter(item__code="EN8-45", kind="opening")
+            .values_list("lot_no", flat=True)
+            .first()
+        )
+        job = jobs.create(
+            planner,
+            {
+                "purpose": "sales",
+                "sales_line": order.lines.get().pk,
+                "item": "SH-600",
+                "quantity": "30",
+                "due_date": (today + timedelta(days=9)).isoformat(),
+            },
+        )
+        job = jobs.release(planner, job)
+        jobs.issue(
+            stores,
+            job,
+            {
+                "store": Store.objects.get(code="WS-MAIN").pk,
+                "lines": [{"item": "EN8-45", "quantity": "80", "lot_no": bar_lot}],
+            },
+        )
 
     # --- The instructions ----------------------------------------------------------------------
 

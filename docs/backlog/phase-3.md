@@ -612,6 +612,13 @@ Status: `[ ]` to do · `[x]` done
 - [ ] **P3-22 User acceptance testing and go-live**
   Scripts in `docs/uat-scripts.md` run by the supervisors, the Production Manager, stores
   and the Accountant; moulding live first, then machining.
+  - Preparation done (PR #190): section 7A of `docs/uat-scripts.md` (Planner, moulding and
+    workshop supervisors on phones, in Sinhala and offline, Production Manager, QC and
+    stores, Accountant and Director: 28 steps); `load_demo_data` gains a "machining" part: a
+    Workshop supervisor (`wssupervisor@demo.sml.lk`) for M-BSW and C-LAT, a bandsaw, the
+    drive shaft SH-600 with an approved routing and BOM, EN8 bar in stock, cost rates, a won
+    and costed quotation for Lanka Tea Machinery, the confirmed sales order and a released
+    job with bar issued. On a PC with the earlier demo data, running it again adds only this.
 
 ---
 

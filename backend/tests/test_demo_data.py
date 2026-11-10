@@ -21,8 +21,8 @@ from apps.inventory.models import (
 from apps.masters.models import Customer, Machine, Section
 from apps.payments.models import SupplierPayment
 from apps.payroll.models import Employee
-from apps.production import plan, rates
-from apps.production.models import Bom, PlanEntry, ProductionOrder
+from apps.production import jobs, plan, rates
+from apps.production.models import Bom, JobOrder, PlanEntry, ProductionOrder
 from apps.purchasing import reports
 from apps.purchasing.models import PurchaseOrder, SupplierInvoice
 from apps.sales.models import CustomerAdvance, Quotation, SalesOrder
@@ -62,6 +62,7 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
         "salesmanager@demo.sml.lk",
         "stores@demo.sml.lk",
         "supervisor@demo.sml.lk",
+        "wssupervisor@demo.sml.lk",
     ]
     secret = re.search(r"Key: ([A-Z2-7]{32})", text).group(1)
     assert {crypto.decrypt(u.totp_secret_encrypted) for u in people} == {secret}
@@ -85,12 +86,13 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
     # Sales (P15-12): quotations at every stage, an open order and an advance.
     assert sorted(Quotation.objects.values_list("status", flat=True)) == [
         "accepted",
+        "accepted",  # the machining one (P3-22 preparation)
         "awaiting_approval",
         "draft",
         "lost",
         "sent",
     ]
-    order = SalesOrder.objects.get()
+    order = SalesOrder.objects.get(customer_po="UL/PO/7781")
     assert (order.status, order.customer_po) == ("open", "UL/PO/7781")
     assert order.lines.get().schedule.count() == 3
     assert CustomerAdvance.objects.get().status == "approved"
@@ -101,9 +103,11 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
         "CAP-38",
         "CNMG-120408",
         "EN8-40",
+        "EN8-45",
         "M8-INSERT",
         "MB-WHT",
         "PP-H-25",
+        "SH-600",
     ]
     assert InspectionPlan.objects.get().parameters.count() == 2
     assert sorted(PurchaseOrder.objects.values_list("status", flat=True)) == [
@@ -146,9 +150,23 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
     today = timezone.localdate()
     assert PlanEntry.objects.filter(day=today, order=released).count() == 1
     assert rates.labour_on(section) == Decimal("450")
-    assert OpeningStock.objects.get().status == "posted"
+    assert set(OpeningStock.objects.values_list("status", flat=True)) == {"posted"}
     assert plan.board(people.get(email="planner@demo.sml.lk"), today.isoformat(), 1)["entries"]
     assert "supervisor@demo.sml.lk" in text
+    # Machining (P3-22 preparation): a routing, BOM, a won and costed quotation, the sales
+    # order and a released job with its bar issued, ready for the Workshop supervisor.
+    ws_supervisor = people.get(email="wssupervisor@demo.sml.lk")
+    assert ws_supervisor in Section.objects.get(code="C-LAT").supervisors.all()
+    job = JobOrder.objects.get(item__code="SH-600")
+    assert (job.status, job.quantity, job.sales_line.order.customer_po) == (
+        "released",
+        Decimal("30"),
+        "LTM/PO/3310",
+    )
+    assert [o.seq for o in job.operations.all()] == [10, 20]
+    assert job.sales_line.quotation_line.costing.weight_kg == Decimal("7.6")
+    assert jobs.net_issued(job)
+    assert "wssupervisor@demo.sml.lk" in text
     with pytest.raises(CommandError, match="already loaded"):
         call_command("load_demo_data", stdout=io.StringIO())
 
@@ -180,7 +198,7 @@ def test_a_pc_with_the_earlier_demo_gets_only_the_missing_part(settings, monkeyp
     monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
     out = io.StringIO()
     call_command("load_demo_data", stdout=out)
-    assert "Demo data loaded: purchasing, production." in out.getvalue()
+    assert "Demo data loaded: purchasing, production, machining." in out.getvalue()
     assert Voucher.objects.count() == vouchers
     assert Customer.objects.count() == 3
     assert PurchaseOrder.objects.count() == 5

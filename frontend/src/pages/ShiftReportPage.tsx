@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 
@@ -24,6 +24,17 @@ import {
 } from "../api/shiftReports";
 import ScanButton from "../components/ScanButton";
 import { formatDecimal } from "../lib/decimal";
+import {
+  clearPending,
+  isNetworkError,
+  keepCopy,
+  readCopy,
+  readPending,
+  timeOf,
+  useOnline,
+  writePending,
+  type PendingSave,
+} from "../lib/offline";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -153,22 +164,92 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const key = ["shift-report", id];
-  const found = useQuery({ queryKey: key, queryFn: () => getReport(id) });
-  const [values, setValues] = useState<ReportValues | null>(null);
+  const online = useOnline();
+  // P3-21: the copy kept on this phone is shown when the server cannot be reached.
+  const [copyAt, setCopyAt] = useState<string | null>(null);
+  const found = useQuery({
+    queryKey: key,
+    queryFn: async () => {
+      try {
+        const d = await getReport(id);
+        keepCopy(d);
+        setCopyAt(null);
+        return d;
+      } catch (error) {
+        const copy = isNetworkError(error) ? readCopy(id) : null;
+        if (!copy) throw error;
+        setCopyAt(copy.at);
+        return copy.report;
+      }
+    },
+  });
+  const [pending, setPending] = useState<PendingSave | null>(() => readPending(id));
+  const [conflict, setConflict] = useState<ShiftReport | null>(null);
+  const [values, setValues] = useState<ReportValues | null>(() => readPending(id)?.values ?? null);
   const r = found.data;
   const v = values ?? (r ? valuesOf(r) : null);
   const done = (d: ShiftReport) => {
     queryClient.setQueryData(key, d);
     queryClient.invalidateQueries({ queryKey: reportsKey });
+    keepCopy(d);
+    clearPending(id);
+    setPending(null);
+    setConflict(null);
+    setCopyAt(null);
     setValues(null);
   };
-  const save = useMutation({ mutationFn: (x: ReportValues) => saveReport(id, x), onSuccess: done });
+  /** Keep the save on the phone, made on the version the supervisor's copy came from. */
+  const keepOnPhone = (x: ReportValues) => {
+    const kept: PendingSave = { values: x, base: pending?.base ?? r?.version ?? "", savedAt: new Date().toISOString() };
+    writePending(id, kept);
+    setPending(kept);
+    setValues(x);
+  };
+  const conflicted = (error: unknown) => {
+    if (error instanceof ApiError && error.status === 409) {
+      setConflict((error.body as { current?: ShiftReport } | null)?.current ?? null);
+      return true;
+    }
+    return false;
+  };
+  const save = useMutation({
+    mutationFn: async (x: ReportValues) => {
+      if (!navigator.onLine) throw new TypeError("offline");
+      return saveReport(id, x, pending?.base ?? r?.version);
+    },
+    onSuccess: done,
+    onError: (error, x) => {
+      if (isNetworkError(error)) keepOnPhone(x);
+      else if (conflicted(error)) keepOnPhone(x);
+    },
+  });
+  // Sends what is kept on the phone; "force" sends it over a report saved elsewhere meanwhile.
+  const send = useMutation({
+    mutationFn: (force: boolean) => {
+      const kept = readPending(id);
+      if (!kept) throw new Error("Nothing kept on this phone.");
+      return saveReport(id, kept.values, force ? undefined : kept.base);
+    },
+    onSuccess: done,
+    onError: (error) => void conflicted(error),
+  });
+  const { mutate: sendKept } = send;
+  useEffect(() => {
+    // Sent when the report is opened with a connection, and whenever the connection returns.
+    const retry = () => {
+      if (readPending(id)) sendKept(false);
+    };
+    if (navigator.onLine) retry();
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [id, sendKept]);
   const submit = useMutation({
     mutationFn: async (x: ReportValues) => {
-      await saveReport(id, x);
+      await saveReport(id, x, pending?.base ?? r?.version);
       return submitReport(id);
     },
     onSuccess: done,
+    onError: (error) => void conflicted(error),
   });
   if (!r || !v) return <ErrorLine error={found.error} />;
   const edit = r.editable;
@@ -364,14 +445,38 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
           {t("shiftReport.notes")}
           <textarea value={v.notes} disabled={!edit} onChange={(e) => put({ notes: e.target.value })} />
         </label>
-        {values !== null && <p className="notice">{t("shiftReport.unsaved")}</p>}
+        {values !== null && !pending && <p className="notice">{t("shiftReport.unsaved")}</p>}
+        <SyncStatus
+          online={online}
+          pending={pending}
+          copyAt={copyAt}
+          sending={send.isPending}
+          sendError={send.isError && isNetworkError(send.error)}
+          onSend={() => send.mutate(false)}
+        />
+        {conflict && pending && (
+          <Conflict
+            mine={pending.values}
+            theirs={conflict}
+            busy={send.isPending}
+            onKeepMine={() => send.mutate(true)}
+            onKeepTheirs={() => {
+              clearPending(id);
+              done(conflict);
+            }}
+          />
+        )}
         <div className="row-actions">
           {edit && (
             <>
               <button type="button" disabled={save.isPending || submit.isPending} onClick={() => save.mutate(v)}>
                 {t("shiftReport.save")}
               </button>
-              <button type="button" disabled={save.isPending || submit.isPending} onClick={() => submit.mutate(v)}>
+              <button
+                type="button"
+                disabled={save.isPending || submit.isPending || !online || pending !== null || copyAt !== null}
+                onClick={() => submit.mutate(v)}
+              >
                 {t("shiftReport.submit")}
               </button>
             </>
@@ -380,7 +485,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
             {t("shiftReport.back")}
           </button>
         </div>
-        <ErrorLine error={save.error ?? submit.error} />
+        <ErrorLine error={(save.error && !isNetworkError(save.error) && !conflict ? save.error : null) ?? submit.error} />
       </section>
       <Approval report={r} onDone={done} />
     </>
@@ -923,6 +1028,90 @@ function JobCards({
           {t("shiftReport.addWork")}
         </button>
       )}
+    </section>
+  );
+}
+
+/** P3-21: whether what is on the screen has reached the server. */
+function SyncStatus(props: {
+  online: boolean;
+  pending: PendingSave | null;
+  copyAt: string | null;
+  sending: boolean;
+  sendError: boolean;
+  onSend: () => void;
+}) {
+  const { t } = useTranslation();
+  const { online, pending, copyAt, sending } = props;
+  if (online && !pending && !copyAt) return null;
+  return (
+    <div className="notice sync-status" role="status">
+      {!online && <p>{t("shiftReport.offline")}</p>}
+      {copyAt && <p>{t("shiftReport.fromCopy", { at: timeOf(copyAt) })}</p>}
+      {pending && <p>{sending ? t("shiftReport.sending") : t("shiftReport.keptOnPhone", { at: timeOf(pending.savedAt) })}</p>}
+      {pending && props.sendError && <p>{t("shiftReport.sendFailed")}</p>}
+      {pending && online && !sending && (
+        <button type="button" className="secondary small" onClick={props.onSend}>
+          {t("shiftReport.sendNow")}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function counts(values: ReportValues) {
+  return { runs: values.runs.length, cards: values.operations.length, stops: values.downtime.length, lines: values.materials.length };
+}
+
+/** P3-21: the report was saved elsewhere after the copy the phone's save was made on. */
+function Conflict(props: { mine: ReportValues; theirs: ShiftReport; busy: boolean; onKeepMine: () => void; onKeepTheirs: () => void }) {
+  const { t } = useTranslation();
+  const theirs = valuesOf(props.theirs);
+  const rows: [string, ReportValues][] = [
+    [t("shiftReport.conflictMine"), props.mine],
+    [t("shiftReport.conflictTheirs"), theirs],
+  ];
+  return (
+    <section className="panel notice" role="alert" aria-label={t("shiftReport.conflictTitle")}>
+      <h3>{t("shiftReport.conflictTitle")}</h3>
+      <p>{t("shiftReport.conflictHelp")}</p>
+      <div className="table-wrap">
+        <table aria-label={t("shiftReport.conflictTitle")}>
+          <thead>
+            <tr>
+              <th />
+              <th className="num">{t("shiftReport.runs")}</th>
+              <th className="num">{t("shiftReport.jobCards")}</th>
+              <th className="num">{t("shiftReport.downtime")}</th>
+              <th className="num">{t("shiftReport.materials")}</th>
+              <th>{t("shiftReport.notes")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([label, x]) => {
+              const c = counts(x);
+              return (
+                <tr key={label}>
+                  <th>{label}</th>
+                  <td className="num">{c.runs}</td>
+                  <td className="num">{c.cards}</td>
+                  <td className="num">{c.stops}</td>
+                  <td className="num">{c.lines}</td>
+                  <td>{x.notes || "–"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="row-actions">
+        <button type="button" disabled={props.busy} onClick={props.onKeepMine}>
+          {t("shiftReport.keepMine")}
+        </button>
+        <button type="button" className="secondary" disabled={props.busy} onClick={props.onKeepTheirs}>
+          {t("shiftReport.keepTheirs")}
+        </button>
+      </div>
     </section>
   );
 }

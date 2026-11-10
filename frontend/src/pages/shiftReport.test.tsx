@@ -66,6 +66,7 @@ const report: ShiftReport = {
     machining: { completed: "0", rejected: "0", rework: "0", minutes: 0 },
   },
   editable: true,
+  version: "2026-11-08T08:00:00+05:30",
   return_reason: "",
   approved_by: "",
   approved_at: null,
@@ -379,4 +380,78 @@ test("in a machining section the supervisor scans a job card and enters the work
       expect.objectContaining({ body: expect.stringContaining('"job":"JO26110001","operation":"20","machine":"M-LAT-01"') }),
     ),
   );
+});
+
+describe("without a connection (P3-21)", () => {
+  afterEach(() => window.localStorage.clear());
+
+  test("a save is kept on the phone, the page opens from the kept copy, and it is sent when the connection returns", async () => {
+    let down = false;
+    const sent: unknown[] = [];
+    const calls = mockApi({
+      "GET /api/v1/shift-reports/9/": () => {
+        if (down) throw new TypeError("Failed to fetch");
+        return { body: report };
+      },
+      "PUT /api/v1/shift-reports/9/": (body) => {
+        if (down) throw new TypeError("Failed to fetch");
+        sent.push(body);
+        return { body: { ...report, notes: "Mould changed at 10", version: "2026-11-08T10:30:00+05:30" } };
+      },
+    });
+    const first = renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+    const notes = await screen.findByLabelText("Notes for the shift");
+    down = true;
+    fireEvent.change(notes, { target: { value: "Mould changed at 10" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText(/Saved on this phone at .*, not sent yet\./)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit the report" })).toBeDisabled();
+    // The phone is reloaded with no connection: the kept copy and the kept save are shown.
+    first.unmount();
+    renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+    expect(await screen.findByText(/No connection: showing the copy kept on this phone at/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Notes for the shift")).toHaveValue("Mould changed at 10");
+    // The connection returns: the save goes, on the version the copy came from.
+    down = false;
+    act(() => {
+      window.dispatchEvent(new Event("online"));
+    });
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]).toMatchObject({ notes: "Mould changed at 10", base_version: report.version });
+    await waitFor(() => expect(screen.queryByText(/not sent yet/)).not.toBeInTheDocument());
+    expect(window.localStorage.getItem("sml-offline-report-9")).toBeNull();
+    expect(calls).toHaveBeenCalled();
+  });
+
+  test("a save made on an older copy is never sent over the report saved elsewhere without a choice", async () => {
+    const office = { ...report, notes: "Saved from the office", version: "2026-11-08T10:00:00+05:30" };
+    const sent: Record<string, unknown>[] = [];
+    window.localStorage.setItem(
+      "sml-offline-report-9",
+      JSON.stringify({
+        values: { runs: [], operations: [], downtime: [], materials: [], manpower: [], notes: "Typed offline" },
+        base: report.version,
+        savedAt: "2026-11-08T09:40:00+05:30",
+      }),
+    );
+    mockApi({
+      "GET /api/v1/shift-reports/9/": { body: office },
+      "PUT /api/v1/shift-reports/9/": (raw) => {
+        const body = raw as Record<string, unknown>;
+        sent.push(body);
+        if (body.base_version) return { status: 409, body: { detail: "Changed elsewhere", current: office } };
+        return { body: { ...office, notes: "Typed offline", version: "2026-11-08T10:40:00+05:30" } };
+      },
+    });
+    renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+    const choice = await screen.findByRole("alert", { name: "This report was changed elsewhere" });
+    expect(within(choice).getByRole("row", { name: /Your version/ })).toHaveTextContent("Typed offline");
+    expect(within(choice).getByRole("row", { name: /The saved version/ })).toHaveTextContent("Saved from the office");
+    expect(sent).toHaveLength(1); // refused, nothing overwritten
+    fireEvent.click(within(choice).getByRole("button", { name: "Keep my version" }));
+    await waitFor(() => expect(sent).toHaveLength(2));
+    expect(sent[1].base_version).toBeUndefined();
+    await waitFor(() => expect(screen.queryByRole("alert", { name: "This report was changed elsewhere" })).not.toBeInTheDocument());
+    expect(window.localStorage.getItem("sml-offline-report-9")).toBeNull();
+  });
 });

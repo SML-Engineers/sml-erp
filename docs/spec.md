@@ -1508,6 +1508,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Production reports, part 1 (P3-20) | From approved shift reports in the user's sections: daily production by section, machine and shift; rejects by reason, part, mould and machine; downtime Pareto by reason and machine; machining jobs' estimated against actual hours and cost, on-time delivery; moulding material issued against the backflushed standard, regrind; moulds near maintenance | 7.6 |
 | Production reports, part 2 (P3-20) | Report builder sources: moulding runs, downtime and job card entries (approved shift reports, own sections), order costs and closed orders (cost access only); closed orders' margin by customer, part, mould, division or order, most profitable first; estimate accuracy by element with material price and usage | 7.6, 7.7 |
 | Shop-floor Sinhala (P3-21 part 1) | Sinhala wording (machine translation, owner to have it checked) for the shift report, production plan, menu, sign-in, notifications and tables; language chosen on the sign-in page or side menu and kept on the device; untranslated text falls back to English | 3A, 7.4 |
+| Offline shift report entry (P3-21 part 2) | Saves kept on the phone without a connection, sent when it returns, with a status line; a save on an older version refused (409) and both versions shown for the supervisor to choose; the page opens offline from a kept copy (service worker for the app files only); kept data cleared on signing out | 7.4 |
 
 **Still needed for initial setup**
 

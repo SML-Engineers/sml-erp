@@ -296,3 +296,30 @@ def test_a_night_shift_runs_past_midnight(clock, supervisor, press, released):
     saved = MouldingRun.objects.get()
     assert saved.started_at == at(23) and saved.ended_at == at(1, day=TODAY + timedelta(days=1))
     assert saved.good_quantity == D("4000") and saved.actual_cycle_s == D("14.40")
+
+
+def test_a_save_made_offline_on_an_older_copy_is_refused_not_overwritten(
+    clock, report, supervisor, released
+):
+    """P3-21: the phone sends the version its copy came from; if the report was saved since,
+    the save is refused with the current report, and the supervisor chooses."""
+    client = as_user(supervisor)
+    first = client.get(f"{URL}{report.pk}/").json()["version"]
+    clock["now"] = at(10, 5)
+    saved = client.put(
+        f"{URL}{report.pk}/",
+        {"notes": "From the office PC", "base_version": first},
+        format="json",
+    )
+    assert saved.status_code == 200 and saved.json()["version"] != first
+    clock["now"] = at(10, 10)
+    late = client.put(
+        f"{URL}{report.pk}/", {"notes": "Typed offline", "base_version": first}, format="json"
+    )
+    assert late.status_code == 409
+    assert late.json()["current"]["notes"] == "From the office PC"
+    report.refresh_from_db()
+    assert report.notes == "From the office PC"  # nothing overwritten
+    # The supervisor chooses to keep the phone's version: sent without a base version.
+    kept = client.put(f"{URL}{report.pk}/", {"notes": "Typed offline"}, format="json")
+    assert kept.status_code == 200 and kept.json()["notes"] == "Typed offline"

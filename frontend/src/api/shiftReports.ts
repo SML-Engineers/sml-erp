@@ -135,6 +135,8 @@ export interface ShiftReport extends ReportRow {
   manpower: { machine: string; people: number; overtime_hours: string }[];
   summary: Summary;
   editable: boolean;
+  /** P3-21: when the report was last saved; an offline save names it. */
+  version: string;
   // P3-09: approval and corrections.
   return_reason: string;
   approved_by: string;
@@ -202,7 +204,8 @@ export const getReports = () => apiGet<{ open: OpenShift[]; recent: ReportRow[];
 export const openReport = (values: { section: string; shift: string; day: string }) =>
   apiSend<ShiftReport>("POST", "/shift-reports/", values);
 export const getReport = (id: number) => apiGet<ShiftReport>(`/shift-reports/${id}/`);
-export const saveReport = (id: number, values: ReportValues) => apiSend<ShiftReport>("PUT", `/shift-reports/${id}/`, values);
+export const saveReport = (id: number, values: ReportValues, baseVersion?: string) =>
+  apiSend<ShiftReport>("PUT", `/shift-reports/${id}/`, baseVersion ? { ...values, base_version: baseVersion } : values);
 export const submitReport = (id: number) => apiSend<ShiftReport>("POST", `/shift-reports/${id}/submit/`);
 export const decideReport = (id: number, action: "approve" | "send_back", reason = "") =>
   apiSend<ShiftReport>("POST", `/shift-reports/${id}/decide/`, { action, reason });

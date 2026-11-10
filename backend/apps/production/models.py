@@ -763,6 +763,8 @@ class ShiftReport(models.Model):
     )
     # A correction (P3-09) reopens a report whose entry time is over until this moment.
     reopened_until = models.DateTimeField(null=True, blank=True)
+    # P3-21: when it was last saved, so a save made offline on an older copy is caught.
+    updated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["-day", "shift__start_time", "section__code"]

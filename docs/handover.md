@@ -1,6 +1,6 @@
 # Handover: continuing SML ERP development
 
-Updated **9 Nov 2026**, for the next Claude session (or any developer). It replaces the
+Updated **10 Nov 2026**, for the next Claude session (or any developer). It replaces the
 handovers of 3 and 5 Nov 2026 (in the git history of this file). A fuller handover package
 (architecture, database, API, testing, deployment, decisions) is kept outside the
 repository by the owner and given to each new session.
@@ -42,7 +42,7 @@ machining workshop, **IM** plastic injection moulding, **HO** head office (share
 | 1.6 Purchasing, GRN, QC, supplier invoices | phase-1-6.md | Built. Only **P16-14 UAT and go-live** open. |
 | 2 Financial accounting | phase-2.md | Built. **P2-29** (parallel run, UAT, go-live on 1 April) has its tools merged (#137) and stays unticked until the owner's sign-off. |
 | 2b Payroll and people | phase-2b.md | Built except **P2B-18** (Commercial Bank file), which waits for the bank's format. |
-| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance; #172 QC deviation approver (all merged). #173 production demo data; #174 asset depreciation terms; #175 P3-11 job orders; #176 P3-12 job cards; #177 P3-13 subcontract; #178 P3-14 inspection; #179 P3-15 mould transfers (all merged). #180 P3-16 part 1 order costs; #181 P3-16 part 2 WIP and cost of sales (merged). #182 P3-17 live order profitability; #183 depreciation defaults amended (merged). #184 P3-18 closing and variances (merged). #185 P3-19 OEE (merged). #186 P3-20 part 1 production reports (merged). #187 P3-20 part 2 report builder and profitability reports (merged). #188 P3-21 part 1 Sinhala (merged). #189 P3-21 part 2 offline entry (merged): Phase 3 development complete. **P3-22 preparation (production test scripts, machining demo data)** in PR #190. Next: fixes from the owner's testing; P3-23 after a few months of production data; servers. |
+| **3 Production** | **phase-3.md** | #160 backlog; #162 P3-01 moulds; #163 P3-02 reasons and settings; #164 P3-03 routings; #165 P3-04 BOMs; #166 P3-05 cost rates; #167 P3-06 production orders; #168 P3-07 plan; #169 P3-08 shift report; #170 P3-09 approval and corrections; #171 P3-10 mould maintenance; #172 QC deviation approver (all merged). #173 production demo data; #174 asset depreciation terms; #175 P3-11 job orders; #176 P3-12 job cards; #177 P3-13 subcontract; #178 P3-14 inspection; #179 P3-15 mould transfers (all merged). #180 P3-16 part 1 order costs; #181 P3-16 part 2 WIP and cost of sales (merged). #182 P3-17 live order profitability; #183 depreciation defaults amended (merged). #184 P3-18 closing and variances (merged). #185 P3-19 OEE (merged). #186 P3-20 part 1 production reports (merged). #187 P3-20 part 2 report builder and profitability reports (merged). #188 P3-21 part 1 Sinhala (merged). #189 P3-21 part 2 offline entry (merged): Phase 3 development complete. #190 P3-22 preparation (merged). **Owner's wording from testing (Work shift report, Sinhala side menu, menu headings)** in PR #191. Next: fixes from the owner's testing; P3-23 after a few months of production data; servers. |
 
 Latest migration per app (new migrations continue from these): accounting `0026_wip_ledger`,
 assets `0004_owner_rates_amended`, banking `0004_petty_cash`, core `0027_company_epf_etf`, inventory
@@ -50,7 +50,7 @@ assets `0004_owner_rates_amended`, banking `0004_petty_cash`, core `0027_company
 `0017_fingerprint`, **production `0040_shift_report_version`**, purchasing `0009_order_on_lines`, sales
 `0019_wip_ledger`, vouchers `0012_order_on_lines`.
 
-The last row of spec section 8.4 is **"Offline shift report entry (P3-21 part 2)"**; the rows run in task
+The last row of spec section 8.4 is **"Owner's wording from testing (10 Nov 2026)"**; the rows run in task
 order.
 
 ## 3. How we work with the owner (keep doing exactly this)

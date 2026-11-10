@@ -155,7 +155,7 @@ def test_an_order_shows_its_estimate_actual_and_forecast(accountant, half_done):
     assert (body["profit"]["status"], body["profit"]["forecast_margin"]) == ("green", "1920.00")
     # Every cost line names its source document.
     entries = {e["element"]: e for e in body["costs"]["entries"]}
-    assert entries["labour"]["document"].startswith("Shift report M-LAT ")
+    assert entries["labour"]["document"].startswith("Work shift report M-LAT ")
     assert entries["labour"]["link"].startswith("/shift-report?report=")
 
 

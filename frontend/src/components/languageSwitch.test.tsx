@@ -5,6 +5,7 @@ import i18n from "../i18n";
 import en from "../i18n/en.json";
 import si from "../i18n/si.json";
 import { renderAt } from "../test-utils";
+import { MENU } from "../layout/menu";
 import LanguageSwitch from "./LanguageSwitch";
 
 afterEach(async () => {
@@ -16,7 +17,7 @@ function Title() {
   return (
     <>
       <h1>{t("shiftReport.title")}</h1>
-      <p>{t("profit.pageTitle")}</p>
+      <p>{t("profit.figures")}</p>
     </>
   );
 }
@@ -29,10 +30,10 @@ test("a supervisor switches the screens to Sinhala, kept on the device", async (
       <Title />
     </>,
   );
-  expect(screen.getByRole("heading", { name: "Shift report" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Work shift report" })).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Language"), { target: { value: "si" } });
-  expect(await screen.findByRole("heading", { name: "මාරු වාර්තාව" })).toBeInTheDocument();
-  expect(screen.getByText("Order profitability")).toBeInTheDocument(); // not translated: English
+  expect(await screen.findByRole("heading", { name: "වැඩ මුර වාර්තාව" })).toBeInTheDocument();
+  expect(screen.getByText("Estimate, actual and forecast")).toBeInTheDocument(); // not translated: English
   expect(window.localStorage.getItem("sml-language")).toBe("si");
   expect(document.documentElement.lang).toBe("si");
   expect(screen.getByLabelText("භාෂාව")).toHaveValue("si");
@@ -57,4 +58,13 @@ test("every Sinhala text has its English one with the same placeholders", () => 
     expect(holes(text), key).toBe(holes(english[key]));
   }
   expect(Object.keys(sinhala).length).toBeGreaterThan(200);
+});
+
+test("every side-menu heading and page name has its Sinhala wording", () => {
+  const sinhala = flat(si as unknown as Tree);
+  for (const section of MENU) {
+    expect(sinhala[section.label], section.label).toBeDefined();
+    for (const item of section.items) expect(sinhala[item.label], item.label).toBeDefined();
+  }
+  for (const key of Object.keys(en.home)) expect(sinhala[`home.${key}`], `home.${key}`).toBeDefined();
 });

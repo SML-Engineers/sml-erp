@@ -598,6 +598,10 @@ Status: `[ ]` to do · `[x]` done
     app's own files, never the API, and only in the built app on the servers. Signing out
     clears the kept sign-in and report copies (saves not yet sent stay). Starting a new
     shift's report still needs a connection (it is created when the shift opens).
+  - Owner, 10 Nov 2026 (testing, PR #191): the page is renamed **Work shift report**
+    (Sinhala **වැඩ මුර වාර්තාව**; the Sinhala uses මුරය for "shift" throughout); the whole
+    side menu and the home page in Sinhala (other office pages stay English); the side-menu
+    headings in black bold and a little larger.
 
 - [ ] **P3-23 Overhead and machine-hour rates from past data**
   Asked for by the owner (7 Nov 2026): the overhead rate and the rate per machine hour

@@ -375,7 +375,7 @@ def source_links(sources) -> dict[str, dict]:
     for source, report_id in report_of.items():
         r = reports[report_id]
         out[source] = {
-            "label": f"Shift report {r.section.code} {r.day} {r.shift.code}",
+            "label": f"Work shift report {r.section.code} {r.day} {r.shift.code}",
             "link": f"/shift-report?report={r.pk}",
         }
     wanted = _ids(sources, "voucher_line")

@@ -118,3 +118,35 @@ test("a day's plan is copied, and a supervisor only reads", async () => {
   expect(within(day).queryByRole("button", { name: "Move" })).not.toBeInTheDocument();
   expect(screen.queryByRole("form", { name: "Plan an order" })).not.toBeInTheDocument();
 });
+
+test("removing the run being moved closes the Move box", async () => {
+  // Owner's testing (T1, 10 Nov 2026).
+  const calls = mockApi({
+    [`GET ${URL}`]: { body: board },
+    "DELETE /api/v1/production-plan/5/": { body: null },
+  });
+  renderAt("/production-plan", <ProductionPlanPage />);
+  const run = await screen.findByLabelText("MO26110001 on IMM-250, General");
+  fireEvent.click(within(run).getByRole("button", { name: "Move" }));
+  await screen.findByRole("form", { name: "Move MO26110001" });
+  fireEvent.click(within(run).getByRole("button", { name: "Remove" }));
+  await waitFor(() => expect(screen.queryByRole("form", { name: "Move MO26110001" })).not.toBeInTheDocument());
+  expect(calls).toHaveBeenCalledWith("/api/v1/production-plan/5/", expect.objectContaining({ method: "DELETE" }));
+  expect(screen.getByRole("form", { name: "Plan an order" })).toBeInTheDocument();
+});
+
+test("moving a run that has gone shows a plain message and closes the Move box", async () => {
+  // Owner's testing (T1, 10 Nov 2026): it showed "No PlanEntry matches the given query."
+  mockApi({
+    [`GET ${URL}`]: { body: board },
+    "PATCH /api/v1/production-plan/5/": { status: 404, body: { detail: "This run is no longer in the plan." } },
+  });
+  renderAt("/production-plan", <ProductionPlanPage />);
+  const run = await screen.findByLabelText("MO26110001 on IMM-250, General");
+  fireEvent.click(within(run).getByRole("button", { name: "Move" }));
+  const move = await screen.findByRole("form", { name: "Move MO26110001" });
+  fireEvent.click(within(move).getByRole("button", { name: "Save the move" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("This run is no longer in the plan, so it was not moved.");
+  expect(screen.queryByRole("form", { name: "Move MO26110001" })).not.toBeInTheDocument();
+  expect(screen.queryByText(/matches the given query/)).not.toBeInTheDocument();
+});

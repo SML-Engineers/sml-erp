@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -819,7 +820,11 @@ class PlanView(_Plan):
 
 class PlanEntryView(_Plan):
     def _entry(self, request, pk):
-        return get_object_or_404(plan.visible(request.user), pk=pk)
+        # Owner's testing (T1): the run may have been removed while the Move box was open.
+        entry = plan.visible(request.user).filter(pk=pk).first()
+        if entry is None:
+            raise NotFound(plan.GONE)
+        return entry
 
     def patch(self, request, pk):
         try:

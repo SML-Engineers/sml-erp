@@ -184,6 +184,27 @@ def test_moving_copying_and_removing(planner, released, presses):  # noqa: F811
     assert PlanEntry.objects.count() == 1
 
 
+def test_moving_or_removing_a_run_that_has_gone_says_so_plainly(planner, released, presses):  # noqa: F811
+    """Owner's testing (T1, 10 Nov 2026): Remove was pressed while the Move box was open, and
+    "Save the move" showed Django's "No PlanEntry matches the given query."."""
+    gone = entry(planner, released, minutes="100")
+    assert as_user(planner).delete(f"{URL}{gone.pk}/").status_code == 204
+    moved = as_user(planner).patch(f"{URL}{gone.pk}/", {"machine": "IMM-90"}, format="json")
+    assert moved.status_code == 404
+    assert moved.json() == {"detail": plan.GONE}
+    again = as_user(planner).delete(f"{URL}{gone.pk}/")
+    assert (again.status_code, again.json()) == (404, {"detail": plan.GONE})
+    assert "PlanEntry" not in plan.GONE
+    assert not PlanEntry.objects.exists()
+
+
+def test_other_missing_records_never_show_model_names(planner):  # noqa: F811
+    from apps.core.exceptions import GONE
+
+    missing = as_user(planner).get("/api/v1/production-orders/999999/")
+    assert (missing.status_code, missing.json()) == (404, {"detail": GONE})
+
+
 def test_a_past_day_never_changes(planner, released, presses):  # noqa: F811
     today = entry(planner, released, day=TODAY)
     # As if it had been planned yesterday.

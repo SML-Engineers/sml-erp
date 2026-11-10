@@ -42,6 +42,10 @@ class PlanError(Exception):
     pass
 
 
+# Owner's testing (T1, 10 Nov 2026): shown when a run was removed while someone was moving it.
+GONE = "This run is no longer in the plan. It may have been removed; the plan has been reloaded."
+
+
 def can_plan(user: User) -> bool:
     return effective_access(user).has("production_planning", "enter")
 

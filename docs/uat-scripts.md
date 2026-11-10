@@ -118,7 +118,7 @@ planned for today) and the drive shaft SH-600 (job for Lanka Tea Machinery, bar 
 
 | # | Steps | Expected | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| MS1 | On your phone: side menu → Language → සිංහල. Production → Shift report → start today's IM-MLD General shift. | Screens in Sinhala; the planned run is listed. | | |
+| MS1 | On your phone: side menu → Language → සිංහල. Production → Work shift report → start today's IM-MLD General shift. | Screens in Sinhala; the planned run is listed. | | |
 | MS2 | Enter the planned run (scan the machine and mould QR labels), counters, 20 FLASH rejects, a 15-minute power cut, the resin batch issued and 2 people. Save. | The summary shows shots, good pieces, reject % and the cycle time against standard. | | |
 | MS3 | Turn Wi-Fi off. Change the rejects and press Save. Close the browser and open the report again. Turn Wi-Fi on. | "Saved on this phone, not sent yet" appears; the page opens without Wi-Fi; on Wi-Fi it is sent by itself. | | |
 | MS4 | While your phone is offline, have someone change the same report on a PC; then go back online. | Both versions are shown; nothing is overwritten until you choose. | | |
@@ -129,7 +129,7 @@ planned for today) and the drive shaft SH-600 (job for Lanka Tea Machinery, bar 
 
 | # | Steps | Expected | Pass/Fail | Notes |
 | --- | --- | --- | --- | --- |
-| WS1 | Shift report for M-BSW: scan the SH-600 job card, operation 10; 10 cut in 30 minutes. Submit. | Saved; the job's progress shows 10 cut. | | |
+| WS1 | Work shift report for M-BSW: scan the SH-600 job card, operation 10; 10 cut in 30 minutes. Submit. | Saved; the job's progress shows 10 cut. | | |
 | WS2 | C-LAT: operation 20, 12 completed. | Refused: only 10 were released by the operation before. | | |
 | WS3 | C-LAT: operation 20, 9 completed, 1 rejected (DIMENSION). Submit. | Saved; the reject is on the job. | | |
 

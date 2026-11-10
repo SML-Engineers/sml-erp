@@ -90,7 +90,7 @@ def send(user: User, report: ShiftReport) -> None:
             report.pk,
             created_by=user,
             division=report.section.division,
-            title=f"Shift report {report.section.code} {report.day} {report.shift.name}",
+            title=f"Work shift report {report.section.code} {report.day} {report.shift.name}",
             link=f"/shift-report?report={report.pk}",
         )
     except ApprovalError as error:
@@ -398,7 +398,7 @@ def ask(user: User, report: ShiftReport, reason: str) -> ShiftCorrection:
                 fix.pk,
                 created_by=user,
                 division=report.section.division,
-                title=f"Correction: shift report {report.section.code} {report.day}",
+                title=f"Correction: work shift report {report.section.code} {report.day}",
                 link=f"/shift-report?report={report.pk}",
                 comment=reason,
             )

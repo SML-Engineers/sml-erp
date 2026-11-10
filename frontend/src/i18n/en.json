@@ -4416,7 +4416,7 @@
     "reason": "Reason for the change",
     "save": "Save",
     "reasons": "Reject and downtime reasons",
-    "reasonsHelp": "The lists supervisors choose from on the shift report, per division. A planned stop (maintenance, nothing planned) is not counted as lost time in OEE. A reason already used keeps its code; deactivate it instead of deleting it.",
+    "reasonsHelp": "The lists supervisors choose from on the work shift report, per division. A planned stop (maintenance, nothing planned) is not counted as lost time in OEE. A reason already used keeps its code; deactivate it instead of deleting it.",
     "division": "Division",
     "kind": "Kind",
     "downtime": "Downtime",
@@ -4783,7 +4783,7 @@
     "noCamera": "The camera could not be opened."
   },
   "shiftReport": {
-    "title": "Shift report",
+    "title": "Work shift report",
     "help": "Enter your section's shift: each machine's run (moulding) or each job card worked on (machining), rejects, downtime, material and manpower. You can enter during the shift and the grace period after it. Submit when the shift is done; the Production Manager then approves it.",
     "openNow": "Shifts open for entry",
     "noneOpen": "None of your sections has a shift open for entry now.",
@@ -4906,7 +4906,7 @@
   },
   "mouldMaint": {
     "title": "Mould maintenance",
-    "help": "Shot counts come from approved shift reports. A mould is due for preventive maintenance when its shots since the last one reach its interval; the Production Manager is told at 90% and at 100%.",
+    "help": "Shot counts come from approved work shift reports. A mould is due for preventive maintenance when its shots since the last one reach its interval; the Production Manager is told at 90% and at 100%.",
     "moulds": "Moulds and their next maintenance",
     "mould": "Mould",
     "shots": "Shot count",
@@ -5193,7 +5193,7 @@
     "difference": "Difference",
     "absorbed": "Production costs charged to orders",
     "unabsorbed": "Machine time charged to no order",
-    "unabsorbedHelp": "Downtime in approved shift reports, at the machine's overhead rate. This cost stays in the month's expenses.",
+    "unabsorbedHelp": "Downtime in approved work shift reports, at the machine's overhead rate. This cost stays in the month's expenses.",
     "nothing": "Nothing this month.",
     "divisionCol": "Division",
     "element": "Cost",
@@ -5251,7 +5251,7 @@
     "costToDate": "Cost to date",
     "forStock": "For stock",
     "moulding": "Moulding by machine and mould",
-    "mouldingHelp": "From approved shift reports: cycle time against the mould's standard, material and cost per good piece, and the margin on 1,000 good pieces (orders for stock have no price).",
+    "mouldingHelp": "From approved work shift reports: cycle time against the mould's standard, material and cost per good piece, and the margin on 1,000 good pieces (orders for stock have no price).",
     "from": "From",
     "to": "To",
     "mouldingTable": "Moulding by machine and mould",
@@ -5307,7 +5307,7 @@
   },
   "oee": {
     "title": "Machine OEE",
-    "help": "How well each moulding machine was used, from approved shift reports and the roster. Availability: run time out of the planned time (off days and planned stops not counted as lost). Performance: the mould's standard cycle against the actual. Quality: good pieces out of all moulded. OEE = availability × performance × quality. Choose a machine to see it day by day and shift by shift.",
+    "help": "How well each moulding machine was used, from approved work shift reports and the roster. Availability: run time out of the planned time (off days and planned stops not counted as lost). Performance: the mould's standard cycle against the actual. Quality: good pieces out of all moulded. OEE = availability × performance × quality. Choose a machine to see it day by day and shift by shift.",
     "availability": "Availability",
     "performance": "Performance",
     "quality": "Quality",
@@ -5338,11 +5338,11 @@
       "moulds": "Moulds due for maintenance"
     },
     "help": {
-      "daily": "Good and rejected pieces, run and stopped hours by day, section, machine and shift, from approved shift reports.",
+      "daily": "Good and rejected pieces, run and stopped hours by day, section, machine and shift, from approved work shift reports.",
       "rejects": "Rejected pieces grouped as you choose, with the reject % of what was made and the share of all rejects.",
       "downtime": "Stopped hours by reason and by machine, largest first, with the running total (Pareto): fix the top few first.",
       "jobs": "Machining jobs due in the dates: the routing's estimated hours against the hours on the job cards, estimated against actual cost, and whether each was completed by its due date.",
-      "material": "Moulding: what supervisors issued less returned, against the standard the approved shift reports used up; and regrind made.",
+      "material": "Moulding: what supervisors issued less returned, against the standard the approved work shift reports used up; and regrind made.",
       "moulds": "Moulds at 90% or more of their maintenance interval."
     },
     "none": "Nothing in these dates.",

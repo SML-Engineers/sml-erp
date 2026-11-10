@@ -391,12 +391,14 @@ tr.flagged {
   margin-bottom: 8px;
 }
 
+/* Owner, 10 Nov 2026: the group headings in black bold, a little larger, easy to see. */
 .menu-section h2 {
-  margin: 16px 20px 6px;
-  font-size: 0.75rem;
+  margin: 18px 20px 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-muted);
+  color: #000;
 }
 
 .menu-section ul {

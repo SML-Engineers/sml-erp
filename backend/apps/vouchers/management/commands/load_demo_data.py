@@ -13,7 +13,7 @@ every stage through goods receipt, QC and the supplier invoice. For production (
 Payroll Officer, a Production Planner, a Supervisor and a Production Manager, moulding
 employees on a day roster, two presses with hourly rates, a mould, a cap with an approved
 moulding BOM, masterbatch and bags in stock, cost rates, a released production order for the
-won sales order and a draft one for stock, and the plan for today and tomorrow, so the
+won sales order and a draft one for stock, and the plan for today and the next six days, so the
 Supervisor can enter today's shift report. For machining (P3-22 preparation): a Workshop
 supervisor for the bandsaw and CNC lathe sections, a bandsaw, a drive shaft with an approved
 routing (cut, turn) and BOM, EN8 bar in stock, cost rates, a won quotation with its costing,
@@ -107,6 +107,10 @@ def invoice_pdf(title: str, lines: list[str]) -> SimpleUploadedFile:
     page.drawString(40, 40, "DEMO INVOICE - for testing the SML ERP only")
     page.save()
     return SimpleUploadedFile(f"{title.lower().replace(' ', '-')}.pdf", out.getvalue())
+
+
+# Days of production plan the demo makes, from the load day (owner's testing, T5, 11 Nov 2026).
+DEMO_PLAN_DAYS = 7
 
 
 class Command(BaseCommand):
@@ -879,8 +883,11 @@ class Command(BaseCommand):
             },
         )
 
-        # Today's and tomorrow's plan: the order on the 250 t press for the General shift.
-        for day in (today, today + timedelta(days=1)):
+        # The plan for today and the next six days: the order on the 250 t press for the General
+        # shift, so "Planned for this shift" still shows on later testing days (owner's testing,
+        # T5).
+        for offset in range(DEMO_PLAN_DAYS):
+            day = today + timedelta(days=offset)
             plan.add(
                 planner,
                 {"day": day.isoformat(), "shift": "G", "machine": "IMM-250", "order": released.pk},

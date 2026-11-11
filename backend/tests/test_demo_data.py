@@ -3,6 +3,7 @@ services, never on production, each part once only."""
 
 import io
 import re
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -149,6 +150,10 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
     assert released.bom_lines.count() == 3 and released.dues.get().quantity == 20000
     today = timezone.localdate()
     assert PlanEntry.objects.filter(day=today, order=released).count() == 1
+    # Owner's testing (T5): a week of plan, so later testing days still have a planned run.
+    planned = PlanEntry.objects.filter(order=released, shift__code="G", machine__code="IMM-250")
+    week = [today + timedelta(days=n) for n in range(7)]
+    assert sorted(planned.values_list("day", flat=True)) == week
     assert rates.labour_on(section) == Decimal("450")
     assert set(OpeningStock.objects.values_list("status", flat=True)) == {"posted"}
     assert plan.board(people.get(email="planner@demo.sml.lk"), today.isoformat(), 1)["entries"]

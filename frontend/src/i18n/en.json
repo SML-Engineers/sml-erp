@@ -5417,5 +5417,21 @@
     "accuracy": "Estimate accuracy",
     "accuracyHelp_one": "Over {{count}} closed order estimated from a quotation. A plus means it cost more than quoted.",
     "accuracyHelp_other": "Over {{count}} closed orders estimated from a quotation. A plus means it cost more than quoted."
+  },
+  "pd": {
+    "title": "Production",
+    "shiftReports": "Shift reports to approve",
+    "corrections_one": "{{count}} correction asked for",
+    "corrections_other": "{{count}} corrections asked for",
+    "issueMore": "Requests to issue more",
+    "issueMoreDetail": "Material beyond what the job may use",
+    "deviations": "Inspection decisions",
+    "deviationsDetail": "Jobs held by a failed inspection",
+    "engineering": "BOMs and routings to approve",
+    "engineeringDetail": "{{boms}} BOMs, {{routings}} routings",
+    "madeToday": "Good pieces made today",
+    "madeDetail": "{{rejected}} rejected ({{pct}}%), {{hours}} h downtime; approved reports only",
+    "mouldsDue": "Moulds due for maintenance",
+    "mouldsDetail": "Due or close by shots"
   }
 }

@@ -21,6 +21,7 @@ from . import (
     boms,
     closing,
     costs,
+    dashboard,
     job_cards,
     job_inspections,
     jobs,
@@ -672,6 +673,9 @@ class ProductionReportView(APIView):
                 body = {"rows": reports.moulds_due(user)}
             elif kind == "sections":
                 body = {"sections": reports.sections(user)}
+            elif kind == "dashboard":
+                # The Production Manager's home page (owner, 11 Nov 2026).
+                body = dashboard.dashboard(user)
             else:
                 return Response({"detail": "Unknown report."}, status=404)
         except reports.ReportError as error:

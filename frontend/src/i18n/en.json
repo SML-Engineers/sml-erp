@@ -5140,7 +5140,8 @@
     "transferNotes": "Notes (optional)",
     "transferIt": "Post the transfer",
     "transferred": "Transferred on {{date}}: journal {{journal}}",
-    "assetMade": "Fixed asset {{asset}} registered; its depreciation terms are waiting for the Director."
+    "assetMade": "Fixed asset {{asset}} registered; its depreciation terms are waiting for the Director.",
+    "otherItem": "Another item…"
   },
   "costs": {
     "title": "Costs so far",

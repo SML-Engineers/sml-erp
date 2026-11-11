@@ -630,6 +630,10 @@ Status: `[ ]` to do · `[x]` done
     drive shaft SH-600 with an approved routing and BOM, EN8 bar in stock, cost rates, a won
     and costed quotation for Lanka Tea Machinery, the confirmed sales order and a released
     job with bar issued. On a PC with the earlier demo data, running it again adds only this.
+  - Owner, 11 Nov 2026 (from his testing, T5): the demo plan covered only the load day and
+    the next day, so on later days the shift report showed no "Planned for this shift".
+    `load_demo_data` now plans CAP-38 on IMM-250, General shift, for the load day and the
+    next six days (`DEMO_PLAN_DAYS = 7`). A PC that already has the demo keeps its plan.
 
 ---
 

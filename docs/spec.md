@@ -1513,6 +1513,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Plan move after removal (owner's testing, 11 Nov 2026) | Removing a run closes its Move box; moving or removing a run that has gone says "This run is no longer in the plan", closes the box and reloads the plan; no API error shows Django's "No <record> matches the given query." (a plain "This record is no longer here" instead) | 7.3 |
 | Demo plan for a week (owner's testing, 11 Nov 2026) | The demo data plans the moulding order for the load day and the next six days, so later testing days still show a planned run | 7.3 |
 | Machines without a shift supervisor (owner's testing, 11 Nov 2026) | The production plan marks a machine whose section has no active shift supervisor (its runs would reach no work shift report), beside the machine and when it is chosen; planning there is still allowed | 7.3 |
+| Ask to issue more: choose the material (owner's testing, 11 Nov 2026) | The material for a request to issue more is chosen from the job's materials; "Another item…" lets a material not on the job be typed | 7.2 |
 
 **Still needed for initial setup**
 

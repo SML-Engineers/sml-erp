@@ -355,6 +355,10 @@ Status: `[ ]` to do · `[x]` done
     no request waiting. Jobs never deleted, issue links insert-only, decided requests never
     change (database). Our choices: materials stay fixed after release (the extra goes
     through a request); the stores person or the Planner may ask for more.
+  - Owner, 11 Nov 2026 (from his testing, W9): in "Ask to issue more", the item code was a
+    typed box. It is now a list of the job's materials (code, name, how much is left), with
+    "Another item…" opening the typed box for a material not on the job. A wrong code was
+    already refused ("Choose the stock item.").
 
 - [x] **P3-12 Job cards and operation entry**
   A printed job card per operation with a QR code (spec 7.2), travelling with the parts. The

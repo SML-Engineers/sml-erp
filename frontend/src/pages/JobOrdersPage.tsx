@@ -712,13 +712,20 @@ function Lots(props: { job: JobOrder; store: number; item: string; value: string
   );
 }
 
+// Owner's testing (11 Nov 2026): the item is chosen from the job's materials, so a typo can't
+// happen; "Another item…" opens a box for a material that isn't on the job.
+const OTHER = "__other";
+
 function AskMore({ job, onSaved }: { job: JobOrder; onSaved: (j: JobOrder) => void }) {
   const { t } = useTranslation();
   const [values, setValues] = useState({ item: "", quantity: "", reason: "" });
+  const [choice, setChoice] = useState("");
+  const materials = job.materials.filter((m, i, all) => m.component && all.findIndex((x) => x.component === m.component) === i);
   const save = useMutation({
-    mutationFn: () => jobAction(job.id, "ask-more", values),
+    mutationFn: () => jobAction(job.id, "ask-more", { ...values, item: choice === OTHER ? values.item : choice }),
     onSuccess: (j) => {
       setValues({ item: "", quantity: "", reason: "" });
+      setChoice("");
       onSaved(j);
     },
   });
@@ -729,9 +736,25 @@ function AskMore({ job, onSaved }: { job: JobOrder; onSaved: (j: JobOrder) => vo
       <p className="muted">{t("job.askMoreHelp")}</p>
       <div className="inline-form">
         <label>
-          {t("job.itemCode")}
-          <input value={values.item} onChange={set("item")} />
+          {t("job.material")}
+          <select value={choice} onChange={(e) => setChoice(e.target.value)}>
+            <option value="">{t("job.choose")}</option>
+            {materials.map((m) => (
+              <option key={m.component} value={m.component}>
+                {m.left === undefined
+                  ? `${m.component} ${m.name}`
+                  : t("job.materialOption", { code: m.component, name: m.name, left: formatDecimal(m.left), unit: m.unit })}
+              </option>
+            ))}
+            <option value={OTHER}>{t("job.otherItem")}</option>
+          </select>
         </label>
+        {choice === OTHER && (
+          <label>
+            {t("job.itemCode")}
+            <input value={values.item} onChange={set("item")} />
+          </label>
+        )}
         <label>
           {t("job.extraQuantity")}
           <input inputMode="decimal" value={values.quantity} onChange={set("quantity")} />

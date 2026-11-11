@@ -455,3 +455,39 @@ test("the Accountant transfers a completed mould repair at cost", async () => {
   );
   expect(await within(panel).findByText("Transferred on 2026-11-09: journal JE26110042")).toBeInTheDocument();
 });
+
+test("asking to issue more: the material is chosen from the job's list, or typed for another item", async () => {
+  // Owner's testing (11 Nov 2026): a typed item code invited typos.
+  const calls = mockApi({
+    "GET /api/v1/job-orders/waiting/": { body: { results: [] } },
+    "GET /api/v1/job-orders/?q=&status=open&purpose=": { body: list },
+    "GET /api/v1/job-orders/7/": { body: { ...job, can_ask_more: true } },
+    "POST /api/v1/job-orders/7/ask-more/": { body: { ...job, can_ask_more: true } },
+  });
+  renderAt("/job-orders?job=7", <JobOrdersPage />, "/job-orders");
+  const panel = await screen.findByRole("region", { name: "Ask to issue more" });
+  const material = within(panel).getByLabelText("Material");
+  expect(within(material).getByRole("option", { name: "EN8-50 EN8 bar 50 mm (7 kg left)" })).toBeInTheDocument();
+  expect(within(panel).queryByLabelText("Item code")).not.toBeInTheDocument();
+  fireEvent.change(material, { target: { value: "EN8-50" } });
+  fireEvent.change(within(panel).getByLabelText("Extra quantity"), { target: { value: "5" } });
+  fireEvent.change(within(panel).getByLabelText("Reason"), { target: { value: "Two pieces scrapped at setup" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Send to the Production Manager" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/job-orders/7/ask-more/",
+      expect.objectContaining({ body: JSON.stringify({ item: "EN8-50", quantity: "5", reason: "Two pieces scrapped at setup" }) }),
+    ),
+  );
+  fireEvent.change(within(panel).getByLabelText("Material"), { target: { value: "__other" } });
+  fireEvent.change(within(panel).getByLabelText("Item code"), { target: { value: "en8-45" } });
+  fireEvent.change(within(panel).getByLabelText("Extra quantity"), { target: { value: "2" } });
+  fireEvent.change(within(panel).getByLabelText("Reason"), { target: { value: "Spare bar" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Send to the Production Manager" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/job-orders/7/ask-more/",
+      expect.objectContaining({ body: JSON.stringify({ item: "en8-45", quantity: "2", reason: "Spare bar" }) }),
+    ),
+  );
+});

@@ -326,6 +326,11 @@ def board(user: User, start=None, days=None) -> dict:
         .select_related("section")
         .order_by("code")
     )
+    supervised = set(
+        Section.supervisors.through.objects.filter(
+            section__in={m.section_id for m in machines}, user__is_active=True
+        ).values_list("section_id", flat=True)
+    )
     released = orders.visible(user).filter(status=St.RELEASED).order_by("number")
     planned = dict(
         PlanEntry.objects.filter(order__in=released)
@@ -346,6 +351,9 @@ def board(user: User, start=None, days=None) -> dict:
                 "name": m.name,
                 "section": m.section.code,
                 "status": m.status,
+                # Owner's testing (T4): without a supervisor, nobody gets this machine's work
+                # shift report, so its runs are never reported.
+                "supervised": m.section_id in supervised,
             }
             for m in machines
         ],

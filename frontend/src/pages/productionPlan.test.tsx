@@ -33,8 +33,8 @@ const board: PlanBoard = {
     { code: "N", name: "Night", minutes: 660 },
   ],
   machines: [
-    { code: "IMM-250", name: "Haitian 250 t", section: "IM-MLD", status: "active" },
-    { code: "IMM-90", name: "Haitian 90 t", section: "IM-MLD", status: "maintenance" },
+    { code: "IMM-250", name: "Haitian 250 t", section: "IM-MLD", status: "active", supervised: true },
+    { code: "IMM-90", name: "Haitian 90 t", section: "IM-MLD", status: "maintenance", supervised: false },
   ],
   entries: [entry],
   orders: [
@@ -149,4 +149,21 @@ test("moving a run that has gone shows a plain message and closes the Move box",
   expect(await screen.findByRole("status")).toHaveTextContent("This run is no longer in the plan, so it was not moved.");
   expect(screen.queryByRole("form", { name: "Move MO26110001" })).not.toBeInTheDocument();
   expect(screen.queryByText(/matches the given query/)).not.toBeInTheDocument();
+});
+
+test("a machine whose section has no shift supervisor is flagged", async () => {
+  // Owner's testing (T4, 10 Nov 2026): runs on such a machine never reach a work shift report.
+  mockApi({ [`GET ${URL}`]: { body: board } });
+  renderAt("/production-plan", <ProductionPlanPage />);
+  const day = await screen.findByRole("table", { name: /2026/ });
+  const rows = within(day).getAllByRole("row");
+  const note = "No shift supervisor in section IM-MLD: runs on this machine won't reach a work shift report.";
+  expect(within(rows.find((r) => r.textContent?.includes("IMM-90"))!).getByText(note)).toBeInTheDocument();
+  expect(within(rows.find((r) => r.textContent?.includes("IMM-250"))!).queryByText(note)).not.toBeInTheDocument();
+  const form = screen.getByRole("form", { name: "Plan an order" });
+  expect(within(form).queryByRole("status")).not.toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Machine"), { target: { value: "IMM-90" } });
+  expect(within(form).getByRole("status")).toHaveTextContent(note);
+  fireEvent.change(within(form).getByLabelText("Machine"), { target: { value: "IMM-250" } });
+  expect(within(form).queryByRole("status")).not.toBeInTheDocument();
 });

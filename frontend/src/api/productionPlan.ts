@@ -24,7 +24,7 @@ export interface PlanBoard {
   first: string;
   days: string[];
   shifts: { code: string; name: string; minutes: number }[];
-  machines: { code: string; name: string; section: string; status: string }[];
+  machines: { code: string; name: string; section: string; status: string; supervised: boolean }[];
   entries: PlanEntry[];
   orders: {
     id: number;

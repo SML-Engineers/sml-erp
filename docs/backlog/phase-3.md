@@ -229,6 +229,12 @@ Status: `[ ]` to do · `[x]` done
     the box and reloads the plan (English and Sinhala). Elsewhere in the API, Django's
     "No <record> matches the given query." is replaced by "This record is no longer here. It
     may have been removed; reload the page."
+  - Owner, 11 Nov 2026 (from his testing, T4): a run planned on a machine whose section has
+    no shift supervisor never reaches a work shift report, and the plan gave no sign of it.
+    The plan board now marks such machines (`supervised` per machine: the section has an
+    active supervisor), and the page says "No shift supervisor in section …: runs on this
+    machine won't reach a work shift report." beside the machine and when it is chosen in
+    the Plan or Move box (English and Sinhala). Planning there is still allowed.
 
 - [x] **P3-08 Moulding shift report (supervisor)**
   Phone and tablet page (spec 7.4) for the sections assigned to the supervisor: per machine,

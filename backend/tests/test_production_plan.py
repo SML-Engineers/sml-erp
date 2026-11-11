@@ -205,6 +205,25 @@ def test_other_missing_records_never_show_model_names(planner):  # noqa: F811
     assert (missing.status_code, missing.json()) == (404, {"detail": GONE})
 
 
+def test_machines_of_a_section_without_a_supervisor_are_flagged(planner, presses):  # noqa: F811
+    """Owner's testing (T4, 10 Nov 2026): a run planned on a machine whose section has no shift
+    supervisor never reached a work shift report, with no sign of it on the plan."""
+
+    def flags():
+        machines = as_user(planner).get(f"{URL}?start={TODAY}&days=1").json()["machines"]
+        return {m["code"]: m["supervised"] for m in machines}
+
+    assert flags() == {"IMM-250": False, "IMM-90": False}
+    supervisor = person("sup2@sml.lk", "production_supervisor", divisions=["IM"])
+    section = Section.objects.get(code="IM-MLD")
+    section.supervisors.add(supervisor)
+    assert flags() == {"IMM-250": True, "IMM-90": True}
+    # A supervisor who has left (deactivated) does not count.
+    supervisor.is_active = False
+    supervisor.save()
+    assert flags() == {"IMM-250": False, "IMM-90": False}
+
+
 def test_a_past_day_never_changes(planner, released, presses):  # noqa: F811
     today = entry(planner, released, day=TODAY)
     # As if it had been planned yesterday.

@@ -134,6 +134,7 @@ function Day({
                 <td>
                   {m.code} <span className="muted small">{m.name}</span>
                   {m.status === "maintenance" && <span className="muted small"> {t("plan.maintenance")}</span>}
+                  {!m.supervised && <div className="warning-text">{t("plan.noSupervisor", { section: m.section })}</div>}
                 </td>
                 {board.shifts.map((s) => (
                   <td key={s.code}>
@@ -198,6 +199,7 @@ function EntryForm({
       ? { day: moving.day, shift: moving.shift, machine: moving.machine, minutes: String(moving.minutes) }
       : { day: board.days[0], shift: board.shifts[0]?.code ?? "", machine: "", order: undefined, minutes: "", notes: "" },
   );
+  const unsupervised = board.machines.find((m) => m.code === values.machine && !m.supervised);
   const save = useMutation({
     mutationFn: () => (moving ? moveEntry(moving.id, values) : addEntry(values)),
     onSuccess: () => {
@@ -267,6 +269,11 @@ function EntryForm({
             ))}
           </select>
         </label>
+        {unsupervised && (
+          <p className="warning-text wide" role="status">
+            {t("plan.noSupervisor", { section: unsupervised.section })}
+          </p>
+        )}
         <label>
           {t("plan.plannedMinutes")}
           <input inputMode="numeric" value={values.minutes} onChange={set("minutes")} placeholder={t("plan.wholeShift")} />

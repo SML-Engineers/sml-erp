@@ -4776,7 +4776,8 @@
     "copyButton": "Copy",
     "copied_one": "{{count}} run copied.",
     "copied_other": "{{count}} runs copied.",
-    "runGone": "This run is no longer in the plan, so it was not moved. It may have been removed; the plan has been reloaded."
+    "runGone": "This run is no longer in the plan, so it was not moved. It may have been removed; the plan has been reloaded.",
+    "noSupervisor": "No shift supervisor in section {{section}}: runs on this machine won't reach a work shift report."
   },
   "scan": {
     "scan": "Scan",

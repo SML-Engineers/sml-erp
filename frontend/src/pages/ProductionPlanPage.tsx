@@ -37,6 +37,19 @@ export default function ProductionPlanPage() {
   const [start, setStart] = useState(today());
   const [days, setDays] = useState(3);
   const [moving, setMoving] = useState<PlanEntry | null>(null);
+  // Owner's testing (T1): a run removed while its Move box is open closes the box with a plain note.
+  const [gone, setGone] = useState(false);
+  const startMove = (e: PlanEntry) => {
+    setGone(false);
+    setMoving(e);
+  };
+  const removed = (id: number) => {
+    if (moving?.id === id) setMoving(null);
+  };
+  const moveFailed = () => {
+    setMoving(null);
+    setGone(true);
+  };
   const found = useQuery({ queryKey: [...planKey, start, days], queryFn: () => getPlan(start, days) });
   const d = found.data;
   return (
@@ -62,9 +75,16 @@ export default function ProductionPlanPage() {
       <ErrorLine error={found.error} />
       {d && (
         <>
-          {d.can_plan && <EntryForm key={moving?.id ?? "new"} board={d} moving={moving} onDone={() => setMoving(null)} />}
+          {gone && (
+            <p className="notice" role="status">
+              {t("plan.runGone")}
+            </p>
+          )}
+          {d.can_plan && (
+            <EntryForm key={moving?.id ?? "new"} board={d} moving={moving} onDone={() => setMoving(null)} onGone={moveFailed} />
+          )}
           {d.days.map((day) => (
-            <Day key={day} day={day} board={d} onMove={setMoving} />
+            <Day key={day} day={day} board={d} onMove={startMove} onRemoved={removed} />
           ))}
           {d.can_plan && <Orders board={d} />}
           {d.can_plan && <CopyDay />}
@@ -74,12 +94,25 @@ export default function ProductionPlanPage() {
   );
 }
 
-function Day({ day, board, onMove }: { day: string; board: PlanBoard; onMove: (e: PlanEntry) => void }) {
+function Day({
+  day,
+  board,
+  onMove,
+  onRemoved,
+}: {
+  day: string;
+  board: PlanBoard;
+  onMove: (e: PlanEntry) => void;
+  onRemoved: (id: number) => void;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const remove = useMutation({
     mutationFn: removeEntry,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: planKey }),
+    onSuccess: (_, id) => {
+      onRemoved(id);
+      queryClient.invalidateQueries({ queryKey: planKey });
+    },
   });
   const entries = board.entries.filter((e) => e.day === day);
   return (
@@ -147,7 +180,17 @@ function Day({ day, board, onMove }: { day: string; board: PlanBoard; onMove: (e
   );
 }
 
-function EntryForm({ board, moving, onDone }: { board: PlanBoard; moving: PlanEntry | null; onDone: () => void }) {
+function EntryForm({
+  board,
+  moving,
+  onDone,
+  onGone,
+}: {
+  board: PlanBoard;
+  moving: PlanEntry | null;
+  onDone: () => void;
+  onGone: () => void;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [values, setValues] = useState<EntryValues>(
@@ -161,6 +204,13 @@ function EntryForm({ board, moving, onDone }: { board: PlanBoard; moving: PlanEn
       queryClient.invalidateQueries({ queryKey: planKey });
       if (!moving) setValues({ ...values, minutes: "", notes: "" });
       onDone();
+    },
+    onError: (error) => {
+      // The run was removed (here or by someone else) while it was being moved.
+      if (moving && error instanceof ApiError && error.status === 404) {
+        queryClient.invalidateQueries({ queryKey: planKey });
+        onGone();
+      }
     },
   });
   const set = (key: keyof EntryValues) => (e: { target: { value: string } }) => setValues({ ...values, [key]: e.target.value });

@@ -222,6 +222,13 @@ Status: `[ ]` to do · `[x]` done
   plan when their order is completed or cancelled. **Supervisors** (shop floor) see the
   plan of their own sections, read only; `GET /production-plan/mine/` gives today's and
   tomorrow's runs for their entry page (P3-08).
+  - Owner, 11 Nov 2026 (from his testing, T1): pressing Remove on a run while its Move box
+    was open, then "Save the move", showed Django's "No PlanEntry matches the given query."
+    Now removing the run closes its Move box, and a move or removal of a run that has gone
+    (removed here or by someone else) says plainly "This run is no longer in the plan", closes
+    the box and reloads the plan (English and Sinhala). Elsewhere in the API, Django's
+    "No <record> matches the given query." is replaced by "This record is no longer here. It
+    may have been removed; reload the page."
 
 - [x] **P3-08 Moulding shift report (supervisor)**
   Phone and tablet page (spec 7.4) for the sections assigned to the supervisor: per machine,

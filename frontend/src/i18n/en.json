@@ -4775,7 +4775,8 @@
     "copyTo": "To",
     "copyButton": "Copy",
     "copied_one": "{{count}} run copied.",
-    "copied_other": "{{count}} runs copied."
+    "copied_other": "{{count}} runs copied.",
+    "runGone": "This run is no longer in the plan, so it was not moved. It may have been removed; the plan has been reloaded."
   },
   "scan": {
     "scan": "Scan",

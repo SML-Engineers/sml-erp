@@ -146,6 +146,8 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     # Money and quantities travel as strings, so no floating point rounding (rule 1).
     "COERCE_DECIMAL_TO_STRING": True,
+    # Plain wording instead of "No <Model> matches the given query." (owner's testing, T1).
+    "EXCEPTION_HANDLER": "apps.core.exceptions.plain_exception_handler",
     # Extra brake on sign-in attempts from one address, on top of the account lock.
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {"login": env("LOGIN_RATE", default="20/minute")},

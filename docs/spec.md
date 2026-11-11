@@ -1510,6 +1510,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Shop-floor Sinhala (P3-21 part 1) | Sinhala wording (machine translation, owner to have it checked) for the shift report, production plan, menu, sign-in, notifications and tables; language chosen on the sign-in page or side menu and kept on the device; untranslated text falls back to English | 3A, 7.4 |
 | Offline shift report entry (P3-21 part 2) | Saves kept on the phone without a connection, sent when it returns, with a status line; a save on an older version refused (409) and both versions shown for the supervisor to choose; the page opens offline from a kept copy (service worker for the app files only); kept data cleared on signing out | 7.4 |
 | Owner's wording from testing (10 Nov 2026) | The shift report is called **Work shift report** (Sinhala **වැඩ මුර වාර්තාව**; "shift" is මුරය throughout the Sinhala); every side-menu heading and page name, and the home page, in Sinhala (the pages themselves stay English except the shop-floor ones); side-menu headings in black bold, a little larger | 7.4 |
+| Plan move after removal (owner's testing, 11 Nov 2026) | Removing a run closes its Move box; moving or removing a run that has gone says "This run is no longer in the plan", closes the box and reloads the plan; no API error shows Django's "No <record> matches the given query." (a plain "This record is no longer here" instead) | 7.3 |
 
 **Still needed for initial setup**
 

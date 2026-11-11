@@ -5,6 +5,7 @@ import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { getHealth } from "../api/health";
 import FinancialDashboard from "../components/FinancialDashboard";
+import ProductionDashboard from "../components/ProductionDashboard";
 import PurchasingDashboard from "../components/PurchasingDashboard";
 import SalesDashboard from "../components/SalesDashboard";
 import VouchersDashboard from "../components/VouchersDashboard";
@@ -19,20 +20,24 @@ export default function HomePage({ user }: { user: CurrentUser }) {
   else if (health.isError) status = t("home.unreachable");
   else status = health.data.status === "ok" ? t("home.ok") : t("home.degraded");
 
+  // Owner, 11 Nov 2026: the Production Manager sees production on the home page, not the sales
+  // and purchasing summaries they can only look at (they still open those pages from the menu).
+  const production = can(user.access, "production_approvals", "approve");
+  const onlyViews = (area: string) => !can(user.access, area, "enter") && !can(user.access, area, "approve");
+
   return (
     <main className="page">
       <h1>{t("menu.dashboard")}</h1>
       <section className="panel">
         <p>{t("home.welcome", { name: user.full_name })}</p>
         <p role="status">{status}</p>
-        {health.data && (
-          <p className="muted">{t("home.version", { version: health.data.version })}</p>
-        )}
+        {health.data && <p className="muted">{t("home.version", { version: health.data.version })}</p>}
       </section>
       {can(user.access, "financial_reports", "view") && <FinancialDashboard />}
       {can(user.access, "vouchers", "view") && <VouchersDashboard me={user} />}
-      {can(user.access, "sales", "view") && <SalesDashboard />}
-      {can(user.access, "purchasing", "view") && <PurchasingDashboard />}
+      {production && <ProductionDashboard />}
+      {can(user.access, "sales", "view") && !(production && onlyViews("sales")) && <SalesDashboard />}
+      {can(user.access, "purchasing", "view") && !(production && onlyViews("purchasing")) && <PurchasingDashboard />}
     </main>
   );
 }

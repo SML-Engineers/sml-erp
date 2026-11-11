@@ -586,6 +586,13 @@ Status: `[ ]` to do · `[x]` done
     (orders for stock or internal work have no revenue and are counted apart); **estimate
     accuracy**: estimate against actual by element over the orders estimated from a
     quotation, with the variance and its %, and the material price and usage totals.
+  - Owner, 11 Nov 2026 (from his testing): the Production Manager's home page showed the
+    sales and purchasing summaries (the role may only view those areas). It now shows a
+    Production panel instead: shift reports and corrections waiting for them, requests to
+    issue more, inspection decisions, BOMs and routings to approve, good pieces made today
+    (approved reports) and moulds due (`GET /api/v1/production-reports/dashboard/`). The
+    panel shows to whoever may approve production; the sales and purchasing summaries are
+    hidden from them only where they can just view those areas.
 
 - [x] **P3-21 Shop-floor languages and offline entry**
   The supervisor pages in Sinhala and Tamil (translations supplied or approved by the

@@ -83,3 +83,15 @@ export function getProductionReport<T>(kind: ReportKind | "sections", params: Re
   const text = query.toString();
   return apiGet<T>(`/production-reports/${kind}/${text ? `?${text}` : ""}`);
 }
+
+/** The Production Manager's dashboard (owner, 11 Nov 2026): what waits for them, and today's output. */
+export interface ProductionDashboardData {
+  today: string;
+  waiting: { shift_reports: number; corrections: number; issue_more: number; deviations: number; boms: number; routings: number };
+  made_today: { good: string; rejected: string; reject_pct: string | null; run_h: string | null; stopped_h: string | null };
+  moulds_due: number;
+}
+
+export function getProductionDashboard() {
+  return apiGet<ProductionDashboardData>("/production-reports/dashboard/");
+}

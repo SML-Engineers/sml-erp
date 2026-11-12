@@ -1518,6 +1518,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Delivery refused for stock: plain wording (owner's testing, 12 Nov 2026) | A delivery note refused for too little finished stock gives the quantity in stock and the quantity asked for in plain figures, and says to finish or approve more production first | 7.7 |
 | Production Planner's dashboard (owner, 12 Nov 2026) | The Production Planner's home page shows the Production panel instead of the sales and purchasing figures, as the Production Manager's does | 7.6 |
 | Supervisors only in their own sections (owner's testing, 12 Nov 2026) | A Production Supervisor sees and enters only the sections they supervise or are assigned to, even with "All sections" ticked: work shift report, production plan, production reports and the report builder's shift data | 7.4 |
+| Demo workshop operators (owner, 12 Nov 2026) | The demo data adds four made-up workshop operators (two on M-BSW, two on C-LAT); a PC with the earlier demo gets just them when the demo is loaded again | 7.4 |
 
 **Still needed for initial setup**
 

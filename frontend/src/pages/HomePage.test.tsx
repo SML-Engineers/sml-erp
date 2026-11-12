@@ -74,3 +74,30 @@ test("viewing production reports alone does not bring the Production Manager's t
   await screen.findByText("System status: OK");
   expect(screen.queryByRole("region", { name: "Production" })).not.toBeInTheDocument();
 });
+
+test("the Production Planner also sees production, not the sales and purchasing figures", async () => {
+  // Owner, 12 Nov 2026.
+  mockApi({
+    "GET /api/v1/health/": { body: { status: "ok", database: "ok", version: "0.1.0" } },
+    "GET /api/v1/production-reports/dashboard/": { body: production },
+  });
+  const planner = {
+    ...sampleUser,
+    access: {
+      areas: {
+        dashboard: ["view"],
+        sales: ["view"],
+        purchasing: ["view"],
+        stores: ["view"],
+        production_planning: ["enter", "view"],
+        production_approvals: ["view"],
+      },
+      actions: [],
+      divisions: "all",
+    },
+  } as typeof sampleUser;
+  renderAt("/dashboard", <HomePage user={planner} />);
+  expect(await screen.findByRole("region", { name: "Production" })).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Sales" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Purchasing and stores" })).not.toBeInTheDocument();
+});

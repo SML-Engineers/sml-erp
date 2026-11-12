@@ -36,7 +36,6 @@ from apps.core.audit import audit_context
 from apps.core.models import User
 from apps.inventory.models import Item, StockMovement
 from apps.masters.models import Machine, Section, Shift
-from apps.masters.services import section_scope
 from apps.payroll.models import Employee
 
 from . import job_cards, plan
@@ -84,13 +83,13 @@ REPORTED = (Section.Type.MOULDING, Section.Type.MACHINING)
 
 def sections(user: User):
     """The moulding and machining (P3-12) sections the user supervises (or may work in)."""
-    return section_scope(user).filter(section_type__in=REPORTED, is_active=True)
+    return plan.work_sections(user).filter(section_type__in=REPORTED, is_active=True)
 
 
 def visible(user: User):
     found = ShiftReport.objects.select_related("section", "shift", "created_by", "submitted_by")
     if plan.own_sections_only(user):
-        return found.filter(section__in=section_scope(user))
+        return found.filter(section__in=plan.own_sections(user))
     return found.filter(section__division__in=division_scope(user))
 
 

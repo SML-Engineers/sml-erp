@@ -113,8 +113,8 @@ def _moulding_runs(user: User) -> QuerySet:
     from django.db.models import IntegerField, OuterRef, Subquery
     from django.db.models.functions import Coalesce
 
-    from apps.masters.services import section_scope
     from apps.production.models import MouldingRun, RejectEntry
+    from apps.production.plan import work_sections
 
     rejected = (
         RejectEntry.objects.filter(run=OuterRef("pk"))
@@ -123,7 +123,7 @@ def _moulding_runs(user: User) -> QuerySet:
         .values("t")
     )
     return MouldingRun.objects.filter(
-        report__status="approved", report__section__in=section_scope(user)
+        report__status="approved", report__section__in=work_sections(user)
     ).annotate(
         hours=_hours(),
         shot_count=F("end_counter") - F("start_counter"),
@@ -132,20 +132,20 @@ def _moulding_runs(user: User) -> QuerySet:
 
 
 def _downtime(user: User) -> QuerySet:
-    from apps.masters.services import section_scope
     from apps.production.models import DowntimeEntry
+    from apps.production.plan import work_sections
 
     return DowntimeEntry.objects.filter(
-        report__status="approved", report__section__in=section_scope(user)
+        report__status="approved", report__section__in=work_sections(user)
     ).annotate(hours=_hours())
 
 
 def _job_cards(user: User) -> QuerySet:
-    from apps.masters.services import section_scope
     from apps.production.models import JobCardEntry
+    from apps.production.plan import work_sections
 
     return JobCardEntry.objects.filter(
-        report__status="approved", report__section__in=section_scope(user)
+        report__status="approved", report__section__in=work_sections(user)
     ).annotate(hours=_hours())
 
 

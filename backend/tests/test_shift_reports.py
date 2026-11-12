@@ -263,6 +263,33 @@ def test_only_the_sections_own_supervisor(clock, press, released, supervisor):
         shift_reports.submit(supervisor, report)
 
 
+def test_a_supervisor_gets_only_their_sections_even_with_all_sections_ticked(
+    clock, press, released, supervisor
+):
+    """Owner's testing (R2, 12 Nov 2026): the Workshop supervisor, with "All sections" ticked
+    (as every person is by default), could start the moulding section's report."""
+    workshop = person("ws@sml.lk", "production_supervisor", all_divisions=True)
+    assert workshop.all_sections is True
+    Section.objects.get(code="C-LAT").supervisors.add(workshop)
+    assert {s["section"] for s in shift_reports.open_shifts(workshop)} == {"C-LAT"}
+    with pytest.raises(ShiftReportError, match="Choose one of your sections"):
+        shift_reports.open_report(workshop, {"section": "IM-MLD", "shift": "G", "day": TODAY})
+    moulding = shift_reports.open_report(
+        supervisor, {"section": "IM-MLD", "shift": "G", "day": TODAY}
+    )
+    assert as_user(workshop).get(f"{URL}{moulding.pk}/").status_code == 404
+    assert moulding.pk not in {r["id"] for r in as_user(workshop).get(URL).json()["recent"]}
+    # The moulding presses are not on their plan either.
+    plan_board = as_user(workshop).get(f"/api/v1/production-plan/?start={TODAY}&days=1").json()
+    assert plan_board["machines"] == []
+    # Nor in their production reports.
+    sections = as_user(workshop).get("/api/v1/production-reports/sections/").json()["sections"]
+    assert {s["code"] for s in sections} == {"C-LAT"}
+    # Someone who plans or approves still sees every section of their divisions.
+    pm = person("pm3@sml.lk", "production_manager", all_divisions=True)
+    assert as_user(pm).get(f"{URL}{moulding.pk}/").status_code == 200
+
+
 def test_material_and_manpower_are_checked(report, supervisor, released):
     for materials, message in [
         ([{"kind": "gift", "lot_no": "L1", "quantity": "1"}], "issued, returned or regrind"),

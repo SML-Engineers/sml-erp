@@ -8,6 +8,7 @@ import FinancialDashboard from "../components/FinancialDashboard";
 import ProductionDashboard from "../components/ProductionDashboard";
 import PurchasingDashboard from "../components/PurchasingDashboard";
 import WaitingPanel from "../components/WaitingPanel";
+import SupervisorDashboard from "../components/SupervisorDashboard";
 import SalesDashboard from "../components/SalesDashboard";
 import VouchersDashboard from "../components/VouchersDashboard";
 
@@ -39,6 +40,8 @@ export default function HomePage({ user }: { user: CurrentUser }) {
       {can(user.access, "vouchers", "view") && <VouchersDashboard me={user} />}
       <WaitingPanel />
       {production && <ProductionDashboard />}
+      {/* Owner, 12 Nov 2026: a shop-floor supervisor's own sections. */}
+      {!production && can(user.access, "shop_floor", "enter") && <SupervisorDashboard />}
       {can(user.access, "sales", "view") && !(production && onlyViews("sales")) && <SalesDashboard />}
       {can(user.access, "purchasing", "view") && !(production && onlyViews("purchasing")) && <PurchasingDashboard />}
     </main>

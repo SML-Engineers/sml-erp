@@ -1487,3 +1487,15 @@ html:lang(si) {
 td.nowrap {
   white-space: nowrap;
 }
+
+/* The supervisor's dashboard (owner, 12 Nov 2026): plain lists that read well on a phone. */
+ul.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+ul.plain-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid #e5e7eb;
+}

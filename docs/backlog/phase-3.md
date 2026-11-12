@@ -616,6 +616,12 @@ Status: `[ ]` to do · `[x]` done
     sales and purchasing figures (order values). He now gets the same Production panel as
     the Production Manager instead: the panel shows to whoever may approve production or
     enter production planning.
+  - Owner, 12 Nov 2026: a dashboard for the shop-floor supervisor (Moulding Supervisor), for
+    their own sections only: the shifts open for entry and how far each report has got,
+    reports still to finish (draft or returned, last 7 days), today's and tomorrow's plan on
+    their machines, good pieces made yesterday and today (approved reports) and moulds due
+    (`GET /api/v1/production-reports/supervisor/`). Shown to whoever may enter shop-floor
+    reports and doesn't get the Production panel; in English and Sinhala.
 
 - [x] **P3-21 Shop-floor languages and offline entry**
   The supervisor pages in Sinhala and Tamil (translations supplied or approved by the

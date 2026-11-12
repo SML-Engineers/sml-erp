@@ -671,6 +671,10 @@ Status: `[ ]` to do · `[x]` done
     operators (E201–E202 on M-BSW, E203–E204 on C-LAT), so the Operator list of a workshop
     shift report is not empty. They are their own demo part (`workshop_operators`, loaded
     when E201 is missing), so a PC with the earlier demo gets just them on the next run.
+  - Owner, 13 Nov 2026 (from his testing, W10): the demo had no inspection plan for the drive
+    shaft, so he typed the check in himself. `load_demo_data` now adds QC's plan for SH-600
+    (Diameter 44.95–45.05 mm, critical) as its own part (`workshop_inspection`, loaded when
+    no active SH-600 plan exists).
 
 ---
 

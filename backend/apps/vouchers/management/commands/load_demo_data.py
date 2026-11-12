@@ -91,7 +91,15 @@ PEOPLE = [
     ("wssupervisor", "Nuwan Silva", "production_supervisor", "machining"),
 ]
 # Each part is there once its first person is (or, for a part without people, its first record).
-PARTS = ("vouchers", "sales", "purchasing", "production", "machining", "workshop_operators")
+PARTS = (
+    "vouchers",
+    "sales",
+    "purchasing",
+    "production",
+    "machining",
+    "workshop_operators",
+    "workshop_inspection",
+)
 # Owner's answer to Q3 (12 Nov 2026): made-up workshop operators, so the Operator list of a
 # workshop shift report is not empty. (number, name, section)
 WORKSHOP_OPERATORS = [
@@ -154,6 +162,8 @@ class Command(BaseCommand):
                     self.machining(people)
                 if "workshop_operators" in missing:
                     self.workshop_operators(people)
+                if "workshop_inspection" in missing:
+                    self.workshop_inspection(people)
         except CommandError:
             raise
         except Exception as error:  # a clash with data already typed in on this PC
@@ -164,6 +174,10 @@ class Command(BaseCommand):
 
     @staticmethod
     def loaded(part: str) -> bool:
+        if part == "workshop_inspection":
+            from apps.inventory.models import InspectionPlan
+
+            return InspectionPlan.objects.filter(item__code="SH-600", is_active=True).exists()
         if part == "workshop_operators":
             from apps.payroll.models import Employee
 
@@ -927,6 +941,22 @@ class Command(BaseCommand):
                     "date_of_birth": "1991-07-01",
                 },
             )
+
+    def workshop_inspection(self, p: dict) -> None:
+        """Owner's testing (W10, 12 Nov 2026): the drive shaft's inspection plan, so QC's
+        inspection of the SH-600 job shows its check without anyone typing it in."""
+        from apps.inventory.models import Item
+
+        inspections.save_plan(
+            p["qc"],
+            None,
+            {
+                "name": "Drive shaft SH-600",
+                "item": Item.objects.get(code="SH-600"),
+                "sampling": "all",
+            },
+            [ParameterInput("Diameter", "number", "44.95", "45.05", "mm", critical=True)],
+        )
 
     def machining(self, p: dict) -> None:
         from apps.inventory import opening

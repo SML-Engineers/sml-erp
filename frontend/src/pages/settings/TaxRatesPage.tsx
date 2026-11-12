@@ -13,6 +13,7 @@ import {
   type RateRow,
   type TaxRates,
 } from "../../api/taxRates";
+import { factoryToday } from "../../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -24,7 +25,7 @@ function ErrorLine({ error }: { error: unknown }) {
   );
 }
 
-const localToday = () => new Date().toLocaleDateString("en-CA");
+const localToday = () => factoryToday();
 
 /** Settings → Tax rates (P16-20): VAT and the SSCL rates, entered by the Admin or the
  * Accountant and confirmed by the Director before they apply. */

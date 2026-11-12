@@ -35,6 +35,8 @@ import {
   writePending,
   type PendingSave,
 } from "../lib/offline";
+import { formatDateTime } from "../lib/time";
+import TimeInput from "../components/TimeInput";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -264,7 +266,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
         </strong>{" "}
         — {r.status_label}
       </p>
-      {edit && <p className="muted small">{t("shiftReport.closes", { at: new Date(r.closes_at).toLocaleString() })}</p>}
+      {edit && <p className="muted small">{t("shiftReport.closes", { at: formatDateTime(r.closes_at) })}</p>}
       {r.return_reason && r.status === "returned" && <p className="notice">{t("shiftReport.returned", { reason: r.return_reason })}</p>}
       {r.approved_by && r.status === "approved" && <p className="notice">{t("shiftReport.approvedBy", { name: r.approved_by })}</p>}
       {r.section_type === "machining" && (
@@ -353,11 +355,11 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
                 </label>
                 <label>
                   {t("shiftReport.startTime")}
-                  <input type="time" value={x.start_time} onChange={(e) => setRun(i, { start_time: e.target.value })} />
+                  <TimeInput value={x.start_time} onChange={(v) => setRun(i, { start_time: v })} />
                 </label>
                 <label>
                   {t("shiftReport.end")}
-                  <input type="time" value={x.end_time} onChange={(e) => setRun(i, { end_time: e.target.value })} />
+                  <TimeInput value={x.end_time} onChange={(v) => setRun(i, { end_time: v })} />
                 </label>
                 <label>
                   {t("shiftReport.counterStart")}
@@ -704,11 +706,11 @@ function Downtime({
             </label>
             <label>
               {t("shiftReport.from")}
-              <input type="time" value={x.start_time} onChange={(e) => set(i, { start_time: e.target.value })} />
+              <TimeInput value={x.start_time} onChange={(v) => set(i, { start_time: v })} />
             </label>
             <label>
               {t("shiftReport.to")}
-              <input type="time" value={x.end_time} onChange={(e) => set(i, { end_time: e.target.value })} />
+              <TimeInput value={x.end_time} onChange={(v) => set(i, { end_time: v })} />
             </label>
             <label className="wide">
               {t("shiftReport.remarks")}
@@ -946,11 +948,11 @@ function JobCards({
               </label>
               <label>
                 {t("shiftReport.startTime")}
-                <input type="time" value={x.start_time} onChange={(e) => set(i, { start_time: e.target.value })} />
+                <TimeInput value={x.start_time} onChange={(v) => set(i, { start_time: v })} />
               </label>
               <label>
                 {t("shiftReport.end")}
-                <input type="time" value={x.end_time} onChange={(e) => set(i, { end_time: e.target.value })} />
+                <TimeInput value={x.end_time} onChange={(v) => set(i, { end_time: v })} />
               </label>
               <label>
                 {t("shiftReport.completed")}

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 
 import { bellKey, getBell, markRead, type NotificationItem } from "../api/notifications";
+import { formatDateTime } from "../lib/time";
 
 const REFRESH_MS = 60_000;
 
@@ -72,7 +73,7 @@ export default function NotificationBell() {
                 </button>
                 {item.body && <span className="muted">{item.body}</span>}
                 <time className="muted" dateTime={item.created_at}>
-                  {new Date(item.created_at).toLocaleString()}
+                  {formatDateTime(item.created_at)}
                 </time>
               </li>
             ))}

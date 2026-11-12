@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { listSentEmails } from "../../api/documentEmail";
 import DataTable from "../../components/DataTable";
+import { formatDateTime } from "../../lib/time";
 
 /** Every document and report emailed from the finance mailbox, exactly as sent (spec 3B). */
 export default function SentEmailsPage() {
@@ -22,7 +23,7 @@ export default function SentEmailsPage() {
           rows={rows.data}
           rowKey={(r) => r.id}
           columns={[
-            { id: "sent_at", header: t("sentEmails.when"), value: (r) => new Date(r.sent_at).toLocaleString() },
+            { id: "sent_at", header: t("sentEmails.when"), value: (r) => formatDateTime(r.sent_at) },
             {
               id: "document",
               header: t("sentEmails.document"),

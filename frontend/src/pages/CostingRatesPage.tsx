@@ -25,6 +25,7 @@ import {
 } from "../api/costing";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ function ErrorLine({ error }: { error: unknown }) {
 }
 
 /** Today in the user's time zone, as YYYY-MM-DD. */
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = () => factoryToday();
 
 /** Costing rates (spec 5.1): material prices per kg and each division's overhead, margin
  * and setup rate, all from a date. Kept by the Accountant; used by quotation costing. */

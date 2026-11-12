@@ -19,6 +19,7 @@ import {
 } from "../../api/currencies";
 import DataTable from "../../components/DataTable";
 import { formatDecimal } from "../../lib/decimal";
+import { factoryToday } from "../../lib/time";
 
 type Tab = "currencies" | "rates";
 
@@ -41,7 +42,7 @@ function ErrorLine({ error }: { error: unknown }) {
   );
 }
 
-const localToday = () => new Date().toLocaleDateString("en-CA");
+const localToday = () => factoryToday();
 
 function useRefresh() {
   const queryClient = useQueryClient();

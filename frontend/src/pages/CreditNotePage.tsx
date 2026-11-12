@@ -22,6 +22,7 @@ import {
   type CNKind,
 } from "../api/creditNotes";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -33,7 +34,7 @@ function ErrorLine({ error }: { error: unknown }) {
   );
 }
 
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = () => factoryToday();
 const plain = (value: string | null) => (value ? formatQuantity(value).replace(/,/g, "") : "");
 
 /** One credit note (P2-06): made from an issued invoice, approved by the Director or a person

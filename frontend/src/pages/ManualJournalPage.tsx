@@ -22,6 +22,7 @@ import {
 } from "../api/manualJournals";
 import JournalLines, { JournalTotals, linesFrom, toInputs, useJournalAccounts, type LineState } from "../components/JournalLines";
 import { formatDecimal } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -34,7 +35,7 @@ function ErrorLine({ error }: { error: unknown }) {
 }
 
 function today() {
-  return new Date().toLocaleDateString("en-CA");
+  return factoryToday();
 }
 
 /** One manual journal (P2-01): entering it, the Director's approval, and what it posted. */

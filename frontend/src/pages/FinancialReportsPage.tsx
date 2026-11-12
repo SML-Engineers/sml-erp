@@ -9,11 +9,12 @@ import { balanceSheet, cashFlow, generalLedger, profitAndLoss, reportsKey, trial
 import ExportLinks from "../components/ExportLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
 type Tab = "tb" | "bs" | "pl" | "cf" | "gl";
 const TABS: Tab[] = ["tb", "bs", "pl", "cf", "gl"];
 
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = () => factoryToday();
 const monthStart = (day: string) => `${day.slice(0, 8)}01`;
 const show = (amount: string) => (amount === "0.00" ? "" : formatDecimal(amount));
 

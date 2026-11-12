@@ -17,6 +17,7 @@ import {
 import { divisionsAdminKey, listDivisionsAdmin } from "../../api/organisation";
 import DataTable from "../../components/DataTable";
 import { formatDecimal } from "../../lib/decimal";
+import { factoryToday } from "../../lib/time";
 
 function errorText(error: unknown, fallback: string) {
   return error instanceof ApiError && error.detail ? error.detail : fallback;
@@ -32,7 +33,7 @@ function ErrorLine({ error }: { error: unknown }) {
   );
 }
 
-const localToday = () => new Date().toLocaleDateString("en-CA");
+const localToday = () => factoryToday();
 const pct = (value: string) => `${formatDecimal(value)}%`;
 // With no confirmed limits these apply (owner's decision, 2 Nov 2026).
 const DEFAULT_MARGIN = "1.00";

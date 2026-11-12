@@ -17,6 +17,7 @@ import {
 } from "../api/recurringJournals";
 import JournalLines, { JournalTotals, linesFrom, toInputs, useJournalAccounts, type LineState } from "../components/JournalLines";
 import { scheduleText } from "./RecurringJournalsPage";
+import { factoryToday } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -75,7 +76,7 @@ function TemplateForm({ template }: { template?: RecurringJournal }) {
     narration: template?.narration ?? "",
     frequency: template?.frequency ?? ("monthly" as Frequency),
     day_of_month: template?.day_of_month ?? LAST_DAY,
-    start_date: template?.start_date ?? new Date().toLocaleDateString("en-CA"),
+    start_date: template?.start_date ?? factoryToday(),
     end_date: template?.end_date ?? "",
     reverse_next_month: template?.reverse_next_month ?? false,
   });

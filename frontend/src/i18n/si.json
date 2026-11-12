@@ -14,7 +14,8 @@
     "notifications": "දැනුම්දීම්",
     "welcome": "ආයුබෝවන්, {{name}}",
     "changePassword": "මුරපදය වෙනස් කරන්න",
-    "language": "භාෂාව"
+    "language": "භාෂාව",
+    "timeNote": "වේලාවන් ශ්‍රී ලංකා වේලාවෙන්, පැය 24 ඔරලෝසුවෙන්."
   },
   "menu": {
     "main": "ප්‍රධාන",
@@ -131,7 +132,7 @@
     "start": "ආරම්භ කරන්න {{section}} · {{shift}} · {{day}}",
     "continue": "දිගටම කරන්න {{section}} · {{shift}} · {{day}}",
     "recent": "මෑත වාර්තා",
-    "closes": "ඇතුළත් කිරීම {{at}} ට වැසේ.",
+    "closes": "ඇතුළත් කිරීම {{at}} ට (ශ්‍රී ලංකා වේලාව) වැසේ.",
     "plan": "මෙම මුරයට සැලසුම් කළ",
     "planLine": "{{machine}}: {{order}} {{item}} (අච්චුව {{mould}}), {{quantity}} සැලසුම් කර ඇත",
     "enterRun": "මෙම ධාවනය ඇතුළත් කරන්න",

@@ -598,6 +598,10 @@ Status: `[ ]` to do · `[x]` done
     (approved reports) and moulds due (`GET /api/v1/production-reports/dashboard/`). The
     panel shows to whoever may approve production; the sales and purchasing summaries are
     hidden from them only where they can just view those areas.
+  - Owner, 12 Nov 2026 (from his testing, R1): the Production Planner's home page showed the
+    sales and purchasing figures (order values). He now gets the same Production panel as
+    the Production Manager instead: the panel shows to whoever may approve production or
+    enter production planning.
 
 - [x] **P3-21 Shop-floor languages and offline entry**
   The supervisor pages in Sinhala and Tamil (translations supplied or approved by the

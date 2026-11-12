@@ -20,9 +20,10 @@ export default function HomePage({ user }: { user: CurrentUser }) {
   else if (health.isError) status = t("home.unreachable");
   else status = health.data.status === "ok" ? t("home.ok") : t("home.degraded");
 
-  // Owner, 11 Nov 2026: the Production Manager sees production on the home page, not the sales
+  // Owner, 11 Nov 2026: the Production Manager (and planner) see production on the home page, not the sales
   // and purchasing summaries they can only look at (they still open those pages from the menu).
-  const production = can(user.access, "production_approvals", "approve");
+  // Owner, 12 Nov 2026: the Production Planner gets the same panel instead of the sales figures.
+  const production = can(user.access, "production_approvals", "approve") || can(user.access, "production_planning", "enter");
   const onlyViews = (area: string) => !can(user.access, area, "enter") && !can(user.access, area, "approve");
 
   return (

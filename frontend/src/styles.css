@@ -1482,3 +1482,8 @@ ul.chips {
 html:lang(si) {
   font-family: "Noto Sans Sinhala", "Iskoola Pota", system-ui, sans-serif;
 }
+
+/* Owner's testing (12 Nov 2026): a date in a table cell stays on one line. */
+td.nowrap {
+  white-space: nowrap;
+}

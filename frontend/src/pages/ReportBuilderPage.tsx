@@ -16,7 +16,7 @@ import {
   type Definition,
   type ReportResult,
 } from "../api/reportBuilder";
-import { formatDecimal } from "../lib/decimal";
+import { formatDecimal, formatQuantity } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -181,9 +181,10 @@ function Designer(props: {
       </h2>
 
       <h3>{t("rb.columns")}</h3>
-      <div className="picture-row">
+      {/* Owner's testing (12 Nov 2026): each tick box on the same line as its column's name. */}
+      <div className="checks">
         {fields.map((f) => (
-          <label key={f.key}>
+          <label key={f.key} className="check">
             <input
               type="checkbox"
               checked={def.columns.includes(f.key)}
@@ -279,7 +280,7 @@ function Designer(props: {
             ))}
           </select>
         </label>
-        <label>
+        <label className="check">
           <input type="checkbox" checked={def.sort?.[0]?.desc ?? false} disabled={!def.sort?.length} onChange={(e) => set({ sort: def.sort?.length ? [{ ...def.sort[0], desc: e.target.checked }] : [] })} />{" "}
           {t("rb.descending")}
         </label>
@@ -360,7 +361,9 @@ function Result({ result, def, name }: { result: ReportResult; def: Definition; 
       }),
     onSuccess: () => setMailOpen(false),
   });
-  const show = (kind: string, value: string | undefined) => (kind === "money" ? formatDecimal(value) : (value ?? ""));
+  // Owner's testing (12 Nov 2026): counts get thousands separators too ("3,960", not "3960").
+  const show = (kind: string, value: string | undefined) =>
+    kind === "money" ? formatDecimal(value) : kind === "number" ? formatQuantity(value) : (value ?? "");
   return (
     <section className="panel" aria-label={t("rb.result")}>
       <h2>

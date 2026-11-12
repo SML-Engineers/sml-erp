@@ -1,5 +1,6 @@
 """Stock movements and valuation (backlog P16-09, spec 5A.3, IAS 2)."""
 
+import io
 from datetime import timedelta
 from decimal import Decimal
 
@@ -8,6 +9,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.db.utils import DatabaseError
 from django.utils import timezone
+from openpyxl import load_workbook
 
 from apps.accounting.models import Account, JournalEntry
 from apps.core.models import Division
@@ -276,3 +278,18 @@ def test_the_api_shows_stock_on_hand_and_movements(buyer, director, stores, qc, 
     assert {m["kind"] for m in moves} == {"received", "damaged", "accepted"}
     ws = person("ws@sml.lk", "store_supervisor", divisions=("WS",))
     assert as_user(ws).get("/api/v1/stock/").json()["rows"] == []
+    # Owner, 12 Nov 2026: the Planner (no cost access) sees quantities, never values.
+    planner = person("planner@sml.lk", "production_planner", all_divisions=True)
+    seen = as_user(planner).get("/api/v1/stock/").json()
+    assert seen["sees_values"] is False and seen["total_value"] is None
+    row = next(r for r in seen["rows"] if r["store"]["code"] == "IM-MAIN")
+    assert (row["quantity"], row["value"], row["average_cost"]) == ("75.000", None, None)
+    assert {m["value"] for m in as_user(planner).get("/api/v1/stock/movements/").json()} == {None}
+    sheet = as_user(planner).get("/api/v1/stock/?export=xlsx")
+    assert sheet.status_code == 200
+    content = b"".join(sheet.streaming_content) if sheet.streaming else sheet.content
+    cells = {
+        str(c.value) for row in load_workbook(io.BytesIO(content)).active.iter_rows() for c in row
+    }
+    assert "Quantity" in cells and not {"Average cost (LKR)", "Value (LKR)"} & cells
+    assert body["sees_values"] is True

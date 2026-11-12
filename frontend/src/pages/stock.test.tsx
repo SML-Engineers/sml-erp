@@ -16,6 +16,7 @@ test("stock on hand shows quantity and value per store, and an item's movements"
   const calls = mockApi({
     "GET /api/v1/stock/": {
       body: {
+        sees_values: true,
         total_value: "31500.00",
         rows: [row("IM-MAIN", "main", "75.000", "31500.00", "420.0000"), row("IM-REJ", "rejected", "25.000", "0.00", null)],
       },
@@ -49,4 +50,23 @@ test("stock on hand shows quantity and value per store, and an item's movements"
   const moves = await screen.findByRole("table", { name: "Movements" });
   expect(within(moves).getByText("Accepted by QC")).toBeInTheDocument();
   expect(within(moves).getByRole("link", { name: "GRN26110101" })).toHaveAttribute("href", "/goods-receipts/4");
+});
+
+test("someone who may not see costs sees quantities but no values", async () => {
+  // Owner, 12 Nov 2026: the Planner should not see average cost or total value.
+  mockApi({
+    "GET /api/v1/stock/": {
+      body: {
+        sees_values: false,
+        total_value: null,
+        rows: [{ ...row("IM-MAIN", "main", "75.000", "", null), value: null }],
+      },
+    },
+  });
+  renderAt("/stock", <StockPage />);
+  const table = await screen.findByRole("table", { name: "Stock on hand" });
+  expect(within(table).getAllByText("75 kg").length).toBeGreaterThan(0);
+  expect(within(table).queryByRole("columnheader", { name: /Average cost/ })).not.toBeInTheDocument();
+  expect(within(table).queryByRole("columnheader", { name: /^Value/ })).not.toBeInTheDocument();
+  expect(screen.queryByText(/Total value/)).not.toBeInTheDocument();
 });

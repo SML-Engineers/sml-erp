@@ -6,7 +6,8 @@ export interface StockRow {
   lot_no: string | null;
   /** Decimals as text. */
   quantity: string;
-  value: string;
+  /** Null for people who may not see costs (owner, 12 Nov 2026). */
+  value: string | null;
   average_cost: string | null;
 }
 
@@ -18,7 +19,7 @@ export interface Movement {
   store: string;
   lot_no: string;
   quantity: string;
-  value: string;
+  value: string | null;
   grn: { id: number; number: string } | null;
   opening?: { id: number; number: string } | null;
   journal: string | null;
@@ -35,6 +36,6 @@ function query(filters: Record<string, string>) {
 }
 
 export const getStock = (filters: { division?: string; lots?: string }) =>
-  apiGet<{ total_value: string; rows: StockRow[] }>(`/stock/${query(filters)}`);
+  apiGet<{ sees_values: boolean; total_value: string | null; rows: StockRow[] }>(`/stock/${query(filters)}`);
 export const listMovements = (filters: { item?: string; lot?: string; division?: string }) =>
   apiGet<Movement[]>(`/stock/movements/${query(filters)}`);

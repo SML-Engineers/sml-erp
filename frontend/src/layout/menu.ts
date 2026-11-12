@@ -12,6 +12,8 @@ export interface MenuItem {
   alsoArea?: string;
   /** Any one of these levels opens the page (e.g. employees: HR's Enter or the Director's Approve). */
   anyLevel?: Level[];
+  /** Only for people linked to an employee record (owner, 12 Nov 2026: "My pay and leave"). */
+  employeesOnly?: boolean;
 }
 
 function allowed(access: Access | undefined, item: MenuItem): boolean {
@@ -36,7 +38,7 @@ export const MENU: MenuSection[] = [
     items: [
       { label: "menu.dashboard", path: "/", area: null },
       // Self-service (P2B-11): every signed-in employee sees their own pay and leave.
-      { label: "my.title", path: "/my", area: null },
+      { label: "my.title", path: "/my", area: null, employeesOnly: true },
       // A custodian can be anyone; the page shows only the floats the user may see (P2-17).
       { label: "petty.title", path: "/petty-cash", area: null },
       // Each data source checks its own area and divisions (P2-26).
@@ -186,10 +188,10 @@ export const MENU: MenuSection[] = [
 ];
 
 /** The menu as this user may see it: items they cannot view, and empty sections, removed. */
-export function visibleMenu(access: Access | undefined): MenuSection[] {
+export function visibleMenu(access: Access | undefined, isEmployee = true): MenuSection[] {
   return MENU.map((section) => ({
     ...section,
-    items: section.items.filter((item) => allowed(access, item)),
+    items: section.items.filter((item) => allowed(access, item) && (isEmployee || !item.employeesOnly)),
   })).filter((section) => section.items.length > 0);
 }
 

@@ -1528,6 +1528,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Waiting for your approval on every dashboard (owner, 14 Nov 2026) | Each person's dashboard shows how many documents of each kind wait at a level they approve, each linking to where it is approved | 3 |
 | Director sends a voucher back to the Accountant (owner, 14 Nov 2026) | Besides Return to Clerk, the Director can send a voucher back to the Accountant with a reason; the Accountant corrects and approves again, then it returns to the Director | 4.3 |
 | Shop-floor supervisor's dashboard (owner, 12 Nov 2026) | A supervisor's home page shows, for their own sections: shifts open for entry, reports still to finish, today's and tomorrow's plan, good pieces made yesterday and today, and moulds due; in English and Sinhala | 7.6 |
+| "My pay and leave" only for employees (owner, 12 Nov 2026) | The menu shows "My pay and leave" only to people whose sign-in is linked to an employee record | 6, 7A |
 
 **Still needed for initial setup**
 

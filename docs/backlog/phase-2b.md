@@ -391,6 +391,9 @@ P2B-06**, in this order.
   certificates, leave balance and attendance; applies for leave (approved by their
   supervisor); asks to change personal or bank details, which HR approves (bank details
   with the second check).
+  Owner, 12 Nov 2026: "My pay and leave" is in the menu only for people whose sign-in HR
+  linked to an employee record (sign-in answers `is_employee`); others, such as the
+  Admin's own account, no longer see it.
   Done: a new page "My pay and leave", in the menu for everyone signed in, shows only the
   signed-in person's own records, whatever their role: the employee whose record HR linked
   to their sign-in (new field "Sign-in email" on the employee page; blank removes the link).

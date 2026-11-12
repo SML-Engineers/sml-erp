@@ -35,6 +35,13 @@ def test_hr_links_the_sign_in_by_email(hr, kamal, me):  # noqa: F811
     assert Employee.objects.get(pk=kamal.pk).user_id is None
 
 
+def test_the_menu_entry_shows_only_for_linked_people(hr, kamal, me):  # noqa: F811
+    """Owner, 12 Nov 2026: "My pay and leave" only for people with an employee record."""
+    assert as_user(me).get("/api/v1/auth/me/").json()["user"]["is_employee"] is True
+    stranger = person("y@sml.lk", divisions=["WS"])
+    assert as_user(stranger).get("/api/v1/auth/me/").json()["user"]["is_employee"] is False
+
+
 def test_without_a_link_nothing_is_shown():
     stranger = person("x@sml.lk", divisions=["WS"])
     body = as_user(stranger).get(URL).json()

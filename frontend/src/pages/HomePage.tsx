@@ -7,6 +7,7 @@ import { getHealth } from "../api/health";
 import FinancialDashboard from "../components/FinancialDashboard";
 import ProductionDashboard from "../components/ProductionDashboard";
 import PurchasingDashboard from "../components/PurchasingDashboard";
+import WaitingPanel from "../components/WaitingPanel";
 import SalesDashboard from "../components/SalesDashboard";
 import VouchersDashboard from "../components/VouchersDashboard";
 
@@ -36,6 +37,7 @@ export default function HomePage({ user }: { user: CurrentUser }) {
       </section>
       {can(user.access, "financial_reports", "view") && <FinancialDashboard />}
       {can(user.access, "vouchers", "view") && <VouchersDashboard me={user} />}
+      <WaitingPanel />
       {production && <ProductionDashboard />}
       {can(user.access, "sales", "view") && !(production && onlyViews("sales")) && <SalesDashboard />}
       {can(user.access, "purchasing", "view") && !(production && onlyViews("purchasing")) && <PurchasingDashboard />}

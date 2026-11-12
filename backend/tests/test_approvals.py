@@ -191,6 +191,21 @@ def test_each_approver_sees_what_waits_for_them(clerk, accountant, director):
     assert [s.document_id for s in approvals.waiting_for(accountant)] == [1]
 
 
+def test_the_dashboard_counts_what_waits_for_each_person(clerk, accountant, director):
+    """Owner, 12 Nov 2026: a "waiting for your approval" panel on every dashboard."""
+    submit(clerk, doc_id=1)
+    submit(clerk, doc_id=2)
+    url = "/api/v1/approvals/waiting/"
+    assert as_user(accountant).get(url).json() == [
+        {"document_type": "voucher", "label": "Payment voucher", "count": 2}
+    ]
+    assert as_user(director).get(url).json() == []
+    approvals.approve(accountant, V, 2)
+    assert as_user(director).get(url).json()[0]["count"] == 1
+    # The maker never sees their own documents waiting.
+    assert as_user(clerk).get(url).json() == []
+
+
 # --- The matrix -------------------------------------------------------------------------
 
 

@@ -213,6 +213,9 @@ def test_every_endpoint_declares_its_access():
         "MyLocationConsentView",
         "MyLeaveWithdrawView",
         "TeamLeaveDecideView",
+        # The dashboard's "waiting for your approval" (owner, 12 Nov 2026): only counts of the
+        # documents waiting at a level the user approves, by kind; no document data.
+        "WaitingForMeView",
     }
 
     def walk(patterns):

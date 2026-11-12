@@ -20,7 +20,7 @@ from datetime import date, timedelta
 from decimal import ROUND_FLOOR, Decimal
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from apps.core.access import division_scope, effective_access
@@ -65,13 +65,29 @@ def own_sections_only(user: User) -> bool:
     )
 
 
+def own_sections(user: User):
+    """The sections a supervisor works in: those they supervise or are assigned to, within
+    their divisions. Owner's testing (R2, 12 Nov 2026): the person's "All sections" tick no
+    longer widens this for a supervisor (spec: entries for assigned sections only)."""
+    return (
+        Section.objects.filter(division__in=division_scope(user))
+        .filter(Q(supervisors=user) | Q(users=user))
+        .distinct()
+    )
+
+
+def work_sections(user: User):
+    """The sections the user works in: a supervisor's own; anyone else's section scope."""
+    return own_sections(user) if own_sections_only(user) else section_scope(user)
+
+
 def visible(user: User):
     """Plan entries of the user's divisions; a supervisor sees their own sections."""
     found = PlanEntry.objects.select_related(
         "shift", "machine", "machine__section", "order", "order__item", "mould", "created_by"
     )
     if own_sections_only(user):
-        return found.filter(machine__section__in=section_scope(user))
+        return found.filter(machine__section__in=own_sections(user))
     return found.filter(order__division__in=division_scope(user))
 
 
@@ -317,7 +333,7 @@ def board(user: User, start=None, days=None) -> dict:
     entries = list(visible(user).filter(day__range=(first, last)))
     warnings = warnings_for(entries, first, count)
     if own_sections_only(user):
-        sections = section_scope(user)
+        sections = own_sections(user)
     else:
         sections = Section.objects.filter(division__in=division_scope(user))
     machines = (
@@ -381,7 +397,7 @@ def mine(user: User) -> dict:
     entries = list(
         PlanEntry.objects.filter(
             day__range=(today, today + timedelta(days=1)),
-            machine__section__in=section_scope(user),
+            machine__section__in=work_sections(user),
         ).select_related("shift", "machine", "machine__section", "order", "order__item", "mould")
     )
     return {"entries": [entry_row(e, []) for e in entries]}

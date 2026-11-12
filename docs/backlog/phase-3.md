@@ -272,6 +272,13 @@ Status: `[ ]` to do · `[x]` done
   P3-07). Not yet: stock, mould shots and costs move on approval (P3-09); a family mould's
   other parts are counted when approved (P3-09); corrections after the grace period
   (P3-09); machining and support pages (P3-12).
+  - Owner, 12 Nov 2026 (from his testing, R2): the Workshop supervisor could start every
+    section's work shift report, moulding included, because his "All sections" tick (every
+    person's default) widened his section scope. A Production Supervisor (shop-floor entry,
+    not planning or approving) now gets only the sections they supervise or are assigned
+    to, whatever the tick (`plan.own_sections` / `plan.work_sections`): on the work shift
+    report, the production plan, the production reports and the report builder's shift
+    data (spec 7.4: "Supervisor can enter data only for assigned sections").
 
 - [x] **P3-09 Approving shift reports and corrections**
   The Production Manager approves or returns each submitted report (never their own).

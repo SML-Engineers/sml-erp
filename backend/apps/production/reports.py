@@ -29,7 +29,7 @@ from apps.core.models import User
 from apps.masters.models import Section
 from apps.masters.services import section_scope
 
-from . import maintenance, profit
+from . import maintenance, plan, profit
 from .models import (
     DowntimeEntry,
     JobCardEntry,
@@ -72,7 +72,8 @@ def _pct(part, whole) -> str | None:
 
 
 def _sections(user: User, code: str = ""):
-    found = section_scope(user).filter(
+    # Owner's testing (R2, 12 Nov 2026): a supervisor's own sections, whatever their tick.
+    found = plan.work_sections(user).filter(
         section_type__in=(Section.Type.MOULDING, Section.Type.MACHINING), is_active=True
     )
     return found.filter(code=code) if code else found

@@ -528,3 +528,6 @@ Status: `[ ]` to do · `[x]` done
   Director and Cashier run through real vouchers on the test server; issues fixed; go-live.
   - Before go-live, the owner revisits protecting `main` (docs/decisions/0003): upgrading to
     GitHub Team so GitHub enforces pull requests with passing checks.
+  - Owner, 14 Nov 2026: BEFORE GO-LIVE switch two-factor sign-in back ON (Administration →
+    Sign-in security). He asked for an Admin switch and keeps it off while testing; payments
+    and payroll rely on it.

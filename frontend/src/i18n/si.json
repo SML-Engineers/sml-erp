@@ -540,5 +540,8 @@
     "welcome": "ආයුබෝවන්, {{name}}",
     "signOut": "ඉවත් වන්න",
     "administration": "පරිපාලනය"
+  },
+  "security": {
+    "title": "පිවිසීමේ ආරක්ෂාව"
   }
 }

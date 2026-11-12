@@ -120,6 +120,11 @@ urlpatterns = [
         numbering_views.NumberSeriesPreviewView.as_view(),
         name="number-series-preview",
     ),
+    path(
+        "access/sign-in-security/",
+        access_views.SignInSecurityView.as_view(),
+        name="sign-in-security",
+    ),
     path("roles/", access_views.RoleListView.as_view(), name="role-list"),
     path("roles/<slug:code>/", access_views.RoleDetailView.as_view(), name="role-detail"),
     path("users/", access_views.UserListView.as_view(), name="user-list"),

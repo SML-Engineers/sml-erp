@@ -167,6 +167,9 @@ class Company(models.Model):
     # On the EPF and ETF returns (P2B-09).
     epf_employer_no = models.CharField("EPF employer no.", max_length=30, blank=True)
     etf_employer_no = models.CharField("ETF employer no.", max_length=30, blank=True)
+    # Owner, 12 Nov 2026: the Admin can switch two-factor sign-in off for the whole company
+    # while testing. On by default; it must be on before go-live (docs/go-live checklist).
+    two_factor_on = models.BooleanField("Two-factor sign-in", default=True)
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
     email = models.EmailField(blank=True)

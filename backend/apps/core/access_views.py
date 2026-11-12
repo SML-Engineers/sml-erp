@@ -486,3 +486,31 @@ class PasswordResetIssueView(APIView):
             return _error(error, status.HTTP_403_FORBIDDEN)
         reset.refresh_from_db()
         return Response({**_reset_row(reset, request.user), "temporary_password": password})
+
+
+class SignInSecurityView(APIView):
+    """The company-wide two-factor switch (owner, 12 Nov 2026). The Admin changes it."""
+
+    permission_classes = [AreaAccess]
+    access_area = "users"
+    access_write_level = "manage"
+
+    def get(self, request):
+        from .security import two_factor_on
+
+        return Response({"two_factor_on": two_factor_on()})
+
+    def put(self, request):
+        from .security import SecurityError, set_two_factor
+
+        on = request.data.get("two_factor_on")
+        if not isinstance(on, bool):
+            return Response(
+                {"detail": "Say whether two-factor sign-in is on or off."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            company = set_two_factor(request.user, on, request.data.get("reason", ""))
+        except SecurityError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"two_factor_on": company.two_factor_on})

@@ -137,6 +137,8 @@ import ApprovalMatrixPage from "./pages/settings/ApprovalMatrixPage";
 import DocumentEmailPage from "./pages/settings/DocumentEmailPage";
 import VoucherTypesPage from "./pages/settings/VoucherTypesPage";
 import SentEmailsPage from "./pages/admin/SentEmailsPage";
+import SignInSecurityPage from "./pages/admin/SignInSecurityPage";
+import { can } from "./api/access";
 
 /** Hands the signed-in user (from the layout) to a page. */
 function WithMe({ page }: { page: (me: CurrentUser) => ReactNode }) {
@@ -294,6 +296,10 @@ export default function App() {
         <Route path="settings/approval-matrix" element={<WithMe page={(me) => <ApprovalMatrixPage me={me} />} />} />
         <Route path="settings/document-email" element={<WithMe page={(me) => <DocumentEmailPage me={me} />} />} />
         <Route path="admin/sent-emails" element={<SentEmailsPage />} />
+        <Route
+          path="admin/sign-in-security"
+          element={<WithMe page={(me) => <SignInSecurityPage canChange={can(me.access, "users", "manage")} />} />}
+        />
         <Route path="settings/voucher-types" element={<WithMe page={(me) => <VoucherTypesPage me={me} />} />} />
       </Route>
     </Routes>

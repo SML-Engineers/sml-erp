@@ -491,6 +491,11 @@ Status: `[ ]` to do · `[x]` done
     approved shift reports charged to no order at the machine's overhead rate (unabsorbed).
     The month-end checklist has "Order costs up to date and Work in progress agreeing with
     the open jobs".
+  - Owner, 12 Nov 2026 (from his testing, W15): issuing a delivery note with too little
+    finished stock said "only 0.000 pcs of SH-600 is in WS-MAIN. Approve its production
+    first." It now says "only 0 pcs of SH-600 are in WS-MAIN, not 21. Finish or approve
+    more production first." (plain figures, the quantity asked for, and wording that fits a
+    workshop job as well as a moulding report).
 
 - [x] **P3-17 Live order profitability**
   For every order: estimate (from the accepted quotation), actual to date, forecast at

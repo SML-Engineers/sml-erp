@@ -83,9 +83,12 @@ def deliver(user, note) -> None:
             value_of_line += value
             left -= part
         if left > 0:
+            # Owner's testing (W15, 12 Nov 2026): plain figures, the quantity asked for, and
+            # wording that fits a workshop job (completed) as well as a moulding report (approved).
             raise StockError(
-                f"{where}: only {x.quantity - left:,.3f} {item.unit} of {item.code} is in "
-                f"{store.code}. Approve its production first."
+                f"{where}: only {(x.quantity - left).normalize():,f} {item.unit} of {item.code} "
+                f"are in {store.code}, not {x.quantity.normalize():,f}. Finish or approve more "
+                "production first."
             )
         x.cost = value_of_line
         x.save(update_fields=["cost"])

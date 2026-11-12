@@ -174,7 +174,9 @@ def test_finished_parts_delivered_leave_stock_at_cost_of_sales(
         executive, ordered, lines=[deliveries.LineInput(order_line, "5", shafts)]
     )
     with pytest.raises(
-        SalesError, match=r"only 0.000 pcs of SH-100 is in IM-MAIN. Approve its production first"
+        SalesError,
+        match=r"^Line 1: only 0 pcs of SH-100 are in IM-MAIN, not 5\. Finish or approve more "
+        r"production first\.$",
     ):
         deliveries.issue(executive, note)
     store = Store.objects.get(code="IM-MAIN")

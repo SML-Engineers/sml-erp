@@ -1515,6 +1515,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Machines without a shift supervisor (owner's testing, 11 Nov 2026) | The production plan marks a machine whose section has no active shift supervisor (its runs would reach no work shift report), beside the machine and when it is chosen; planning there is still allowed | 7.3 |
 | Ask to issue more: choose the material (owner's testing, 11 Nov 2026) | The material for a request to issue more is chosen from the job's materials; "Another item…" lets a material not on the job be typed | 7.2 |
 | Production Manager's dashboard (owner, 11 Nov 2026) | The Production Manager's home page shows what waits for their decision (shift reports, corrections, requests to issue more, inspection decisions, BOMs and routings), good pieces made today and moulds due, instead of the sales and purchasing summaries they can only view | 7.6 |
+| Delivery refused for stock: plain wording (owner's testing, 12 Nov 2026) | A delivery note refused for too little finished stock gives the quantity in stock and the quantity asked for in plain figures, and says to finish or approve more production first | 7.7 |
 
 **Still needed for initial setup**
 

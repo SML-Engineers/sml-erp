@@ -110,7 +110,7 @@ def test_demo_data_covers_every_stage(settings, monkeypatch):
         "PP-H-25",
         "SH-600",
     ]
-    assert InspectionPlan.objects.get().parameters.count() == 2
+    assert InspectionPlan.objects.get(item__code="PP-H-25").parameters.count() == 2
     assert sorted(PurchaseOrder.objects.values_list("status", flat=True)) == [
         "awaiting_approval",
         "draft",
@@ -204,7 +204,8 @@ def test_a_pc_with_the_earlier_demo_gets_only_the_missing_part(settings, monkeyp
     out = io.StringIO()
     call_command("load_demo_data", stdout=out)
     assert (
-        "Demo data loaded: purchasing, production, machining, workshop_operators." in out.getvalue()
+        "Demo data loaded: purchasing, production, machining, workshop_operators, "
+        "workshop_inspection." in out.getvalue()
     )
     assert Voucher.objects.count() == vouchers
     assert Customer.objects.count() == 3
@@ -229,6 +230,7 @@ def test_a_pc_with_the_earlier_demo_gets_the_workshop_operators(settings, monkey
     )
     call_command("load_demo_data", stdout=io.StringIO())
     assert not Employee.objects.filter(division__code="WS").exists()
+    assert not InspectionPlan.objects.filter(item__code="SH-600").exists()
     people = User.objects.count()
 
     monkeypatch.undo()
@@ -236,7 +238,15 @@ def test_a_pc_with_the_earlier_demo_gets_the_workshop_operators(settings, monkey
     monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
     out = io.StringIO()
     call_command("load_demo_data", stdout=out)
-    assert "Demo data loaded: workshop_operators." in out.getvalue()
+    assert "Demo data loaded: workshop_operators, workshop_inspection." in out.getvalue()
+    # Owner's testing (W10): the drive shaft's check is there for QC.
+    check = InspectionPlan.objects.get(item__code="SH-600").parameters.get()
+    assert (check.name, check.minimum, check.maximum, check.unit) == (
+        "Diameter",
+        Decimal("44.95"),
+        Decimal("45.05"),
+        "mm",
+    )
     assert User.objects.count() == people
     workshop = {
         (e.number, e.section.code)

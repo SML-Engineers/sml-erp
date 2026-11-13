@@ -535,6 +535,9 @@ Status: `[ ]` to do · `[x]` done
     owner changes or deletes it; whoever runs it sees only what they may); Excel and PDF;
     emailed with the "report" message of Settings → Document email and the Excel attached.
     Production data is added as a source in Phase 3.
+  - Owner, 13 Nov 2026 (from his testing, A8): each column's tick box now sits on the same line
+    as its name (they showed a line above, looking misplaced), and counts show with thousands
+    separators (3,960, not 3960).
 
 - [x] **P2-27 Pay Now and invoice tracking** (spec 7A)
   The emailed invoice links to a customer page with the PDF, a Pay Now button through a Sri

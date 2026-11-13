@@ -76,7 +76,7 @@ export default function OrderCostsPanel({ costs, onRefresh, busy }: { costs: Ord
             <tbody>
               {costs.entries.map((e) => (
                 <tr key={e.id} className={e.adjusts ? "muted" : undefined}>
-                  <td>{e.day}</td>
+                  <td className="nowrap">{e.day}</td>
                   <td>{costs.elements.find((x) => x.element === e.element)?.label ?? t(`costs.elements.${e.element}`)}</td>
                   <td>{e.description}</td>
                   <td className="num">{e.quantity && `${formatDecimal(e.quantity)} ${e.unit}`}</td>

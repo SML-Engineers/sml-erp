@@ -503,6 +503,8 @@ Status: `[ ]` to do · `[x]` done
     first." It now says "only 0 pcs of SH-600 are in WS-MAIN, not 21. Finish or approve
     more production first." (plain figures, the quantity asked for, and wording that fits a
     workshop job as well as a moulding report).
+  - Owner, 13 Nov 2026 (from his testing, A3): the date of a cost entry stays on one line
+    (it wrapped as "2026-11-" / "10").
 
 - [x] **P3-17 Live order profitability**
   For every order: estimate (from the accepted quotation), actual to date, forecast at

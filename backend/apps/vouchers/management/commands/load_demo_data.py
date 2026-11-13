@@ -90,8 +90,16 @@ PEOPLE = [
     ("productionmanager", "Thilini Abeysekara", "production_manager", "production"),
     ("wssupervisor", "Nuwan Silva", "production_supervisor", "machining"),
 ]
-# Each part is there once its first person is.
-PARTS = ("vouchers", "sales", "purchasing", "production", "machining")
+# Each part is there once its first person is (or, for a part without people, its first record).
+PARTS = ("vouchers", "sales", "purchasing", "production", "machining", "workshop_operators")
+# Owner's answer to Q3 (12 Nov 2026): made-up workshop operators, so the Operator list of a
+# workshop shift report is not empty. (number, name, section)
+WORKSHOP_OPERATORS = [
+    ("E201", "Chathura Bandara", "M-BSW"),
+    ("E202", "Pradeep Senanayake", "M-BSW"),
+    ("E203", "Isuru Madushanka", "C-LAT"),
+    ("E204", "Dinesh Wickramasinghe", "C-LAT"),
+]
 
 
 def invoice_pdf(title: str, lines: list[str]) -> SimpleUploadedFile:
@@ -144,6 +152,8 @@ class Command(BaseCommand):
                     self.production(people)
                 if "machining" in missing:
                     self.machining(people)
+                if "workshop_operators" in missing:
+                    self.workshop_operators(people)
         except CommandError:
             raise
         except Exception as error:  # a clash with data already typed in on this PC
@@ -154,6 +164,10 @@ class Command(BaseCommand):
 
     @staticmethod
     def loaded(part: str) -> bool:
+        if part == "workshop_operators":
+            from apps.payroll.models import Employee
+
+            return Employee.objects.filter(number=WORKSHOP_OPERATORS[0][0]).exists()
         first = next(key for key, _, _, p in PEOPLE if p == part)
         return User.objects.filter(email=f"{first}@{DEMO_DOMAIN}").exists()
 
@@ -894,6 +908,25 @@ class Command(BaseCommand):
             )
 
     # --- Machining (P3-22 preparation) ----------------------------------------------------------
+
+    def workshop_operators(self, p: dict) -> None:
+        """Owner's answer to Q3 (12 Nov 2026): operators for the workshop sections."""
+        from apps.payroll import employees
+
+        for number, name, section in WORKSHOP_OPERATORS:
+            employees.create(
+                p["hr"],
+                {
+                    "number": number,
+                    "full_name": name,
+                    "nic": f"1991{number[1:]}45678",
+                    "division": "WS",
+                    "section": section,
+                    "employment_type": "permanent",
+                    "join_date": "2024-03-01",
+                    "date_of_birth": "1991-07-01",
+                },
+            )
 
     def machining(self, p: dict) -> None:
         from apps.inventory import opening

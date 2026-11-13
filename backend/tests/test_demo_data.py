@@ -203,7 +203,9 @@ def test_a_pc_with_the_earlier_demo_gets_only_the_missing_part(settings, monkeyp
     monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
     out = io.StringIO()
     call_command("load_demo_data", stdout=out)
-    assert "Demo data loaded: purchasing, production, machining." in out.getvalue()
+    assert (
+        "Demo data loaded: purchasing, production, machining, workshop_operators." in out.getvalue()
+    )
     assert Voucher.objects.count() == vouchers
     assert Customer.objects.count() == 3
     assert PurchaseOrder.objects.count() == 5
@@ -213,5 +215,38 @@ def test_a_pc_with_the_earlier_demo_gets_only_the_missing_part(settings, monkeyp
     }
     assert len(secrets) == 1
     assert User.objects.get(email="qc@demo.sml.lk").check_password("Demo-SML-2026!")
+    with pytest.raises(CommandError, match="already loaded"):
+        call_command("load_demo_data", stdout=io.StringIO())
+
+
+def test_a_pc_with_the_earlier_demo_gets_the_workshop_operators(settings, monkeypatch):
+    """Owner's answer to Q3 (12 Nov 2026): a PC loaded before the workshop operators existed
+    gets just them on the next run, in their sections; the Operator list then offers them."""
+    settings.DEBUG = True
+    monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
+    monkeypatch.setattr(
+        load_demo_data, "PARTS", ("vouchers", "sales", "purchasing", "production", "machining")
+    )
+    call_command("load_demo_data", stdout=io.StringIO())
+    assert not Employee.objects.filter(division__code="WS").exists()
+    people = User.objects.count()
+
+    monkeypatch.undo()
+    settings.DEBUG = True
+    monkeypatch.delenv("APP_ENVIRONMENT", raising=False)
+    out = io.StringIO()
+    call_command("load_demo_data", stdout=out)
+    assert "Demo data loaded: workshop_operators." in out.getvalue()
+    assert User.objects.count() == people
+    workshop = {
+        (e.number, e.section.code)
+        for e in Employee.objects.filter(division__code="WS").select_related("section")
+    }
+    assert workshop == {
+        ("E201", "M-BSW"),
+        ("E202", "M-BSW"),
+        ("E203", "C-LAT"),
+        ("E204", "C-LAT"),
+    }
     with pytest.raises(CommandError, match="already loaded"):
         call_command("load_demo_data", stdout=io.StringIO())

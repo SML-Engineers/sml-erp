@@ -667,6 +667,10 @@ Status: `[ ]` to do · `[x]` done
     the next day, so on later days the shift report showed no "Planned for this shift".
     `load_demo_data` now plans CAP-38 on IMM-250, General shift, for the load day and the
     next six days (`DEMO_PLAN_DAYS = 7`). A PC that already has the demo keeps its plan.
+  - Owner, 12 Nov 2026 (his answer to Q3): `load_demo_data` adds four made-up workshop
+    operators (E201–E202 on M-BSW, E203–E204 on C-LAT), so the Operator list of a workshop
+    shift report is not empty. They are their own demo part (`workshop_operators`, loaded
+    when E201 is missing), so a PC with the earlier demo gets just them on the next run.
 
 ---
 

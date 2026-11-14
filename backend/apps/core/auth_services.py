@@ -63,12 +63,19 @@ def record_event(request, email: str, outcome: str, user: User | None = None) ->
     )
 
 
+def _two_factor_on() -> bool:
+    """The company-wide switch (owner, 12 Nov 2026): off while testing, on before go-live."""
+    from .security import two_factor_on
+
+    return two_factor_on()
+
+
 def setup_requirements(user: User) -> list[str]:
     """What a signed-in user must do before they can use the rest of the system."""
     pending = []
     if user.must_change_password:
         pending.append(PASSWORD_CHANGE_REQUIRED)
-    if user.two_factor_required and not user.two_factor_enabled:
+    if user.two_factor_required and not user.two_factor_enabled and _two_factor_on():
         pending.append(TWO_FACTOR_SETUP_REQUIRED)
     return pending
 
@@ -134,7 +141,7 @@ def sign_in(request, email: str, password: str) -> SignInResult:
         _register_failure(request, email, LoginEvent.Outcome.BAD_CREDENTIALS, known)
         return SignInResult("invalid")
 
-    if user.two_factor_enabled:
+    if user.two_factor_enabled and _two_factor_on():
         request.session.cycle_key()
         request.session[SESSION_PENDING_USER] = user.pk
         request.session[SESSION_PENDING_AT] = timezone.now().isoformat()

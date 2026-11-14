@@ -5434,5 +5434,16 @@
     "madeDetail": "{{rejected}} rejected ({{pct}}%), {{hours}} h downtime; approved reports only",
     "mouldsDue": "Moulds due for maintenance",
     "mouldsDetail": "Due or close by shots"
+  },
+  "security": {
+    "title": "Sign-in security",
+    "help": "Two-factor sign-in asks for a code from an authenticator app after the password. It protects payments and payroll. Switch it off only while testing; it must be on before go-live.",
+    "twoFactor": "Two-factor sign-in",
+    "isOn": "On: an authenticator code is asked for at sign-in.",
+    "isOff": "Off: nobody is asked for an authenticator code.",
+    "offWarning": "Switch this on before go-live. Authenticators people have already set up are kept and work again when it is on.",
+    "reason": "Reason for the change",
+    "switchOff": "Switch two-factor sign-in off",
+    "switchOn": "Switch two-factor sign-in on"
   }
 }

@@ -1521,6 +1521,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Demo workshop operators (owner, 12 Nov 2026) | The demo data adds four made-up workshop operators (two on M-BSW, two on C-LAT); a PC with the earlier demo gets just them when the demo is loaded again | 7.4 |
 | Demo inspection plan for the drive shaft (owner's testing, 13 Nov 2026) | The demo data adds QC's inspection plan for SH-600 (Diameter 44.95–45.05 mm), so the job's inspection shows its check | 7.9 |
 | Layout fixes from testing (owner, 13 Nov 2026) | Report builder: each column's tick box beside its name, and counts with thousands separators; job cost entries: the date on one line | 7A |
+| Times in Sri Lanka time, 24-hour clock (owner, 13 Nov 2026) | Every date and time shown is Sri Lanka time on the 24-hour clock on any PC or phone; new documents default to the factory's date; time boxes take HH:MM | 3 |
 
 **Still needed for initial setup**
 

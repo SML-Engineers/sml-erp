@@ -20,6 +20,7 @@ import {
   type DNOrderLine,
 } from "../api/deliveryNotes";
 import { compareDecimal, formatDecimal, formatQuantity } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -31,7 +32,7 @@ function ErrorLine({ error }: { error: unknown }) {
   );
 }
 
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = () => factoryToday();
 
 /** One delivery note (P2-04): made from an open order, issued when the goods leave, printed
  * for the customer to sign, and the signed copy kept when it comes back. */

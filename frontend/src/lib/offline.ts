@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ApiError } from "../api/client";
 import type { Me } from "../api/auth";
 import type { ReportValues, ShiftReport } from "../api/shiftReports";
+import { formatTime } from "./time";
 
 /** P3-21: shift reports entered without Wi-Fi. A save that cannot reach the server is kept on
  * the phone (browser storage) with the version of the report it was made on, and sent when the
@@ -94,7 +95,7 @@ export function useOnline(): boolean {
 }
 
 export function timeOf(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return formatTime(iso); // Sri Lanka time, 24-hour clock (owner, 12 Nov 2026)
 }
 
 const ME = "sml-offline-me";

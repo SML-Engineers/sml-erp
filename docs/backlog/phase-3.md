@@ -279,6 +279,11 @@ Status: `[ ]` to do · `[x]` done
     to, whatever the tick (`plan.own_sections` / `plan.work_sections`): on the work shift
     report, the production plan, the production reports and the report builder's shift
     data (spec 7.4: "Supervisor can enter data only for assigned sections").
+  - Owner, 13 Nov 2026 (his yes to Q2): every date and time the ERP shows is in Sri Lanka
+    time on the 24-hour clock, whatever the PC's time zone or clock setting (`lib/time.ts`,
+    Asia/Colombo); a new document's default date is the factory's date; the time boxes are a
+    24-hour HH:MM box ("830" becomes "08:30") instead of the browser's AM/PM picker; the side
+    menu says times are Sri Lanka time, and the shift report's closing time says so too.
 
 - [x] **P3-09 Approving shift reports and corrections**
   The Production Manager approves or returns each submitted report (never their own).

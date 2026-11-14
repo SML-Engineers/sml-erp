@@ -36,6 +36,7 @@ import {
 } from "../../api/factory";
 import { divisionsAdminKey, listDivisionsAdmin } from "../../api/organisation";
 import { formatDecimal } from "../../lib/decimal";
+import { factoryToday } from "../../lib/time";
 
 type Selection =
   | { kind: "section"; id: number }
@@ -610,7 +611,7 @@ function RatesPanel({ machine, canManage }: { machine: Machine; canManage: boole
   const queryClient = useQueryClient();
   const key = ["settings", "machines", machine.id, "rates"];
   const rates = useQuery({ queryKey: key, queryFn: () => listRates(machine.id) });
-  const [from, setFrom] = useState(() => new Date().toLocaleDateString("en-CA"));
+  const [from, setFrom] = useState(() => factoryToday());
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const done = () => {

@@ -49,6 +49,7 @@ export default function AppLayout({ user }: { user: CurrentUser }) {
         <div className="sidebar-user">
           <strong>{t("layout.welcome", { name: user.full_name })}</strong>
           <LanguageSwitch />
+          <p className="muted small">{t("layout.timeNote")}</p>
         </div>
         {sections.map((section) => (
           <div key={section.label} className="menu-section">

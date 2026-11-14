@@ -8,6 +8,7 @@ import { createUser, listUsers } from "../../api/admin";
 import type { CurrentUser } from "../../api/auth";
 import { ApiError } from "../../api/client";
 import DataTable from "../../components/DataTable";
+import { formatDate } from "../../lib/time";
 
 export default function UsersPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
@@ -104,7 +105,7 @@ export default function UsersPage({ me }: { me: CurrentUser }) {
               id: "last",
               header: t("users.lastSignIn"),
               value: (u) => u.last_login ?? "",
-              cell: (u) => (u.last_login ? new Date(u.last_login).toLocaleDateString() : "—"),
+              cell: (u) => (u.last_login ? formatDate(u.last_login) : "—"),
             },
           ]}
         />

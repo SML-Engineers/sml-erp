@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { AuditEvent } from "../api/audit";
+import { formatDateTime } from "../lib/time";
 
 function show(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
@@ -27,7 +28,7 @@ export default function AuditTable({ rows }: { rows: AuditEvent[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td>{new Date(row.occurred_at).toLocaleString()}</td>
+              <td>{formatDateTime(row.occurred_at)}</td>
               <td>
                 {row.actor_email}
                 {row.ip_address && <div className="muted">{row.ip_address}</div>}

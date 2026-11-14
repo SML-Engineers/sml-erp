@@ -19,6 +19,7 @@ import {
 } from "../api/taxInvoices";
 import SendEmailForm from "../components/SendEmailForm";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -326,7 +327,7 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
 function Tracking({ invoice }: { invoice: InvoiceDetail }) {
   const { t } = useTranslation();
   const done = useDone();
-  const today = new Date().toLocaleDateString("en-CA");
+  const today = factoryToday();
   const [form, setForm] = useState({ url: "", amount: "", sent_on: today, note: "" });
   const [open, setOpen] = useState(false);
   const save = useMutation({

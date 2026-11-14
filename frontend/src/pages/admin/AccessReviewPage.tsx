@@ -6,6 +6,7 @@ import { canDo } from "../../api/access";
 import { getReview, recordReview } from "../../api/admin";
 import type { CurrentUser } from "../../api/auth";
 import { ApiError } from "../../api/client";
+import { formatDate } from "../../lib/time";
 
 export default function AccessReviewPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
@@ -72,7 +73,7 @@ export default function AccessReviewPage({ me }: { me: CurrentUser }) {
                           </div>
                         ))}
                   </td>
-                  <td>{row.last_login ? new Date(row.last_login).toLocaleDateString() : "—"}</td>
+                  <td>{row.last_login ? formatDate(row.last_login) : "—"}</td>
                   <td>
                     {row.review ? (
                       t(`review.outcome.${row.review.outcome}`)

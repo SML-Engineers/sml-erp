@@ -302,7 +302,8 @@
     "notifications": "Notifications",
     "welcome": "Welcome, {{name}}",
     "changePassword": "Change password",
-    "language": "Language"
+    "language": "Language",
+    "timeNote": "Times are Sri Lanka time, 24-hour clock."
   },
   "table": {
     "show": "Show",
@@ -4792,7 +4793,7 @@
     "start": "Start {{section}} · {{shift}} · {{day}}",
     "continue": "Continue {{section}} · {{shift}} · {{day}}",
     "recent": "Recent reports",
-    "closes": "Entry closes at {{at}}.",
+    "closes": "Entry closes at {{at}} (Sri Lanka time).",
     "plan": "Planned for this shift",
     "planLine": "{{machine}}: {{order}} {{item}} (mould {{mould}}), {{quantity}} planned",
     "enterRun": "Enter this run",

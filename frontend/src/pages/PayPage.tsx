@@ -18,8 +18,9 @@ import {
 } from "../api/payments";
 import { voucherPrintUrl, vouchersKey } from "../api/vouchers";
 import { formatDecimal } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
-const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD, local date
+const today = () => factoryToday(); // YYYY-MM-DD, local date
 
 /** Record a payment against one approved voucher (spec 4.4, Cashier). The payee and the
  * most that can be paid come from the voucher; the server checks everything again. */

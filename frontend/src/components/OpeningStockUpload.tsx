@@ -5,9 +5,10 @@ import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client";
 import { openingTemplateUrl, type OSCheck, type OSDetail } from "../api/openingStock";
 import { formatDecimal } from "../lib/decimal";
+import { factoryToday } from "../lib/time";
 
 function today() {
-  return new Date().toLocaleDateString("en-CA");
+  return factoryToday();
 }
 
 /** The Excel sheet of the counted stock: checked first, then loaded as a draft (or into one). */

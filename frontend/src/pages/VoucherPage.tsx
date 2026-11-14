@@ -32,6 +32,7 @@ import {
 import MatchedInvoice from "../components/MatchedInvoice";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -91,7 +92,7 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
         <p className="notice change-notice" role="status">
           {t("voucherActions.deletedBy", {
             name: data.deleted.by,
-            when: new Date(data.deleted.at).toLocaleString(),
+            when: formatDateTime(data.deleted.at),
           })}
           {data.deleted.reason && ` — ${data.deleted.reason}`}
         </p>
@@ -733,7 +734,7 @@ function History({ voucher }: { voucher: VoucherDetail }) {
         {voucher.approvals.map((row, index) => (
           <li key={index}>
             L{row.level} · {t(`vouchers.actions.${row.action}`)} · {row.user} ·{" "}
-            {new Date(row.acted_at).toLocaleString()}
+            {formatDateTime(row.acted_at)}
             {row.reason && ` — ${row.reason}`}
           </li>
         ))}
@@ -760,12 +761,12 @@ function CancellationPanel({ voucher, request }: { voucher: VoucherDetail; reque
       <h2>{t("cancellations.panel")}</h2>
       <p>
         {t(`cancellations.statuses.${request.status}`)} ·{" "}
-        {t("cancellations.requestedBy", { name: request.requested_by, when: new Date(request.requested_at).toLocaleString() })}
+        {t("cancellations.requestedBy", { name: request.requested_by, when: formatDateTime(request.requested_at) })}
         : {request.reason}
       </p>
       {request.decided_by && (
         <p className="muted">
-          {t("cancellations.decidedBy", { name: request.decided_by, when: new Date(request.decided_at ?? "").toLocaleString() })}
+          {t("cancellations.decidedBy", { name: request.decided_by, when: formatDateTime(request.decided_at ?? "") })}
           {request.decision_reason && `: ${request.decision_reason}`}
         </p>
       )}

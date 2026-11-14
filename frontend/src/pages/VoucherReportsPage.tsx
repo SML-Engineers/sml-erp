@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router";
 import { approvedReport, listVouchers, pendingReport, voucherHistory, vouchersKey } from "../api/vouchers";
 import DataTable from "../components/DataTable";
 import ExportLinks from "../components/ExportLinks";
+import { formatDateTime } from "../lib/time";
 
 type Tab = "approved" | "pending" | "history";
 const TABS: Tab[] = ["approved", "pending", "history"];
@@ -96,7 +97,7 @@ function Approved(props: { division: string }) {
               id: "approved",
               header: t("voucherReports.approvedOn"),
               value: (r) => r.approved_at ?? "",
-              cell: (r) => (r.approved_at ? new Date(r.approved_at).toLocaleString() : ""),
+              cell: (r) => (r.approved_at ? formatDateTime(r.approved_at) : ""),
             },
             { id: "by", header: t("voucherReports.approvedBy"), value: (r) => r.approved_by },
             { id: "status", header: t("vouchers.status"), value: (r) => t(`vouchers.statuses.${r.status_code}`) },
@@ -179,7 +180,7 @@ function Pending({ division, level }: { division: string; level: string }) {
               id: "since",
               header: t("voucherReports.since"),
               value: (r) => r.since,
-              cell: (r) => new Date(r.since).toLocaleString(),
+              cell: (r) => formatDateTime(r.since),
             },
             { id: "days", header: t("voucherReports.days"), value: (r) => r.days },
             { id: "total", header: t("vouchers.total"), value: (r) => r.total_amount, money: true },
@@ -242,7 +243,7 @@ function History() {
                   id: "when",
                   header: t("voucherReports.when"),
                   value: (r) => r.acted_at,
-                  cell: (r) => new Date(r.acted_at).toLocaleString(),
+                  cell: (r) => formatDateTime(r.acted_at),
                 },
                 { id: "level", header: t("voucherReports.level"), value: (r) => `L${r.level}` },
                 { id: "action", header: t("voucherReports.action"), value: (r) => r.action },

@@ -26,6 +26,8 @@ import {
   type Shift,
 } from "../../api/rosters";
 import DataTable from "../../components/DataTable";
+import { factoryToday } from "../../lib/time";
+import TimeInput from "../../components/TimeInput";
 
 type Tab = "shifts" | "patterns" | "crews" | "calendar";
 const TABS: Tab[] = ["shifts", "patterns", "crews", "calendar"];
@@ -48,7 +50,7 @@ const hhmm = (time: string) => time.slice(0, 5);
 const hours = (minutes: number) => (minutes / 60).toFixed(2).replace(/\.?0+$/, "");
 
 function localToday() {
-  return new Date().toLocaleDateString("en-CA");
+  return factoryToday();
 }
 
 function useRefresh() {
@@ -215,11 +217,11 @@ function ShiftForm({ shift, onDone }: { shift: Shift | null; onDone: () => void 
         </label>
         <label>
           {t("shifts.start")}
-          <input type="time" value={start} required onChange={(e) => setStart(e.target.value)} />
+          <TimeInput value={start} required onChange={setStart} />
         </label>
         <label>
           {t("shifts.end")}
-          <input type="time" value={end} required onChange={(e) => setEnd(e.target.value)} />
+          <TimeInput value={end} required onChange={setEnd} />
         </label>
         <label>
           {t("shifts.breakMinutes")}

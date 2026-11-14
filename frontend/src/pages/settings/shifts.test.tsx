@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { CurrentUser } from "../../api/auth";
 import type { DivisionAdmin } from "../../api/organisation";
 import type { RosterPattern, RosterPreview, Shift } from "../../api/rosters";
+import { factoryToday } from "../../lib/time";
 import { mockApi, renderAt, sampleUser } from "../../test-utils";
 import ShiftsPage from "./ShiftsPage";
 
@@ -56,7 +57,8 @@ const im: DivisionAdmin = {
   created_at: "2026-10-01T00:00:00Z",
 };
 
-const today = new Date().toLocaleDateString("en-CA");
+// The factory's date (Sri Lanka), as the page uses: the browser's own date differs late at night UTC.
+const today = factoryToday();
 
 const preview: RosterPreview = {
   start: today,

@@ -676,6 +676,9 @@ class ProductionReportView(APIView):
             elif kind == "dashboard":
                 # The Production Manager's home page (owner, 11 Nov 2026).
                 body = dashboard.dashboard(user)
+            elif kind == "supervisor":
+                # The shop-floor supervisor's home page (owner, 12 Nov 2026).
+                body = dashboard.supervisor(user)
             else:
                 return Response({"detail": "Unknown report."}, status=404)
         except reports.ReportError as error:

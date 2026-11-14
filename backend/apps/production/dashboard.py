@@ -32,3 +32,45 @@ def dashboard(user: User) -> dict:
         "made_today": made,
         "moulds_due": len(reports.moulds_due(user)),
     }
+
+
+def supervisor(user: User) -> dict:
+    """The shop-floor supervisor's home page (owner, 12 Nov 2026), for their own sections only:
+    the shifts open for entry and how far each report has got, reports still to finish (draft
+    or returned), today's and tomorrow's plan on their machines, what was made yesterday and
+    today (approved reports), and the moulds due for maintenance."""
+    from datetime import timedelta
+
+    from . import plan, shift_reports
+    from .models import ShiftReport
+
+    today = timezone.localdate()
+    to_finish = (
+        shift_reports.visible(user)
+        .filter(
+            status__in=[ShiftReport.Status.DRAFT, ShiftReport.Status.RETURNED],
+            day__gte=today - timedelta(days=7),
+        )
+        .select_related("section", "shift")
+        .order_by("-day", "section__code")
+    )
+    return {
+        "today": today,
+        "shifts": shift_reports.open_shifts(user),
+        "to_finish": [
+            {
+                "id": r.pk,
+                "section": r.section.code,
+                "day": r.day,
+                "shift": r.shift.code,
+                "status": r.status,
+            }
+            for r in to_finish
+        ],
+        "plan": plan.mine(user)["entries"],
+        "made_yesterday": reports.daily(user, today - timedelta(days=1), today - timedelta(days=1))[
+            "total"
+        ],
+        "made_today": reports.daily(user, today, today)["total"],
+        "moulds_due": reports.moulds_due(user),
+    }

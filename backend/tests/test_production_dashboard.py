@@ -63,3 +63,30 @@ def test_only_people_with_production_reports_see_it(manager):  # noqa: F811
     assert as_user(manager).get(URL).status_code == 200
     clerk = person("clerk9@sml.lk", "clerk")
     assert as_user(clerk).get(URL).status_code == 403
+
+
+SUPERVISOR_URL = "/api/v1/production-reports/supervisor/"
+
+
+def test_the_supervisors_home_page_shows_their_own_shifts_and_output(
+    ready,  # noqa: F811
+    manager,  # noqa: F811
+    supervisor,  # noqa: F811
+):
+    """Owner, 12 Nov 2026: a dashboard for the Moulding Supervisor."""
+    body = as_user(supervisor).get(SUPERVISOR_URL).json()
+    assert body["today"] == TODAY.isoformat()
+    general = [s for s in body["shifts"] if s["shift"] == "G" and s["day"] == TODAY.isoformat()]
+    assert [(s["section"], s["status"]) for s in general] == [("IM-MLD", "submitted")]
+    assert body["to_finish"] == []
+    assert body["made_today"]["good"] == "0"  # submitted, not yet approved
+
+    # The manager sends it back: it is now one to finish.
+    shift_approval.decide(manager, ready["report"], "send_back", reason="Check the rejects")
+    finish = as_user(supervisor).get(SUPERVISOR_URL).json()["to_finish"]
+    assert [(r["section"], r["status"]) for r in finish] == [("IM-MLD", "returned")]
+
+    # A supervisor of another section sees none of it.
+    other = person("ws9@sml.lk", "production_supervisor", all_divisions=True)
+    seen = as_user(other).get(SUPERVISOR_URL).json()
+    assert seen["shifts"] == [] and seen["to_finish"] == [] and seen["plan"] == []

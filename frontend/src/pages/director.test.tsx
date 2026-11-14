@@ -128,3 +128,39 @@ test("the side panel shows the scan, the accountant's comment and the payee bala
   fireEvent.click(within(panel).getByRole("button", { name: "Close" }));
   expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 });
+
+test("from the side panel the Director sends a voucher back to the Accountant", async () => {
+  const detail = {
+    ...waiting[0],
+    voucher_type: { ...waiting[0].voucher_type, id: 1 },
+    payee: { id: 11, code: "S0011", name: "Lanka Steel", category: "supplier" },
+    transfer_to: null,
+    lines: [],
+    attachments: [],
+    warnings: [],
+    payee_balance: null,
+    approvals: [],
+    can_act: true,
+    can_send_to_accountant: true,
+  } as unknown as VoucherDetail;
+  const calls = mockApi({
+    "GET /api/v1/vouchers/waiting/": { body: waiting },
+    "GET /api/v1/vouchers/1/": { body: detail },
+    "POST /api/v1/vouchers/1/back-to-accountant/": { body: { ...detail, status: "submitted" } },
+  });
+  renderAt("/vouchers/approve", <DirectorPage />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "WS261029001" }));
+  const panel = await screen.findByRole("complementary", { name: "Voucher WS261029001" });
+  expect(within(panel).getByRole("button", { name: "Return to Clerk" })).toBeInTheDocument();
+  fireEvent.change(within(panel).getByLabelText(/Send it back instead/), { target: { value: "Code it to repairs" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Send back to the Accountant" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/vouchers/1/back-to-accountant/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "Code it to repairs" }) }),
+    ),
+  );
+  expect(await screen.findByText("Voucher WS261029001 was sent back.")).toBeInTheDocument();
+  expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
+});

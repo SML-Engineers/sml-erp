@@ -161,6 +161,8 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
   waiting_level: number | null;
   waiting_for: string | null;
   can_act: boolean;
+  /** The Director can send it back to the Accountant (it waits after the first level). */
+  can_send_to_accountant?: boolean;
   uncoded_lines: number[];
 }
 

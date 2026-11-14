@@ -66,6 +66,12 @@ urlpatterns += [
         name="voucher-return",
     ),
     path(
+        "vouchers/<int:pk>/back-to-accountant/",
+        v.DecisionView.as_view(),
+        {"decision": "accountant"},
+        name="voucher-back-to-accountant",
+    ),
+    path(
         "vouchers/<int:pk>/reject/",
         v.DecisionView.as_view(),
         {"decision": "reject"},

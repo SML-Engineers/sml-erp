@@ -30,6 +30,7 @@ import {
   type VoucherLineInput,
 } from "../api/vouchers";
 import MatchedInvoice from "../components/MatchedInvoice";
+import { SentBackNotice } from "../components/SentBackNotice";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
@@ -76,7 +77,6 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
   }
   const data = voucher.data;
   const revising = Boolean(data?.actions?.includes("revise") && search.get("edit") === "1");
-  const sentBack = data?.approvals.at(-1)?.action === "send_down" ? data.approvals.at(-1) : undefined;
   const returned =
     data?.status === "returned" ? [...data.approvals].reverse().find((a) => a.action === "return") : undefined;
   return (
@@ -120,11 +120,7 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
           {t("amendments.returnedBy", { name: returned.user })} {returned.reason}
         </p>
       )}
-      {sentBack && (
-        <p className="notice change-notice" role="status">
-          {t("voucherActions.sentBack", { name: sentBack.user })} {sentBack.reason}
-        </p>
-      )}
+      {data && <SentBackNotice approvals={data.approvals} />}
       {data && (
         <p className="muted">
           {t(`vouchers.statuses.${data.status}`)} · {data.division} · {data.voucher_date} ·{" "}

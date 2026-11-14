@@ -514,7 +514,7 @@ A return at either level sends the voucher back to the clerk, and approval resta
 | --- | --- | --- |
 | Draft | Clerk (L1) | Edit, attach invoices, submit, delete |
 | Submitted | Clerk (L1) | Accountant approves, returns or rejects |
-| Accountant Approved | Accountant (L2) | Director approves, returns or rejects |
+| Accountant Approved | Accountant (L2) | Director approves, sends back to the Accountant, returns to the Clerk or rejects |
 | Director Approved | Director (L3) | Cashier records payment |
 | Returned | L2 or L3 | Clerk corrects and resubmits; approvals restart at L2 |
 | Rejected | L2 or L3 | None (final). Reason mandatory |
@@ -529,6 +529,7 @@ A return at either level sends the voucher back to the clerk, and approval resta
 - Every voucher of every type and amount goes through all three levels: L1 submit → L2 approve → L3 approve. No type or amount skips the Director.
 - A user cannot approve their own voucher, or approve at two levels.
 - Reject and Return require a reason; Approve allows an optional comment.
+- The Director can send a voucher back to the Accountant instead of to the Clerk, with a reason, for things the Accountant is responsible for (coding, division, tax). It goes back to the Accountant's queue as Submitted with the reason shown at the top; every Accountant who can approve is notified, the Clerk is not. The Accountant corrects and approves again, and it returns to the Director. The history shows "Sent back to the Accountant" with who and why.
 - Optional reminder: notify the next approver again if a voucher waits longer than a set number of days.
 - The approval matrix (section 3) still allows extra levels to be added later, but not fewer than three for vouchers.
 
@@ -1525,6 +1526,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Admin switch for two-factor sign-in (owner, 14 Nov 2026) | The Admin can switch two-factor sign-in off or on for the whole company, with a reason, audited; on by default; off only while testing and it must be on before go-live | 3 |
 | Stock values only for cost viewers (owner, 14 Nov 2026) | Stock on hand shows average cost, values and the total value only to people who may see costs (Director, Accountant, Auditor, cost viewers); everyone else sees quantities | 5A.3 |
 | Waiting for your approval on every dashboard (owner, 14 Nov 2026) | Each person's dashboard shows how many documents of each kind wait at a level they approve, each linking to where it is approved | 3 |
+| Director sends a voucher back to the Accountant (owner, 14 Nov 2026) | Besides Return to Clerk, the Director can send a voucher back to the Accountant with a reason; the Accountant corrects and approves again, then it returns to the Director | 4.3 |
 
 **Still needed for initial setup**
 

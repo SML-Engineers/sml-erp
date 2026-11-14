@@ -1012,6 +1012,39 @@ def send_back(user: User, voucher: Voucher, reason: str) -> Voucher:
         return sync_status(voucher)
 
 
+TO_ACCOUNTANT = "Sent back to the Accountant: "
+
+
+def send_to_accountant(user: User, voucher: Voucher, reason: str) -> Voucher:
+    """The Director sends the voucher back to the Accountant's level, not all the way to the
+    Clerk: the Accountant corrects the coding and approves again (reason required). The
+    approvals before it no longer count; the log row keeps who sent it back and why."""
+    reason = (reason or "").strip()
+    if not reason:
+        raise VoucherError("Say what the Accountant should check or correct.")
+    with transaction.atomic():
+        voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
+        state = _acting_state(user, voucher)
+        if state.current_level == state.route[0]["level"]:
+            raise VoucherError(
+                f"Voucher {voucher.number} is already waiting for the Accountant; "
+                "use Return to Clerk to send it further back."
+            )
+        try:
+            approvals.send_down(user, DOC, voucher.pk, TO_ACCOUNTANT + reason)
+        except ApprovalError as error:
+            raise VoucherError(str(error)) from None
+        return sync_status(voucher)
+
+
+def history_row(row) -> tuple[str, str, str]:
+    """(action code, label, reason) of one approval-log row, telling a Director's "send back
+    to the Accountant" apart from a change sent back for checking."""
+    if row.action == "send_down" and row.reason.startswith(TO_ACCOUNTANT):
+        return "to_accountant", "Sent back to the Accountant", row.reason[len(TO_ACCOUNTANT) :]
+    return row.action, row.get_action_display(), row.reason
+
+
 def reject(user: User, voucher: Voucher, reason: str) -> Voucher:
     """Reject for good (reason required)."""
     with transaction.atomic():

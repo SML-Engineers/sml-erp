@@ -9,6 +9,7 @@ import { ApiError, apiGet, apiSend } from "../api/client";
 import { getTaxes, taxesKey } from "../api/taxes";
 import MatchedInvoice from "../components/MatchedInvoice";
 import SearchSelect from "../components/SearchSelect";
+import { SentBackNotice } from "../components/SentBackNotice";
 import {
   getVoucher,
   voucherFileUrl,
@@ -185,7 +186,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
     },
   });
   const decide = useMutation({
-    mutationFn: async (decision: "approve" | "return" | "reject") => {
+    mutationFn: async (decision: "approve" | "return" | "back-to-accountant" | "reject") => {
       // Approving uses the coding on the screen: save it first (it stops here if it is wrong).
       if (decision === "approve" && unsaved) {
         props.onSaved(await saveCoding());
@@ -240,11 +241,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
           ⚠ {w}
         </p>
       ))}
-      {voucher.approvals.at(-1)?.action === "send_down" && (
-        <p className="notice change-notice" role="status">
-          {t("voucherActions.sentBack", { name: voucher.approvals.at(-1)!.user })} {voucher.approvals.at(-1)!.reason}
-        </p>
-      )}
+      <SentBackNotice approvals={voucher.approvals} />
 
       <div className="preview" aria-label={t("voucherReview.preview")} role="group">
         {voucher.attachments.length > 1 && (
@@ -453,6 +450,11 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         <button type="button" disabled={decide.isPending} onClick={() => decide.mutate("approve")}>
           {t("voucherReview.approve")}
         </button>
+        {voucher.can_send_to_accountant && (
+          <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("back-to-accountant")}>
+            {t("voucherReview.toAccountant")}
+          </button>
+        )}
         <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("return")}>
           {t("voucherReview.return")}
         </button>

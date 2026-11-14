@@ -95,3 +95,36 @@ export interface ProductionDashboardData {
 export function getProductionDashboard() {
   return apiGet<ProductionDashboardData>("/production-reports/dashboard/");
 }
+
+/** The shop-floor supervisor's dashboard (owner, 12 Nov 2026), for their own sections. */
+export interface SupervisorDashboardData {
+  today: string;
+  shifts: {
+    section: string;
+    section_name: string;
+    day: string;
+    shift: string;
+    shift_name: string;
+    report: number | null;
+    status: string;
+  }[];
+  to_finish: { id: number; section: string; day: string; shift: string; status: "draft" | "returned" }[];
+  plan: {
+    id: number;
+    day: string;
+    shift: string;
+    machine: string;
+    order_number: string;
+    item: string;
+    item_name: string;
+    mould: string;
+    quantity: string;
+  }[];
+  made_yesterday: ProductionDashboardData["made_today"];
+  made_today: ProductionDashboardData["made_today"];
+  moulds_due: { mould: string; name: string; state: "due" | "approaching"; used_pct: string | null }[];
+}
+
+export function getSupervisorDashboard() {
+  return apiGet<SupervisorDashboardData>("/production-reports/supervisor/");
+}

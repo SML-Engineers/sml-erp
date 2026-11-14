@@ -129,3 +129,51 @@ test("nothing waiting shows no panel", async () => {
   await screen.findByText("System status: OK");
   expect(screen.queryByRole("region", { name: "Waiting for your approval" })).not.toBeInTheDocument();
 });
+
+test("a shop-floor supervisor sees their shifts, reports to finish, plan and output", async () => {
+  // Owner, 12 Nov 2026: a dashboard for the Moulding Supervisor.
+  mockApi({
+    "GET /api/v1/health/": { body: { status: "ok", database: "ok", version: "0.1.0" } },
+    "GET /api/v1/production-reports/supervisor/": {
+      body: {
+        today: "2026-11-12",
+        shifts: [
+          { section: "IM-MLD", section_name: "Moulding", day: "2026-11-12", shift: "G", shift_name: "General", report: 6, status: "draft" },
+        ],
+        to_finish: [{ id: 4, section: "IM-MLD", day: "2026-11-10", shift: "G", status: "returned" }],
+        plan: [
+          {
+            id: 1,
+            day: "2026-11-12",
+            shift: "G",
+            machine: "IMM-250",
+            order_number: "MO26110001",
+            item: "CAP-38",
+            item_name: "Cap",
+            mould: "MD-C38",
+            quantity: "19200",
+          },
+        ],
+        made_yesterday: { good: "3960", rejected: "40", reject_pct: "1.00", run_h: "2", stopped_h: "0.25" },
+        made_today: { good: "0", rejected: "0", reject_pct: null, run_h: null, stopped_h: null },
+        moulds_due: [],
+      },
+    },
+  });
+  const supervisor = {
+    ...sampleUser,
+    access: {
+      areas: { dashboard: ["view"], shop_floor: ["enter", "view"], production_approvals: ["view"] },
+      actions: [],
+      divisions: "all",
+    },
+  } as typeof sampleUser;
+  renderAt("/dashboard", <HomePage user={supervisor} />);
+  const panel = await screen.findByRole("region", { name: "My sections" });
+  expect(within(panel).getByRole("link", { name: "IM-MLD · General · 2026-11-12" })).toHaveAttribute("href", "/shift-report?report=6");
+  expect(within(panel).getByText("Draft: not submitted yet")).toBeInTheDocument();
+  expect(within(panel).getByText("Sent back: correct and submit again")).toBeInTheDocument();
+  expect(within(panel).getByText(/CAP-38 \(MD-C38\) · 19,200 pcs/)).toBeInTheDocument();
+  expect(within(panel).getByRole("link", { name: /Good pieces yesterday/ })).toHaveTextContent("3,960");
+  expect(screen.queryByRole("region", { name: "Production" })).not.toBeInTheDocument();
+});

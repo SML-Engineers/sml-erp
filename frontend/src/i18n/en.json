@@ -5454,5 +5454,26 @@
   "waiting": {
     "title": "Waiting for your approval",
     "open": "Open to approve"
+  },
+  "sup": {
+    "title": "My sections",
+    "shifts": "Shifts open for entry",
+    "noShifts": "No shift of your sections is open for entry now.",
+    "status": {
+      "none": "Not started",
+      "draft": "Draft: not submitted yet",
+      "submitted": "Submitted: waiting for approval",
+      "returned": "Sent back: correct and submit again",
+      "approved": "Approved"
+    },
+    "toFinish": "Reports to finish",
+    "plan": "Planned today and tomorrow",
+    "noPlan": "Nothing planned on your machines today or tomorrow.",
+    "pieces": "{{count}} pcs",
+    "yesterday": "Good pieces yesterday",
+    "today": "Good pieces today",
+    "made": "{{rejected}} rejected ({{pct}}%), {{hours}} h downtime; approved reports",
+    "mouldsDue": "Moulds due for maintenance",
+    "noneDue": "None due"
   }
 }

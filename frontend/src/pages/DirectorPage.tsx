@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
 import { ApiError, apiGet, apiSend } from "../api/client";
-import { getVoucher, voucherFileUrl, vouchersKey, type VoucherSummary } from "../api/vouchers";
+import { getVoucher, voucherFileUrl, vouchersKey, type VoucherDetail, type VoucherSummary } from "../api/vouchers";
 import FilesIcon from "../components/FilesIcon";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
@@ -49,6 +49,7 @@ export default function DirectorPage() {
   const [confirming, setConfirming] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
   const [result, setResult] = useState<BulkResult | null>(null);
+  const [sentBack, setSentBack] = useState("");
 
   const all = queue.data ?? [];
   const tabs = useMemo(() => {
@@ -307,14 +308,40 @@ export default function DirectorPage() {
         </p>
       )}
 
-      {open !== null && <SidePanel key={open} id={open} onClose={() => setOpen(null)} />}
+      {sentBack && (
+        <p className="notice" role="status">
+          {t("director.sentBack", { number: sentBack })}
+        </p>
+      )}
+
+      {open !== null && (
+        <SidePanel
+          key={open}
+          id={open}
+          onClose={() => setOpen(null)}
+          onSentBack={(number) => {
+            setOpen(null);
+            setSentBack(number);
+          }}
+        />
+      )}
     </main>
   );
 }
 
-function SidePanel({ id, onClose }: { id: number; onClose: () => void }) {
+function SidePanel({ id, onClose, onSentBack }: { id: number; onClose: () => void; onSentBack: (number: string) => void }) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const voucher = useQuery({ queryKey: [...vouchersKey, "one", id], queryFn: () => getVoucher(id) });
+  // Instead of approving: back to the Accountant (to correct the coding) or to the Clerk.
+  const [reason, setReason] = useState("");
+  const back = useMutation({
+    mutationFn: (to: "back-to-accountant" | "return") => apiSend<VoucherDetail>("POST", `/vouchers/${id}/${to}/`, { reason }),
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries({ queryKey: vouchersKey });
+      onSentBack(data.number);
+    },
+  });
   const v = voucher.data;
   if (!v) return null;
   const scan = v.attachments[0];
@@ -365,6 +392,29 @@ function SidePanel({ id, onClose }: { id: number; onClose: () => void }) {
           ))}
         </tbody>
       </table>
+      {v.can_act && (
+        <div className="send-back">
+          <label>
+            {t("director.sendBackReason")}
+            <input value={reason} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <div className="row-actions">
+            {v.can_send_to_accountant && (
+              <button type="button" className="secondary" disabled={back.isPending} onClick={() => back.mutate("back-to-accountant")}>
+                {t("voucherReview.toAccountant")}
+              </button>
+            )}
+            <button type="button" className="secondary" disabled={back.isPending} onClick={() => back.mutate("return")}>
+              {t("voucherReview.return")}
+            </button>
+          </div>
+          {back.error && (
+            <p className="form-error" role="alert">
+              {back.error instanceof ApiError && back.error.detail ? back.error.detail : t("common.error")}
+            </p>
+          )}
+        </div>
+      )}
     </aside>
   );
 }

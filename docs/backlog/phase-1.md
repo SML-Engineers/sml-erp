@@ -362,6 +362,11 @@ Status: `[ ]` to do · `[x]` done
     total of the rows shown. Tabs, ticks and the side panel work on a phone.
   - Supplier aging in the side panel waits for payments (P1-07); until then it shows the
     amount outstanding on the payee's vouchers.
+  - Owner, 14 Nov 2026 (from his testing): the Director can also send a voucher back to the
+    Accountant, not only to the Clerk, for things the Accountant is responsible for. With a
+    reason, on the review page and in this page's side panel (which also has Return to
+    Clerk). Every Accountant who can approve is notified; the history and the notice at the
+    top say "Sent back to the Accountant" with who and why.
 
 - [x] **P1-04b Row actions: Resources, Print, Edit, Delete** (spec 4.4, as in the current system)
   Actions menu (⋯) on every voucher row, plus a paperclip icon when attachments exist.

@@ -1058,7 +1058,8 @@
       "return": "Returned",
       "reject": "Rejected",
       "send_down": "Changed and sent back to the Accountant",
-      "withdraw": "Withdrawn (voucher deleted)"
+      "withdraw": "Withdrawn (voucher deleted)",
+      "to_accountant": "Sent back to the Accountant"
     },
     "paysMatchedInvoice": "pays a matched supplier invoice",
     "taxOnInvoice": "on the invoice",
@@ -1108,14 +1109,15 @@
     "splitPercent": "Line {{n}}, part {{row}}: %",
     "addDivision": "Add a division",
     "saveCoding": "Save coding",
-    "commentOrReason": "Comment (approve) or reason (return, reject)",
+    "commentOrReason": "Comment (approve) or reason (send back, reject)",
     "approve": "Approve",
     "return": "Return to Clerk",
     "reject": "Reject",
     "saveFirst": "Approve saves the coding first. A voucher is approved at L2 only when every line has its account and division.",
     "unsaved": "Coding changed and not saved yet.",
     "whtOf": "Withholding tax, line {{n}}",
-    "noWht": "No WHT"
+    "noWht": "No WHT",
+    "toAccountant": "Send back to the Accountant"
   },
   "director": {
     "title": "Approve vouchers",
@@ -1153,7 +1155,9 @@
     "details": "Voucher {{number}}",
     "close": "Close",
     "accountantSaid": "Checked by {{name}}",
-    "noComment": "no comment"
+    "noComment": "no comment",
+    "sendBackReason": "Send it back instead: say what to check or correct",
+    "sentBack": "Voucher {{number}} was sent back."
   },
   "voucherActions": {
     "header": "Actions",
@@ -1197,7 +1201,8 @@
     "cancelHelp": "The Director approves or rejects the cancellation. Until then the voucher cannot be amended, deleted or paid. A voucher with any payment can never be cancelled.",
     "cancelReason": "Why should it be cancelled? (required)",
     "sendRequest": "Send to the Director",
-    "pay": "Pay"
+    "pay": "Pay",
+    "toAccountant": "Sent back to the Accountant by {{name}}:"
   },
   "deletedVouchers": {
     "title": "Deleted vouchers",

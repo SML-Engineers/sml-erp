@@ -263,3 +263,50 @@ def test_the_review_through_the_api(clerk, accountant, submitted):
     assert approved.json()["waiting_for"] == "Director"
     refused = client.post(f"/api/v1/vouchers/{submitted.pk}/return/", {}, format="json")
     assert refused.status_code == 400  # it waits for the Director now
+
+
+# --- The Director sends it back to the Accountant ---------------------------------------
+
+
+def test_the_director_sends_a_voucher_back_to_the_accountant(
+    clerk, accountant, director, submitted
+):
+    from apps.core.models import Notification
+
+    with pytest.raises(VoucherError, match="already waiting for the Accountant"):
+        services.send_to_accountant(accountant, submitted, "Check the account")
+    code(accountant, submitted, account=acc("6210"), division=div("WS"))
+    services.approve(accountant, submitted)
+    Notification.objects.all().delete()
+    with pytest.raises(VoucherError, match="Say what the Accountant should check"):
+        services.send_to_accountant(director, submitted, "  ")
+    with pytest.raises(VoucherError):
+        services.send_to_accountant(clerk, submitted, "Check the account")
+    back = services.send_to_accountant(director, submitted, "Code this to repairs, not fuel")
+    assert back.status == "submitted"
+    assert [v.pk for v in services.waiting(accountant)] == [submitted.pk]
+    assert list(services.waiting(director)) == []
+    # every Accountant who can approve is told; the Clerk is not
+    assert Notification.objects.filter(user=accountant).exists()
+    assert not Notification.objects.filter(user=clerk).exists()
+    # the Accountant approves again and it is back with the Director
+    assert services.approve(accountant, back).status == "accountant_approved"
+    assert [v.pk for v in services.waiting(director)] == [submitted.pk]
+
+
+def test_sending_back_to_the_accountant_through_the_api(accountant, director, submitted):
+    code(accountant, submitted, account=acc("6210"), division=div("WS"))
+    services.approve(accountant, submitted)
+    client = as_user(director)
+    detail = client.get(f"/api/v1/vouchers/{submitted.pk}/").json()
+    assert detail["can_send_to_accountant"] is True
+    url = f"/api/v1/vouchers/{submitted.pk}/back-to-accountant/"
+    assert as_user(accountant).post(url, {"reason": "x"}, format="json").status_code == 400
+    assert client.post(url, {}, format="json").status_code == 400
+    sent = client.post(url, {"reason": "Wrong division"}, format="json")
+    assert sent.status_code == 200, sent.json()
+    assert sent.json()["waiting_for"] == "Accountant"
+    last = sent.json()["approvals"][-1]
+    assert last["action"] == "to_accountant" and last["reason"] == "Wrong division"
+    seen = as_user(accountant).get(f"/api/v1/vouchers/{submitted.pk}/").json()
+    assert seen["can_act"] is True and seen["can_send_to_accountant"] is False

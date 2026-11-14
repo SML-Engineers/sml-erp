@@ -257,9 +257,9 @@ def _detail(v: Voucher, user) -> dict:
             "approvals": [
                 {
                     "level": row.level,
-                    "action": row.action,
+                    "action": services.history_row(row)[0],
                     "user": row.user.full_name,
-                    "reason": row.reason,
+                    "reason": services.history_row(row)[2],
                     "acted_at": row.acted_at,
                 }
                 for row in approvals.history(services.DOC, v.pk)
@@ -281,6 +281,10 @@ def _approval(v: Voucher, user) -> dict:
         "waiting_level": state.current_level if waiting else None,
         "waiting_for": step["role_name"] if step else None,
         "can_act": waiting and approvals.why_not(user, state) is None,
+        # The Director (any level after the first) can send it back to the Accountant.
+        "can_send_to_accountant": waiting
+        and state.current_level != state.route[0]["level"]
+        and approvals.why_not(user, state) is None,
         "uncoded_lines": services.uncoded_lines(v) if waiting else [],
     }
 
@@ -658,7 +662,8 @@ class CodingView(_Approving):
 
 
 class DecisionView(_Approving):
-    """Approve (optional comment), return or reject (reason required)."""
+    """Approve (optional comment); return to the Clerk, send back to the Accountant or
+    reject (reason required)."""
 
     def post(self, request, pk, decision):
         voucher = _get(request.user, pk)
@@ -668,6 +673,8 @@ class DecisionView(_Approving):
                 voucher = services.approve(request.user, voucher, text)
             elif decision == "return":
                 voucher = services.send_back(request.user, voucher, text)
+            elif decision == "accountant":
+                voucher = services.send_to_accountant(request.user, voucher, text)
             elif decision == "reject":
                 voucher = services.reject(request.user, voucher, text)
             else:

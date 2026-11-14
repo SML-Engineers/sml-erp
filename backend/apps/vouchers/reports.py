@@ -211,9 +211,9 @@ def history(voucher: Voucher) -> list[dict]:
             "acted_at": row.acted_at,
             "round": row.round,
             "level": row.level,
-            "action": row.get_action_display(),
+            "action": services.history_row(row)[1],
             "user": row.user.full_name,
-            "reason": row.reason,
+            "reason": services.history_row(row)[2],
         }
         for row in approvals.history(DOC, voucher.pk)
     ]

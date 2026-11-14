@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { LedgerAccount } from "../api/accounts";
 import type { VoucherDetail } from "../api/vouchers";
+import { SentBackNotice } from "../components/SentBackNotice";
 import { mockApi, renderAt } from "../test-utils";
 import ReviewPage from "./ReviewPage";
 
@@ -154,7 +155,7 @@ test("the accountant codes an electricity bill split across divisions and approv
     ],
   });
 
-  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (return, reject)"), { target: { value: "checked meter" } });
+  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (send back, reject)"), { target: { value: "checked meter" } });
   fireEvent.click(within(panel).getByRole("button", { name: "Approve" }));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
@@ -170,7 +171,7 @@ test("returning sends the reason", async () => {
 
   fireEvent.click(await screen.findByRole("button", { name: /WS261029001/ }));
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
-  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (return, reject)"), {
+  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (send back, reject)"), {
     target: { value: "Attach the meter reading" },
   });
   fireEvent.click(within(panel).getByRole("button", { name: "Return to Clerk" }));
@@ -180,6 +181,52 @@ test("returning sends the reason", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "Attach the meter reading" }) }),
     ),
   );
+});
+
+test("the Director sends a voucher back to the Accountant, and the Accountant sees why", async () => {
+  const atDirector = { ...voucher, status: "accountant_approved", waiting_level: 3, can_send_to_accountant: true };
+  const back = {
+    ...voucher,
+    approvals: [{ level: 3, action: "to_accountant", user: "Lasith", reason: "Code it to repairs", acted_at: "2026-11-14T10:00:00Z" }],
+  };
+  const calls = mockApi(
+    api({
+      "GET /api/v1/vouchers/9/": { body: atDirector },
+      "POST /api/v1/vouchers/9/back-to-accountant/": { body: back },
+    }),
+  );
+  renderAt("/vouchers/review", <ReviewPage />);
+
+  fireEvent.click(await screen.findByRole("button", { name: /WS261029001/ }));
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (send back, reject)"), {
+    target: { value: "Code it to repairs" },
+  });
+  fireEvent.click(await within(panel).findByRole("button", { name: "Send back to the Accountant" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/vouchers/9/back-to-accountant/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "Code it to repairs" }) }),
+    ),
+  );
+});
+
+test("the Accountant does not see Send back to the Accountant", async () => {
+  mockApi(api());
+  renderAt("/vouchers/review", <ReviewPage />);
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  expect(within(panel).getByRole("button", { name: "Return to Clerk" })).toBeInTheDocument();
+  expect(within(panel).queryByRole("button", { name: "Send back to the Accountant" })).not.toBeInTheDocument();
+});
+
+test("the notice says the Director sent it back", () => {
+  renderAt(
+    "/",
+    <SentBackNotice
+      approvals={[{ level: 3, action: "to_accountant", user: "Lasith", reason: "Code it to repairs", acted_at: "2026-11-14T10:00:00Z" }]}
+    />,
+  );
+  expect(screen.getByRole("status")).toHaveTextContent("Sent back to the Accountant by Lasith: Code it to repairs");
 });
 
 test("the first voucher in the queue opens by itself", async () => {

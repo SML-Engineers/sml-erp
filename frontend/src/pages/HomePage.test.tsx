@@ -101,3 +101,31 @@ test("the Production Planner also sees production, not the sales and purchasing 
   expect(screen.queryByRole("region", { name: "Sales" })).not.toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Purchasing and stores" })).not.toBeInTheDocument();
 });
+
+test("everyone sees what waits for their approval, with a link to each", async () => {
+  // Owner, 12 Nov 2026.
+  mockApi({
+    "GET /api/v1/health/": { body: { status: "ok", database: "ok", version: "0.1.0" } },
+    "GET /api/v1/approvals/waiting/": {
+      body: [
+        { document_type: "voucher", label: "Payment voucher", count: 2 },
+        { document_type: "shift_report", label: "Work shift report", count: 1 },
+      ],
+    },
+  });
+  renderAt("/dashboard", <HomePage user={sampleUser} />);
+  const panel = await screen.findByRole("region", { name: "Waiting for your approval" });
+  expect(within(panel).getByRole("link", { name: /Payment voucher/ })).toHaveAttribute("href", "/vouchers/review");
+  expect(within(panel).getByRole("link", { name: /Work shift report/ })).toHaveAttribute("href", "/shift-report");
+  expect(within(panel).getByRole("link", { name: /Payment voucher/ })).toHaveTextContent("2");
+});
+
+test("nothing waiting shows no panel", async () => {
+  mockApi({
+    "GET /api/v1/health/": { body: { status: "ok", database: "ok", version: "0.1.0" } },
+    "GET /api/v1/approvals/waiting/": { body: [] },
+  });
+  renderAt("/dashboard", <HomePage user={sampleUser} />);
+  await screen.findByText("System status: OK");
+  expect(screen.queryByRole("region", { name: "Waiting for your approval" })).not.toBeInTheDocument();
+});

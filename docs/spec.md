@@ -1524,6 +1524,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Times in Sri Lanka time, 24-hour clock (owner, 13 Nov 2026) | Every date and time shown is Sri Lanka time on the 24-hour clock on any PC or phone; new documents default to the factory's date; time boxes take HH:MM | 3 |
 | Admin switch for two-factor sign-in (owner, 14 Nov 2026) | The Admin can switch two-factor sign-in off or on for the whole company, with a reason, audited; on by default; off only while testing and it must be on before go-live | 3 |
 | Stock values only for cost viewers (owner, 14 Nov 2026) | Stock on hand shows average cost, values and the total value only to people who may see costs (Director, Accountant, Auditor, cost viewers); everyone else sees quantities | 5A.3 |
+| Waiting for your approval on every dashboard (owner, 14 Nov 2026) | Each person's dashboard shows how many documents of each kind wait at a level they approve, each linking to where it is approved | 3 |
 
 **Still needed for initial setup**
 

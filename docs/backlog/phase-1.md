@@ -268,6 +268,10 @@ Status: `[ ]` to do · `[x]` done
   - My notifications page (user menu): bell and email on or off per kind of event.
   - The reminder for vouchers waiting too long (spec 4.3, optional) is left for later.
   - Servers need an SMTP account (EMAIL_* settings) and APP_URL for links in emails.
+  - Owner, 14 Nov 2026: every dashboard starts with "Waiting for your approval": one tile per kind
+    of document waiting at a level the person approves, with a link to where it is approved
+    (`GET /api/v1/approvals/waiting/`, counts only; the engine's own queue). Nothing shows
+    when nothing waits; the maker never sees their own documents.
 
 - [x] **P0-19 Sending documents and reports by email** (spec 3B; owner, 29 Oct 2026)
   Settings → Document email: the sending mailbox (e.g. finance@domain.com) with its mail

@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from . import approvals
 from .approvals import ApprovalError
 from .models import ApprovalRule, Division, Role
-from .permissions import AreaAccess
+from .permissions import AreaAccess, IsFullyAuthenticated
 
 
 def _error(error):
@@ -153,3 +153,27 @@ class ReminderView(_Matrix):
         except ApprovalError as error:
             return _error(error)
         return Response(rows)
+
+
+class WaitingForMeView(APIView):
+    """What waits for this person's approval, by kind of document (owner, 12 Nov 2026): the
+    same queue each document's own page uses, counted for the dashboard."""
+
+    permission_classes = [IsFullyAuthenticated]
+
+    def get(self, request):
+        counts: dict[str, int] = {}
+        for state in approvals.waiting_for(request.user):
+            counts[state.document_type] = counts.get(state.document_type, 0) + 1
+        return Response(
+            [
+                {
+                    "document_type": code,
+                    "label": approvals.DOCUMENT_TYPES[code].name
+                    if code in approvals.DOCUMENT_TYPES
+                    else code,
+                    "count": count,
+                }
+                for code, count in sorted(counts.items())
+            ]
+        )

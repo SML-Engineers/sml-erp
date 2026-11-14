@@ -5445,5 +5445,9 @@
     "reason": "Reason for the change",
     "switchOff": "Switch two-factor sign-in off",
     "switchOn": "Switch two-factor sign-in on"
+  },
+  "waiting": {
+    "title": "Waiting for your approval",
+    "open": "Open to approve"
   }
 }

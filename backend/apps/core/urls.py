@@ -89,6 +89,7 @@ urlpatterns = [
         organisation_views.DivisionAdminDetailView.as_view(),
         name="settings-division-detail",
     ),
+    path("approvals/waiting/", approval_views.WaitingForMeView.as_view(), name="approvals-waiting"),
     path("settings/approval-matrix/", approval_views.MatrixView.as_view(), name="approval-matrix"),
     path(
         "settings/approval-reminders/",

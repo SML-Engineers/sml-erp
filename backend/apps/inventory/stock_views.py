@@ -20,6 +20,14 @@ class _Stock(APIView):
     access_area = "stores"
 
 
+def _sees_values(user) -> bool:
+    """Owner, 12 Nov 2026: stock values (average cost, value, total) are for the people who may
+    see costs (Director, Accountant, Auditor, cost viewers); others see quantities only."""
+    from apps.production import costs
+
+    return costs.can_see(user)
+
+
 def _movements(request):
     rows = StockMovement.objects.filter(division__in=division_scope(request.user))
     params = request.query_params
@@ -37,6 +45,7 @@ def _movements(request):
 class StockOnHandView(_Stock):
     def get(self, request):
         rows = _movements(request)
+        sees = _sees_values(request.user)
         by_lot = request.query_params.get("lots") in ("1", "true")
         found = stock.balances(rows, by_lot=by_lot)
         averages = stock.average_costs(rows)
@@ -65,9 +74,12 @@ class StockOnHandView(_Stock):
                 *([exports.Column("lot", "Lot", width=1.4)] if by_lot else []),
                 exports.Column("quantity", "Quantity", "number", width=0.8),
                 exports.Column("unit", "Unit", width=0.5),
-                exports.Column("average_cost", "Average cost (LKR)", "number", width=0.9),
-                exports.Column("value", "Value (LKR)", "money"),
             ]
+            if sees:
+                columns += [
+                    exports.Column("average_cost", "Average cost (LKR)", "number", width=0.9),
+                    exports.Column("value", "Value (LKR)", "money"),
+                ]
             return exports.response(
                 fmt,
                 title="Stock on hand",
@@ -80,7 +92,8 @@ class StockOnHandView(_Stock):
             )
         return Response(
             {
-                "total_value": str(total),
+                "sees_values": sees,
+                "total_value": str(total) if sees else None,
                 "rows": [
                     {
                         "item": {
@@ -97,9 +110,9 @@ class StockOnHandView(_Stock):
                         },
                         "lot_no": r.get("lot_no"),
                         "quantity": str(r["quantity"]),
-                        "value": str(r["value"]),
+                        "value": str(r["value"]) if sees else None,
                         "average_cost": None
-                        if stores[r["store"]].kind != Store.Kind.MAIN
+                        if not sees or stores[r["store"]].kind != Store.Kind.MAIN
                         else str(averages.get(r["item"], "")) or None,
                     }
                     for r in found
@@ -122,6 +135,7 @@ class MovementListView(_Stock):
             )
             .order_by("-movement_date", "-id")[:2000]
         )
+        sees = _sees_values(request.user)
         return Response(
             [
                 {
@@ -132,7 +146,7 @@ class MovementListView(_Stock):
                     "store": m.store.code,
                     "lot_no": m.lot_no,
                     "quantity": str(m.quantity),
-                    "value": str(m.value),
+                    "value": str(m.value) if sees else None,
                     "grn": None
                     if m.receipt_line_id is None
                     else {"id": m.receipt_line.receipt_id, "number": m.receipt_line.receipt.number},

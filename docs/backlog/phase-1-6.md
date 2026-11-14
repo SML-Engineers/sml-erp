@@ -170,6 +170,10 @@ Status: `[ ]` to do · `[x]` done
     movements. Purchasing and stores → Stock on hand, with lots and movements.
 
 ## F. Supplier invoices and payment
+  - Owner, 14 Nov 2026 (from his testing): the Production Planner saw average cost and total
+    value on Stock on hand. Values (average cost, value, total value, movement values and
+    the Excel/PDF value columns) now show only to people who may see costs (Director,
+    Accountant, Auditor, cost viewers: `production.costs.can_see`); others see quantities.
 
 - [x] **P16-10 Supplier invoices with three-way match** (spec 5A.4)
   Entered by the Accounts Clerk with the scan, linked to GRN lines; supplier + invoice number

@@ -30,7 +30,7 @@ export default function StockPage() {
         <label>
           <input type="checkbox" checked={lots === "1"} onChange={(e) => set("lots", e.target.checked ? "1" : "")} /> {t("stock.byLot")}
         </label>
-        {stock.data && <strong>{t("stock.totalValue", { value: formatDecimal(stock.data.total_value) })}</strong>}
+        {stock.data?.sees_values && <strong>{t("stock.totalValue", { value: formatDecimal(stock.data.total_value) })}</strong>}
         <span className="export-links">
           <a href={`/api/v1/stock/?export=xlsx${lots ? "&lots=1" : ""}`}>Excel</a> · <a href={`/api/v1/stock/?export=pdf${lots ? "&lots=1" : ""}`}>PDF</a>
         </span>
@@ -55,8 +55,18 @@ export default function StockPage() {
             { id: "store", header: t("stock.store"), value: (r) => `${r.store.code} · ${t(`stock.kinds.${r.store.kind}`)}` },
             ...(lots === "1" ? [{ id: "lot", header: t("stock.lot"), value: (r: StockRow) => r.lot_no ?? "" }] : []),
             { id: "quantity", header: t("quotations.quantity"), value: (r) => r.quantity, cell: (r) => `${formatQuantity(r.quantity)} ${r.item.unit}` },
-            { id: "cost", header: t("stock.averageCost"), value: (r) => r.average_cost ?? "", cell: (r) => (r.average_cost ? formatDecimal(r.average_cost) : "") },
-            { id: "value", header: t("stock.value"), value: (r) => r.value, cell: (r) => formatDecimal(r.value) },
+            // Owner, 12 Nov 2026: values only for people who may see costs.
+            ...(stock.data.sees_values
+              ? [
+                  {
+                    id: "cost",
+                    header: t("stock.averageCost"),
+                    value: (r: StockRow) => r.average_cost ?? "",
+                    cell: (r: StockRow) => (r.average_cost ? formatDecimal(r.average_cost) : ""),
+                  },
+                  { id: "value", header: t("stock.value"), value: (r: StockRow) => r.value ?? "", cell: (r: StockRow) => formatDecimal(r.value) },
+                ]
+              : []),
           ]}
         />
       )}
@@ -77,7 +87,7 @@ export default function StockPage() {
                   <th>{t("stock.store")}</th>
                   <th>{t("stock.lot")}</th>
                   <th className="num">{t("quotations.quantity")}</th>
-                  <th className="num">{t("stock.value")}</th>
+                  {stock.data?.sees_values && <th className="num">{t("stock.value")}</th>}
                   <th>{t("stock.source")}</th>
                 </tr>
               </thead>
@@ -89,7 +99,7 @@ export default function StockPage() {
                     <td>{m.store}</td>
                     <td className="mono">{m.lot_no}</td>
                     <td className="num">{formatQuantity(m.quantity)}</td>
-                    <td className="num">{Number(m.value) !== 0 ? formatDecimal(m.value) : ""}</td>
+                    {stock.data?.sees_values && <td className="num">{Number(m.value) !== 0 ? formatDecimal(m.value) : ""}</td>}
                     <td>
                       {m.grn && <Link to={`/goods-receipts/${m.grn.id}`}>{m.grn.number}</Link>}
                       {m.opening && <Link to={`/opening-stock/${m.opening.id}`}>{m.opening.number}</Link>}

@@ -76,6 +76,16 @@ Status: `[ ]` to do · `[x]` done
     (copy: the source's roles by name and the present roles they replace) and need a reason
     and a second press ("Yes, …"); the server refuses copy and reset without a reason. After
     any change the roles and divisions panels show the saved values at once.
+  - Owner, 15 Nov 2026: **every new role waits for the Director.** A role the Admin gives
+    (or copies) is a role request (core 0029) and works only once someone who confirms
+    sensitive access, other than the person who asked and the person it is for, confirms
+    it (database check too); refusing needs a reason; unticking a waiting role withdraws
+    it; removing a role works at once. With nobody else able to confirm (a new system
+    with no Director yet) the role works at once, in the audit log. The Director is told
+    (in-app and email) and sees **Access to confirm** under "Waiting for your approval";
+    the page of that name (Administration) lists new roles, sensitive extra access and
+    password resets waiting, each with Confirm / Approve or Refuse with a reason. The
+    Admin is told the decision; the user page shows the waiting roles.
   - The Admin cannot change their own roles or overrides.
   - Deactivating a leaver ends all their sessions at once and removes their overrides; their
     records and history remain.

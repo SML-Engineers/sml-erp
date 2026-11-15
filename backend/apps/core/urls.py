@@ -170,6 +170,22 @@ urlpatterns = [
     path(
         "overrides/pending/", access_views.PendingOverridesView.as_view(), name="overrides-pending"
     ),
+    path("role-requests/", access_views.RoleRequestsView.as_view(), name="role-requests"),
+    path(
+        "access-to-confirm/", access_views.AccessToConfirmView.as_view(), name="access-to-confirm"
+    ),
+    path(
+        "role-requests/<int:pk>/confirm/",
+        access_views.RoleRequestDecisionView.as_view(),
+        {"decision": "confirm"},
+        name="role-request-confirm",
+    ),
+    path(
+        "role-requests/<int:pk>/refuse/",
+        access_views.RoleRequestDecisionView.as_view(),
+        {"decision": "refuse"},
+        name="role-request-refuse",
+    ),
     path(
         "overrides/<int:pk>/confirm/",
         access_views.OverrideConfirmView.as_view(),

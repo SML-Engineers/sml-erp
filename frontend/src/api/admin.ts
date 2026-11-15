@@ -20,6 +20,8 @@ export interface UserRecord {
   all_divisions: boolean;
   divisions: string[];
   roles: RoleSummary[];
+  /** Roles given but waiting for the Director (owner, 15 Nov 2026); they do not work yet. */
+  pending_roles?: RoleRequestRow[];
   last_login: string | null;
   date_joined: string;
 }
@@ -163,3 +165,32 @@ export const decidePasswordReset = (id: number, approve: boolean, reason: string
   apiPost<PasswordResetRow>(`/password-resets/${id}/${approve ? "approve" : "refuse"}/`, { reason });
 export const issuePasswordReset = (id: number) =>
   apiPost<PasswordResetRow & { temporary_password: string }>(`/password-resets/${id}/issue/`);
+
+// --- Access waiting for the Director (owner, 15 Nov 2026) ---
+
+export interface RoleRequestRow {
+  id: number;
+  user_id: number;
+  user: string;
+  email: string;
+  code: string;
+  name: string;
+  reason: string;
+  conflict_warning: string;
+  requested_by: string;
+  requested_by_id: number;
+  requested_at: string;
+  mine?: boolean;
+}
+
+export interface AccessToConfirm {
+  can_confirm: boolean;
+  roles: RoleRequestRow[];
+  grants: (Override & { user_name: string; user_id: number; mine: boolean })[];
+  resets: (PasswordResetRow & { user_name: string; user_id: number })[];
+}
+
+export const accessToConfirmKey = ["access-to-confirm"];
+export const getAccessToConfirm = () => apiGet<AccessToConfirm>("/access-to-confirm/");
+export const confirmRole = (id: number) => apiPost<RoleRequestRow>(`/role-requests/${id}/confirm/`);
+export const refuseRole = (id: number, reason: string) => apiPost<RoleRequestRow>(`/role-requests/${id}/refuse/`, { reason });

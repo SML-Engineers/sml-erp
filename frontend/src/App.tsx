@@ -122,6 +122,7 @@ import QuotationPage from "./pages/QuotationPage";
 import QuotationsPage from "./pages/QuotationsPage";
 import TwoFactorSetupPage from "./pages/TwoFactorSetupPage";
 import AccessReviewPage from "./pages/admin/AccessReviewPage";
+import AccessToConfirmPage from "./pages/admin/AccessToConfirmPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
 import UserAccessPage from "./pages/admin/UserAccessPage";
 import UsersPage from "./pages/admin/UsersPage";
@@ -287,6 +288,7 @@ export default function App() {
         <Route path="admin/users" element={<WithMe page={(me) => <UsersPage me={me} />} />} />
         <Route path="admin/users/:id" element={<WithMe page={(me) => <UserAccessPage me={me} />} />} />
         <Route path="admin/access-review" element={<WithMe page={(me) => <AccessReviewPage me={me} />} />} />
+        <Route path="admin/access-to-confirm" element={<AccessToConfirmPage />} />
         <Route path="admin/audit" element={<AuditLogPage />} />
         <Route path="settings/company" element={<WithMe page={(me) => <CompanyPage me={me} />} />} />
         <Route path="settings/divisions" element={<WithMe page={(me) => <DivisionsPage me={me} />} />} />

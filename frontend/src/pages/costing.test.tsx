@@ -111,3 +111,32 @@ test("the Accountant adds a material's price from a date", async () => {
     ),
   );
 });
+
+test("removing a price not started yet asks for the reason right there (owner, 15 Nov 2026)", async () => {
+  const calls = mockApi(
+    api({
+      "GET /api/v1/costing/materials/3/rates/": {
+        body: [
+          { id: 9, effective_from: "2099-01-01", rate: "425.50", reason: "", created_by: null, created_at: "", in_force: false },
+          { id: 8, effective_from: "2026-10-01", rate: "400.00", reason: "", created_by: null, created_at: "", in_force: true },
+        ],
+      },
+      "DELETE /api/v1/costing/materials/3/rates/9/": { status: 204, body: null },
+    }),
+  );
+  renderAt("/costing-rates", <CostingRatesPage me={accountant} />);
+  fireEvent.click(await screen.findByRole("button", { name: "EN8-BAR" }));
+  const prices = await screen.findByRole("group", { name: "Prices of EN8-BAR" });
+  fireEvent.click(await within(prices).findByRole("button", { name: "Remove" }));
+  const reason = within(prices).getByLabelText("Reason for removing");
+  const confirm = within(prices).getByRole("button", { name: "Remove" });
+  expect(confirm).toBeDisabled(); // no reason yet
+  fireEvent.change(reason, { target: { value: "Supplier withdrew the offer" } });
+  fireEvent.click(confirm);
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/costing/materials/3/rates/9/",
+      expect.objectContaining({ method: "DELETE", body: JSON.stringify({ reason: "Supplier withdrew the offer" }) }),
+    ),
+  );
+});

@@ -24,6 +24,7 @@ import {
   type MaterialKind,
 } from "../api/costing";
 import DataTable from "../components/DataTable";
+import RemoveWithReason from "../components/RemoveWithReason";
 import { formatDecimal } from "../lib/decimal";
 import { factoryToday } from "../lib/time";
 
@@ -110,14 +111,11 @@ function DivisionRates({ canManage }: { canManage: boolean }) {
               value: () => "",
               cell: (r) =>
                 canManage && !r.in_force ? (
-                  <button
-                    type="button"
-                    className="small secondary"
-                    title={t("costing.removeReason")}
-                    onClick={() => remove.mutate({ id: r.id, reason: values.reason })}
-                  >
-                    {t("costing.remove")}
-                  </button>
+                  <RemoveWithReason
+                    label={t("costing.remove")}
+                    pending={remove.isPending}
+                    onRemove={(reason) => remove.mutate({ id: r.id, reason })}
+                  />
                 ) : null,
             },
           ]}
@@ -386,14 +384,11 @@ function MaterialPrices({ material, canManage }: { material: Material; canManage
                   <td>{r.in_force ? t("costing.started") : t("costing.future")}</td>
                   <td>
                     {canManage && !r.in_force && (
-                      <button
-                        type="button"
-                        className="small secondary"
-                        title={t("costing.removeReason")}
-                        onClick={() => remove.mutate({ id: r.id, reason: values.reason })}
-                      >
-                        {t("costing.remove")}
-                      </button>
+                      <RemoveWithReason
+                        label={t("costing.remove")}
+                        pending={remove.isPending}
+                        onRemove={(reason) => remove.mutate({ id: r.id, reason })}
+                      />
                     )}
                   </td>
                 </tr>

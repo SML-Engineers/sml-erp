@@ -43,6 +43,10 @@ Status: `[ ]` to do · `[x]` done
 
 ## B. Quotations
 
+  Owner, 15 Nov 2026 (testing 2.7): **Remove** on a price or division rate not started yet
+  asked for "a reason" that had to be typed in the add form's Reason box, which nobody could
+  guess. Now Remove opens a "Reason for removing" box next to it with its own Remove (only
+  with a reason) and Cancel; the same on the tax rates page.
 - [x] **P15-03 Quotation entry** (spec 5.1, 5.5)
   Header: customer, contact, enquiry reference, division (WS or IM), currency and the
   exchange rate of the day, validity (days or date), payment terms, delivery lead time,

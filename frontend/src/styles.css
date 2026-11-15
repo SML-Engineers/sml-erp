@@ -1543,3 +1543,11 @@ ul.plain-list li {
   padding-top: 6px;
   border-top: 1px solid var(--color-border);
 }
+
+/* A Remove button that asks for the reason in place (owner, 15 Nov 2026). */
+.remove-with-reason {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+}

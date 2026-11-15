@@ -299,3 +299,35 @@ def test_pieces_shared_by_time_always_add_up():
     assert (first, second) == ("5", "6")
     assert _piece_part(job, D("11"), at(7), at(9), at(9)) == "11"
     assert _piece_part(MachineJob(started_at=at(7)), D("11"), at(7), at(8), at(9)) == ""
+
+
+# --- P3-24 d: the Dashboard ---------------------------------------------------------------------
+
+
+def test_the_dashboard_counts_machines_and_hours_today(
+    clock,  # noqa: F811
+    leader,
+    manager,  # noqa: F811
+    job,
+    press,
+    released,
+):
+    Machine.objects.create(
+        code="M-LAT-02", name="Lathe 2", section=Section.objects.get(code="M-LAT")
+    )
+    Machine.objects.filter(code="IMM-250").update(status=Machine.Status.MAINTENANCE)
+    clock["now"] = at(8)
+    first = machine_jobs.start(leader, {"machine": "M-LAT-01", "job": f"{job.number}/20"})
+    clock["now"] = at(9, 30)
+    machine_jobs.finish(leader, first.pk, {"completed": "4"})
+    machine_jobs.start(leader, {"machine": "M-LAT-01", "job": f"{job.number}/20"})
+    clock["now"] = at(10)
+    d = as_user(manager).get("/api/v1/machine-jobs/today/").json()
+    assert d["counts"] == {"running": 1, "idle": 1, "maintenance": 1}
+    assert [m["code"] for m in d["running"]] == ["M-LAT-01"]
+    assert d["running"][0]["jobs"][0]["minutes"] == 30
+    assert d["running"][0]["jobs"][0]["started_by"] == leader.full_name
+    assert d["idle"] == ["M-LAT-02"] and d["maintenance"] == ["IMM-250"]
+    assert [(f["job"], f["minutes"]) for f in d["finished"]] == [(job.number, 90)]
+    lathe = next(h for h in d["hours"] if h["machine"] == "M-LAT-01")
+    assert lathe["minutes"] == 120 and lathe["pct"] == "20.0"  # 2 h of the 10 h so far

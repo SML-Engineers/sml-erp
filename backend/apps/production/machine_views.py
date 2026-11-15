@@ -40,6 +40,13 @@ class MachineBoardView(_MachineTime):
         return Response(machine_jobs.board(request.user))
 
 
+class MachineTodayView(_MachineTime):
+    """The Dashboard's machine panel (P3-24 d)."""
+
+    def get(self, request):
+        return Response(machine_jobs.today(request.user))
+
+
 class MachineJobListView(_MachineTime):
     def get(self, request):
         return Response({"results": machine_jobs.recent(request.user)})

@@ -5579,5 +5579,28 @@
     "resetApproved": "Password reset approved for {{name}}; the Admin can now make the temporary password.",
     "resetRefused": "Password reset refused for {{name}}.",
     "waitingRoles": "Waiting for the Director: {{roles}}. They work once confirmed."
+  },
+  "mh": {
+    "title": "Machine hours",
+    "help": "Hours each machine ran, from the jobs started and finished on Machine time, with downtime from the shift reports. Utilisation is the hours run out of the clock hours (24 a day). Each job's time against its estimate: the operation's setup and run time for the pieces made, or the shots at the mould's standard cycle.",
+    "from": "From",
+    "to": "To",
+    "by": "Group by",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "machines": "Hours per machine",
+    "hours": "Hours run",
+    "downtime": "Downtime (h)",
+    "utilisation": "Utilisation",
+    "costVsEstimate": "Machine cost / estimate (LKR)",
+    "cellTitle": "Downtime {{down}} h · utilisation {{pct}}%",
+    "jobs": "Jobs and orders",
+    "actual": "Actual (h)",
+    "estimate": "Estimate (h)",
+    "cost": "Machine cost (LKR)",
+    "estimateCost": "Estimated cost (LKR)",
+    "over": "+{{pct}}%",
+    "profitHint": "Each job's profit or loss, with materials, labour and all its costs:"
   }
 }

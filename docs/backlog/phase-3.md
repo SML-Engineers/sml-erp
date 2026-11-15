@@ -672,7 +672,7 @@ Status: `[ ]` to do · `[x]` done
   can adopt them as new dated rates (P3-05). Needs a few months of production data, so it
   comes after costing (P3-16).
 
-- [ ] **P3-24 Machine production time: start and finish jobs live**
+- [x] **P3-24 Machine production time: start and finish jobs live**
   Asked for by the owner (15 Nov 2026): a **Production Team Leader** records, at the machine
   and as it happens, when each machine starts and finishes a job; the Dashboard shows what
   every machine is doing; the time feeds job costing and profit with no second entry.
@@ -735,6 +735,17 @@ Status: `[ ]` to do · `[x]` done
     downtime; time per job and order; estimated (routing) against actual time with the
     jobs over estimate; machine cost (hours × rate) against standard, linked to order
     profitability for the profit or loss of each job.
+    Done: **Machine hours** in the Production menu (area machine_time; `GET
+    /api/v1/machine-jobs/hours/?start&end&by=day|week|month`): per machine and period the
+    hours run (from machine time, split at midnight), downtime from the shift reports and
+    utilisation = hours run ÷ clock hours (24 a day, today so far; the same measure as the
+    Dashboard); per job and order the actual hours against the estimate (workshop:
+    operation setup + run minutes × pieces completed and rejected; moulding: shots × the
+    mould's standard cycle), over estimate flagged with the %. For people who may see costs
+    (`costs.can_see`): machine cost = hours × the machine-hour rate in force on the start
+    day, the estimate at the same rate, and per machine actual against estimate (over in
+    colour). Jobs and orders link to their pages; the full profit or loss per job stays on
+    Order profitability (P3-17), which already uses the shift report time this feeds.
 
 - [ ] **P3-22 User acceptance testing and go-live**
   Scripts in `docs/uat-scripts.md` run by the supervisors, the Production Manager, stores

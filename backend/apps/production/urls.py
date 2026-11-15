@@ -88,6 +88,7 @@ urlpatterns = [
     path("machine-jobs/", mv.MachineJobListView.as_view(), name="machine-jobs"),
     path("machine-jobs/board/", mv.MachineBoardView.as_view(), name="machine-board"),
     path("machine-jobs/today/", mv.MachineTodayView.as_view(), name="machine-today"),
+    path("machine-jobs/hours/", mv.MachineHoursView.as_view(), name="machine-hours"),
     path("machine-jobs/options/", mv.MachineJobOptionsView.as_view(), name="machine-job-options"),
     path(
         "machine-jobs/<int:pk>/finish/",

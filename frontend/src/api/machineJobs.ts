@@ -85,3 +85,45 @@ export function duration(minutes: number): string {
   const m = minutes % 60;
   return h ? `${h} h ${String(m).padStart(2, "0")} min` : `${m} min`;
 }
+
+/** The machine hours report (P3-24 e). Cost fields only for people who may see costs. */
+export interface MachineHours {
+  start: string;
+  end: string;
+  by: "day" | "week" | "month";
+  periods: string[];
+  show_cost: boolean;
+  machines: {
+    machine: string;
+    name: string;
+    section: string;
+    hours: string;
+    downtime_hours: string;
+    utilisation: string;
+    periods: { period: string; hours: string; downtime_hours: string; utilisation: string }[];
+    cost_vs_estimate?: { actual: string; estimate: string; over: boolean };
+  }[];
+  jobs: {
+    id: number;
+    machine: string;
+    kind: "job" | "moulding";
+    job: string | null;
+    job_id: number | null;
+    operation: number | null;
+    operation_name: string | null;
+    order: string | null;
+    order_id: number | null;
+    started_at: string;
+    ended_at: string | null;
+    hours: string;
+    estimate_hours: string | null;
+    over: boolean;
+    over_pct: string | null;
+    rate?: string;
+    cost?: string;
+    estimate_cost?: string | null;
+  }[];
+}
+
+export const getMachineHours = (start: string, end: string, by: string) =>
+  apiGet<MachineHours>(`/machine-jobs/hours/?${new URLSearchParams({ start, end, by }).toString()}`);

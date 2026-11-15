@@ -18,7 +18,7 @@ export default function AppLayout({ user }: { user: CurrentUser }) {
   const { t } = useTranslation();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const sections = visibleMenu(user.access);
+  const sections = visibleMenu(user.access, user.is_employee !== false);
 
   // On a phone the menu covers the page; close it after choosing a page.
   useEffect(() => setMenuOpen(false), [location.pathname]);

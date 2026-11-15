@@ -10,6 +10,8 @@ export interface CurrentUser {
   two_factor_required: boolean;
   requirements: Requirement[];
   access: Access;
+  /** Linked to an employee record: sees "My pay and leave" (owner, 12 Nov 2026). */
+  is_employee?: boolean;
 }
 
 export type Me =

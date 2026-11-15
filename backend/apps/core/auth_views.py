@@ -37,7 +37,15 @@ def _user_payload(user):
         "two_factor_required": user.two_factor_required,
         "requirements": auth.setup_requirements(user),
         "access": access_payload(user),
+        # Owner, 12 Nov 2026: "My pay and leave" only for people linked to an employee record.
+        "is_employee": _is_employee(user),
     }
+
+
+def _is_employee(user) -> bool:
+    from apps.payroll.models import Employee
+
+    return Employee.objects.filter(user=user).exists()
 
 
 def _result_response(result):

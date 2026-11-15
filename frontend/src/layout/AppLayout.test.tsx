@@ -89,3 +89,11 @@ test("the user menu signs out", async () => {
 test("empty menu sections are left out", () => {
   expect(visibleMenu(clerk.access).map((s) => s.label)).toEqual(["menu.main", "menu.vouchers"]);
 });
+
+test("My pay and leave is only for people linked to an employee record", () => {
+  // Owner, 12 Nov 2026.
+  const items = (isEmployee: boolean) => visibleMenu(clerk.access, isEmployee).flatMap((s) => s.items.map((i) => i.label));
+  expect(items(true)).toContain("my.title");
+  expect(items(false)).not.toContain("my.title");
+  expect(items(false)).toContain("menu.dashboard");
+});

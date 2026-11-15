@@ -4923,7 +4923,14 @@
     "conflictMine": "Your version (on this phone)",
     "conflictTheirs": "The saved version",
     "keepMine": "Keep my version",
-    "keepTheirs": "Keep the saved version"
+    "keepTheirs": "Keep the saved version",
+    "mtTitle": "From machine time",
+    "mtHelp": "Jobs the Team Leader started and finished on this section's machines in this shift. Add them as lines, then check, give rejects by reason and save.",
+    "mtRunning": "still running: give the figures",
+    "mtBy": "by {{name}}",
+    "mtAdd": "Add",
+    "mtAddAll": "Add all {{n}}",
+    "mtRejected": "Team Leader: {{n}} rejected, give the reasons"
   },
   "mouldMaint": {
     "title": "Mould maintenance",

@@ -34,6 +34,8 @@ export interface RunValues {
   machine: string;
   order: number | "";
   plan_entry?: number | null;
+  /** P3-24 c: the Team Leader's machine job the line was filled from. */
+  machine_job?: number | null;
   material_lot: string;
   operator: string;
   start_time: string;
@@ -71,6 +73,7 @@ export interface JobWorkValues {
   rework: string;
   setup: boolean;
   notes: string;
+  machine_job?: number | null;
   rejects: { reason: string; quantity: string }[];
 }
 
@@ -184,10 +187,34 @@ export interface ShiftReport extends ReportRow {
       description: string;
       operations: { seq: number; name: string; section: string; machine: string; in_hand: string; run_min: string }[];
     }[];
+    /** P3-24 c: the Team Leader's jobs in this shift, ready to add as lines. */
+    machine_time?: MachineTimeLine[];
     reject_reasons: { code: string; name: string }[];
     downtime_reasons: { code: string; name: string }[];
     operators: { number: string; name: string }[];
   };
+}
+
+export interface MachineTimeLine {
+  machine_job: number;
+  machine: string;
+  operator: string;
+  start_time: string;
+  end_time: string;
+  started_by: string;
+  running: boolean;
+  kind: "job" | "moulding";
+  job?: string;
+  operation?: number;
+  operation_name?: string;
+  completed?: string;
+  rejected?: string;
+  notes?: string;
+  order?: number;
+  order_number?: string;
+  mould?: string;
+  start_counter?: number;
+  end_counter?: number | null;
 }
 
 export interface ReportValues {

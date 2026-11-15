@@ -36,6 +36,7 @@ from apps.core.models import Company
 from apps.inventory.labels import _fit, _qr
 from apps.payroll.models import Employee
 
+from . import machine_jobs
 from .models import (
     JobCardEntry,
     JobCardReject,
@@ -280,6 +281,9 @@ def parse(report: ShiftReport, values: dict, look, helpers) -> list[dict]:
                 "rework": rework,
                 "setup": setup,
                 "notes": " ".join(str(r.get("notes") or "").split())[:200],
+                "machine_job": machine_jobs.check_link(
+                    report, machine, r.get("machine_job"), started, ended
+                ),
                 "rejects": rejects,
                 "label": label,
             }
@@ -365,6 +369,7 @@ def read(report: ShiftReport) -> list[dict]:
                 "rework": _n(e.rework),
                 "setup": e.setup,
                 "notes": e.notes,
+                "machine_job": e.machine_job_id,
                 "rejects": [
                     {"reason": x.reason.code, "quantity": _n(x.quantity)} for x in e.rejects.all()
                 ],

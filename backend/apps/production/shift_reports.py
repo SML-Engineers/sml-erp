@@ -38,7 +38,7 @@ from apps.inventory.models import Item, StockMovement
 from apps.masters.models import Machine, Section, Shift
 from apps.payroll.models import Employee
 
-from . import job_cards, plan
+from . import job_cards, machine_jobs, plan
 from .job_cards import JobCardError
 from .models import (
     DowntimeEntry,
@@ -349,6 +349,9 @@ def _runs(report: ShiftReport, values: dict, look: _Lookups) -> list[dict]:
                 "order": order,
                 "mould": order.mould,
                 "plan_entry": entry,
+                "machine_job": machine_jobs.check_link(
+                    report, machine, r.get("machine_job"), started, ended
+                ),
                 "material": material,
                 "material_lot": lot,
                 "operator": operator,
@@ -685,6 +688,7 @@ def payload(report: ShiftReport, user: User) -> dict:
                 "item": r.order.item.code,
                 "mould": r.mould.code,
                 "plan_entry": r.plan_entry_id,
+                "machine_job": r.machine_job_id,
                 "material_lot": r.material_lot,
                 "material": r.material.code if r.material_id else "",
                 "operator": r.operator.number if r.operator_id else "",
@@ -765,6 +769,8 @@ def payload(report: ShiftReport, user: User) -> dict:
                 for e in planned
             ],
             "jobs": job_cards.options(look),
+            # P3-24 c: the Team Leader's jobs in this shift, ready to add as lines.
+            "machine_time": machine_jobs.for_report(report, start, end),
             "reject_reasons": [{"code": c, "name": r.name} for c, r in look.rejects.items()],
             "downtime_reasons": [{"code": c, "name": r.name} for c, r in look.downtime.items()],
             "operators": [

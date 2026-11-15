@@ -806,6 +806,10 @@ class MouldingRun(models.Model):
     cavities = models.PositiveSmallIntegerField()
     good_quantity = models.DecimalField(max_digits=18, decimal_places=3)
     actual_cycle_s = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # P3-24 c: the Team Leader's machine job this run was filled from, if any.
+    machine_job = models.ForeignKey(
+        "MachineJob", null=True, blank=True, on_delete=models.PROTECT, related_name="runs"
+    )
 
     class Meta:
         ordering = ["report", "machine__code", "started_at"]
@@ -1279,6 +1283,10 @@ class JobCardEntry(models.Model):
     # Minutes worked less the machine's downtime in them, per piece (completed + rejected).
     minutes_per_piece = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     notes = models.CharField(max_length=200, blank=True)
+    # P3-24 c: the Team Leader's machine job this line was filled from, if any.
+    machine_job = models.ForeignKey(
+        "MachineJob", null=True, blank=True, on_delete=models.PROTECT, related_name="entries"
+    )
 
     class Meta:
         ordering = ["report", "machine__code", "started_at"]

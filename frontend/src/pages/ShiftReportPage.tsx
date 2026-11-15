@@ -16,6 +16,7 @@ import {
   submitReport,
   type DowntimeValues,
   type JobWorkValues,
+  type MachineTimeLine,
   type ManpowerValues,
   type MaterialValues,
   type ReportValues,
@@ -122,6 +123,7 @@ function valuesOf(r: ShiftReport): ReportValues {
       machine: x.machine,
       order: x.order,
       plan_entry: x.plan_entry,
+      machine_job: x.machine_job ?? null,
       material_lot: x.material_lot,
       operator: x.operator,
       start_time: x.start_time,
@@ -141,6 +143,7 @@ function valuesOf(r: ShiftReport): ReportValues {
       rework: x.rework,
       setup: x.setup,
       notes: x.notes,
+      machine_job: x.machine_job ?? null,
       rejects: x.rejects.map((j) => ({ ...j })),
     })),
     downtime: r.downtime.map((x) => ({ ...x })),
@@ -269,6 +272,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
       {edit && <p className="muted small">{t("shiftReport.closes", { at: formatDateTime(r.closes_at) })}</p>}
       {r.return_reason && r.status === "returned" && <p className="notice">{t("shiftReport.returned", { reason: r.return_reason })}</p>}
       {r.approved_by && r.status === "approved" && <p className="notice">{t("shiftReport.approvedBy", { name: r.approved_by })}</p>}
+      {edit && <FromMachineTime lines={o.machine_time ?? []} values={v} onAdd={put} />}
       {r.section_type === "machining" && (
         <JobCards report={r} rows={v.operations} edit={edit} fresh={values === null} onChange={(operations) => put({ operations })} />
       )}
@@ -1114,6 +1118,85 @@ function Conflict(props: { mine: ReportValues; theirs: ShiftReport; busy: boolea
           {t("shiftReport.keepTheirs")}
         </button>
       </div>
+    </section>
+  );
+}
+
+/** P3-24 c: the Team Leader's jobs on this section's machines in this shift, not yet in the
+ * report: one tap adds them as lines (times, counters or pieces filled in) to check and save.
+ * Rejects by reason, downtime and the rest are still entered here as before. */
+function FromMachineTime({
+  lines,
+  values,
+  onAdd,
+}: {
+  lines: MachineTimeLine[];
+  values: ReportValues;
+  onAdd: (next: Partial<ReportValues>) => void;
+}) {
+  const { t } = useTranslation();
+  const added = new Set([...values.runs, ...values.operations].map((x) => x.machine_job).filter(Boolean));
+  const waiting = lines.filter((l) => !added.has(l.machine_job));
+  if (waiting.length === 0) return null;
+
+  function add(chosen: MachineTimeLine[]) {
+    const runs = chosen
+      .filter((l) => l.kind === "moulding")
+      .map((l): RunValues => ({
+        ...NEW_RUN,
+        machine: l.machine,
+        order: l.order ?? "",
+        operator: l.operator,
+        start_time: l.start_time,
+        end_time: l.end_time,
+        start_counter: l.start_counter === undefined ? "" : String(l.start_counter),
+        end_counter: l.end_counter === null || l.end_counter === undefined ? "" : String(l.end_counter),
+        machine_job: l.machine_job,
+      }));
+    const operations = chosen
+      .filter((l) => l.kind === "job")
+      .map((l): JobWorkValues => ({
+        job: l.job ?? "",
+        operation: String(l.operation ?? ""),
+        machine: l.machine,
+        operator: l.operator,
+        start_time: l.start_time,
+        end_time: l.end_time,
+        completed: l.completed ?? "",
+        rework: "",
+        setup: false,
+        notes: [l.notes, l.rejected && l.rejected !== "0" ? t("shiftReport.mtRejected", { n: l.rejected }) : ""]
+          .filter(Boolean)
+          .join(" · ")
+          .slice(0, 200),
+        machine_job: l.machine_job,
+        rejects: [],
+      }));
+    onAdd({ runs: [...values.runs, ...runs], operations: [...values.operations, ...operations] });
+  }
+
+  return (
+    <section className="panel" aria-label={t("shiftReport.mtTitle")}>
+      <h2>{t("shiftReport.mtTitle")}</h2>
+      <p className="muted">{t("shiftReport.mtHelp")}</p>
+      <ul className="plain-list">
+        {waiting.map((l) => (
+          <li key={`${l.machine_job}-${l.start_time}`}>
+            {l.machine} · {l.start_time}–{l.end_time} ·{" "}
+            {l.kind === "job" ? `${l.job}/${l.operation} ${l.operation_name ?? ""}` : `${l.order_number} · ${l.mould}`}
+            {l.running && <span className="warning-text"> · {t("shiftReport.mtRunning")}</span>}{" "}
+            <span className="muted">{t("shiftReport.mtBy", { name: l.started_by })}</span>{" "}
+            <button type="button" className="secondary" onClick={() => add([l])}>
+              {t("shiftReport.mtAdd")}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {waiting.length > 1 && (
+        <button type="button" onClick={() => add(waiting)}>
+          {t("shiftReport.mtAddAll", { n: String(waiting.length) })}
+        </button>
+      )}
     </section>
   );
 }

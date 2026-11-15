@@ -181,6 +181,51 @@ test("a run from the plan, downtime and material are saved, then the report subm
   expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
 });
 
+test("the Team Leader's machine time is added to the report in one tap (P3-24 c)", async () => {
+  const machineTime = [
+    {
+      machine_job: 41,
+      machine: "IMM-250",
+      operator: "E010",
+      start_time: "08:00",
+      end_time: "10:00",
+      started_by: "Tharindu",
+      running: false,
+      kind: "moulding" as const,
+      order: 7,
+      order_number: "MO26110001",
+      mould: "MD-001",
+      start_counter: 1000,
+      end_counter: 1500,
+    },
+  ];
+  const calls = mockApi({
+    "GET /api/v1/shift-reports/9/": { body: { ...report, runs: [], options: { ...report.options, machine_time: machineTime } } },
+    "PUT /api/v1/shift-reports/9/": { body: report },
+  });
+  renderAt("/shift-report?report=9", <ShiftReportPage />, "/shift-report");
+  const panel = await screen.findByRole("region", { name: "From machine time" });
+  expect(within(panel).getByText(/IMM-250 · 08:00–10:00 · MO26110001 · MD-001/)).toBeInTheDocument();
+  fireEvent.click(within(panel).getByRole("button", { name: "Add" }));
+  expect(screen.queryByRole("region", { name: "From machine time" })).not.toBeInTheDocument();
+  const run = screen.getByRole("group", { name: "Run 1" });
+  expect(within(run).getByLabelText("Shot counter at start")).toHaveValue("1000");
+  expect(within(run).getByLabelText("Shot counter at end")).toHaveValue("1500");
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/shift-reports/9/", expect.objectContaining({ method: "PUT" })));
+  const put = calls.mock.calls.find((c) => c[0] === "/api/v1/shift-reports/9/" && c[1]?.method === "PUT");
+  expect(JSON.parse(String(put?.[1]?.body)).runs[0]).toMatchObject({
+    machine: "IMM-250",
+    order: 7,
+    operator: "E010",
+    start_time: "08:00",
+    end_time: "10:00",
+    start_counter: "1000",
+    end_counter: "1500",
+    machine_job: 41,
+  });
+});
+
 test("the summary and a saving error are shown", async () => {
   mockApi({
     "GET /api/v1/shift-reports/9/": { body: report },

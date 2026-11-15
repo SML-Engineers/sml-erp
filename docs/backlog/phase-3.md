@@ -672,6 +672,43 @@ Status: `[ ]` to do · `[x]` done
   can adopt them as new dated rates (P3-05). Needs a few months of production data, so it
   comes after costing (P3-16).
 
+- [ ] **P3-24 Machine production time: start and finish jobs live**
+  Asked for by the owner (15 Nov 2026): a **Production Team Leader** records, at the machine
+  and as it happens, when each machine starts and finishes a job; the Dashboard shows what
+  every machine is doing; the time feeds job costing and profit with no second entry.
+  The owner's choices (15 Nov): a **new role**, Production Team Leader (not the
+  supervisor); **workshop and moulding** machines; the job is **picked or scanned** from the
+  open jobs and production orders (no free typing). Already in place and reused: the time
+  per job and operation in the Work shift report (P3-08, P3-12), job costing with the
+  machine-hour, labour, material, subcontract and overhead rates (P3-05, P3-16), order
+  profitability with estimate, actual and forecast (P3-17), and the production reports
+  (P3-20). One PR each:
+  - **a. Start and finish (backend).** A new area "Machine time" (view: the machine board;
+    enter: start and finish jobs; approve: allow a second job on a busy machine) and the
+    role Production Team Leader (machine time for their own sections, the dashboard). A
+    machine job: the machine, a job order's operation (workshop) or a production order and
+    mould (moulding), the operator, drawing no. (from the job, can be changed or left
+    blank), description, notes, started and finished by whom and when; on finishing, the
+    pieces completed and rejected (workshop) or the shot counter at start and end
+    (moulding). The total time is worked out from start and finish. **One running job per
+    machine** (database), unless someone with Approve (the Production Manager) starts a
+    second with a reason. A retired machine or one under maintenance cannot start a job.
+  - **b. Team Leader page.** Phone-first, in English and Sinhala: the machines of their
+    sections as tiles (running with job and time so far, idle, maintenance); Start job
+    (scan the job card or pick the job / order), Finish job, notes.
+  - **c. Into the shift report.** A finished job becomes the job card line (workshop) or
+    moulding run of the Work shift report of the shift it ran in, split at shift ends, so
+    costing, OEE and profit keep working as now; the supervisor sees these lines marked
+    "from the Team Leader" and completes the report as before.
+  - **d. Dashboard: machines now.** On the existing Dashboard, by role and section: machines
+    running (number and list), idle, under maintenance; each one's job / order, start time,
+    running time (counts up), operator and team leader; jobs finished today with their
+    times; hours each machine ran today. Refreshes every minute.
+  - **e. Machine hours report.** Hours per machine by day, week or month; utilisation and
+    downtime; time per job and order; estimated (routing) against actual time with the
+    jobs over estimate; machine cost (hours × rate) against standard, linked to order
+    profitability for the profit or loss of each job.
+
 - [ ] **P3-22 User acceptance testing and go-live**
   Scripts in `docs/uat-scripts.md` run by the supervisors, the Production Manager, stores
   and the Accountant; moulding live first, then machining.

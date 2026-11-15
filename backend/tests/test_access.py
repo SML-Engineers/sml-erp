@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.core import access
-from apps.core.access_defaults import AREAS, STANDARD_ROLES_V1
+from apps.core.access_defaults import AREAS, STANDARD_ROLES_V1, TEAM_LEADER_ROLE_V1
 from apps.core.models import AuditEvent, Division, Role, User, UserRole
 from apps.core.permissions import AreaAccess
 
@@ -55,8 +55,11 @@ def test_standard_roles_are_loaded_with_phase_one_and_sales_roles_active():
         "production_planner",
         "production_supervisor",
         "production_manager",
-    }  # Phase 1.5 (P15-01), Phase 1.6 (P16-02), Phase 2b (P2B-01) and Phase 3 (P3-01)
-    assert Role.objects.filter(is_standard=True).count() == len(STANDARD_ROLES_V1)
+        "production_team_leader",
+    }  # Phase 1.5 (P15-01), Phase 1.6 (P16-02), Phase 2b (P2B-01), Phase 3 (P3-01, P3-24)
+    assert Role.objects.filter(is_standard=True).count() == len(STANDARD_ROLES_V1) + len(
+        TEAM_LEADER_ROLE_V1
+    )
 
 
 def test_divisions_ws_im_ho_are_loaded():

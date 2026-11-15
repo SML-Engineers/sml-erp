@@ -1474,7 +1474,6 @@
     "future": "Not started yet",
     "started": "Started",
     "remove": "Remove",
-    "removeReason": "Removes a rate that has not started yet; type the reason in the Reason box first.",
     "add": "Add",
     "materials": "Materials",
     "noMaterials": "No materials yet.",
@@ -5521,5 +5520,8 @@
     "secondReason": "The machine is already running a job: why is a second one allowed?",
     "completed": "Pieces completed",
     "rejected": "Pieces rejected"
+  },
+  "removeWithReason": {
+    "reason": "Reason for removing"
   }
 }

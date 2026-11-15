@@ -24,6 +24,7 @@ import {
   type TaxOverview,
   type TaxUse,
 } from "../api/taxes";
+import RemoveWithReason from "../components/RemoveWithReason";
 import { formatDecimal } from "../lib/decimal";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -224,7 +225,10 @@ function ComponentPanel({ component, canManage }: { component: TaxComponent; can
   const [sales, setSales] = useState(component.sales_account ? String(component.sales_account.id) : "");
   const [purchases, setPurchases] = useState(component.purchase_account ? String(component.purchase_account.id) : "");
   const add = useMutation({ mutationFn: () => addTaxRate(component.id, from, rate, reason), onSuccess: save });
-  const remove = useMutation({ mutationFn: (id: number) => removeTaxRate(component.id, id, reason), onSuccess: save });
+  const remove = useMutation({
+    mutationFn: ({ id, why }: { id: number; why: string }) => removeTaxRate(component.id, id, why),
+    onSuccess: save,
+  });
   const update = useMutation({
     mutationFn: (change: { is_active?: boolean }) =>
       updateComponent(component.id, {
@@ -265,9 +269,11 @@ function ComponentPanel({ component, canManage }: { component: TaxComponent; can
                 <td className="num">{r.rate}%</td>
                 <td>
                   {canManage && !(r.in_force && component.in_use) && (
-                    <button type="button" className="small secondary" onClick={() => remove.mutate(r.id)}>
-                      {t("taxes.removeRate")}
-                    </button>
+                    <RemoveWithReason
+                      label={t("taxes.removeRate")}
+                      pending={remove.isPending}
+                      onRemove={(why) => remove.mutate({ id: r.id, why })}
+                    />
                   )}
                 </td>
               </tr>

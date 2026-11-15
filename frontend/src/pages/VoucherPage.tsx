@@ -127,6 +127,15 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
           {t("vouchers.createdBy", { name: data.created_by })}
         </p>
       )}
+      {data?.can_act && (
+        <section className="panel confirm-box" aria-label={t("waiting.title")}>
+          <h2>{t("waiting.title")}</h2>
+          <p>{t("vouchers.waitingYou", { level: data.waiting_level, role: data.waiting_for ?? "" })}</p>
+          <Link className="button-link" to={`/vouchers/review?open=${data.id}`}>
+            {t("waiting.open")}
+          </Link>
+        </section>
+      )}
       {data?.warnings.map((w) => (
         <p key={w} className="notice" role="status">
           ⚠ {w}

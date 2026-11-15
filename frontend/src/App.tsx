@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 
 import type { CurrentUser } from "./api/auth";
 import AuthGate from "./components/AuthGate";
@@ -198,6 +198,8 @@ export default function App() {
         <Route path="reconciliation" element={<ReconciliationPage />} />
         <Route path="petty-cash" element={<PettyCashPage />} />
         <Route path="stores-work" element={<StockWorkPage />} />
+        {/* Stock adjustment notifications sent before 16 Nov 2026 link here. */}
+        <Route path="stock-adjustments/:id" element={<Navigate to="/stores-work?tab=adjustments" replace />} />
         <Route path="fixed-assets" element={<FixedAssetsPage />} />
         <Route path="tax-reports" element={<TaxReportsPage />} />
         <Route path="wip-report" element={<WipReportPage />} />

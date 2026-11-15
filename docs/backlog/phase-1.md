@@ -281,6 +281,13 @@ Status: `[ ]` to do · `[x]` done
     of document waiting at a level the person approves, with a link to where it is approved
     (`GET /api/v1/approvals/waiting/`, counts only; the engine's own queue). Nothing shows
     when nothing waits; the maker never sees their own documents.
+  - Owner, 16 Nov 2026: a notification must open a page where the person can do what it asks.
+    A voucher opened from the bell showed no Approve: vouchers are decided on "Waiting for my
+    approval". Now the voucher page shows a "Waiting for your approval" box (level and role)
+    with "Open to approve", which opens that voucher there with the scan, the coding and
+    Approve / Return / Reject (and Send back to the Accountant for the Director). Every other
+    notification link was checked: the pages already had their action, except stock adjustments,
+    whose link had no page; it now opens Stores work on the Adjustments tab (old links too).
 
 - [x] **P0-19 Sending documents and reports by email** (spec 3B; owner, 29 Oct 2026)
   Settings → Document email: the sending mailbox (e.g. finance@domain.com) with its mail

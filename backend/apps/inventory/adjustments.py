@@ -210,7 +210,7 @@ def submit(user: User, adjustment: StockAdjustment, comment: str = "") -> StockA
                 division=adjustment.store.division,
                 comment=comment,
                 title=f"Stock adjustment {adjustment.number} ({adjustment.get_kind_display()})",
-                link=f"/stock-adjustments/{adjustment.pk}",
+                link="/stores-work?tab=adjustments",
             )
         except ApprovalError as error:
             raise StockError(str(error)) from None

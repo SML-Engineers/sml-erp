@@ -1506,3 +1506,40 @@ ul.plain-list li {
   padding: 6px 0;
   border-bottom: 1px solid #e5e7eb;
 }
+
+/* --- Machine time (P3-24): machine tiles, running / idle / maintenance --- */
+.machine-tile {
+  border-left: 4px solid var(--color-border);
+}
+
+.machine-tile.running {
+  border-left-color: #1f8a4c;
+}
+
+.machine-tile.maintenance {
+  border-left-color: #b26b00;
+}
+
+.machine-status {
+  font-weight: 700;
+}
+
+.machine-status.running {
+  color: #1f8a4c;
+}
+
+.machine-status.idle {
+  color: var(--color-muted);
+}
+
+.machine-status.maintenance {
+  color: #b26b00;
+}
+
+.machine-job {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border);
+}

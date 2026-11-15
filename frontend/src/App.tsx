@@ -90,6 +90,7 @@ import ProductionOrdersPage from "./pages/ProductionOrdersPage";
 import JobOrdersPage from "./pages/JobOrdersPage";
 import MouldMaintenancePage from "./pages/MouldMaintenancePage";
 import ProductionPlanPage from "./pages/ProductionPlanPage";
+import MachineTimePage from "./pages/MachineTimePage";
 import ShiftReportPage from "./pages/ShiftReportPage";
 import PayrollTakeoverPage from "./pages/PayrollTakeoverPage";
 import WorkRulesPage from "./pages/WorkRulesPage";
@@ -231,6 +232,7 @@ export default function App() {
         <Route path="production-plan" element={<ProductionPlanPage />} />
         <Route path="mould-maintenance" element={<MouldMaintenancePage />} />
         <Route path="shift-report" element={<ShiftReportPage />} />
+        <Route path="machine-time" element={<MachineTimePage />} />
         <Route path="payroll-returns" element={<StatutoryReturnsPage />} />
         <Route path="advances-loans" element={<AdvancesLoansPage />} />
         <Route path="my" element={<MyPage />} />

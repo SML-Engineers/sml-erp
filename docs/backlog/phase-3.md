@@ -696,6 +696,15 @@ Status: `[ ]` to do · `[x]` done
   - **b. Team Leader page.** Phone-first, in English and Sinhala: the machines of their
     sections as tiles (running with job and time so far, idle, maintenance); Start job
     (scan the job card or pick the job / order), Finish job, notes.
+    Done: **Machine time** in the Production menu (area machine_time). Tiles per machine
+    with the status in colour (running green, idle grey, maintenance amber), each running
+    job with its start and time so far (counts up, refreshed every minute) and operator.
+    Start: workshop picks the job card from a list (operations planned on the machine
+    marked ★) or scans it, drawing no. filled from the job; moulding picks the order (mould
+    from the order, can be changed) and types the shot counter. A running machine offers
+    "Start a second job" only to the Production Manager, who gives the reason. Finish:
+    pieces completed and rejected, or the counter at the end. Latest jobs below with times
+    and output. English and Sinhala.
   - **c. Into the shift report.** A finished job becomes the job card line (workshop) or
     moulding run of the Work shift report of the shift it ran in, split at shift ends, so
     costing, OEE and profit keep working as now; the supervisor sees these lines marked

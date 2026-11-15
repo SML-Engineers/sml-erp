@@ -962,8 +962,15 @@ legend {
   border-top: 1px solid var(--color-border);
 }
 
+/* Owner, 15 Nov 2026: unread in bold, read in regular weight (and greyer). */
 .bell-panel li.unread > .link-button {
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.bell-panel li.read > .link-button {
+  font-weight: 400;
+  color: var(--color-muted);
 }
 
 .bell-panel li .link-button {

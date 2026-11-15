@@ -97,3 +97,14 @@ test("a person switches off emails for one kind of event", async () => {
   );
   await waitFor(() => expect(screen.getByLabelText("By email: A document is waiting for my approval")).not.toBeChecked());
 });
+
+test("unread notifications are bold, read ones regular (owner, 15 Nov 2026)", async () => {
+  const older = { ...bell.items[0], id: 4, title: "Voucher WS261028001 was approved", read: true };
+  mockApi({ "GET /api/v1/notifications/": { body: { unread: 1, items: [bell.items[0], older] } } });
+  renderBell();
+
+  fireEvent.click(await screen.findByRole("button", { name: "Notifications, 1 unread" }));
+  const unread = await screen.findByRole("button", { name: bell.items[0].title });
+  expect(unread.closest("li")).toHaveClass("unread");
+  expect(screen.getByRole("button", { name: older.title }).closest("li")).toHaveClass("read");
+});

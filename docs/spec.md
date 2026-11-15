@@ -1530,6 +1530,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Shop-floor supervisor's dashboard (owner, 12 Nov 2026) | A supervisor's home page shows, for their own sections: shifts open for entry, reports still to finish, today's and tomorrow's plan, good pieces made yesterday and today, and moulds due; in English and Sinhala | 7.6 |
 | "My pay and leave" only for employees (owner, 12 Nov 2026) | The menu shows "My pay and leave" only to people whose sign-in is linked to an employee record | 6, 7A |
 | Read notifications in regular type (owner, 15 Nov 2026) | Under the bell, unread notifications are bold and read ones regular, so the new ones stand out | 3 |
+| Office pages in Sinhala (owner, 15 Nov 2026) | The office pages are translated to Sinhala one area at a time, vouchers first; someone fluent checks the wording on screen | 7.4 |
 
 **Still needed for initial setup**
 

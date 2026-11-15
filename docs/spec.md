@@ -1531,6 +1531,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | "My pay and leave" only for employees (owner, 12 Nov 2026) | The menu shows "My pay and leave" only to people whose sign-in is linked to an employee record | 6, 7A |
 | Read notifications in regular type (owner, 15 Nov 2026) | Under the bell, unread notifications are bold and read ones regular, so the new ones stand out | 3 |
 | Office pages in Sinhala (owner, 15 Nov 2026) | The office pages are translated to Sinhala one area at a time, vouchers first; someone fluent checks the wording on screen | 7.4 |
+| Machine production time (owner, 15 Nov 2026) | A new role, Production Team Leader, starts and finishes jobs live at workshop and moulding machines (job picked or scanned); one running job per machine unless the Production Manager allows a second; the Dashboard shows every machine; the time feeds the shift report, job costing and profit (P3-24 a to e) | 7.4, 7.7 |
 
 **Still needed for initial setup**
 

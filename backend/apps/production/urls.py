@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import machine_views as mv
 from . import views as v
 
 urlpatterns = [
@@ -82,6 +83,15 @@ urlpatterns = [
     path("job-orders/<int:pk>/cards/", v.JobCardsView.as_view(), name="job-order-cards"),
     path(
         "job-orders/<int:pk>/<str:action>/", v.JobOrderActionView.as_view(), name="job-order-action"
+    ),
+    # P3-24: machine time, started and finished live at the machine.
+    path("machine-jobs/", mv.MachineJobListView.as_view(), name="machine-jobs"),
+    path("machine-jobs/board/", mv.MachineBoardView.as_view(), name="machine-board"),
+    path("machine-jobs/options/", mv.MachineJobOptionsView.as_view(), name="machine-job-options"),
+    path(
+        "machine-jobs/<int:pk>/finish/",
+        mv.MachineJobFinishView.as_view(),
+        name="machine-job-finish",
     ),
     path("production-plan/", v.PlanView.as_view(), name="production-plan"),
     path("production-plan/copy/", v.PlanCopyView.as_view(), name="production-plan-copy"),

@@ -1770,3 +1770,107 @@ class OrderClose(models.Model):
 
     def __str__(self):
         return f"Close report of {self.job or self.production_order}"
+
+
+class MachineJob(models.Model):
+    """A job started and finished live at the machine by the Production Team Leader (backlog
+    P3-24): a job order's operation on a workshop machine, or a production order and mould on
+    a moulding machine. At most one runs on a machine at a time (database), unless someone
+    with Approve on machine time started a second with a reason. The time is worked out from
+    start and finish."""
+
+    class Kind(models.TextChoices):
+        JOB = "job", "Workshop job"
+        MOULDING = "moulding", "Moulding"
+
+    machine = models.ForeignKey("masters.Machine", on_delete=models.PROTECT, related_name="+")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    job = models.ForeignKey(
+        JobOrder, null=True, blank=True, on_delete=models.PROTECT, related_name="machine_jobs"
+    )
+    operation = models.ForeignKey(
+        JobOperation, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    order = models.ForeignKey(
+        ProductionOrder,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="machine_jobs",
+    )
+    mould = models.ForeignKey(
+        Mould, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    operator = models.ForeignKey(
+        "payroll.Employee", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    drawing_no = models.CharField("Drawing no.", max_length=50, blank=True)
+    description = models.CharField(max_length=200)
+    notes = models.CharField(max_length=300, blank=True)
+    started_at = models.DateTimeField()
+    started_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    # Workshop: pieces finished at the end. Moulding: the shot counter at start and end.
+    completed = models.DecimalField(max_digits=18, decimal_places=3, null=True, blank=True)
+    rejected = models.DecimalField(max_digits=18, decimal_places=3, null=True, blank=True)
+    start_counter = models.PositiveBigIntegerField(null=True, blank=True)
+    end_counter = models.PositiveBigIntegerField(null=True, blank=True)
+    # A second job on a machine already running one: who allowed it and why.
+    second_allowed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    second_reason = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ["-started_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["machine"],
+                condition=models.Q(ended_at__isnull=True, second_allowed_by__isnull=True),
+                name="production_machinejob_one_running",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(ended_at__isnull=True)
+                | models.Q(ended_at__gt=models.F("started_at")),
+                name="production_machinejob_times",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        kind="job",
+                        job__isnull=False,
+                        operation__isnull=False,
+                        order__isnull=True,
+                        mould__isnull=True,
+                        start_counter__isnull=True,
+                    )
+                    | models.Q(
+                        kind="moulding",
+                        job__isnull=True,
+                        operation__isnull=True,
+                        order__isnull=False,
+                        mould__isnull=False,
+                        start_counter__isnull=False,
+                        completed__isnull=True,
+                    )
+                ),
+                name="production_machinejob_kind",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(end_counter__isnull=True)
+                | models.Q(end_counter__gte=models.F("start_counter")),
+                name="production_machinejob_counters",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(second_allowed_by__isnull=True) | ~models.Q(second_reason=""),
+                name="production_machinejob_second_reason",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.machine_id} {self.started_at}"

@@ -21,6 +21,8 @@ AREAS = {
     "quality": "Quality",
     "production_planning": "Production planning and job orders",
     "shop_floor": "Shop-floor entry",
+    # P3-24 (owner, 15 Nov 2026): start and finish jobs live at the machine; the machine board.
+    "machine_time": "Machine time (start and finish jobs)",
     "production_approvals": "Production approvals and reports",
     "job_profitability": "Job and order profitability",
     "hr_payroll": "HR and payroll",
@@ -392,4 +394,27 @@ ROLE_NAMES_V2 = {
         "Receives goods against purchase orders and confirms GRNs; material issues and "
         "returns. Never approves payments or accepts goods in QC.",
     ),
+}
+
+# P3-24 (production migration 0042): machine time, started and finished live at the machine
+# (owner, 15 Nov 2026). A new role, Production Team Leader, for their own sections; Approve
+# (the Production Manager) may start a second job on a busy machine.
+TEAM_LEADER_ROLE_V1 = {
+    "production_team_leader": (
+        "Production Team Leader",
+        "Starts and finishes jobs on the machines of their own sections.",
+        True,
+        [
+            ("dashboard", "view", "own sections"),
+            ("machine_time", "enter", "own sections"),
+        ],
+        [],
+    ),
+}
+MACHINE_TIME_GRANTS_V1 = {
+    "director": ("view", ""),
+    "auditor": ("view", ""),
+    "production_planner": ("view", ""),
+    "production_supervisor": ("enter", "own sections"),
+    "production_manager": ("approve", ""),
 }

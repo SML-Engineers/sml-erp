@@ -655,6 +655,12 @@ Status: `[ ]` to do · `[x]` done
     (Sinhala **වැඩ මුර වාර්තාව**; the Sinhala uses මුරය for "shift" throughout); the whole
     side menu and the home page in Sinhala (other office pages stay English); the side-menu
     headings in black bold and a little larger.
+  - Owner, 15 Nov 2026 (testing): the office pages in Sinhala too, **one area at a time**,
+    one PR each, checked on screen by someone fluent as they come. About 4,500 texts.
+    First the vouchers (PR #211, about 270 texts): the list, voucher entry and its actions,
+    review and coding, the Director's approval page, the voucher reports, cancellations,
+    amendments and deleted vouchers. Terms: ගණකාධිකාරී (Accountant), අධ්‍යක්ෂ (Director),
+    ලිපිකරු (Clerk), ලාභියා (payee), කොට්ඨාසය (division), ගිණුම් කේතනය (coding).
 
 - [ ] **P3-23 Overhead and machine-hour rates from past data**
   Asked for by the owner (7 Nov 2026): the overhead rate and the rate per machine hour

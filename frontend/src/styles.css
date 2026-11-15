@@ -1551,3 +1551,13 @@ ul.plain-list li {
   align-items: flex-end;
   gap: 6px;
 }
+
+/* A change that needs a second look before it is made (owner, 15 Nov 2026). */
+.confirm-box {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid #b26b00;
+  border-radius: 6px;
+  background: #fffaf0;
+}

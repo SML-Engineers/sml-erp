@@ -138,8 +138,12 @@ def copy_access(actor: User, target: User, source: User, reason: str) -> list[st
     """Give `target` the same roles, divisions and current overrides as `source`.
 
     Sensitive grants are copied as new requests that the Director must confirm again.
+    A reason is required (owner, 15 Nov 2026: it replaces the person's roles).
     """
     _not_self(actor, target)
+    reason = (reason or "").strip()
+    if not reason:
+        raise access.AccessError("Give a reason for copying the access.")
     roles = list(Role.objects.filter(assignments__user=source))
     warnings = access.set_user_roles(actor, target, roles, reason)
     access.set_user_scope(actor, target, source.all_divisions, list(source.divisions.all()))

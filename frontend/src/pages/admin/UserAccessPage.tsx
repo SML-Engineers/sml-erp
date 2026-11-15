@@ -90,8 +90,15 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
 
       {canManage && !own && <Lifecycle user={user} onDone={refresh} />}
       {!own && <PasswordResetPanel userId={id} name={user.full_name} />}
-      <RolesPanel user={user} editable={canManage && !own} onDone={refresh} />
-      <ScopePanel user={user} editable={canManage && !own} onDone={refresh} />
+      {/* Keyed on what they show, so they start again from the saved values after a change
+          elsewhere on the page (copy access, reset), not only after a page refresh. */}
+      <RolesPanel key={user.roles.map((r) => r.code).join()} user={user} editable={canManage && !own} onDone={refresh} />
+      <ScopePanel
+        key={`${user.all_divisions}:${user.divisions.join()}`}
+        user={user}
+        editable={canManage && !own}
+        onDone={refresh}
+      />
       <SectionScopePanel userId={id} editable={canManage && !own} />
       <GridPanel grid={grid.data} userId={id} editable={canManage && !own} onDone={refresh} />
 
@@ -193,31 +200,45 @@ function OverrideButton(props: {
   );
 }
 
+type Change = "deactivate" | "reset" | "copy";
+
+/** Account changes. Deactivate, reset and copy first say exactly what will happen and need a
+ * reason, then a second press (owner, 15 Nov 2026: "Copy access" used to change the roles at
+ * once, with no confirmation and no reason). Activating stays one press. */
 function Lifecycle({ user, onDone }: { user: UserRecord; onDone: () => void }) {
   const { t } = useTranslation();
   const [reason, setReason] = useState("");
   const [source, setSource] = useState("");
+  const [asking, setAsking] = useState<Change | null>(null);
   const users = useQuery({ queryKey: ["users"], queryFn: listUsers });
+  const from = users.data?.find((u) => String(u.id) === source);
   const act = useMutation({
-    mutationFn: (what: "deactivate" | "reactivate" | "reset" | "copy"): Promise<unknown> => {
+    mutationFn: (what: Change | "reactivate"): Promise<unknown> => {
       if (what === "deactivate") return deactivateUser(user.id, reason);
       if (what === "reactivate") return reactivateUser(user.id);
       if (what === "reset") return resetOverrides(user.id, reason);
       return copyAccess(user.id, Number(source), reason);
     },
-    onSuccess: onDone,
+    onSuccess: () => {
+      setAsking(null);
+      setReason("");
+      setSource("");
+      onDone();
+    },
   });
+  const names = (roles: { name: string }[]) => roles.map((r) => r.name).join(", ") || t("access.noRoles");
+
+  function ask(what: Change) {
+    act.reset();
+    setAsking(what);
+  }
 
   return (
     <section className="panel">
       <h2>{t("access.account")}</h2>
       <div className="inline-form">
-        <label>
-          {t("access.reason")}
-          <input value={reason} onChange={(e) => setReason(e.target.value)} />
-        </label>
         {user.is_active ? (
-          <button type="button" className="danger" onClick={() => act.mutate("deactivate")}>
+          <button type="button" className="danger" onClick={() => ask("deactivate")}>
             {t("access.deactivate")}
           </button>
         ) : (
@@ -225,14 +246,20 @@ function Lifecycle({ user, onDone }: { user: UserRecord; onDone: () => void }) {
             {user.last_login ? t("access.reactivate") : t("access.activate")}
           </button>
         )}
-        <button type="button" className="secondary" onClick={() => act.mutate("reset")}>
+        <button type="button" className="secondary" onClick={() => ask("reset")}>
           {t("access.reset")}
         </button>
       </div>
       <div className="inline-form">
         <label>
           {t("access.copyFrom")}
-          <select value={source} onChange={(e) => setSource(e.target.value)}>
+          <select
+            value={source}
+            onChange={(e) => {
+              setSource(e.target.value);
+              setAsking(null);
+            }}
+          >
             <option value="">—</option>
             {users.data
               ?.filter((u) => u.id !== user.id)
@@ -243,15 +270,42 @@ function Lifecycle({ user, onDone }: { user: UserRecord; onDone: () => void }) {
               ))}
           </select>
         </label>
-        <button
-          type="button"
-          className="secondary"
-          disabled={!source}
-          onClick={() => act.mutate("copy")}
-        >
+        <button type="button" className="secondary" disabled={!source} onClick={() => ask("copy")}>
           {t("access.copy")}
         </button>
       </div>
+      {asking && (
+        <div className="confirm-box" role="group" aria-label={t("access.confirmTitle")}>
+          <p>
+            {asking === "copy" &&
+              t("access.copyConfirm", {
+                name: user.full_name,
+                source: from?.full_name ?? "",
+                roles: names(from?.roles ?? []),
+                current: names(user.roles),
+              })}
+            {asking === "reset" && t("access.resetConfirm", { name: user.full_name })}
+            {asking === "deactivate" && t("access.deactivateConfirm", { name: user.full_name })}
+          </p>
+          <div className="inline-form">
+            <label>
+              {t("access.reasonNeeded")}
+              <input value={reason} autoFocus onChange={(e) => setReason(e.target.value)} />
+            </label>
+            <button
+              type="button"
+              className={asking === "deactivate" ? "danger" : ""}
+              disabled={!reason.trim() || act.isPending}
+              onClick={() => act.mutate(asking)}
+            >
+              {t(`access.confirmChange.${asking}`)}
+            </button>
+            <button type="button" className="secondary" onClick={() => setAsking(null)}>
+              {t("access.cancel")}
+            </button>
+          </div>
+        </div>
+      )}
       {act.isError && (
         <p className="form-error" role="alert">
           {errorText(act.error, t("common.error"))}

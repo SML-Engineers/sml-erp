@@ -309,6 +309,8 @@ class UserResetOverridesView(_UsersArea):
         user = get_object_or_404(User, pk=pk)
         data = ReasonInput(data=request.data)
         data.is_valid(raise_exception=True)
+        if not data.validated_data["reason"].strip():
+            return _error(access.AccessError("Give a reason for resetting to the role defaults."))
         try:
             count = access_admin.reset_to_role_defaults(
                 request.user, user, data.validated_data["reason"]

@@ -183,3 +183,45 @@ test("only the Director can record the access review", async () => {
   expect(await screen.findByText("Not reviewed yet")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
 });
+
+test("copy access says what will change and needs a reason and a second press; the roles then show at once", async () => {
+  const cashier: UserRecord = {
+    ...clerk,
+    id: 9,
+    email: "cash@sml.lk",
+    full_name: "Sunil Fernando",
+    roles: [{ code: "cashier", name: "Cashier / Payment Officer", assigned_at: "", reason: "", conflict_warning: "" }],
+  };
+  const copied = { ...clerk, roles: cashier.roles };
+  let grid2 = grid;
+  const api = mockApi(
+    accessPageApi({
+      "GET /api/v1/users/7/access/": () => ({ body: grid2 }),
+      "GET /api/v1/users/": { body: [clerk, cashier] },
+      "POST /api/v1/users/7/copy-access/": () => {
+        grid2 = { ...grid, user: copied };
+        return { body: { user: copied, warnings: [] } };
+      },
+    }),
+  );
+  renderAt("/admin/users/7", <UserAccessPage me={admin} />, "/admin/users/:id");
+
+  await screen.findByRole("option", { name: "Sunil Fernando (cash@sml.lk)" });
+  fireEvent.change(screen.getByLabelText("Copy access from"), { target: { value: "9" } });
+  fireEvent.click(screen.getByRole("button", { name: "Copy access" }));
+  // Nothing is sent yet: first what will happen, and a reason.
+  expect(api.mock.calls.some(([url]) => url === "/api/v1/users/7/copy-access/")).toBe(false);
+  const box = screen.getByRole("group", { name: "Check before changing" });
+  expect(box).toHaveTextContent("Nimal Perera will get the same roles as Sunil Fernando (Cashier / Payment Officer)");
+  expect(box).toHaveTextContent("present roles (Accounts Clerk)");
+  const yes = within(box).getByRole("button", { name: "Yes, copy the access" });
+  expect(yes).toBeDisabled();
+  fireEvent.change(within(box).getByLabelText("Reason (required)"), { target: { value: "Moves to the cash desk" } });
+  fireEvent.click(yes);
+
+  // The roles panel shows the copied roles without reloading the page.
+  expect(await screen.findByRole("checkbox", { name: "Cashier / Payment Officer", checked: true })).toBeInTheDocument();
+  expect(screen.getByRole("checkbox", { name: "Accounts Clerk" })).not.toBeChecked();
+  const call = api.mock.calls.find(([url]) => url === "/api/v1/users/7/copy-access/");
+  expect(JSON.parse(String(call?.[1]?.body))).toEqual({ source_user: 9, reason: "Moves to the cash desk" });
+});

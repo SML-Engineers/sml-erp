@@ -1533,6 +1533,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Office pages in Sinhala (owner, 15 Nov 2026) | The office pages are translated to Sinhala one area at a time, vouchers first; someone fluent checks the wording on screen | 7.4 |
 | Machine production time (owner, 15 Nov 2026) | A new role, Production Team Leader, starts and finishes jobs live at workshop and moulding machines (job picked or scanned); one running job per machine unless the Production Manager allows a second; the Dashboard shows every machine; the time feeds the shift report, job costing and profit (P3-24 a to e) | 7.4, 7.7 |
 | Reason asked where Remove is pressed (owner, 15 Nov 2026) | Removing a costing price, division rate or tax rate not started yet asks for the reason right next to the button | 5.1 |
+| Confirm before copying access (owner, 15 Nov 2026) | Copy access, reset to role defaults and deactivate say what will change and need a reason and a second press; the page shows the new roles at once | 1.3 |
 
 **Still needed for initial setup**
 

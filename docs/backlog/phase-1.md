@@ -70,6 +70,12 @@ Status: `[ ]` to do · `[x]` done
   - An expired temporary override stops working on its end date, and the user is notified.
   - No override can let a user approve their own document, approve at two levels, or skip the
     Director on a voucher (tested directly against the hard controls).
+  - Owner, 15 Nov 2026 (testing): "Copy access" changed the roles at once, with no
+    confirmation and no reason, and the page showed the old roles until it was refreshed.
+    Now Copy access, Reset to role defaults and Deactivate first say what will happen
+    (copy: the source's roles by name and the present roles they replace) and need a reason
+    and a second press ("Yes, …"); the server refuses copy and reset without a reason. After
+    any change the roles and divisions panels show the saved values at once.
   - The Admin cannot change their own roles or overrides.
   - Deactivating a leaver ends all their sessions at once and removes their overrides; their
     records and history remain.

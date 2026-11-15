@@ -111,7 +111,18 @@
       "revoked": "Ended",
       "expired": "Expired"
     },
-    "activate": "Activate"
+    "activate": "Activate",
+    "confirmTitle": "Check before changing",
+    "noRoles": "no roles",
+    "copyConfirm": "{{name}} will get the same roles as {{source}} ({{roles}}), the same divisions and the same extra access. {{name}}'s present roles ({{current}}) and extra access are replaced. Sensitive access goes to the Director to confirm again.",
+    "resetConfirm": "All extra access given to or taken from {{name}} by hand ends; {{name}} keeps only what the roles give.",
+    "deactivateConfirm": "{{name}} can no longer sign in, is signed out everywhere, and any extra access ends. Their records stay.",
+    "reasonNeeded": "Reason (required)",
+    "confirmChange": {
+      "copy": "Yes, copy the access",
+      "reset": "Yes, reset",
+      "deactivate": "Yes, deactivate"
+    }
   },
   "review": {
     "link": "Access review",

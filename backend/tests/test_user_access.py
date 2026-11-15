@@ -236,8 +236,13 @@ def test_copy_access_from_another_user(admin):
         format="json",
     )
     target = person("new@sml.lk")
+    url = f"/api/v1/users/{target.pk}/copy-access/"
+    # It replaces the person's roles: a reason is required (owner, 15 Nov 2026).
+    refused = as_user(admin).post(url, {"source_user": source.pk}, format="json")
+    assert refused.status_code == 400 and "reason" in refused.json()["detail"]
+    assert not rights(User.objects.get(pk=target.pk)).has("vouchers", "enter")
     response = as_user(admin).post(
-        f"/api/v1/users/{target.pk}/copy-access/", {"source_user": source.pk}, format="json"
+        url, {"source_user": source.pk, "reason": "Same job as Old"}, format="json"
     )
     assert response.status_code == 200
     target = User.objects.get(pk=target.pk)
@@ -251,6 +256,8 @@ def test_reset_to_role_defaults(admin):
     client = as_user(admin)
     grant(client, clerk, area="stores", level="view")
     remove(client, clerk, area="vouchers", level="enter")
+    url = f"/api/v1/users/{clerk.pk}/reset-overrides/"
+    assert client.post(url, {"reason": " "}, format="json").status_code == 400
     response = client.post(
         f"/api/v1/users/{clerk.pk}/reset-overrides/", {"reason": "Job review"}, format="json"
     )

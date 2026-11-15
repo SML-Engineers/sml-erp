@@ -266,6 +266,9 @@ Status: `[ ]` to do · `[x]` done
     the background worker after it commits, with a five-minute job sending any still waiting.
     Each email is sent once. Read notifications are tidied after 180 days.
   - My notifications page (user menu): bell and email on or off per kind of event.
+  - Owner, 15 Nov 2026: under the bell, unread notifications are bold and read ones regular
+    (and greyer), so it is clear which are new; one turns read when it is opened, or all with
+    "Mark all as read".
   - The reminder for vouchers waiting too long (spec 4.3, optional) is left for later.
   - Servers need an SMTP account (EMAIL_* settings) and APP_URL for links in emails.
   - Owner, 14 Nov 2026: every dashboard starts with "Waiting for your approval": one tile per kind

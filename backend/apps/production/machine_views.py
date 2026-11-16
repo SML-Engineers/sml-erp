@@ -1,5 +1,9 @@
-"""Machine time API (backlog P3-24 a): the machine board, start and finish jobs."""
+"""Machine time API (backlog P3-24): the machine board, start and finish jobs, the
+Dashboard panel and the machine hours report."""
 
+from datetime import date
+
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,7 +11,8 @@ from rest_framework.views import APIView
 from apps.core.access import has_access
 from apps.core.permissions import AreaAccess, IsFullyAuthenticated
 
-from . import machine_jobs
+from . import machine_hours, machine_jobs
+from .machine_hours import MachineHoursError
 from .machine_jobs import MachineJobError
 
 
@@ -73,4 +78,20 @@ class MachineJobOptionsView(_MachineTime):
         try:
             return Response(machine_jobs.options(request.user, request.query_params.get("machine")))
         except MachineJobError as error:
+            return _error(error)
+
+
+class MachineHoursView(_MachineTime):
+    """The machine hours report (P3-24 e)."""
+
+    def get(self, request):
+        q = request.query_params
+        try:
+            today = timezone.localdate()
+            start = date.fromisoformat(q.get("start") or today.replace(day=1).isoformat())
+            end = date.fromisoformat(q.get("end") or today.isoformat())
+            return Response(machine_hours.report(request.user, start, end, q.get("by") or "day"))
+        except ValueError:
+            return _error("Give the dates as YYYY-MM-DD.")
+        except MachineHoursError as error:
             return _error(error)

@@ -350,3 +350,67 @@ def test_the_dashboard_panel_shows_only_your_own_sections(clock, leader, job):  
     assert theirs["counts"] == {"running": 0, "idle": 0, "maintenance": 0}
     # Someone without machine time is refused.
     assert as_user(person("c3@sml.lk", "clerk", divisions=["WS"])).get(today).status_code == 403
+
+
+# --- P3-24 e: machine hours report -----------------------------------------------------------
+
+
+def test_machine_hours_estimate_against_actual_and_cost(
+    clock,  # noqa: F811
+    leader,
+    manager,  # noqa: F811
+    job,
+):
+    from decimal import Decimal as D
+
+    from apps.production.models import CostRate
+
+    lathe = Machine.objects.get(code="M-LAT-01")
+    CostRate.objects.create(
+        kind="overhead",
+        section=lathe.section,
+        machine=lathe,
+        rate=D("1200.00"),
+        effective_from=at(8).date() - timedelta(days=30),
+        reason="t",
+    )
+    op = job.operations.get(seq=20)
+    clock["now"] = at(8)
+    first = machine_jobs.start(leader, {"machine": "M-LAT-01", "job": f"{job.number}/20"})
+    clock["now"] = at(10)
+    machine_jobs.finish(leader, first.pk, {"completed": "10"})
+    day = at(8).date().isoformat()
+    url = f"/api/v1/machine-jobs/hours/?start={day}&end={day}&by=day"
+
+    d = as_user(manager).get(url).json()
+    lathe_row = next(m for m in d["machines"] if m["machine"] == "M-LAT-01")
+    assert lathe_row["hours"] == "2.00"
+    assert lathe_row["utilisation"] == "20.0"  # 2 h of the 10 h of today so far
+    (row,) = d["jobs"]
+    estimate = (op.setup_min + op.run_min * 10) / 60
+    assert row["estimate_hours"] == str(estimate.quantize(D("0.01")))
+    assert row["over"] == (D(120) > op.setup_min + op.run_min * 10)
+    assert "cost" in row  # the manager may see costs (order profitability)
+    assert row["cost"] == "2400.00" and row["rate"] == "1200.00"
+
+    # A team leader sees the hours but no costs.
+    led = as_user(leader).get(url).json()
+    assert led["show_cost"] is False and "cost" not in led["jobs"][0]
+    assert as_user(manager).get(url.replace("by=day", "by=year")).status_code == 400
+
+
+def test_machine_hours_show_only_your_own_sections(clock, leader, job):  # noqa: F811
+    clock["now"] = at(8)
+    first = machine_jobs.start(leader, {"machine": "M-LAT-01", "job": f"{job.number}/20"})
+    clock["now"] = at(9)
+    machine_jobs.finish(leader, first.pk, {"completed": "2"})
+    day = at(8).date().isoformat()
+    url = f"/api/v1/machine-jobs/hours/?start={day}&end={day}&by=day"
+    assert [r["job"] for r in as_user(leader).get(url).json()["jobs"]] == [job.number]
+    # A team leader of other sections sees none of these jobs.
+    other = person("tl5@sml.lk", "production_team_leader", divisions=["WS"])
+    other.all_sections = False
+    other.save()
+    assert as_user(other).get(url).json()["jobs"] == []
+    # Someone without machine time is refused.
+    assert as_user(person("c4@sml.lk", "clerk", divisions=["WS"])).get(url).status_code == 403

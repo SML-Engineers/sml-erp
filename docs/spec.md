@@ -1536,6 +1536,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Confirm before copying access (owner, 15 Nov 2026) | Copy access, reset to role defaults and deactivate say what will change and need a reason and a second press; the page shows the new roles at once | 1.3 |
 | Notifications lead to the action (owner, 16 Nov 2026) | A notification opens a page where the person can do what it asks; a voucher waiting for you says so and opens it where it is approved | 3, 4.4 |
 | Every new role waits for the Director (owner, 15 Nov 2026) | A role the Admin gives works only after the Director confirms it; the Director is told and sees "Access to confirm" on the Dashboard with roles, sensitive access and password resets; removing a role works at once | 1.3 |
+| Activity log level (owner, 14 Nov 2026) | Changes and sign-ins only / sensitive (default: payslips, salaries and bank details opened, and every download) / everything; set by the Admin with a reason on Security and logging; views and downloads in an insert-only record (Views and downloads) | 3 |
 
 **Still needed for initial setup**
 

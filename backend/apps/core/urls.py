@@ -198,4 +198,5 @@ urlpatterns = [
     ),
     path("access-review/", access_views.AccessReviewView.as_view(), name="access-review"),
     path("audit/", audit_views.AuditLogView.as_view(), name="audit-log"),
+    path("activity-log/", audit_views.ActivityLogView.as_view(), name="activity-log"),
 ]

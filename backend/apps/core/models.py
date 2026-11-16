@@ -170,6 +170,17 @@ class Company(models.Model):
     # Owner, 12 Nov 2026: the Admin can switch two-factor sign-in off for the whole company
     # while testing. On by default; it must be on before go-live (docs/go-live checklist).
     two_factor_on = models.BooleanField("Two-factor sign-in", default=True)
+
+    class LogLevel(models.TextChoices):
+        CHANGES = "changes", "Changes and sign-ins only"
+        SENSITIVE = "sensitive", "Sensitive views and every download"
+        EVERYTHING = "everything", "Everything"
+
+    # Owner, 14 Nov 2026: how much of what people look at goes in the activity log, besides
+    # the changes and sign-ins that are always recorded. The Admin changes it with a reason.
+    activity_log_level = models.CharField(
+        "Activity log level", max_length=12, choices=LogLevel.choices, default=LogLevel.SENSITIVE
+    )
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
     email = models.EmailField(blank=True)
@@ -444,6 +455,42 @@ class AuditEvent(models.Model):
         return (
             f"{self.occurred_at:%Y-%m-%d %H:%M} {self.actor_email} {self.action} {self.object_repr}"
         )
+
+
+class ActivityEvent(models.Model):
+    """What people looked at and downloaded (owner, 14 Nov 2026), as far as the activity log
+    level asks: payslips, salaries and bank details, every download, or every page.
+
+    Insert-only like the audit log: a database trigger refuses updates and deletes.
+    """
+
+    class Kind(models.TextChoices):
+        VIEW = "view", "Viewed"
+        DOWNLOAD = "download", "Downloaded"
+
+    class Category(models.TextChoices):
+        PAYSLIP = "payslip", "Payslips"
+        SALARY = "salary", "Salaries and pay"
+        BANK = "bank", "Bank details"
+        OTHER = "other", "Other"
+
+    occurred_at = models.DateTimeField(default=timezone.now, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    user_email = models.CharField(max_length=254, blank=True, default="")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    category = models.CharField(max_length=10, choices=Category.choices)
+    path = models.CharField(max_length=300)
+    file_name = models.CharField(max_length=255, blank=True, default="")
+    level = models.CharField(max_length=12)  # the level in force when it was recorded
+
+    class Meta:
+        ordering = ["-occurred_at", "-id"]
+
+    def __str__(self):
+        return f"{self.occurred_at:%Y-%m-%d %H:%M} {self.user_email} {self.kind} {self.path}"
 
 
 class NumberSeries(models.Model):

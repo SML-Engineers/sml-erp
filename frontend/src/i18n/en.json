@@ -5461,15 +5461,31 @@
     "mouldsDetail": "Due or close by shots"
   },
   "security": {
-    "title": "Sign-in security",
-    "help": "Two-factor sign-in asks for a code from an authenticator app after the password. It protects payments and payroll. Switch it off only while testing; it must be on before go-live.",
+    "title": "Security and logging",
+    "help": "How people sign in, and what is recorded of what they open and download. Only the Admin changes these, with a reason; every change is in the audit log.",
     "twoFactor": "Two-factor sign-in",
     "isOn": "On: an authenticator code is asked for at sign-in.",
     "isOff": "Off: nobody is asked for an authenticator code.",
     "offWarning": "Switch this on before go-live. Authenticators people have already set up are kept and work again when it is on.",
     "reason": "Reason for the change",
     "switchOff": "Switch two-factor sign-in off",
-    "switchOn": "Switch two-factor sign-in on"
+    "switchOn": "Switch two-factor sign-in on",
+    "twoFactorHelp": "Two-factor sign-in asks for a code from an authenticator app after the password. It protects payments and payroll. Switch it off only while testing; it must be on before go-live.",
+    "logLevel": "Activity log level",
+    "logHelp": "Changes and sign-ins are always recorded. Choose what else is recorded of what people open and download. Nobody can change or delete the record; read it on Views and downloads.",
+    "chooseLevel": "What to record",
+    "level": {
+      "changes": "Changes and sign-ins only",
+      "sensitive": "Sensitive (recommended)",
+      "everything": "Everything"
+    },
+    "levelHelp": {
+      "changes": "Nothing more is recorded.",
+      "sensitive": "Also who opened payslips, salaries and pay, and bank details, and every download (Excel, PDF, scans).",
+      "everything": "Also every page of data anyone opens. The record grows fast: use it for a short time, for example during an audit."
+    },
+    "inForce": "in force",
+    "saveLevel": "Change the level"
   },
   "waiting": {
     "title": "Waiting for your approval",
@@ -5602,5 +5618,31 @@
     "estimateCost": "Estimated cost (LKR)",
     "over": "+{{pct}}%",
     "profitHint": "Each job's profit or loss, with materials, labour and all its costs:"
+  },
+  "activity": {
+    "title": "Views and downloads",
+    "help": "Who opened payslips, salaries and bank details, and who downloaded what, as far as the activity log level on Security and logging asks. Nobody can change or delete these records.",
+    "filters": "Filters",
+    "person": "Person (email)",
+    "kind": "Viewed or downloaded",
+    "category": "What",
+    "all": "All",
+    "kinds": {
+      "view": "Viewed",
+      "download": "Downloaded"
+    },
+    "categories": {
+      "payslip": "Payslips",
+      "salary": "Salaries and pay",
+      "bank": "Bank details",
+      "other": "Other"
+    },
+    "from": "From",
+    "to": "To",
+    "show": "Show",
+    "none": "Nothing recorded for these filters.",
+    "when": "When",
+    "what": "Page or file",
+    "ip": "Address"
   }
 }

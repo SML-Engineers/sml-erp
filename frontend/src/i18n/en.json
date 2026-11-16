@@ -1094,7 +1094,8 @@
     "advanceOn": "Advance on {{po}}",
     "advanceException": "Exception: advance of LKR {{amount}} on purchase order {{po}} (LKR {{total}}) before the goods arrive. It is set off against the supplier's invoice once paid.",
     "whtKept": "Withholding tax kept",
-    "payable": "Payable to the payee"
+    "payable": "Payable to the payee",
+    "waitingYou": "This voucher waits for your approval at level {{level}} ({{role}}). Open it to check the scan and the coding, then approve, return or reject it."
   },
   "voucherReview": {
     "title": "Waiting for my approval",

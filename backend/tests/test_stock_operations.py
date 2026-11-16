@@ -8,6 +8,7 @@ from django.db.models import Sum
 from django.db.utils import DatabaseError
 from django.utils import timezone
 
+from apps.core.models import Notification
 from apps.inventory import adjustments, issues, items
 from apps.inventory.adjustments import LineInput
 from apps.inventory.issues import IssueLine
@@ -153,6 +154,10 @@ def test_a_write_off_waits_for_the_director(stores, director, resin):
     )
     adjustments.submit(stores, draft)
     assert on_hand(resin, "A")[0] == D("100.000")  # nothing moves before approval
+    # The Director's notification opens the page where adjustments are approved (owner,
+    # 16 Nov 2026: a notification must lead to a page with the action on it).
+    note = Notification.objects.get(user=director, document_type="stock_adjustment")
+    assert note.link == "/stores-work?tab=adjustments"
     with pytest.raises(StockError):
         adjustments.approve(stores, draft)
     adjustments.approve(director, draft, "OK")

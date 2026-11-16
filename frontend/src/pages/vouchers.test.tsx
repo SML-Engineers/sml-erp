@@ -165,3 +165,36 @@ test("a submitted voucher is shown read-only with its approval history", async (
   const history = screen.getByRole("region", { name: "Approval history" });
   expect(within(history).getByText(/L1 · Submitted · Nimal/)).toBeInTheDocument();
 });
+
+// Owner, 16 Nov 2026: the Director opened a voucher from the bell and found no Approve.
+test("a voucher waiting for me says so and opens it where I approve it", async () => {
+  const director: CurrentUser = {
+    ...sampleUser,
+    full_name: "Ruwan Jayasinghe",
+    access: { areas: { vouchers: ["approve", "view"] }, actions: [], divisions: "all" },
+  };
+  mockApi({
+    ...formApi,
+    "GET /api/v1/vouchers/9/": {
+      body: { ...draft, status: "accountant_approved", can_edit: false, waiting_level: 3, waiting_for: "Director", can_act: true },
+    },
+  });
+  renderAt("/vouchers/9", <VoucherPage me={director} />, "/vouchers/:id");
+
+  const box = await screen.findByRole("region", { name: "Waiting for your approval" });
+  expect(within(box).getByText(/waits for your approval at level 3 \(Director\)/)).toBeInTheDocument();
+  expect(within(box).getByRole("link", { name: "Open to approve" })).toHaveAttribute("href", "/vouchers/review?open=9");
+});
+
+test("a voucher that does not wait for me shows no approval box", async () => {
+  mockApi({
+    ...formApi,
+    "GET /api/v1/vouchers/9/": {
+      body: { ...draft, status: "submitted", can_edit: false, waiting_level: 2, waiting_for: "Accountant", can_act: false },
+    },
+  });
+  renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+
+  expect(await screen.findByRole("region", { name: "Voucher details" })).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Waiting for your approval" })).not.toBeInTheDocument();
+});

@@ -724,6 +724,13 @@ Status: `[ ]` to do · `[x]` done
     running (number and list), idle, under maintenance; each one's job / order, start time,
     running time (counts up), operator and team leader; jobs finished today with their
     times; hours each machine ran today. Refreshes every minute.
+    Done: **Machines now** on the Dashboard for everyone with machine time View (team
+    leaders and supervisors their own sections; the Production Manager, Planner, Director
+    and Auditor all): tiles for running, idle (with the machines) and under maintenance; a
+    table of the running jobs (machine, job / order, start, running time counting up,
+    operator, team leader); jobs finished today with their times; each machine's hours
+    today and the share of the day so far (`GET /api/v1/machine-jobs/today/`). The title
+    opens the Machine time page.
   - **e. Machine hours report.** Hours per machine by day, week or month; utilisation and
     downtime; time per job and order; estimated (routing) against actual time with the
     jobs over estimate; machine cost (hours × rate) against standard, linked to order

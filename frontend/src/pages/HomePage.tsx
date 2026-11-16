@@ -5,6 +5,7 @@ import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { getHealth } from "../api/health";
 import FinancialDashboard from "../components/FinancialDashboard";
+import MachinesPanel from "../components/MachinesPanel";
 import ProductionDashboard from "../components/ProductionDashboard";
 import PurchasingDashboard from "../components/PurchasingDashboard";
 import WaitingPanel from "../components/WaitingPanel";
@@ -39,6 +40,8 @@ export default function HomePage({ user }: { user: CurrentUser }) {
       {can(user.access, "financial_reports", "view") && <FinancialDashboard />}
       {can(user.access, "vouchers", "view") && <VouchersDashboard me={user} />}
       <WaitingPanel />
+      {/* P3-24 d (owner, 15 Nov 2026): what every machine is doing, for whoever may see machine time. */}
+      {can(user.access, "machine_time", "view") && <MachinesPanel />}
       {production && <ProductionDashboard />}
       {/* Owner, 12 Nov 2026: a shop-floor supervisor's own sections. */}
       {!production && can(user.access, "shop_floor", "enter") && <SupervisorDashboard />}

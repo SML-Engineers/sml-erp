@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiError } from "../api/client";
@@ -15,26 +15,13 @@ import {
   type MachineJob,
 } from "../api/machineJobs";
 import ScanButton from "../components/ScanButton";
+import { runningMinutes, useNow } from "../lib/machineClock";
 import { formatDateTime, formatTime } from "../lib/time";
 
 const REFRESH_MS = 60_000;
 
 function errorText(error: unknown, fallback: string): string {
   return error instanceof ApiError && error.detail ? error.detail : fallback;
-}
-
-/** Minutes from a start to now, counting up while the page is open. */
-function useNow(): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return now;
-}
-
-export function runningMinutes(job: MachineJob, now: number): number {
-  return Math.max(job.minutes, Math.floor((now - new Date(job.started_at).getTime()) / 60_000));
 }
 
 function what(job: MachineJob): string {

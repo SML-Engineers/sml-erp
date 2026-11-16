@@ -60,7 +60,18 @@ export interface StartOptions {
   orders: { number: string; item: string; mould: string }[];
 }
 
+export interface MachinesToday {
+  now: string;
+  counts: { running: number; idle: number; maintenance: number };
+  running: BoardMachine[];
+  idle: string[];
+  maintenance: string[];
+  finished: MachineJob[];
+  hours: { machine: string; name: string; minutes: number; pct: string }[];
+}
+
 export const machineJobsKey = ["machine-jobs"];
+export const getMachinesToday = () => apiGet<MachinesToday>("/machine-jobs/today/");
 
 export const getBoard = () => apiGet<MachineBoard>("/machine-jobs/board/");
 export const getRecent = () => apiGet<{ results: MachineJob[] }>("/machine-jobs/");

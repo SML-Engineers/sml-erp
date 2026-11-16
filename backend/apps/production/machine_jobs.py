@@ -550,3 +550,62 @@ def check_link(report, machine, value, started_at, ended_at) -> MachineJob | Non
         Q(ended_at__gt=started_at) | Q(ended_at__isnull=True)
     )
     return found.first()
+
+
+# --- The Dashboard: machines now (P3-24 d) -------------------------------------------------
+
+
+def today(user: User) -> dict:
+    """The Dashboard's machine panel: how many machines are running, idle and under
+    maintenance, what each running one is doing, the jobs finished today with their times,
+    and the hours each machine ran today (Sri Lanka day, running jobs up to now)."""
+    now = timezone.now()
+    local = timezone.localtime(now)
+    start = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    current = board(user)
+    counts = {"running": 0, "idle": 0, "maintenance": 0}
+    for m in current["machines"]:
+        counts[m["status"]] += 1
+    day_jobs = (
+        visible(user)
+        .filter(started_at__lt=now)
+        .filter(Q(ended_at__gt=start) | Q(ended_at__isnull=True))
+    )
+    minutes_by_machine: dict[str, int] = {}
+    for j in day_jobs:
+        a = max(j.started_at, start)
+        b = j.ended_at or now
+        if b > a:
+            minutes_by_machine[j.machine.code] = minutes_by_machine.get(j.machine.code, 0) + int(
+                (b - a).total_seconds() // 60
+            )
+    finished = [
+        payload(j, now)
+        for j in visible(user)
+        .filter(ended_at__gte=start, ended_at__lte=now)
+        .order_by("-ended_at", "-id")[:20]
+    ]
+    return {
+        "now": current["now"],
+        "counts": counts,
+        "running": [m for m in current["machines"] if m["status"] == "running"],
+        "idle": [m["code"] for m in current["machines"] if m["status"] == "idle"],
+        "maintenance": [m["code"] for m in current["machines"] if m["status"] == "maintenance"],
+        "finished": finished,
+        "hours": [
+            {
+                "machine": m["code"],
+                "name": m["name"],
+                "minutes": minutes_by_machine.get(m["code"], 0),
+                # Share of the day so far the machine ran (utilisation today).
+                "pct": str(
+                    (
+                        Decimal(minutes_by_machine.get(m["code"], 0))
+                        * 100
+                        / Decimal(max(1, int((now - start).total_seconds() // 60)))
+                    ).quantize(Decimal("0.1"), ROUND_HALF_UP)
+                ),
+            }
+            for m in current["machines"]
+        ],
+    }

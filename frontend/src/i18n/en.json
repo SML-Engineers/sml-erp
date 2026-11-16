@@ -5540,7 +5540,15 @@
     "notes": "Notes (optional)",
     "secondReason": "The machine is already running a job: why is a second one allowed?",
     "completed": "Pieces completed",
-    "rejected": "Pieces rejected"
+    "rejected": "Pieces rejected",
+    "dashTitle": "Machines now",
+    "runningNow": "Running now",
+    "runningFor": "Running for",
+    "operatorCol": "Operator",
+    "teamLeader": "Team leader",
+    "finishedToday": "Finished today",
+    "hoursToday": "Hours each machine ran today",
+    "ofTheDay": "Of the day so far"
   },
   "removeWithReason": {
     "reason": "Reason for removing"

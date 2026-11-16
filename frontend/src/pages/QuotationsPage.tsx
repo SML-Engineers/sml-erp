@@ -5,7 +5,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
-import { listQuotations, quotationsKey } from "../api/quotations";
+import { listQuotations, quotationStatus, quotationsKey } from "../api/quotations";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
@@ -99,7 +99,7 @@ export default function QuotationsPage({ me }: { me: CurrentUser }) {
               cell: (r) => `${r.currency} ${formatDecimal(r.total_amount)}`,
             },
             { id: "lkr", header: t("quotations.totalLkr"), value: (r) => r.total_lkr, money: true },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`quotations.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => quotationStatus(t, r) },
             { id: "by", header: t("quotations.madeBy"), value: (r) => r.created_by },
           ]}
         />

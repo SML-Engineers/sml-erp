@@ -1,3 +1,7 @@
+import type { TFunction } from "i18next";
+
+import type { StatusPeople } from "../lib/docStatus";
+import { approvalStatus } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 import type { Payment } from "./payments";
 
@@ -58,6 +62,8 @@ export interface VoucherSummary {
   total_amount: string;
   created_by: string;
   attachments: number;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
   /** Row actions this user may take (spec 4.4); the server checks each one again. */
   actions?: VoucherAction[];
   deleted?: { at: string; by: string; reason: string };
@@ -363,3 +369,9 @@ export interface VoucherDashboard {
 export const voucherDashboard = (division: string) =>
   apiGet<VoucherDashboard>(`/vouchers/dashboard/${query({ division })}`);
 export const voucherHistory = (id: number) => apiGet<HistoryRow[]>(`/vouchers/${id}/history/`);
+
+/** The clear status of a voucher: "Draft of Nimal", "Waiting for Ruwan (Director)",
+ * "Returned by Kumari", "Approved by Ruwan"; otherwise its own label (Paid, Cancelled…). */
+export function voucherStatus(t: TFunction, v: Pick<VoucherSummary, "status" | "created_by" | "people">): string {
+  return approvalStatus(t, v, "director_approved") ?? t(`vouchers.statuses.${v.status}`);
+}

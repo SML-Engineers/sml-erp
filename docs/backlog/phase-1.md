@@ -280,6 +280,15 @@ Status: `[ ]` to do · `[x]` done
     off, never edited. For vouchers the matrix always keeps at least two approval levels that
     apply to every voucher, the last being the Director (rule 6).
   - The approval queue page and the voucher's own statuses come with the vouchers (P1-04).
+  - Owner, 16 Nov 2026: **clear statuses.** Lists and document pages say who a document is
+    with: "Draft of Nimal", "Waiting for Kumari (Accountant)" (a person is named only when
+    exactly one active person other than the maker holds the waiting level's role, else
+    "Waiting for the Director"), "Returned by Ruwan", "Approved by Ruwan", "Rejected by …";
+    later statuses keep their own label (Paid, Cancelled…). One server helper
+    (`approvals.people_for`, two queries per list) and one screen helper (`lib/docStatus.ts`).
+    Quotations: "Sent to customer", "Customer accepted", "Customer did not accept" (was
+    "Lost"), "Expired, no answer". Vouchers and quotations first; the other documents follow
+    one area per PR.
 
 - [x] **P0-18 Notifications**
   In-app bell and email for: voucher awaiting my approval, voucher returned to me,

@@ -28,6 +28,7 @@ import {
   type Cancellation,
   type VoucherDetail,
   type VoucherLineInput,
+  voucherStatus,
 } from "../api/vouchers";
 import MatchedInvoice from "../components/MatchedInvoice";
 import { SentBackNotice } from "../components/SentBackNotice";
@@ -123,7 +124,7 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
       {data && <SentBackNotice approvals={data.approvals} />}
       {data && (
         <p className="muted">
-          {t(`vouchers.statuses.${data.status}`)} · {data.division} · {data.voucher_date} ·{" "}
+          {voucherStatus(t, data)} · {data.division} · {data.voucher_date} ·{" "}
           {t("vouchers.createdBy", { name: data.created_by })}
         </p>
       )}

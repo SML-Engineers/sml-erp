@@ -1,3 +1,7 @@
+import type { TFunction } from "i18next";
+
+import type { StatusPeople } from "../lib/docStatus";
+import { approvalStatus } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 import type { SalesOrderStatus } from "./salesOrders";
@@ -19,6 +23,8 @@ export interface QuotationSummary {
   total_amount: string;
   total_lkr: string;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
 }
 
 export interface QtyBreak {
@@ -371,3 +377,9 @@ export const sendQuotationEmail = (
   message: { to: string[]; cc: string[]; subject: string; body: string; include_images?: boolean },
 ) =>
   apiSend<QuotationDetail>("POST", `/quotations/${id}/email/`, message);
+
+/** The clear status of a quotation: "Draft of Dilini", "Waiting for Ruwan (Director)",
+ * "Returned by …", "Approved by …", "Customer accepted", "Customer did not accept"… */
+export function quotationStatus(t: TFunction, q: Pick<QuotationSummary, "status" | "created_by" | "people">): string {
+  return approvalStatus(t, q, "approved") ?? t(`quotations.statuses.${q.status}`);
+}

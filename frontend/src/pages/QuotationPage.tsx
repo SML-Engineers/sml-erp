@@ -31,6 +31,7 @@ import {
   MAX_QUOTATION_IMAGE_BYTES,
   type LineInput,
   type QuotationDetail,
+  quotationStatus,
 } from "../api/quotations";
 import { createProforma } from "../api/proformas";
 import { orderFromQuotation } from "../api/salesOrders";
@@ -83,7 +84,7 @@ export default function QuotationPage() {
       <h1>{title}</h1>
       {data && (
         <p className="muted">
-          {t(`quotations.statuses.${data.status}`)} · {data.division} · {data.quote_date} · {t("vouchers.createdBy", { name: data.created_by })}
+          {quotationStatus(t, data)} · {data.division} · {data.quote_date} · {t("vouchers.createdBy", { name: data.created_by })}
         </p>
       )}
       {data && (

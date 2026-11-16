@@ -37,8 +37,8 @@ def _get(user, pk) -> Quotation:
 # --- Output -----------------------------------------------------------------------------
 
 
-def _summary(q: Quotation) -> dict:
-    return {
+def _summary(q: Quotation, people=None) -> dict:
+    row = {
         "id": q.id,
         "number": q.number,
         "revision": q.revision,
@@ -53,10 +53,14 @@ def _summary(q: Quotation) -> dict:
         "total_lkr": str(q.total_lkr),
         "created_by": q.created_by.full_name,
     }
+    if people is not None:
+        # Who it waits for and who last acted (owner, 16 Nov 2026: clear statuses).
+        row["people"] = people.get(q.pk)
+    return row
 
 
 def _detail(q: Quotation, user) -> dict:
-    body = _summary(q)
+    body = _summary(q, approvals.people_for(workflow.DOC, [q.pk]))
     contact = q.contact
     body |= {
         "contact": None
@@ -312,7 +316,9 @@ class QuotationListView(_Sales):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, workflow.DOC)
             rows = rows.filter(pk__in=[state.document_id for state in waiting])
-        return Response([_summary(q) for q in rows[:2000]])
+        rows = list(rows[:2000])
+        people = approvals.people_for(workflow.DOC, [q.pk for q in rows])
+        return Response([_summary(q, people) for q in rows])
 
     def post(self, request):
         data = QuotationInput(data=request.data)

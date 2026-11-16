@@ -91,8 +91,14 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
       {canManage && !own && <Lifecycle user={user} onDone={refresh} />}
       {!own && <PasswordResetPanel userId={id} name={user.full_name} />}
       {/* Keyed on what they show, so they start again from the saved values after a change
-          elsewhere on the page (copy access, reset), not only after a page refresh. */}
-      <RolesPanel key={user.roles.map((r) => r.code).join()} user={user} editable={canManage && !own} onDone={refresh} />
+          elsewhere on the page (copy access, reset, a role waiting or confirmed), not only
+          after a page refresh. */}
+      <RolesPanel
+        key={[...user.roles.map((r) => r.code), ...(user.pending_roles ?? []).map((r) => `${r.code}?`)].join()}
+        user={user}
+        editable={canManage && !own}
+        onDone={refresh}
+      />
       <ScopePanel
         key={`${user.all_divisions}:${user.divisions.join()}`}
         user={user}
@@ -318,7 +324,9 @@ function Lifecycle({ user, onDone }: { user: UserRecord; onDone: () => void }) {
 function RolesPanel(props: { user: UserRecord; editable: boolean; onDone: () => void }) {
   const { t } = useTranslation();
   const roles = useQuery({ queryKey: ["roles"], queryFn: listRoles });
-  const [chosen, setChosen] = useState<string[]>(props.user.roles.map((r) => r.code));
+  const waiting = props.user.pending_roles ?? [];
+  // Roles waiting for the Director stay ticked, so saving again does not withdraw them.
+  const [chosen, setChosen] = useState<string[]>([...props.user.roles.map((r) => r.code), ...waiting.map((r) => r.code)]);
   const [reason, setReason] = useState("");
   const save = useMutation({
     mutationFn: () => setUserRoles(props.user.id, chosen, reason),
@@ -338,6 +346,11 @@ function RolesPanel(props: { user: UserRecord; editable: boolean; onDone: () => 
   return (
     <section className="panel">
       <h2>{t("users.roles")}</h2>
+      {waiting.length > 0 && (
+        <p className="notice" role="status">
+          {t("atc.waitingRoles", { roles: waiting.map((r) => r.name).join(", ") })}
+        </p>
+      )}
       <form onSubmit={submit}>
         <div className="checks">
           {roles.data

@@ -289,7 +289,9 @@
       "voucher_cancelled": "Voucher cancelled",
       "voucher_cancellation_rejected": "Voucher cancellation rejected",
       "supplier_payment_recorded": "Supplier payment recorded",
-      "approval_reminder_changed": "Approval reminders changed"
+      "approval_reminder_changed": "Approval reminders changed",
+      "role_confirmed": "Role confirmed",
+      "role_refused": "Role refused"
     }
   },
   "menu": {
@@ -5535,5 +5537,32 @@
   },
   "removeWithReason": {
     "reason": "Reason for removing"
+  },
+  "atc": {
+    "title": "Access to confirm",
+    "help": "What the Admin asked for and waits for the Director: new roles, sensitive extra access and password resets. Nothing here works until it is confirmed. Nobody decides what they asked for or what is for themselves.",
+    "none": "Nothing is waiting.",
+    "roles": "New roles",
+    "grants": "Sensitive extra access",
+    "resets": "Password resets",
+    "person": "Person",
+    "role": "Role",
+    "what": "What",
+    "askedBy": "Asked by",
+    "confirm": "Confirm",
+    "approve": "Approve",
+    "refuse": "Refuse",
+    "refuseReason": "Reason for refusing",
+    "notYours": "Someone else decides this",
+    "until": "until {{date}}",
+    "resetPassword": "Password",
+    "resetBoth": "Password and authenticator",
+    "roleConfirmed": "{{role}} confirmed for {{name}}; it works now.",
+    "roleRefused": "{{role}} refused for {{name}}.",
+    "grantConfirmed": "Access confirmed for {{name}}.",
+    "grantRefused": "Access refused for {{name}}.",
+    "resetApproved": "Password reset approved for {{name}}; the Admin can now make the temporary password.",
+    "resetRefused": "Password reset refused for {{name}}.",
+    "waitingRoles": "Waiting for the Director: {{roles}}. They work once confirmed."
   }
 }

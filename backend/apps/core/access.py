@@ -26,6 +26,7 @@ from .models import (
     Role,
     RoleAction,
     RolePermission,
+    RoleRequest,
     User,
     UserRole,
 )
@@ -199,22 +200,134 @@ def set_user_roles(actor: User, target: User, roles: list[Role], reason: str = "
             warnings,
         )
 
+    # Removing a role works at once; a role asked for earlier and now unticked is withdrawn.
     target.role_assignments.exclude(role__in=roles).delete()
+    target.role_requests.filter(status=RoleRequest.Status.WAITING).exclude(role__in=roles).update(
+        status=RoleRequest.Status.WITHDRAWN, decided_at=timezone.now()
+    )
     held = set(target.role_assignments.values_list("role_id", flat=True))
+    waiting = set(
+        target.role_requests.filter(status=RoleRequest.Status.WAITING).values_list(
+            "role_id", flat=True
+        )
+    )
+    # A new role waits for the Director (owner, 15 Nov 2026), unless nobody else can confirm
+    # it (a new system with no Director yet): then it works at once, in the audit log.
+    asked = []
     for role in roles:
-        if role.pk not in held:
-            UserRole.objects.create(
-                user=target,
-                role=role,
-                assigned_by=actor,
-                reason=reason,
-                conflict_warning=" ".join(warnings),
+        if role.pk in held or role.pk in waiting:
+            continue
+        if role_confirmers(actor, target):
+            asked.append(
+                RoleRequest.objects.create(
+                    user=target,
+                    role=role,
+                    requested_by=actor,
+                    reason=reason,
+                    conflict_warning=" ".join(warnings),
+                )
             )
-    if codes & TWO_FACTOR_ROLES and not target.two_factor_required:
+        else:
+            _give_role(target, role, actor, reason, " ".join(warnings))
+    if asked:
+        from . import notifications
+
+        names_asked = ", ".join(r.role.name for r in asked)
+        notifications.notify(
+            role_confirmers(actor, target),
+            "admin_request_waiting",
+            title=f"{target.full_name}: {names_asked} waiting for your confirmation",
+            body=f"Asked by {actor.full_name}" + (f": {reason}" if reason else ""),
+            link="/admin/access-to-confirm",
+        )
+    target.__dict__.pop("_effective_access", None)
+    return warnings
+
+
+def role_confirmers(actor: User, target: User) -> list[User]:
+    """Who may confirm a role: the Director (confirm sensitive grants), not the person who
+    asked or the person it is for."""
+    return [
+        u
+        for u in User.objects.filter(is_active=True).exclude(pk__in=(actor.pk, target.pk))
+        if effective_access(u).can("confirm_sensitive_grants")
+    ]
+
+
+def _give_role(target: User, role: Role, by: User, reason: str, warning: str) -> UserRole:
+    held = UserRole.objects.create(
+        user=target, role=role, assigned_by=by, reason=reason, conflict_warning=warning
+    )
+    if role.code in TWO_FACTOR_ROLES and not target.two_factor_required:
         target.two_factor_required = True
         target.save(update_fields=["two_factor_required"])
     target.__dict__.pop("_effective_access", None)
-    return warnings
+    return held
+
+
+@audited("role_confirmed")
+@transaction.atomic
+def confirm_role(actor: User, request: RoleRequest) -> RoleRequest:
+    """The Director confirms a role: only now does it work."""
+    request = RoleRequest.objects.select_for_update().get(pk=request.pk)
+    if not effective_access(actor).can("confirm_sensitive_grants"):
+        raise AccessError("Only the Director can confirm a role.")
+    if request.status != RoleRequest.Status.WAITING:
+        raise AccessError("This role is not waiting for confirmation.")
+    if actor.pk in (request.requested_by_id, request.user_id):
+        raise AccessError(
+            "Someone other than the person who asked and the person it is for must confirm it."
+        )
+    if not request.role.is_active:
+        raise AccessError(f"{request.role.name} is not available any more.")
+    _give_role(
+        request.user, request.role, request.requested_by, request.reason, request.conflict_warning
+    )
+    request.status = RoleRequest.Status.CONFIRMED
+    request.decided_by = actor
+    request.decided_at = timezone.now()
+    request.save(update_fields=["status", "decided_by", "decided_at"])
+    _tell_requester(request, "confirmed")
+    return request
+
+
+@audited("role_refused", reason_arg="reason")
+@transaction.atomic
+def refuse_role(actor: User, request: RoleRequest, reason: str) -> RoleRequest:
+    request = RoleRequest.objects.select_for_update().get(pk=request.pk)
+    if not effective_access(actor).can("confirm_sensitive_grants"):
+        raise AccessError("Only the Director can refuse a role.")
+    if request.status != RoleRequest.Status.WAITING:
+        raise AccessError("This role is not waiting for confirmation.")
+    if actor.pk in (request.requested_by_id, request.user_id):
+        raise AccessError(
+            "Someone other than the person who asked and the person it is for must decide."
+        )
+    reason = (reason or "").strip()
+    if not reason:
+        raise AccessError("Give a reason for refusing the role.")
+    request.status = RoleRequest.Status.REFUSED
+    request.decided_by = actor
+    request.decided_at = timezone.now()
+    request.decision_reason = reason
+    request.save(update_fields=["status", "decided_by", "decided_at", "decision_reason"])
+    _tell_requester(request, "refused")
+    return request
+
+
+def _tell_requester(request: RoleRequest, what: str) -> None:
+    from . import notifications
+
+    notifications.notify(
+        [request.requested_by],
+        "admin_request_decided",
+        title=(
+            f"{request.role.name} for {request.user.full_name} was {what} "
+            f"by {request.decided_by.full_name}"
+        ),
+        body=request.decision_reason,
+        link=f"/admin/users/{request.user_id}",
+    )
 
 
 @audited("divisions_changed")

@@ -1,5 +1,6 @@
 """Approval matrix settings API (P0-17). Rules live in approvals.py."""
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.response import Response
@@ -165,15 +166,45 @@ class WaitingForMeView(APIView):
         counts: dict[str, int] = {}
         for state in approvals.waiting_for(request.user):
             counts[state.document_type] = counts.get(state.document_type, 0) + 1
-        return Response(
-            [
-                {
-                    "document_type": code,
-                    "label": approvals.DOCUMENT_TYPES[code].name
-                    if code in approvals.DOCUMENT_TYPES
-                    else code,
-                    "count": count,
-                }
-                for code, count in sorted(counts.items())
-            ]
-        )
+        rows = [
+            {
+                "document_type": code,
+                "label": approvals.DOCUMENT_TYPES[code].name
+                if code in approvals.DOCUMENT_TYPES
+                else code,
+                "count": count,
+            }
+            for code, count in sorted(counts.items())
+        ]
+        access_count = access_waiting(request.user)
+        if access_count:
+            rows.append(
+                {"document_type": "access", "label": "Access to confirm", "count": access_count}
+            )
+        return Response(rows)
+
+
+def access_waiting(user) -> int:
+    """For the Director (owner, 15 Nov 2026): roles, sensitive access and password resets
+    waiting for them, not asked by them or for them."""
+    from . import access as access_rules
+    from . import password_resets
+    from .models import AccessOverride, PasswordReset, RoleRequest
+
+    if not access_rules.effective_access(user).can("confirm_sensitive_grants"):
+        return 0
+    mine = Q(requested_by=user) | Q(user=user)
+    roles = RoleRequest.objects.filter(status=RoleRequest.Status.WAITING).exclude(mine).count()
+    grants = sum(
+        1
+        for o in AccessOverride.objects.filter(
+            is_sensitive=True, confirmed_at__isnull=True, revoked_at__isnull=True
+        ).exclude(Q(created_by=user) | Q(user=user))
+        if o.status == "pending"
+    )
+    resets = sum(
+        1
+        for r in PasswordReset.objects.filter(approved__isnull=True)
+        if password_resets.can_decide(user, r)
+    )
+    return roles + grants + resets

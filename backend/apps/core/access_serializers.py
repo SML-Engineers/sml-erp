@@ -53,6 +53,7 @@ class RoleInput(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     roles = serializers.SerializerMethodField()
+    pending_roles = serializers.SerializerMethodField()
     divisions = serializers.SlugRelatedField(many=True, read_only=True, slug_field="code")
 
     class Meta:
@@ -68,6 +69,7 @@ class UserSerializer(serializers.ModelSerializer):
             "all_divisions",
             "divisions",
             "roles",
+            "pending_roles",
             "last_login",
             "date_joined",
         ]
@@ -83,6 +85,10 @@ class UserSerializer(serializers.ModelSerializer):
             }
             for a in user.role_assignments.select_related("role").order_by("role__name")
         ]
+
+    def get_pending_roles(self, user):
+        """Roles given but waiting for the Director (owner, 15 Nov 2026); they do not work yet."""
+        return [role_request(r) for r in user.role_requests.filter(status="waiting")]
 
 
 class UserCreateInput(serializers.Serializer):
@@ -167,3 +173,19 @@ class ReviewInput(serializers.Serializer):
     outcome = serializers.ChoiceField(choices=["confirmed", "changed"])
     note = serializers.CharField(required=False, allow_blank=True, default="")
     period = serializers.CharField(max_length=7, required=False, default="")
+
+
+def role_request(r) -> dict:
+    return {
+        "id": r.id,
+        "user_id": r.user_id,
+        "user": r.user.full_name,
+        "email": r.user.email,
+        "code": r.role.code,
+        "name": r.role.name,
+        "reason": r.reason,
+        "conflict_warning": r.conflict_warning,
+        "requested_by": r.requested_by.full_name,
+        "requested_by_id": r.requested_by_id,
+        "requested_at": r.requested_at,
+    }

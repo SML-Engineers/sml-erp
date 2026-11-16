@@ -24,9 +24,10 @@ from .access_serializers import (
     UserScopeInput,
     UserSerializer,
     UserUpdateInput,
+    role_request,
 )
 from .audit import audit_context
-from .models import AccessOverride, Division, PasswordReset, Role, User
+from .models import AccessOverride, Division, PasswordReset, Role, RoleRequest, User
 from .permissions import AreaAccess
 from .serializers import LoginEventSerializer
 
@@ -263,6 +264,32 @@ class UserOverridesView(_UsersArea):
         except access.AccessError as error:
             return _error(error, 403 if user.pk == request.user.pk else 400)
         return Response(OverrideSerializer(override).data, status=status.HTTP_201_CREATED)
+
+
+class RoleRequestsView(_UsersArea):
+    """Roles waiting for the Director (owner, 15 Nov 2026)."""
+
+    def get(self, request):
+        waiting = RoleRequest.objects.filter(status=RoleRequest.Status.WAITING).select_related(
+            "user", "role", "requested_by"
+        )
+        return Response([role_request(r) for r in waiting])
+
+
+class RoleRequestDecisionView(_UsersArea):
+    # Viewing users is enough to reach this; the service requires the Director's action.
+    access_write_level = "view"
+
+    def post(self, request, pk, decision):
+        found = get_object_or_404(RoleRequest, pk=pk)
+        try:
+            if decision == "confirm":
+                found = access.confirm_role(request.user, found)
+            else:
+                found = access.refuse_role(request.user, found, request.data.get("reason", ""))
+        except access.AccessError as error:
+            return _error(error)
+        return Response(role_request(found) | {"status": found.status})
 
 
 class PendingOverridesView(_UsersArea):
@@ -516,3 +543,54 @@ class SignInSecurityView(APIView):
         except SecurityError as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"two_factor_on": company.two_factor_on})
+
+
+class AccessToConfirmView(APIView):
+    """Everything waiting for the Director, in one list (owner, 15 Nov 2026): roles, sensitive
+    extra access and password resets, without what they asked for or what is for them."""
+
+    permission_classes = [AreaAccess]
+    access_area = "users"
+
+    def get(self, request):
+        me = request.user
+        can_confirm = access.effective_access(me).can("confirm_sensitive_grants")
+        roles = (
+            RoleRequest.objects.filter(status=RoleRequest.Status.WAITING)
+            .select_related("user", "role", "requested_by")
+            .order_by("requested_at")
+        )
+        grants = [
+            o
+            for o in AccessOverride.objects.filter(
+                is_sensitive=True, confirmed_at__isnull=True, revoked_at__isnull=True
+            ).select_related("user", "created_by")
+            if o.status == "pending"
+        ]
+        resets = PasswordReset.objects.filter(approved__isnull=True).select_related(
+            "user", "requested_by"
+        )
+        mine = {me.pk}
+        return Response(
+            {
+                "can_confirm": can_confirm,
+                "roles": [
+                    role_request(r) | {"mine": bool({r.user_id, r.requested_by_id} & mine)}
+                    for r in roles
+                ],
+                "grants": [
+                    OverrideSerializer(o).data
+                    | {
+                        "user_name": o.user.full_name,
+                        "user_id": o.user_id,
+                        "mine": bool({o.user_id, o.created_by_id} & mine),
+                    }
+                    for o in grants
+                ],
+                "resets": [
+                    _reset_row(r, me) | {"user_name": r.user.full_name, "user_id": r.user_id}
+                    for r in resets
+                    if r.status == "waiting"
+                ],
+            }
+        )

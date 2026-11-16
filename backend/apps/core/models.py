@@ -886,3 +886,55 @@ class PasswordReset(models.Model):
         if timezone.now() - self.decided_at > timedelta(hours=self.APPROVAL_HOURS):
             return "lapsed"
         return "approved"
+
+
+class RoleRequest(models.Model):
+    """A role the Admin gave someone, waiting for the Director (owner, 15 Nov 2026: every new
+    role needs the Director's confirmation). The role works only once confirmed, when a
+    UserRole is made from it; removing a role still works at once. The Director cannot
+    confirm a role they asked for or that is for themselves (also in the database)."""
+
+    class Status(models.TextChoices):
+        WAITING = "waiting", "Waiting for the Director"
+        CONFIRMED = "confirmed", "Confirmed"
+        REFUSED = "refused", "Refused"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="role_requests"
+    )
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="requests")
+    reason = models.TextField(blank=True, default="")
+    conflict_warning = models.TextField(blank=True, default="")
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    requested_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.WAITING)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["requested_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "role"],
+                condition=models.Q(status="waiting"),
+                name="core_rolerequest_one_waiting",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(status__in=["confirmed", "refused"])
+                | (
+                    models.Q(decided_by__isnull=False)
+                    & ~models.Q(decided_by=models.F("requested_by"))
+                    & ~models.Q(decided_by=models.F("user"))
+                ),
+                name="core_rolerequest_decided_by_another",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.role} for {self.user} ({self.status})"

@@ -16,6 +16,7 @@ export function getWaiting() {
 /** The page where each kind of document is approved. */
 export const WAITING_PAGES: Record<string, string> = {
   voucher: "/vouchers/review",
+  access: "/admin/access-to-confirm",
   voucher_cancellation: "/vouchers/cancellations",
   quotation: "/quotations",
   customer_advance: "/advances",

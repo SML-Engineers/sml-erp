@@ -162,6 +162,7 @@ export const MENU: MenuSection[] = [
     label: "menu.administration",
     items: [
       { label: "users.title", path: "/admin/users", area: "users" },
+      { label: "atc.title", path: "/admin/access-to-confirm", area: "users" },
       { label: "review.link", path: "/admin/access-review", area: "users" },
       { label: "audit.link", path: "/admin/audit", area: "audit_logs" },
       { label: "sentEmails.title", path: "/admin/sent-emails", area: "audit_logs" },

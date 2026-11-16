@@ -52,7 +52,7 @@ def test_while_it_is_off_nobody_is_asked_for_a_code(client, user, make_user):
 def test_only_the_admin_switches_it_with_a_reason():
     admin = person("admin2@sml.lk", "system_admin", all_divisions=True)
     director = person("dir2@sml.lk", "director", all_divisions=True)
-    assert as_user(director).get(URL).json() == {"two_factor_on": True}
+    assert as_user(director).get(URL).json()["two_factor_on"] is True
     refused = as_user(director).put(URL, {"two_factor_on": False, "reason": "x"}, format="json")
     assert refused.status_code == 403
     no_reason = as_user(admin).put(URL, {"two_factor_on": False}, format="json")
@@ -60,7 +60,7 @@ def test_only_the_admin_switches_it_with_a_reason():
     off = as_user(admin).put(
         URL, {"two_factor_on": False, "reason": "Testing on the PC"}, format="json"
     )
-    assert off.status_code == 200 and off.json() == {"two_factor_on": False}
+    assert off.status_code == 200 and off.json()["two_factor_on"] is False
     assert Company.get().two_factor_on is False
     assert AuditEvent.objects.filter(event="two_factor_switched_off").exists()
     clerk = person("clerk3@sml.lk", "clerk")

@@ -105,6 +105,15 @@ Status: `[ ]` to do · `[x]` done
     sign-in time are not logged.
   - Every row records who (or "system" for scheduled jobs), when, the address, the event and
     the reason. Auditor, Director and Admin can read and filter it; nobody can change it.
+  - Owner, 14 Nov 2026: **activity log level** on Administration → **Security and logging**
+    (the former Sign-in security page): "changes and sign-ins only" / "sensitive" (the
+    default: who opened payslips, salaries and pay, and bank details, and every download) /
+    "everything" (every page of data opened, apart from the screens' own background checks).
+    Only the Admin changes it, with a reason, in the audit log (`activity_log_level_changed`).
+    What was viewed or downloaded goes in a new insert-only record (core 0030, trigger),
+    shown on Administration → **Views and downloads** to those who read the audit log, with
+    filters. One check after every page (`apps/core/activity.py`) decides by the level and
+    the address; a failure to record goes to the server log and never stops the page.
 
 - [x] **P0-06 Application layout**
   Sidebar navigation, top bar with notification bell and user menu, responsive layout

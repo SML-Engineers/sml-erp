@@ -52,6 +52,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.core.middleware.AbsoluteSessionTimeoutMiddleware",
     "apps.core.audit.AuditMiddleware",
+    "apps.core.activity.ActivityLogMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

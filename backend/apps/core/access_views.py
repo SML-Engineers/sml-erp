@@ -518,20 +518,37 @@ class PasswordResetIssueView(APIView):
 
 
 class SignInSecurityView(APIView):
-    """The company-wide two-factor switch (owner, 12 Nov 2026). The Admin changes it."""
+    """Security and logging: the company-wide two-factor switch (owner, 12 Nov 2026) and the
+    activity log level (owner, 14 Nov 2026). The Admin changes them, one at a time, with a
+    reason."""
 
     permission_classes = [AreaAccess]
     access_area = "users"
     access_write_level = "manage"
 
-    def get(self, request):
+    def _state(self):
+        from .activity import current_level
         from .security import two_factor_on
 
-        return Response({"two_factor_on": two_factor_on()})
+        return {"two_factor_on": two_factor_on(), "activity_log_level": current_level()}
+
+    def get(self, request):
+        return Response(self._state())
 
     def put(self, request):
+        from .activity import LevelError, set_level
         from .security import SecurityError, set_two_factor
 
+        if "activity_log_level" in request.data:
+            try:
+                set_level(
+                    request.user,
+                    str(request.data.get("activity_log_level")),
+                    request.data.get("reason", ""),
+                )
+            except LevelError as error:
+                return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(self._state())
         on = request.data.get("two_factor_on")
         if not isinstance(on, bool):
             return Response(
@@ -539,10 +556,10 @@ class SignInSecurityView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            company = set_two_factor(request.user, on, request.data.get("reason", ""))
+            set_two_factor(request.user, on, request.data.get("reason", ""))
         except SecurityError as error:
             return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"two_factor_on": company.two_factor_on})
+        return Response(self._state())
 
 
 class AccessToConfirmView(APIView):

@@ -1561,3 +1561,15 @@ ul.plain-list li {
   border-radius: 6px;
   background: #fffaf0;
 }
+
+/* One choice of a short list, with its explanation under it (Security and logging). */
+.radio-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 8px 0;
+}
+
+.radio-row input {
+  margin-top: 4px;
+}

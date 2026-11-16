@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AuditEvent
+from .models import ActivityEvent, AuditEvent
 from .permissions import AreaAccess
 
 MAX_ROWS = 500
@@ -71,3 +71,46 @@ class AuditLogView(APIView):
         except ValueError:
             return Response({"detail": "Dates are YYYY-MM-DD; limit is a number."}, status=400)
         return Response(AuditEventSerializer(rows[:limit], many=True).data)
+
+
+class ActivityEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActivityEvent
+        fields = [
+            "id",
+            "occurred_at",
+            "user_email",
+            "ip_address",
+            "kind",
+            "category",
+            "path",
+            "file_name",
+            "level",
+        ]
+
+
+class ActivityLogView(APIView):
+    """Views and downloads (owner, 14 Nov 2026), newest first. Filters: person (email), kind,
+    category, from, to (YYYY-MM-DD), limit (up to 500). Read only, like the audit log."""
+
+    permission_classes = [AreaAccess]
+    access_area = "audit_logs"
+
+    def get(self, request):
+        q = request.query_params
+        rows = ActivityEvent.objects.all()
+        if q.get("person"):
+            rows = rows.filter(user_email__iexact=q["person"].strip())
+        if q.get("kind"):
+            rows = rows.filter(kind=q["kind"])
+        if q.get("category"):
+            rows = rows.filter(category=q["category"])
+        try:
+            if q.get("from"):
+                rows = rows.filter(occurred_at__gte=_day(q["from"], end=False))
+            if q.get("to"):
+                rows = rows.filter(occurred_at__lte=_day(q["to"], end=True))
+            limit = min(int(q.get("limit", 100)), MAX_ROWS)
+        except ValueError:
+            return Response({"detail": "Dates are YYYY-MM-DD; limit is a number."}, status=400)
+        return Response(ActivityEventSerializer(rows[:limit], many=True).data)

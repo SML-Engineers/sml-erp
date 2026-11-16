@@ -331,3 +331,22 @@ def test_the_dashboard_counts_machines_and_hours_today(
     assert [(f["job"], f["minutes"]) for f in d["finished"]] == [(job.number, 90)]
     lathe = next(h for h in d["hours"] if h["machine"] == "M-LAT-01")
     assert lathe["minutes"] == 120 and lathe["pct"] == "20.0"  # 2 h of the 10 h so far
+
+
+def test_the_dashboard_panel_shows_only_your_own_sections(clock, leader, job):  # noqa: F811
+    clock["now"] = at(8)
+    machine_jobs.start(leader, {"machine": "M-LAT-01", "job": f"{job.number}/20"})
+    clock["now"] = at(9)
+    today = "/api/v1/machine-jobs/today/"
+    # The team leader of the section sees the running lathe.
+    mine = as_user(leader).get(today).json()
+    assert [m["code"] for m in mine["running"]] == ["M-LAT-01"]
+    # A team leader of other sections sees none of it.
+    other = person("tl4@sml.lk", "production_team_leader", divisions=["WS"])
+    other.all_sections = False
+    other.save()
+    theirs = as_user(other).get(today).json()
+    assert theirs["running"] == [] and theirs["finished"] == [] and theirs["hours"] == []
+    assert theirs["counts"] == {"running": 0, "idle": 0, "maintenance": 0}
+    # Someone without machine time is refused.
+    assert as_user(person("c3@sml.lk", "clerk", divisions=["WS"])).get(today).status_code == 403

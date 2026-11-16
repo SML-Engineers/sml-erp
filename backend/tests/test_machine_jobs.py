@@ -200,3 +200,102 @@ def test_through_the_api(clock, leader, job):  # noqa: F811
         == 400
     )
     assert as_user(person("c2@sml.lk", "clerk", divisions=["WS"])).get(BOARD).status_code == 403
+
+
+# --- P3-24 c: into the shift report ---------------------------------------------------------
+
+
+@pytest.fixture
+def mould_supervisor():
+    user = person("msup@sml.lk", "production_supervisor", divisions=["IM"])
+    user.all_sections = False
+    user.save()
+    Section.objects.get(code="IM-MLD").supervisors.add(user)
+    return user
+
+
+def test_a_finished_moulding_job_is_offered_to_the_shift_report_once(
+    clock,  # noqa: F811
+    leader,
+    mould_supervisor,
+    press,
+    released,
+):
+    from apps.production import shift_reports
+
+    clock["now"] = at(8)
+    started = machine_jobs.start(
+        leader, {"machine": "IMM-250", "order": released.number, "start_counter": "1000"}
+    )
+    report = shift_reports.open_report(
+        mould_supervisor, {"section": "IM-MLD", "shift": "G", "day": at(8).date().isoformat()}
+    )
+    # Still running during the shift: not offered yet.
+    assert shift_reports.payload(report, mould_supervisor)["options"]["machine_time"] == []
+    clock["now"] = at(10)
+    machine_jobs.finish(leader, started.pk, {"end_counter": "1500"})
+    offered = shift_reports.payload(report, mould_supervisor)["options"]["machine_time"]
+    assert offered == [
+        {
+            "machine_job": started.pk,
+            "machine": "IMM-250",
+            "operator": "",
+            "start_time": "08:00",
+            "end_time": "10:00",
+            "started_by": leader.full_name,
+            "running": False,
+            "kind": "moulding",
+            "order": released.pk,
+            "order_number": released.number,
+            "mould": released.mould.code,
+            "start_counter": 1000,
+            "end_counter": 1500,
+        }
+    ]
+    line = {k: offered[0][k] for k in ("machine", "order", "start_time", "end_time", "machine_job")}
+    shift_reports.save(
+        mould_supervisor,
+        report,
+        {"runs": [line | {"start_counter": "1000", "end_counter": "1500"}]},
+    )
+    assert report.runs.get().machine_job == started
+    assert shift_reports.payload(report, mould_supervisor)["options"]["machine_time"] == []
+    assert shift_reports.payload(report, mould_supervisor)["runs"][0]["machine_job"] == started.pk
+
+
+def test_a_job_across_a_shift_change_is_split_and_its_figures_shared_by_time(
+    clock,  # noqa: F811
+    leader,
+    mould_supervisor,
+    press,
+    released,
+):
+    from apps.production import shift_reports
+
+    clock["now"] = at(15)
+    started = machine_jobs.start(
+        leader, {"machine": "IMM-250", "order": released.number, "start_counter": "1000"}
+    )
+    clock["now"] = at(19)
+    machine_jobs.finish(leader, started.pk, {"end_counter": "1401"})
+    report = shift_reports.open_report(
+        mould_supervisor, {"section": "IM-MLD", "shift": "G", "day": at(8).date().isoformat()}
+    )
+    (line,) = machine_jobs.for_report(report, at(8), at(17))
+    assert (line["start_time"], line["end_time"]) == ("15:00", "17:00")
+    assert (line["start_counter"], line["end_counter"]) == (1000, 1200)  # half the time
+    (rest,) = machine_jobs.for_report(report, at(17), at(23))
+    assert (rest["start_counter"], rest["end_counter"]) == (1200, 1401)
+
+
+def test_pieces_shared_by_time_always_add_up():
+    job = MachineJob(started_at=at(7), ended_at=at(9))
+    from decimal import Decimal as D
+
+    from apps.production.machine_jobs import _piece_part
+
+    first = _piece_part(job, D("11"), at(7), at(8), at(9))
+    second = _piece_part(job, D("11"), at(8), at(9), at(9))
+    assert (first, second) == ("5", "6")
+    assert _piece_part(job, D("11"), at(7), at(9), at(9)) == "11"
+    assert _piece_part(MachineJob(started_at=at(7)), D("11"), at(7), at(8), at(9)) == ""

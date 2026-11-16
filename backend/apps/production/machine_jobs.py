@@ -15,7 +15,8 @@ machines and finishes it when the machine stops:
   never in the future, the finish after the start.
 - The time is worked out from start and finish (running jobs: up to now).
 
-Finished jobs become shift report lines in P3-24 c; until then they are kept here only."""
+P3-24 c: the jobs of a shift are offered to the section's Work shift report as lines, split
+at shift changes with pieces and shots shared by time; a line keeps its link to the job."""
 
 from __future__ import annotations
 
@@ -450,3 +451,102 @@ def recent(user: User, limit: int = 50) -> list[dict]:
     """The latest jobs of the person's sections, running and finished."""
     now = timezone.now()
     return [payload(j, now) for j in visible(user).order_by("-started_at", "-id")[:limit]]
+
+
+# --- Into the shift report (P3-24 c) -----------------------------------------------------
+
+
+def _hhmm(moment: datetime) -> str:
+    return f"{timezone.localtime(moment):%H:%M}"
+
+
+def for_report(report, start: datetime, end: datetime) -> list[dict]:
+    """The Team Leader's jobs on the section's machines in this shift, as report lines ready
+    to add: the part of each job inside the shift (a job across a shift change is split at
+    it; its pieces or shots shared by time), those not yet in this report. A job still
+    running is offered once the shift is over, up to the shift's end."""
+    now = timezone.now()
+    linked = set(report.runs.exclude(machine_job=None).values_list("machine_job_id", flat=True))
+    linked |= set(
+        report.job_entries.exclude(machine_job=None).values_list("machine_job_id", flat=True)
+    )
+    found = (
+        MachineJob.objects.filter(machine__section=report.section, started_at__lt=end)
+        .filter(Q(ended_at__gt=start) | Q(ended_at__isnull=True))
+        .exclude(pk__in=linked)
+        .select_related("machine", "job", "operation", "order", "mould", "operator", "started_by")
+        .order_by("machine__code", "started_at")
+    )
+    out = []
+    for j in found:
+        finish = j.ended_at
+        if finish is None:
+            if now < end:
+                continue  # still running in this shift: offered when it finishes or the shift ends
+            finish = end
+        a, b = max(j.started_at, start), min(finish, end)
+        if b <= a:
+            continue
+        row = {
+            "machine_job": j.pk,
+            "machine": j.machine.code,
+            "operator": j.operator.number if j.operator_id else "",
+            "start_time": _hhmm(a),
+            "end_time": _hhmm(b),
+            "started_by": j.started_by.full_name,
+            "running": j.ended_at is None,
+        }
+        if j.kind == MachineJob.Kind.JOB:
+            row |= {
+                "kind": "job",
+                "job": j.job.number,
+                "operation": j.operation.seq,
+                "operation_name": j.operation.name,
+                "completed": _piece_part(j, j.completed, a, b, finish),
+                "rejected": _piece_part(j, j.rejected, a, b, finish),
+                "notes": j.notes,
+            }
+        else:
+            total = None if j.end_counter is None else j.end_counter - j.start_counter
+            row |= {
+                "kind": "moulding",
+                "order": j.order_id,
+                "order_number": j.order.number,
+                "mould": j.mould.code,
+                "start_counter": j.start_counter
+                + (_upto(total, j.started_at, a, finish) if total is not None else 0),
+                "end_counter": None
+                if total is None
+                else j.start_counter + _upto(total, j.started_at, b, finish),
+            }
+        out.append(row)
+    return out
+
+
+def _upto(total, started: datetime, moment: datetime, finish: datetime) -> int:
+    """The part of a total done by a moment, shared by time, in whole pieces or shots, so
+    the parts of a job split at shift changes always add up to the total."""
+    span = Decimal((finish - started).total_seconds())
+    return int(Decimal(total) * Decimal((moment - started).total_seconds()) // span)
+
+
+def _piece_part(j: MachineJob, total, a: datetime, b: datetime, finish: datetime) -> str:
+    if j.ended_at is None or total is None:
+        return ""  # pieces are counted when the job finishes
+    if a == j.started_at and b == finish:
+        return f"{total.normalize():f}"
+    return str(_upto(total, j.started_at, b, finish) - _upto(total, j.started_at, a, finish))
+
+
+def check_link(report, machine, value, started_at, ended_at) -> MachineJob | None:
+    """A line names the machine job it was filled from: of this machine, overlapping it."""
+    if value in (None, ""):
+        return None
+    try:
+        pk = int(str(value))
+    except ValueError:
+        return None
+    found = MachineJob.objects.filter(pk=pk, machine=machine, started_at__lt=ended_at).filter(
+        Q(ended_at__gt=started_at) | Q(ended_at__isnull=True)
+    )
+    return found.first()

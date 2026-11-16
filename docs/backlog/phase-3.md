@@ -709,6 +709,17 @@ Status: `[ ]` to do · `[x]` done
     moulding run of the Work shift report of the shift it ran in, split at shift ends, so
     costing, OEE and profit keep working as now; the supervisor sees these lines marked
     "from the Team Leader" and completes the report as before.
+    Done: the shift report shows **From machine time**: the Team Leader's jobs on the
+    section's machines in the shift, not yet in the report, each with **Add** (and "Add
+    all"). Added lines carry the times, operator, order and shot counters (moulding) or the
+    job card and pieces completed (workshop; the Team Leader's rejected count goes in the
+    notes, as the report needs rejects by reason). A job across a shift change is offered
+    to each report for its part, the pieces or shots shared by time in whole numbers so
+    the parts add up; a job still running is offered once the shift is over, without
+    figures. Report lines keep the link (`machine_job` on runs and job card lines,
+    production 0043), so a job is offered to a report only once. The supervisor still
+    checks, gives rejects by reason and downtime, saves and submits as before; all report
+    checks apply (times in the shift, no overlaps on a machine).
   - **d. Dashboard: machines now.** On the existing Dashboard, by role and section: machines
     running (number and list), idle, under maintenance; each one's job / order, start time,
     running time (counts up), operator and team leader; jobs finished today with their

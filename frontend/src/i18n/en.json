@@ -1303,6 +1303,8 @@
     "save": "Save payment",
     "saved": "Payment saved",
     "savedText": "Payment {{number}} of LKR {{amount}} against voucher {{voucher}} is saved, with journal entry {{entry}}.",
+    "savedCheque": "Cheque no. {{number}}. Write this number on the cheque.",
+    "savedReference": "Reference: {{reference}}",
     "print": "Print payment voucher",
     "ofVoucher": "Payments",
     "amountIn": "Amount {{currency}}",

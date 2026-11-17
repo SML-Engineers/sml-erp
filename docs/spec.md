@@ -1542,6 +1542,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Who cancelled a document (owner, 16 Nov 2026) | Sales orders, proformas, delivery notes and supplier invoices show who cancelled them, when and why; kept for good | 5.3 |
 | Audit trail in plain words (owner, 16 Nov 2026) | Events in the audit trails read as plain words, and a user's trail shows each password-reset step at once | 3 |
 | Cancel button per payment (owner, 17 Nov 2026) | On the voucher page, each payment row has a Cancel button that opens its reason box | 4.6 |
+| Cheque number when a payment is saved (owner, 17 Nov 2026) | The "Payment saved" message shows the cheque number to write on the cheque, or the reference for other methods | 4.6 |
 
 **Still needed for initial setup**
 

@@ -950,5 +950,13 @@
   },
   "activity": {
     "title": "බැලීම් සහ බාගැනීම්"
+  },
+  "docStatus": {
+    "draftOf": "{{person}} ගේ කෙටුම්පත",
+    "waitingFor": "{{person}} ({{role}}) ගේ අනුමැතිය බලාපොරොත්තුවෙන්",
+    "waitingForRole": "{{role}} ගේ අනුමැතිය බලාපොරොත්තුවෙන්",
+    "returnedBy": "{{person}} ආපසු එවා ඇත",
+    "approvedBy": "{{person}} අනුමත කළා",
+    "rejectedBy": "{{person}} ප්‍රතික්ෂේප කළා"
   }
 }

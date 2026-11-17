@@ -1536,10 +1536,10 @@
       "draft": "Draft",
       "awaiting_approval": "Awaiting approval",
       "approved": "Approved",
-      "sent": "Sent",
-      "accepted": "Accepted",
-      "lost": "Lost",
-      "expired": "Expired",
+      "sent": "Sent to customer",
+      "accepted": "Customer accepted",
+      "lost": "Customer did not accept",
+      "expired": "Expired, no answer",
       "revised": "Replaced by a revision"
     },
     "form": "Quotation details",
@@ -5644,5 +5644,13 @@
     "when": "When",
     "what": "Page or file",
     "ip": "Address"
+  },
+  "docStatus": {
+    "draftOf": "Draft of {{person}}",
+    "waitingFor": "Waiting for {{person}} ({{role}})",
+    "waitingForRole": "Waiting for the {{role}}",
+    "returnedBy": "Returned by {{person}}",
+    "approvedBy": "Approved by {{person}}",
+    "rejectedBy": "Rejected by {{person}}"
   }
 }

@@ -5,7 +5,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
-import { listVoucherTypes, listVouchers, voucherTypesKey, vouchersKey, type VoucherStatus } from "../api/vouchers";
+import { listVoucherTypes, listVouchers, voucherStatus, voucherTypesKey, vouchersKey, type VoucherStatus } from "../api/vouchers";
 import DataTable from "../components/DataTable";
 import ExportLinks from "../components/ExportLinks";
 import FilesIcon from "../components/FilesIcon";
@@ -119,7 +119,7 @@ export default function VouchersPage({ me }: { me: CurrentUser }) {
             { id: "type", header: t("vouchers.type"), value: (v) => v.voucher_type.name },
             { id: "payee", header: t("vouchers.payee"), value: (v) => v.payee?.name ?? "" },
             { id: "total", header: t("vouchers.total"), value: (v) => v.total_amount, money: true },
-            { id: "status", header: t("vouchers.status"), value: (v) => t(`vouchers.statuses.${v.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (v) => voucherStatus(t, v) },
             {
               id: "actions",
               header: t("voucherActions.header"),

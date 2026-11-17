@@ -116,8 +116,9 @@ class TypeDetailView(_Types):
 # --- Vouchers (P1-02) -------------------------------------------------------------------
 
 
-def _summary(v: Voucher, user=None, waiting=None) -> dict:
-    """One row of a voucher list; with `user`, also the row actions they may take."""
+def _summary(v: Voucher, user=None, waiting=None, people=None) -> dict:
+    """One row of a voucher list; with `user`, also the row actions they may take; with
+    `people`, who it waits for and who last acted (from approvals.people_for)."""
     row = {
         "id": v.pk,
         "number": v.number,
@@ -130,6 +131,8 @@ def _summary(v: Voucher, user=None, waiting=None) -> dict:
         "created_by": v.created_by.full_name,
         "attachments": v.attachments.count(),
     }
+    if people is not None:
+        row["people"] = people.get(v.pk)
     if user is not None:
         row["actions"] = services.actions(user, v, waiting)
     if v.status == Voucher.Status.DELETED:
@@ -142,7 +145,7 @@ def _summary(v: Voucher, user=None, waiting=None) -> dict:
 
 
 def _detail(v: Voucher, user) -> dict:
-    body = _summary(v, user)
+    body = _summary(v, user, people=approvals.people_for(services.DOC, [v.pk]))
     body.update(
         {
             "voucher_type": _type(v.voucher_type),
@@ -444,7 +447,9 @@ class VoucherListView(_Vouchers):
                 user=request.user,
             )
         waiting = services.waiting_levels(request.user)
-        return Response([_summary(v, request.user, waiting) for v in rows[:500]])
+        rows = list(rows[:500])
+        people = approvals.people_for(services.DOC, [v.pk for v in rows])
+        return Response([_summary(v, request.user, waiting, people) for v in rows])
 
     def post(self, request):
         data = VoucherInput(data=request.data)

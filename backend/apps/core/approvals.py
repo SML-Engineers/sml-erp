@@ -648,6 +648,56 @@ def approvers(state: ApprovalState) -> list[User]:
     return [person for person in people.distinct() if why_not(person, state) is None]
 
 
+def people_for(document_type: str, document_ids) -> dict[int, dict]:
+    """Who each document waits for and who last acted on it, for clear statuses in lists and
+    on document pages (owner, 16 Nov 2026: "Waiting for Ruwan", "Returned by Kumari").
+
+    For each id with an approval: {"waiting": {"person", "role"} or None, "last": {"action",
+    "by"} or None}. "person" is named only when exactly one active person other than the maker
+    holds the waiting level's role; otherwise the role alone is given, so it is never wrong.
+    Two queries for the whole list, plus one per role waited on.
+    """
+    ids = list(document_ids)
+    found: dict[int, dict] = {}
+    if not ids:
+        return found
+    holders: dict[str, list] = {}
+    names: dict[str, str] = {}
+    states = ApprovalState.objects.filter(document_type=document_type, document_id__in=ids)
+    for state in states:
+        entry = {"waiting": None, "last": None}
+        if state.status == ApprovalState.Status.IN_PROGRESS:
+            step = next(s for s in state.route if s["level"] == state.current_level)
+            code = step["role"]
+            if code not in holders:
+                holders[code] = list(
+                    User.objects.filter(
+                        is_active=True,
+                        role_assignments__role__code=code,
+                        role_assignments__role__is_active=True,
+                    )
+                    .distinct()
+                    .values_list("pk", "full_name")
+                )
+                names[code] = _role_name(code)
+            people = [name for pk, name in holders[code] if pk != state.created_by_id]
+            entry["waiting"] = {
+                "person": people[0] if len(people) == 1 else None,
+                "role": names[code],
+            }
+        found[state.document_id] = entry
+    logs = (
+        ApprovalLog.objects.filter(document_type=document_type, document_id__in=ids)
+        .exclude(action=ApprovalLog.Action.SUBMIT)
+        .select_related("user")
+        .order_by("acted_at", "id")
+    )
+    for log in logs:
+        entry = found.setdefault(log.document_id, {"waiting": None, "last": None})
+        entry["last"] = {"action": log.action, "by": log.user.full_name}
+    return found
+
+
 def _action_holders(document_type: str):
     """Users who may hold the document type's approver action (through a role or a grant);
     why_not() then checks it is in force."""

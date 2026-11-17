@@ -43,7 +43,7 @@ test("the quotation register lists, filters and exports", async () => {
   const table = await screen.findByRole("table", { name: "Quotation register" });
   expect(within(table).getByRole("link", { name: "QL26103101 Rev 0" })).toHaveAttribute("href", "/quotations/12");
   expect(within(table).getByText("Price")).toBeInTheDocument();
-  expect(screen.getByRole("list", { name: "By status" })).toHaveTextContent("Lost: 1 · LKR 23,500.00");
+  expect(screen.getByRole("list", { name: "By status" })).toHaveTextContent("Customer did not accept: 1 · LKR 23,500.00");
   const exports = screen.getByRole("group", { name: "Download Quotation register" });
   expect(within(exports).getByRole("link", { name: "PDF" })).toHaveAttribute("href", "/api/v1/sales/reports/register/?export=pdf");
 

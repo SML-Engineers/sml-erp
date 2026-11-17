@@ -10,6 +10,13 @@ function show(value: unknown): string {
   return String(value);
 }
 
+/** "password_reset_requested" → "Password reset requested": plain words for an event that has
+ * no wording of its own yet (owner, 16 Nov 2026: raw event names showed in the trail). */
+export function eventWords(event: string): string {
+  const words = event.replace(/_/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** Audit rows, newest first: when, who, what, and each field's old → new value. */
 export default function AuditTable({ rows }: { rows: AuditEvent[] }) {
   const { t } = useTranslation();
@@ -34,7 +41,7 @@ export default function AuditTable({ rows }: { rows: AuditEvent[] }) {
                 {row.ip_address && <div className="muted">{row.ip_address}</div>}
               </td>
               <td>
-                <strong>{row.event ? t(`audit.event.${row.event}`, row.event) : t(`audit.action.${row.action}`)}</strong>
+                <strong>{row.event ? t(`audit.event.${row.event}`, eventWords(row.event)) : t(`audit.action.${row.action}`)}</strong>
                 <div>{row.object_repr}</div>
                 {row.reason && <div className="muted">{t("audit.reason", { reason: row.reason })}</div>}
               </td>

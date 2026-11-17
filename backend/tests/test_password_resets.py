@@ -58,6 +58,11 @@ def test_the_admin_asks_the_director_approves_the_admin_makes_the_password(admin
         "password_reset_approved",
         "password_reset_done",
     } <= events
+    # Owner, 16 Nov 2026: every step is in the person's own audit trail, the Director's
+    # approval included.
+    trail = as_user(director).get("/api/v1/audit/", {"user": clerk.pk}).json()
+    steps = {r["event"] for r in trail}
+    assert {"password_reset_requested", "password_reset_approved", "password_reset_done"} <= steps
 
 
 def test_a_password_only_reset_keeps_the_authenticator(admin, director, clerk):

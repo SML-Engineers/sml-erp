@@ -12,6 +12,7 @@ import { createDirectOrder, listSalesOrders, SALES_ORDER_STATUSES, salesOrdersKe
 import DataTable from "../components/DataTable";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal } from "../lib/decimal";
+import { cancelledStatus } from "../lib/cancelled";
 
 /** Sales orders (spec 5.3): confirmed customer orders, from a quotation, a proforma or typed in. */
 export default function SalesOrdersPage({ me }: { me: CurrentUser }) {
@@ -100,7 +101,14 @@ export default function SalesOrdersPage({ me }: { me: CurrentUser }) {
               cell: (r) => `${r.currency} ${formatDecimal(r.total_amount)}`,
             },
             { id: "next", header: t("salesOrders.nextDelivery"), value: (r) => r.next_delivery ?? "" },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`salesOrders.statuses.${r.status}`) },
+            {
+              id: "status",
+              header: t("vouchers.status"),
+              value: (r) =>
+                r.status === "cancelled"
+                  ? cancelledStatus(t, r.cancelled_by, t("salesOrders.statuses.cancelled"))
+                  : t(`salesOrders.statuses.${r.status}`),
+            },
             { id: "by", header: t("quotations.madeBy"), value: (r) => r.created_by },
           ]}
         />

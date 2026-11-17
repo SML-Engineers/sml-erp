@@ -20,6 +20,7 @@ export interface SalesOrderSummary {
   /** The first delivery date of an open order. */
   next_delivery: string | null;
   created_by: string;
+  cancelled_by?: string | null;
 }
 
 export interface Delivery {
@@ -61,6 +62,9 @@ export interface SalesOrderDetail extends SalesOrderSummary {
   subtotal: string;
   tax_total: string;
   cancel_reason: string;
+  /** Who cancelled it and when (owner, 16 Nov 2026). */
+  cancelled_by?: string | null;
+  cancelled_at?: string | null;
   confirmed_at: string | null;
   lines: SalesOrderLine[];
   quotation_lines: { id: number; line_no: number; description: string; quantity: string }[];

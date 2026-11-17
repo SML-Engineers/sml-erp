@@ -55,6 +55,9 @@ export interface InvoiceDetail extends InvoiceSummary {
   notes: string;
   exception_reason: string;
   cancel_reason: string;
+  /** Who cancelled it and when (owner, 16 Nov 2026). */
+  cancelled_by?: string | null;
+  cancelled_at?: string | null;
   journal: string | null;
   posted_at: string | null;
   on_vouchers?: string;

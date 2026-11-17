@@ -21,6 +21,7 @@ import {
 } from "../api/deliveryNotes";
 import { compareDecimal, formatDecimal, formatQuantity } from "../lib/decimal";
 import { factoryToday } from "../lib/time";
+import { cancelledNote } from "../lib/cancelled";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -74,7 +75,7 @@ export default function DeliveryNotePage() {
               </span>
             ))}
           </p>
-          {data.status === "cancelled" && <p className="notice">{t("proformas.cancelledBecause", { reason: data.cancel_reason })}</p>}
+          {data.status === "cancelled" && <p className="notice">{cancelledNote(t, data)}</p>}
           {data.can_edit ? (
             <NoteForm key={`${data.id}-${data.vehicle_no}-${data.lines.map((l) => l.quantity).join()}`} note={data} lines={data.lines} address={data.delivery_address} />
           ) : (

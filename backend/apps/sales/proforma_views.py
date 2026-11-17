@@ -74,6 +74,8 @@ def _detail(p: ProformaInvoice, user) -> dict:
         "subtotal": str(p.subtotal),
         "tax_total": str(p.tax_total),
         "cancel_reason": p.cancel_reason,
+        "cancelled_by": p.cancelled_by.full_name if p.cancelled_by_id else None,
+        "cancelled_at": p.cancelled_at,
         "lines": [
             {
                 "line_no": line.line_no,

@@ -349,6 +349,7 @@ def test_the_director_sends_an_exception_back(clerk, accountant, director, suppl
         invoices.cancel(clerk, invoice, "")
     invoice = invoices.cancel(clerk, invoice, "Supplier sends a new invoice")
     assert invoice.status == St.CANCELLED
+    assert invoice.cancelled_by_id == clerk.pk and invoice.cancelled_at is not None  # 16 Nov
     again = enter(clerk, supplier, grn_line)  # the number is free again
     assert invoices.match(clerk, again).status == St.POSTED
 

@@ -312,6 +312,10 @@ def test_a_cancelled_proforma_stays_cancelled(draft, executive):
         P.CANCELLED,
         "Customer changed the order",
     )
+    # Who cancelled it and when are kept (owner, 16 Nov 2026), and cannot be changed.
+    assert cancelled.cancelled_by_id == executive.pk and cancelled.cancelled_at is not None
+    with pytest.raises(DatabaseError, match="cannot be changed"), transaction.atomic():
+        ProformaInvoice.objects.filter(pk=cancelled.pk).update(cancelled_at=None)
     with pytest.raises(DatabaseError, match="cancelled for good"), transaction.atomic():
         ProformaInvoice.objects.filter(pk=cancelled.pk).update(status=P.ISSUED)
 

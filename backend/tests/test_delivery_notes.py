@@ -236,6 +236,8 @@ def test_cancelling_reopens_the_quantities(order, stores, executive):
     with pytest.raises(SalesError, match="reason"):
         deliveries.cancel(stores, note, " ")
     deliveries.cancel(stores, note, "Lorry turned back: wrong lot")
+    note.refresh_from_db()
+    assert note.cancelled_by_id == stores.pk and note.cancelled_at is not None  # owner, 16 Nov
     assert status_of(order) == OS.OPEN
     assert deliveries.remaining(order)[order.lines.get(line_no=1).pk] == Decimal("10000")
     with pytest.raises(DatabaseError, match="cancelled for good"):

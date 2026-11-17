@@ -1539,6 +1539,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Activity log level (owner, 14 Nov 2026) | Changes and sign-ins only / sensitive (default: payslips, salaries and bank details opened, and every download) / everything; set by the Admin with a reason on Security and logging; views and downloads in an insert-only record (Views and downloads) | 3 |
 | Clear statuses (owner, 16 Nov 2026) | Lists and document pages say who a document is with (draft of, waiting for, returned / approved / rejected by) and what the customer did (accepted, did not accept), for every document type, one area at a time | 3, 5.1 |
 | Document histories in Sri Lanka time (owner, 17 Nov 2026) | History lines, sent emails, uploads and "changed by" notes show Sri Lanka time, like the rest of the ERP | 3 |
+| Who cancelled a document (owner, 16 Nov 2026) | Sales orders, proformas, delivery notes and supplier invoices show who cancelled them, when and why; kept for good | 5.3 |
 
 **Still needed for initial setup**
 

@@ -360,8 +360,12 @@ def cancel(user: User, note: DeliveryNote, reason: str) -> DeliveryNote:
                 raise SalesError(str(error)) from None
         note.status = St.CANCELLED
         note.cancel_reason = reason[:1000]
+        note.cancelled_by = user
+        note.cancelled_at = timezone.now()
         note.updated_at = timezone.now()
-        note.save(update_fields=["status", "cancel_reason", "updated_at"])
+        note.save(
+            update_fields=["status", "cancel_reason", "updated_at", "cancelled_by", "cancelled_at"]
+        )
         _move_order(order)
         return note
 

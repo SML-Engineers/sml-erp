@@ -22,6 +22,7 @@ import { orderFromProforma } from "../api/salesOrders";
 import OrderLinks from "../components/OrderLinks";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { cancelledNote } from "../lib/cancelled";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -54,7 +55,7 @@ export default function ProformaPage() {
             {t(`proformas.statuses.${data.status}`)} · {data.issue_date} · {data.customer.code} {data.customer.name} ·{" "}
             <Link to={`/quotations/${data.quotation.id}`}>{data.quotation.label}</Link>
           </p>
-          {data.status === "cancelled" && <p className="notice">{t("proformas.cancelledBecause", { reason: data.cancel_reason })}</p>}
+          {data.status === "cancelled" && <p className="notice">{cancelledNote(t, data)}</p>}
           <p>
             <a className="button-link secondary" href={proformaPdfUrl(data.id)} target="_blank" rel="noreferrer">
               {t("proformas.printPdf")}

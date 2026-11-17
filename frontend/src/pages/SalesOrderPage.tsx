@@ -20,6 +20,7 @@ import {
 import { getTaxes, taxesKey } from "../api/taxes";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { cancelledNote, cancelledStatus } from "../lib/cancelled";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -49,7 +50,7 @@ export default function SalesOrderPage() {
       {data && (
         <>
           <p className="muted">
-            {t(`salesOrders.statuses.${data.status}`)} · {data.order_date} · {data.division} · {data.customer.code} {data.customer.name}
+            {data.status === "cancelled" ? cancelledStatus(t, data.cancelled_by, t("salesOrders.statuses.cancelled")) : t(`salesOrders.statuses.${data.status}`)} · {data.order_date} · {data.division} · {data.customer.code} {data.customer.name}
             {data.quotation && (
               <>
                 {" · "}
@@ -64,7 +65,7 @@ export default function SalesOrderPage() {
             )}
           </p>
           {data.source === "direct" && <p className="notice">{t("salesOrders.directNotice")}</p>}
-          {data.status === "cancelled" && <p className="notice">{t("proformas.cancelledBecause", { reason: data.cancel_reason })}</p>}
+          {data.status === "cancelled" && <p className="notice">{cancelledNote(t, data)}</p>}
           <p className="muted">{t("salesOrders.noSale")}</p>
           {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}-${data.status}`} order={data} /> : <ReadOnly order={data} />}
           <Actions order={data} />

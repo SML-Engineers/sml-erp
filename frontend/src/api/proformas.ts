@@ -65,6 +65,9 @@ export interface ProformaDetail extends ProformaSummary {
   subtotal: string;
   tax_total: string;
   cancel_reason: string;
+  /** Who cancelled it and when (owner, 16 Nov 2026). */
+  cancelled_by?: string | null;
+  cancelled_at?: string | null;
   lines: ProformaLine[];
   packing_totals: { cartons: string | null; net_weight_kg: string | null; gross_weight_kg: string | null; volume_m3: string | null };
   quotation_lines: {

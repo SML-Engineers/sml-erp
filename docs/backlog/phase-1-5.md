@@ -149,6 +149,11 @@ Status: `[ ]` to do · `[x]` done
     accounts. Partly delivered is set by deliveries in Phase 2.
   - The number format and the Director's approval of repeat orders were confirmed by the owner
     (decisions 12 and 13).
+  - Owner, 16 Nov 2026: **who cancelled it and when.** Sales orders, proformas, delivery notes
+    and supplier invoices keep who cancelled them and when (sales 0020, purchasing 0010; a
+    trigger keeps them fixed once set; documents already cancelled get them from the audit
+    log). The page says "Cancelled by Dilini Wijesekara on 2026-11-16 14:52: wrong quantity";
+    the sales order list says "Cancelled by Dilini".
 
 ## D. Reports and go-live
 

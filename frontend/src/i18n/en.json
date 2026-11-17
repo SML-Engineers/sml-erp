@@ -5652,5 +5652,10 @@
     "returnedBy": "Returned by {{person}}",
     "approvedBy": "Approved by {{person}}",
     "rejectedBy": "Rejected by {{person}}"
+  },
+  "cancelled": {
+    "because": "Cancelled: {{reason}}",
+    "byOn": "Cancelled by {{person}} on {{at}}: {{reason}}",
+    "by": "Cancelled by {{person}}"
   }
 }

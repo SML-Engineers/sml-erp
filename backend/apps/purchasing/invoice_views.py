@@ -78,6 +78,8 @@ def _detail(i: SupplierInvoice, user) -> dict:
         "notes": i.notes,
         "exception_reason": i.exception_reason,
         "cancel_reason": i.cancel_reason,
+        "cancelled_by": i.cancelled_by.full_name if i.cancelled_by_id else None,
+        "cancelled_at": i.cancelled_at,
         "journal": None if i.journal_entry_id is None else i.journal_entry.number,
         "set_offs": [
             {

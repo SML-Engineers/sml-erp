@@ -182,3 +182,33 @@ test("the list links to each order; a repeat order is typed in from it", async (
     ],
   });
 });
+
+// Owner, 16 Nov 2026: "mention who cancelled the sales order".
+test("a cancelled order says who cancelled it and when", async () => {
+  const cancelled = {
+    ...draft,
+    status: "cancelled",
+    can_edit: false,
+    can_cancel: false,
+    cancel_reason: "wrong quantity",
+    cancelled_by: "Dilini Wijesekara",
+    cancelled_at: "2026-11-16T09:20:00Z",
+  };
+  mockApi({
+    "GET /api/v1/sales-orders/": { body: [cancelled] },
+    "GET /api/v1/sales-orders/50/": { body: cancelled },
+  });
+  renderAt("/sales-orders", <SalesOrdersPage me={executive} />);
+  const table = await screen.findByRole("table", { name: "Sales orders" });
+  expect(within(table).getByText("Cancelled by Dilini")).toBeInTheDocument();
+
+  renderAt("/sales-orders/50", <SalesOrderPage />, "/sales-orders/:id");
+  expect(await screen.findByText("Cancelled by Dilini Wijesekara on 2026-11-16 14:50: wrong quantity")).toBeInTheDocument();
+});
+
+test("an order cancelled before who was kept still gives the reason", async () => {
+  const old = { ...draft, status: "cancelled", can_edit: false, can_cancel: false, cancel_reason: "wrong quantity", cancelled_by: null };
+  mockApi({ "GET /api/v1/sales-orders/50/": { body: old } });
+  renderAt("/sales-orders/50", <SalesOrderPage />, "/sales-orders/:id");
+  expect(await screen.findByText("Cancelled: wrong quantity")).toBeInTheDocument();
+});

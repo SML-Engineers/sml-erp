@@ -53,6 +53,8 @@ def _summary(o: SalesOrder) -> dict:
         if o.status in (SalesOrder.Status.OPEN, SalesOrder.Status.PARTLY_DELIVERED)
         else None,
         "created_by": o.created_by.full_name,
+        # Who cancelled it (owner, 16 Nov 2026): "Cancelled by Dilini" in the list.
+        "cancelled_by": o.cancelled_by.full_name if o.cancelled_by_id else None,
     }
 
 
@@ -79,6 +81,7 @@ def _detail(o: SalesOrder, user) -> dict:
         "subtotal": str(o.subtotal),
         "tax_total": str(o.tax_total),
         "cancel_reason": o.cancel_reason,
+        "cancelled_at": o.cancelled_at,
         "confirmed_at": o.confirmed_at,
         "lines": [
             {

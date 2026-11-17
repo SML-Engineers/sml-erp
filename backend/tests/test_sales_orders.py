@@ -344,3 +344,25 @@ def test_the_api_takes_a_repeat_order(executive, unilever):
     )
     assert answer.status_code == 201, answer.json()
     assert (answer.json()["source"], answer.json()["total_amount"]) == ("direct", "2300.00")
+
+
+def test_who_cancelled_and_when_is_kept(from_quote, executive):
+    # Owner, 16 Nov 2026: "mention who cancelled the sales order".
+    orders.save(executive, from_quote, lines=call_offs(from_quote, (14, "10000")), customer_po="P1")
+    order = orders.confirm(executive, from_quote)
+    before = timezone.now()
+    cancelled = orders.cancel(executive, order, "Wrong quantity")
+    assert cancelled.cancelled_by_id == executive.pk and cancelled.cancelled_at >= before
+    row = next(
+        r for r in as_user(executive).get("/api/v1/sales-orders/").json() if r["id"] == order.pk
+    )
+    assert row["cancelled_by"] == executive.full_name
+    page = as_user(executive).get(f"/api/v1/sales-orders/{order.pk}/").json()
+    assert (page["cancelled_by"], page["cancel_reason"]) == (executive.full_name, "Wrong quantity")
+    assert page["cancelled_at"] is not None
+    # Once kept, who and when cannot be changed.
+    other = person("other@sml.lk", "sales_executive", all_divisions=True)
+    with pytest.raises(DatabaseError, match="cannot be changed"), transaction.atomic():
+        SalesOrder.objects.filter(pk=order.pk).update(cancelled_by=other)
+    with pytest.raises(DatabaseError, match="cannot be changed"), transaction.atomic():
+        SalesOrder.objects.filter(pk=order.pk).update(cancelled_at=before)

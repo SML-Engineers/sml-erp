@@ -958,5 +958,10 @@
     "returnedBy": "{{person}} ආපසු එවා ඇත",
     "approvedBy": "{{person}} අනුමත කළා",
     "rejectedBy": "{{person}} ප්‍රතික්ෂේප කළා"
+  },
+  "cancelled": {
+    "because": "අවලංගු කළා: {{reason}}",
+    "byOn": "{{person}} විසින් {{at}} දින අවලංගු කළා: {{reason}}",
+    "by": "{{person}} අවලංගු කළා"
   }
 }

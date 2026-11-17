@@ -505,7 +505,9 @@ def cancel(user: User, invoice: SupplierInvoice, reason: str) -> SupplierInvoice
             raise InvoiceError("Give a reason for cancelling the invoice.")
         invoice.status = St.CANCELLED
         invoice.cancel_reason = reason[:5000]
-        invoice.save(update_fields=["status", "cancel_reason"])
+        invoice.cancelled_by = user
+        invoice.cancelled_at = timezone.now()
+        invoice.save(update_fields=["status", "cancel_reason", "cancelled_by", "cancelled_at"])
         return invoice
 
 

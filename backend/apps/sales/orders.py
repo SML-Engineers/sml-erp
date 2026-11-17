@@ -544,5 +544,7 @@ def cancel(user: User, order: SalesOrder, reason: str) -> SalesOrder:
             )
         order.status = St.CANCELLED
         order.cancel_reason = reason[:1000]
-        order.save(update_fields=["status", "cancel_reason"])
+        order.cancelled_by = user
+        order.cancelled_at = timezone.now()
+        order.save(update_fields=["status", "cancel_reason", "cancelled_by", "cancelled_at"])
         return order

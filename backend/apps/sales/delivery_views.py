@@ -94,6 +94,8 @@ def _detail(n: DeliveryNote, user) -> dict:
         "received_on": n.received_on,
         "signed_copy": n.signed_copy_name or None,
         "cancel_reason": n.cancel_reason,
+        "cancelled_by": n.cancelled_by.full_name if n.cancelled_by_id else None,
+        "cancelled_at": n.cancelled_at,
         "invoices": [
             {"id": i.pk, "number": i.number, "status": i.status}
             for i in TaxInvoice.objects.filter(lines__delivery_line__note=n).distinct()

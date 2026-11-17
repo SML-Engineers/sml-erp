@@ -143,6 +143,11 @@ class SupplierInvoice(models.Model):
     notes = models.TextField(blank=True)
     exception_reason = models.TextField(blank=True)
     cancel_reason = models.TextField(blank=True)
+    # Who cancelled it and when (owner, 16 Nov 2026); fixed once set (database trigger).
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     journal_entry = models.ForeignKey(
         "accounting.JournalEntry", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )

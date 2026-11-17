@@ -45,6 +45,9 @@ export interface DNDetail extends DNSummary {
   received_on: string | null;
   signed_copy: string | null;
   cancel_reason: string;
+  /** Who cancelled it and when (owner, 16 Nov 2026). */
+  cancelled_by?: string | null;
+  cancelled_at?: string | null;
   /** Tax invoices of this note (P2-05). */
   invoices?: { id: number; number: string; status: string }[];
   lines: DNOrderLine[];

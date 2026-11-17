@@ -331,7 +331,9 @@ def cancel(user: User, proforma: ProformaInvoice, reason: str) -> ProformaInvoic
             )
         proforma.status = P.CANCELLED
         proforma.cancel_reason = reason[:1000]
-        proforma.save(update_fields=["status", "cancel_reason"])
+        proforma.cancelled_by = user
+        proforma.cancelled_at = timezone.now()
+        proforma.save(update_fields=["status", "cancel_reason", "cancelled_by", "cancelled_at"])
         return proforma
 
 

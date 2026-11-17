@@ -568,6 +568,11 @@ class ProformaInvoice(models.Model):
     total_lkr = models.DecimalField("Total (LKR)", max_digits=18, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     cancel_reason = models.TextField(blank=True)
+    # Who cancelled it and when (owner, 16 Nov 2026); fixed once set (database trigger).
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
@@ -709,6 +714,11 @@ class SalesOrder(models.Model):
     total_lkr = models.DecimalField("Total (LKR)", max_digits=18, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     cancel_reason = models.TextField(blank=True)
+    # Who cancelled it and when (owner, 16 Nov 2026); fixed once set (database trigger).
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
@@ -838,6 +848,11 @@ class DeliveryNote(models.Model):
     signed_copy_type = models.CharField(max_length=100, blank=True)
     signed_copy_sha256 = models.CharField(max_length=64, blank=True)
     cancel_reason = models.TextField(blank=True)
+    # Who cancelled it and when (owner, 16 Nov 2026); fixed once set (database trigger).
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )

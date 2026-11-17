@@ -30,6 +30,7 @@ import SearchSelect from "../components/SearchSelect";
 import Trail from "../components/Trail";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { cancelledNote } from "../lib/cancelled";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -113,7 +114,7 @@ export default function SupplierInvoicePage() {
           )}
           {data.can_set_off && <SetOff invoice={data} />}
           {data.exception_reason && <p className="muted">{t("si.exceptionReason", { reason: data.exception_reason })}</p>}
-          {data.cancel_reason && <p className="notice">{t("si.cancelReason", { reason: data.cancel_reason })}</p>}
+          {data.cancel_reason && <p className="notice">{cancelledNote(t, data)}</p>}
           {data.can_edit ? <InvoiceForm key={`${data.id}-${data.total_amount}`} invoice={data} /> : <ReadOnly invoice={data} />}
           <Scans invoice={data} />
           <Actions invoice={data} />

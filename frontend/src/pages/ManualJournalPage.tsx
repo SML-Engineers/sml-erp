@@ -22,7 +22,7 @@ import {
 } from "../api/manualJournals";
 import JournalLines, { JournalTotals, linesFrom, toInputs, useJournalAccounts, type LineState } from "../components/JournalLines";
 import { formatDecimal } from "../lib/decimal";
-import { factoryToday } from "../lib/time";
+import { factoryToday, formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -296,7 +296,7 @@ function Actions({ journal }: { journal: MJDetail }) {
         <ul className="changes" aria-label={t("salesOrders.approvalHistory")}>
           {journal.approval.history.map((h, i) => (
             <li key={i}>
-              {h.at.slice(0, 16).replace("T", " ")} · {h.action_label} · {h.by}
+              {formatDateTime(h.at)} · {h.action_label} · {h.by}
               {h.reason ? ` · ${h.reason}` : ""}
             </li>
           ))}

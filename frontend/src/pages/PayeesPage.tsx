@@ -20,6 +20,7 @@ import {
   type PayeeChange,
 } from "../api/payees";
 import DataTable from "../components/DataTable";
+import { formatDate } from "../lib/time";
 
 function warningsOf(error: unknown): string[] {
   if (!(error instanceof ApiError) || error.status !== 409) return [];
@@ -183,7 +184,7 @@ function PayeeForm(props: { me: CurrentUser; payee?: Payee; onDone: (id: number 
       <h2>{title}</h2>
       {payee?.bank_change_pending && (
         <p className="notice warning-text" role="status">
-          {t("payees.bankChangedNotice", { by: payee.bank_changed_by ?? "", at: payee.bank_changed_at?.slice(0, 10) })}
+          {t("payees.bankChangedNotice", { by: payee.bank_changed_by ?? "", at: formatDate(payee.bank_changed_at) })}
         </p>
       )}
       <form className="form-grid" onSubmit={submit}>

@@ -16,6 +16,7 @@ import {
   type OpeningDoc,
 } from "../api/migration";
 import { formatDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 const FILES: MigrationFile[] = ["trial_balance", "receivables", "payables", "items"];
 
@@ -203,7 +204,7 @@ function Document({ doc }: { doc: OpeningDoc }) {
         <ul>
           {doc.history.map((h, i) => (
             <li key={i}>
-              {h.action} · {h.by} · {h.at.slice(0, 16).replace("T", " ")}
+              {h.action} · {h.by} · {formatDateTime(h.at)}
               {h.reason && ` · ${h.reason}`}
             </li>
           ))}

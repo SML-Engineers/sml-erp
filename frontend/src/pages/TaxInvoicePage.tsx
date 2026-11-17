@@ -19,7 +19,7 @@ import {
 } from "../api/taxInvoices";
 import SendEmailForm from "../components/SendEmailForm";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
-import { factoryToday } from "../lib/time";
+import { factoryToday, formatDate, formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -312,7 +312,7 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
         <ul className="changes" aria-label={t("ti.emails")}>
           {invoice.emails.map((m, i) => (
             <li key={i}>
-              {m.sent_at.slice(0, 16).replace("T", " ")} · {m.to} · {m.status === "sent" ? t("ti.emailSent") : `${t("ti.emailFailed")}: ${m.error}`}
+              {formatDateTime(m.sent_at)} · {m.to} · {m.status === "sent" ? t("ti.emailSent") : `${t("ti.emailFailed")}: ${m.error}`}
             </li>
           ))}
         </ul>
@@ -348,7 +348,7 @@ function Tracking({ invoice }: { invoice: InvoiceDetail }) {
       <ol aria-label={t("ti.history")}>
         {tr.events.map((e, i) => (
           <li key={i}>
-            {e.at.slice(0, 10)} · {e.text}
+            {formatDate(e.at)} · {e.text}
             {e.url && (
               <>
                 {" · "}

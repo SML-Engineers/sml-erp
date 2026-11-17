@@ -23,6 +23,7 @@ import {
   type MySummary,
 } from "../api/my";
 import { formatDecimal } from "../lib/decimal";
+import { formatDate } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -374,7 +375,7 @@ function Details({ details, requests, onDone }: { details: MyDetails; requests: 
       <ul className="plain">
         {requests.map((r) => (
           <li key={r.id}>
-            {r.created_at.slice(0, 10)}: {r.changes.map((c) => `${t(`emp.f.${c.field}`)} → ${c.after || "-"}`).join("; ")} —{" "}
+            {formatDate(r.created_at)}: {r.changes.map((c) => `${t(`emp.f.${c.field}`)} → ${c.after || "-"}`).join("; ")} —{" "}
             {r.status_label}
             {r.decision_note && <span className="muted"> ({r.decision_note})</span>}{" "}
             {r.status === "waiting" && (

@@ -17,6 +17,7 @@ import {
 } from "../api/employees";
 import EmployeeLeave from "./EmployeeLeave";
 import EmployeePay from "./EmployeePay";
+import { formatDate, formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -70,7 +71,7 @@ export default function EmployeePage() {
             <section className="panel" aria-label={t("emp.bankCheck")}>
               <h2>{t("emp.bankCheck")}</h2>
               <p>
-                {t("emp.bankChangedBy", { name: e.bank_changed_by, at: e.bank_changed_at?.slice(0, 16).replace("T", " ") })}
+                {t("emp.bankChangedBy", { name: e.bank_changed_by, at: formatDateTime(e.bank_changed_at) })}
               </p>
               <p className="mono">
                 {e.bank_name} {e.bank_branch} — {e.account_name} {e.account_number}
@@ -90,8 +91,8 @@ export default function EmployeePage() {
           <EmployeeLeave employeeId={e.id} />
           {e.can_edit && <Leaving employee={e} onSaved={done} />}
           <p className="muted">
-            {t("emp.created", { name: e.created_by, at: e.created_at.slice(0, 10) })}
-            {e.bank_checked_by && ` ${t("emp.bankCheckedBy", { name: e.bank_checked_by, at: e.bank_checked_at?.slice(0, 10) })}`}
+            {t("emp.created", { name: e.created_by, at: formatDate(e.created_at) })}
+            {e.bank_checked_by && ` ${t("emp.bankCheckedBy", { name: e.bank_checked_by, at: formatDate(e.bank_checked_at) })}`}
           </p>
         </>
       )}
@@ -179,7 +180,7 @@ function Details({ employee, onSaved }: { employee: Employee; onSaved: (e: Emplo
         {employee.phone_clock === "sites" && (
           <span className="muted">
             {employee.location_consent_at
-              ? t("emp.consentGiven", { at: employee.location_consent_at.slice(0, 10) })
+              ? t("emp.consentGiven", { at: formatDate(employee.location_consent_at) })
               : t("emp.consentMissing")}
           </span>
         )}

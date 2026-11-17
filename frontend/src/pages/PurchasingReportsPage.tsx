@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router";
 import { getReport, prKey, reportExportUrl, type ReportName, type Row } from "../api/purchasingReports";
 import DataTable, { type Column } from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 const TABS: { id: string; report: ReportName; filters?: Record<string, string>; period?: boolean }[] = [
   { id: "open", report: "open-orders" },
@@ -62,7 +63,7 @@ export default function PurchasingReportsPage() {
       money("total", t("vouchers.total")),
     ],
     exceptions: [
-      { id: "at", header: t("pr.approved"), value: (r) => String(r.approved_at), cell: (r) => String(r.approved_at).slice(0, 16).replace("T", " ") },
+      { id: "at", header: t("pr.approved"), value: (r) => String(r.approved_at), cell: (r) => formatDateTime(String(r.approved_at)) },
       text("kind", t("pr.exception")),
       text("document", t("pr.document")),
       text("supplier", t("po.supplier")),

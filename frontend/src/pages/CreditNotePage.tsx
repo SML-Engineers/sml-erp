@@ -22,7 +22,7 @@ import {
   type CNKind,
 } from "../api/creditNotes";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
-import { factoryToday } from "../lib/time";
+import { factoryToday, formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -320,7 +320,7 @@ function Actions({ note }: { note: CNDetail }) {
         <ul className="changes" aria-label={t("salesOrders.approvalHistory")}>
           {note.approval.history.map((h, i) => (
             <li key={i}>
-              {h.at.slice(0, 16).replace("T", " ")} · {h.action_label} · {h.by}
+              {formatDateTime(h.at)} · {h.action_label} · {h.by}
               {h.reason ? ` · ${h.reason}` : ""}
             </li>
           ))}

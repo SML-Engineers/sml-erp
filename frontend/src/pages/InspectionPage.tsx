@@ -19,6 +19,7 @@ import {
   type InspectionDetail,
 } from "../api/inspections";
 import { formatQuantity } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -299,7 +300,7 @@ function Approval({ data }: { data: InspectionDetail }) {
       <ul className="changes">
         {data.history.map((h, i) => (
           <li key={i}>
-            {h.at.slice(0, 16).replace("T", " ")} · {h.action_label} · {h.by}
+            {formatDateTime(h.at)} · {h.action_label} · {h.by}
             {h.reason ? ` · ${h.reason}` : ""}
           </li>
         ))}
@@ -324,7 +325,7 @@ function Files({ data }: { data: InspectionDetail }) {
               {a.file_name}
             </a>{" "}
             <span className="muted">
-              {a.uploaded_by} · {a.uploaded_at.slice(0, 16).replace("T", " ")}
+              {a.uploaded_by} · {formatDateTime(a.uploaded_at)}
             </span>{" "}
             {data.can_edit && (
               <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate(a.id)}>

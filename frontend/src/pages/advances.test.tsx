@@ -125,3 +125,17 @@ test("the Accountant approves the advance and it is posted", async () => {
   expect(screen.getByText("Approved and posted")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Print the receipt (PDF)" })).toHaveAttribute("href", "/api/v1/advances/7/receipt/");
 });
+
+// Owner, 17 Nov 2026: the history said 09:27 (GMT); in Sri Lanka it was 14:57.
+test("the history is in Sri Lanka time", async () => {
+  mockApi({
+    "GET /api/v1/advances/7/": {
+      body: {
+        ...made,
+        history: [{ action: "submit", action_label: "Submitted", by: "Sunil Fernando", at: "2026-11-17T09:27:38Z", reason: "" }],
+      },
+    },
+  });
+  renderAt("/advances/7", <AdvancePage />, "/advances/:id");
+  expect(await screen.findByText(/Sunil Fernando · 2026-11-17 14:57/)).toBeInTheDocument();
+});

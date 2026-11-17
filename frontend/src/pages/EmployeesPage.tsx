@@ -21,6 +21,7 @@ import {
   type EmployeeList,
   type EmployeeValues,
 } from "../api/employees";
+import { formatDate } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -297,7 +298,7 @@ function DetailRequests() {
             <strong>
               <Link to={`/employees/${r.employee_id}`}>{r.employee}</Link>
             </strong>{" "}
-            <span className="muted">{r.created_at.slice(0, 10)}</span>
+            <span className="muted">{formatDate(r.created_at)}</span>
             <ul>
               {r.changes.map((c) => (
                 <li key={c.field}>

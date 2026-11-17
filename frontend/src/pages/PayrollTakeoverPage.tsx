@@ -22,6 +22,7 @@ import {
   type UploadResult,
 } from "../api/takeover";
 import { formatDecimal } from "../lib/decimal";
+import { formatDate } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -346,7 +347,7 @@ function Check({ check: c, onDone }: { check: ParallelCheck; onDone: (d: Takeove
       <People people={c.people} />
       {c.signed_off_at ? (
         <p className="notice">
-          {t("takeover.signedOff", { by: c.signed_off_by, at: c.signed_off_at.slice(0, 10) })}
+          {t("takeover.signedOff", { by: c.signed_off_by, at: formatDate(c.signed_off_at) })}
           {c.note && ` ${c.note}`}
         </p>
       ) : c.can_sign_off ? (

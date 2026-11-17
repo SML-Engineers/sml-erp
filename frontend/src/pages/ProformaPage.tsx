@@ -21,6 +21,7 @@ import {
 import { orderFromProforma } from "../api/salesOrders";
 import OrderLinks from "../components/OrderLinks";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -411,7 +412,7 @@ function Actions({ proforma }: { proforma: ProformaDetail }) {
         <ul className="changes" aria-label={t("quotations.emailsSent")}>
           {proforma.emails.map((m, i) => (
             <li key={i}>
-              {m.status === "sent" ? "✓" : "✗"} {m.sent_at.slice(0, 16).replace("T", " ")} · {m.to} · {m.by}
+              {m.status === "sent" ? "✓" : "✗"} {formatDateTime(m.sent_at)} · {m.to} · {m.by}
             </li>
           ))}
         </ul>

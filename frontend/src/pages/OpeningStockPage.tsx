@@ -17,6 +17,7 @@ import {
 } from "../api/openingStock";
 import OpeningStockUpload from "../components/OpeningStockUpload";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -181,7 +182,7 @@ function Actions({ data, done }: { data: OSDetail; done: (latest: OSDetail) => v
         <ul className="changes" aria-label={t("salesOrders.approvalHistory")}>
           {data.approval.history.map((h, i) => (
             <li key={i}>
-              {h.at.slice(0, 16).replace("T", " ")} · {h.action_label} · {h.by}
+              {formatDateTime(h.at)} · {h.action_label} · {h.by}
               {h.reason ? ` · ${h.reason}` : ""}
             </li>
           ))}

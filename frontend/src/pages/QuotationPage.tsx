@@ -39,6 +39,7 @@ import { getTaxes, taxesKey } from "../api/taxes";
 import OrderLinks from "../components/OrderLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -801,7 +802,7 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
         <ul className="changes" aria-label={t("quotations.approvalHistory")}>
           {history.map((h, i) => (
             <li key={i}>
-              {h.action_label} · {h.by} · {h.at.slice(0, 16).replace("T", " ")}
+              {h.action_label} · {h.by} · {formatDateTime(h.at)}
               {h.reason && ` · ${h.reason}`}
             </li>
           ))}
@@ -924,7 +925,7 @@ function EmailPanel({ quotation }: { quotation: QuotationDetail }) {
         <ul className="changes" aria-label={t("quotations.emailsSent")}>
           {quotation.emails.map((m, i) => (
             <li key={i}>
-              {m.status === "sent" ? "✓" : "✗"} {m.sent_at.slice(0, 16).replace("T", " ")} · {m.to} · {m.by}
+              {m.status === "sent" ? "✓" : "✗"} {formatDateTime(m.sent_at)} · {m.to} · {m.by}
               {m.error && ` · ${m.error}`}
             </li>
           ))}

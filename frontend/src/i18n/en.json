@@ -1321,7 +1321,9 @@
     "whtSummary": "Withholding tax {{wht}} is kept; the payee receives {{receive}}. Enter what the payee receives.",
     "whtKept": "Withholding tax {{amount}} kept, certificate {{number}}.",
     "whtCertificate": "Print the WHT certificate",
-    "whtCertificateNo": "WHT certificate {{number}} ({{amount}})"
+    "whtCertificateNo": "WHT certificate {{number}} ({{amount}})",
+    "cancelButton": "Cancel…",
+    "actions": "Actions"
   },
   "exports": {
     "excel": "Excel",

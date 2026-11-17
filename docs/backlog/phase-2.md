@@ -223,6 +223,9 @@ Status: `[ ]` to do · `[x]` done
     to Exchange gain or Exchange loss. Payments keep their currency, the amount that left the
     account and the rate; supplier statements now compare payments in the statement's
     currency.
+  - Owner, 17 Nov 2026: on the voucher page each payment row has its own **Cancel…** button
+    that opens its reason box ("Why cancel it", then Ask the Director, or Cancel to close);
+    the reason boxes are no longer all open under the table.
 
 - [x] **P2-12 Withholding tax on payments** (spec 6, tax)
   Where the law requires it (question 6): WHT worked out on the voucher, the supplier paid the

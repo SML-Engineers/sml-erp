@@ -198,3 +198,56 @@ test("a voucher that does not wait for me shows no approval box", async () => {
   expect(await screen.findByRole("region", { name: "Voucher details" })).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Waiting for your approval" })).not.toBeInTheDocument();
 });
+
+// Owner, 17 Nov 2026: a Cancel button on each payment row opens its reason box; no reason
+// boxes are open under the table until asked for.
+test("each payment has its own Cancel button that opens the reason box", async () => {
+  const payment = (id: number, number: string) => ({
+    id,
+    number,
+    voucher: { id: 9, number: "IM261031002" },
+    payee: "Polymer Resins Lanka (Pvt) Ltd",
+    account: { id: 1, code: "COM-CUR", name: "Commercial Bank current" },
+    method: "cheque" as const,
+    reference: String(100000 + id),
+    cheque_date: null,
+    payment_date: "2026-11-17",
+    amount: "10000.00",
+    journal_entry: "JV26110018",
+    notes: "",
+    created_by: "Sunil Fernando",
+    created_at: "2026-11-17T09:00:00Z",
+    can_cancel: true,
+  });
+  const calls = mockApi({
+    ...formApi,
+    "GET /api/v1/vouchers/9/": {
+      body: {
+        ...draft,
+        status: "partly_paid",
+        can_edit: false,
+        remaining: "90000.00",
+        payments: [payment(1, "PY26100001"), payment(2, "PY26110001")],
+      },
+    },
+    "POST /api/v1/payments/2/cancel/": { body: payment(2, "PY26110001") },
+  });
+  renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+
+  const table = await screen.findByRole("table", { name: "Payments" });
+  expect(screen.queryByRole("textbox", { name: /Why cancel it/ })).not.toBeInTheDocument();
+  fireEvent.click(within(table).getByRole("button", { name: "Cancelling payment PY26110001" }));
+  const box = screen.getByRole("form", { name: "Cancelling payment PY26110001" });
+  const send = within(box).getByRole("button", { name: "Ask the Director" });
+  expect(send).toBeDisabled();
+  fireEvent.change(within(box).getByRole("textbox"), { target: { value: "Cheque spoiled" } });
+  fireEvent.click(send);
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/payments/2/cancel/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "Cheque spoiled" }) }),
+    ),
+  );
+  // Only one box at a time, and none for the other payment.
+  expect(screen.queryByRole("form", { name: "Cancelling payment PY26100001" })).not.toBeInTheDocument();
+});

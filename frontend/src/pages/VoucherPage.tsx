@@ -806,6 +806,10 @@ function CancellationPanel({ voucher, request }: { voucher: VoucherDetail; reque
  * with the Director's approval (P2-11). */
 function Payments({ voucher }: { voucher: VoucherDetail }) {
   const { t } = useTranslation();
+  // Owner, 17 Nov 2026: one "Cancel" button per payment that opens its reason box, instead of a
+  // reason box always open under the table for every payment.
+  const [cancelling, setCancelling] = useState<number | null>(null);
+  const anyCancel = voucher.payments?.some((p) => p.can_cancel) ?? false;
   return (
     <section className="panel" aria-label={t("payments.ofVoucher")}>
       <h2>{t("payments.ofVoucher")}</h2>
@@ -819,6 +823,7 @@ function Payments({ voucher }: { voucher: VoucherDetail }) {
               <th>{t("payments.method")}</th>
               <th>{t("payments.reference")}</th>
               <th className="num">{t("payments.amount")}</th>
+              {anyCancel && <th aria-label={t("payments.actions")} />}
             </tr>
           </thead>
           <tbody>
@@ -849,6 +854,20 @@ function Payments({ voucher }: { voucher: VoucherDetail }) {
                     </div>
                   )}
                 </td>
+                {anyCancel && (
+                  <td>
+                    {p.can_cancel && cancelling !== p.id && (
+                      <button
+                        type="button"
+                        className="secondary small"
+                        aria-label={t("payments.cancelOf", { number: p.number })}
+                        onClick={() => setCancelling(p.id)}
+                      >
+                        {t("payments.cancelButton")}
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -856,25 +875,46 @@ function Payments({ voucher }: { voucher: VoucherDetail }) {
             <tr>
               <th colSpan={5}>{t("payments.remaining")}</th>
               <th className="num">{formatDecimal(voucher.remaining ?? "")}</th>
+              {anyCancel && <th />}
             </tr>
           </tfoot>
         </table>
       </div>
       {voucher.payments?.map((p) => (
-        <PaymentCancel key={p.id} voucher={voucher} payment={p} />
+        <PaymentCancel
+          key={p.id}
+          voucher={voucher}
+          payment={p}
+          open={cancelling === p.id}
+          onClose={() => setCancelling(null)}
+        />
       ))}
     </section>
   );
 }
 
-function PaymentCancel({ voucher, payment }: { voucher: VoucherDetail; payment: NonNullable<VoucherDetail["payments"]>[number] }) {
+function PaymentCancel({
+  voucher,
+  payment,
+  open,
+  onClose,
+}: {
+  voucher: VoucherDetail;
+  payment: NonNullable<VoucherDetail["payments"]>[number];
+  open: boolean;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const act = useMutation({
     mutationFn: (call: () => Promise<unknown>) => call(),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: [...vouchersKey, "one", String(voucher.id)] }),
+    onSuccess: () => {
+      setReason("");
+      onClose();
+      void queryClient.invalidateQueries({ queryKey: [...vouchersKey, "one", String(voucher.id)] });
+    },
   });
   const c = payment.cancellation;
   const error = act.error;
@@ -899,9 +939,10 @@ function PaymentCancel({ voucher, payment }: { voucher: VoucherDetail; payment: 
           </button>
         </div>
       )}
-      {payment.can_cancel && (
+      {payment.can_cancel && open && (
         <form
           className="inline-form"
+          aria-label={t("payments.cancelOf", { number: payment.number })}
           onSubmit={(e) => {
             e.preventDefault();
             act.mutate(() => cancelPayment(payment.id, reason));
@@ -909,10 +950,13 @@ function PaymentCancel({ voucher, payment }: { voucher: VoucherDetail; payment: 
         >
           <label>
             {t("payments.cancelReason")} ({payment.number})
-            <input value={reason} required maxLength={2000} onChange={(e) => setReason(e.target.value)} />
+            <input value={reason} required autoFocus maxLength={2000} onChange={(e) => setReason(e.target.value)} />
           </label>
-          <button type="submit" className="secondary" disabled={act.isPending}>
+          <button type="submit" className="secondary" disabled={act.isPending || !reason.trim()}>
             {t("payments.askCancel")}
+          </button>
+          <button type="button" className="secondary" onClick={onClose}>
+            {t("common.cancel")}
           </button>
         </form>
       )}

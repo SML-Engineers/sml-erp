@@ -5,9 +5,18 @@ import { mockApi, renderAt } from "../test-utils";
 import PasswordResetPanel from "./PasswordResetPanel";
 
 const waiting: PasswordResetRow = {
-  id: 3, status: "waiting", with_authenticator: true, reason: "Lost phone", requested_by: "Peduru Somarathna",
-  requested_at: "2026-10-31T21:20:00", decided_by: null, decided_at: null, decision_reason: "", issued_at: null,
-  can_decide: false, can_issue: false,
+  id: 3,
+  status: "waiting",
+  with_authenticator: true,
+  reason: "Lost phone",
+  requested_by: "Peduru Somarathna",
+  requested_at: "2026-10-31T21:20:00",
+  decided_by: null,
+  decided_at: null,
+  decision_reason: "",
+  issued_at: null,
+  can_decide: false,
+  can_issue: false,
 };
 
 test("the Admin asks for a reset, then makes the temporary password once approved", async () => {
@@ -52,4 +61,16 @@ test("the Director approves or refuses a waiting reset", async () => {
       expect.objectContaining({ body: JSON.stringify({ reason: "Call me first" }) }),
     ),
   );
+});
+
+// Owner, 16 Nov 2026: the panel showed 09:22 (GMT) while the audit trail showed 14:52.
+test("the reset is shown in Sri Lanka time", async () => {
+  mockApi({
+    "GET /api/v1/users/7/password-resets/": {
+      body: { can_request: false, resets: [{ ...waiting, requested_at: "2026-11-16T09:22:25.595519+00:00" }] },
+    },
+  });
+  renderAt("/admin/users/7", <PasswordResetPanel userId={7} name="Nimal Perera" />, "/admin/users/:id");
+  const panel = await screen.findByRole("region", { name: "Password reset" });
+  expect(within(panel).getByText(/2026-11-16 14:52/)).toBeInTheDocument();
 });

@@ -16,6 +16,7 @@ import {
 } from "../api/budgets";
 import { ApiError } from "../api/client";
 import { formatDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -312,7 +313,7 @@ export default function BudgetPage() {
           <ul>
             {data.approval.history.map((h, i) => (
               <li key={i}>
-                {h.action_label} · {h.by} · {h.at.slice(0, 16).replace("T", " ")}
+                {h.action_label} · {h.by} · {formatDateTime(h.at)}
                 {h.reason && ` · ${h.reason}`}
               </li>
             ))}

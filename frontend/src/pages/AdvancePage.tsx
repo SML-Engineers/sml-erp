@@ -14,6 +14,7 @@ import {
 } from "../api/advances";
 import { ApiError } from "../api/client";
 import { compareDecimal, formatDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 /** One customer advance: its details, the Accountant's approval, and the receipt. */
 export default function AdvancePage() {
@@ -161,7 +162,7 @@ export default function AdvancePage() {
             <ul className="changes" aria-label={t("quotations.approvalHistory")}>
               {a.history.map((h, i) => (
                 <li key={i}>
-                  {h.action_label} · {h.by} · {h.at.slice(0, 16).replace("T", " ")}
+                  {h.action_label} · {h.by} · {formatDateTime(h.at)}
                   {h.reason && ` · ${h.reason}`}
                 </li>
               ))}

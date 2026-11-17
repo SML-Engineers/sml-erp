@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import type { CloseReport } from "../api/orderProfits";
 import { formatDecimal } from "../lib/decimal";
+import { formatDate } from "../lib/time";
 
 const money = (value: string | null) => (value === null ? "–" : formatDecimal(value));
 
@@ -14,7 +15,7 @@ export default function OrderClosePanel({ report }: { report: CloseReport }) {
     <section className="panel" aria-label={t("closeReport.title")}>
       <h3>{t("closeReport.title")}</h3>
       <p className="muted">
-        {t(r.automatic ? "closeReport.byDelivery" : "closeReport.byHand", { name: r.closed_by, at: r.closed_at.slice(0, 10) })}
+        {t(r.automatic ? "closeReport.byDelivery" : "closeReport.byHand", { name: r.closed_by, at: formatDate(r.closed_at) })}
         {" · "}
         {t("closeReport.pieces", { good: formatDecimal(r.good), rejected: formatDecimal(r.rejected), quantity: formatDecimal(r.quantity) })}
       </p>

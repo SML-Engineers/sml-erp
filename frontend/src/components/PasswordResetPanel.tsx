@@ -10,6 +10,7 @@ import {
   type PasswordResetRow,
 } from "../api/admin";
 import { ApiError } from "../api/client";
+import { formatDateTime } from "../lib/time";
 
 /** Password reset on a user's page (owner's decision, 31 Oct 2026): the Admin asks with a
  * reason, the Director approves or refuses, then the Admin makes a temporary password that is
@@ -105,7 +106,7 @@ export default function PasswordResetPanel({ userId, name }: { userId: number; n
         <ul className="changes" aria-label={t("resets.history")}>
           {rows.map((r: PasswordResetRow) => (
             <li key={r.id}>
-              {r.requested_at.slice(0, 16).replace("T", " ")} · {t(`resets.statuses.${r.status}`)}
+              {formatDateTime(r.requested_at)} · {t(`resets.statuses.${r.status}`)}
               {r.with_authenticator ? ` · ${t("resets.andAuthenticator")}` : ""} · {t("resets.askedBy", { name: r.requested_by })}: {r.reason}
               {r.decided_by ? ` · ${t("resets.decidedBy", { name: r.decided_by })}` : ""}
               {r.decision_reason ? `: ${r.decision_reason}` : ""}

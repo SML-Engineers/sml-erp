@@ -13,6 +13,7 @@ import {
   type RequestDetail,
 } from "../api/purchaseRequests";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -100,7 +101,7 @@ export default function PurchaseRequestPage() {
           <ol className="changes">
             {r.approvals.map((a, i) => (
               <li key={i}>
-                {a.acted_at.slice(0, 16).replace("T", " ")} · {a.user} · {a.action}
+                {formatDateTime(a.acted_at)} · {a.user} · {a.action}
                 {a.reason && `: ${a.reason}`}
               </li>
             ))}

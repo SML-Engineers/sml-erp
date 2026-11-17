@@ -23,6 +23,7 @@ import {
 } from "../api/attendance";
 import { ApiError } from "../api/client";
 import PayPeriodLine from "../components/PayPeriodLine";
+import { formatDate } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -166,7 +167,7 @@ function MonthStatus({ data }: { data: AttendanceMonth }) {
         {data.division} {data.month}: {data.confirmed ? t("att.confirmed") : t("att.open")}
       </h2>
       {data.confirmed ? (
-        <p className="muted">{t("att.confirmedBy", { name: data.confirmed_by, at: data.confirmed_at?.slice(0, 10) })}</p>
+        <p className="muted">{t("att.confirmedBy", { name: data.confirmed_by, at: formatDate(data.confirmed_at) })}</p>
       ) : (
         <p className="muted">{t("att.confirmHelp")}</p>
       )}

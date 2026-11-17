@@ -13,6 +13,7 @@ import {
   type ReceiptDetail,
 } from "../api/receipts";
 import { formatDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 /** One customer receipt (P2-07): the invoices it pays, the Accountant's approval, the printed
  * receipt. */
@@ -133,7 +134,7 @@ export default function ReceiptPage() {
             <ul className="changes" aria-label={t("quotations.approvalHistory")}>
               {r.history.map((h, i) => (
                 <li key={i}>
-                  {h.action_label} · {h.by} · {h.at.slice(0, 16).replace("T", " ")}
+                  {h.action_label} · {h.by} · {formatDateTime(h.at)}
                   {h.reason && ` · ${h.reason}`}
                 </li>
               ))}

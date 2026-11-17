@@ -19,6 +19,7 @@ import {
 import ExportLinks from "../components/ExportLinks";
 import SendEmailForm from "../components/SendEmailForm";
 import { formatDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -292,7 +293,7 @@ function EmailStatement(props: { statement: Statement; from: string; to: string;
         <ul className="changes" aria-label={t("ar.emailsSent")}>
           {props.statement.emails.map((m, i) => (
             <li key={i}>
-              {m.sent_at.slice(0, 16).replace("T", " ")} · {m.to} · {m.reminder ? t("ar.reminder") : m.subject} · {m.by}
+              {formatDateTime(m.sent_at)} · {m.to} · {m.reminder ? t("ar.reminder") : m.subject} · {m.by}
               {m.status === "failed" && ` · ${t("ar.failed")}: ${m.error}`}
             </li>
           ))}

@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router";
 import { ApiError } from "../api/client";
 import { allowCreditHold, listCreditHolds, receivablesKey, type CreditHold } from "../api/receivables";
 import { formatDecimal } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 /** Sales orders and tax invoices stopped by credit control (P2-08): the Director allows each
  * one, with a note. */
@@ -51,7 +52,7 @@ function HoldCard({ hold }: { hold: CreditHold }) {
       </h2>
       <p>
         <strong>{t(`holds.statuses.${hold.status}`)}</strong> · {t("holds.stoppedBy", { name: hold.requested_by })} ·{" "}
-        {hold.requested_at.slice(0, 16).replace("T", " ")}
+        {formatDateTime(hold.requested_at)}
       </p>
       <ul>
         {hold.reasons.split("\n").map((reason, i) => (

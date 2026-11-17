@@ -284,6 +284,10 @@ Status: `[ ]` to do · `[x]` done
     Asia/Colombo); a new document's default date is the factory's date; the time boxes are a
     24-hour HH:MM box ("830" becomes "08:30") instead of the browser's AM/PM picker; the side
     menu says times are Sri Lanka time, and the shift report's closing time says so too.
+  - Owner, 16–17 Nov 2026: the history lines under documents, the password reset panel,
+    sent emails, credit holds, uploads and "changed by … on …" notes still cut the raw time
+    (GMT): 09:27 shown for 14:57. All 28 pages now use `formatDateTime` / `formatDate`, so
+    they show Sri Lanka time too (a date near midnight GMT no longer shows the day before).
 
 - [x] **P3-09 Approving shift reports and corrections**
   The Production Manager approves or returns each submitted report (never their own).

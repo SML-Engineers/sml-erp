@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { approveReturn, confirmReturn, deleteReturn, getReturn, rtnKey, sendBackReturn, type ReturnDetail } from "../api/supplierReturns";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 /** One supplier return (P16-12): its lots, the Director's approval for accepted goods, and
  * the debit notes. */
@@ -134,7 +135,7 @@ export default function SupplierReturnPage() {
             <ul className="changes">
               {data.history.map((h, i) => (
                 <li key={i}>
-                  {h.at.slice(0, 16).replace("T", " ")} · {h.action_label} · {h.by}
+                  {formatDateTime(h.at)} · {h.action_label} · {h.by}
                   {h.reason ? ` · ${h.reason}` : ""}
                 </li>
               ))}

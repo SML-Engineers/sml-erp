@@ -26,6 +26,7 @@ import { poKey } from "../api/purchaseOrders";
 import PackagesPanel from "../components/PackagesPanel";
 import Trail from "../components/Trail";
 import { formatQuantity } from "../lib/decimal";
+import { formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -68,7 +69,7 @@ export default function GoodsReceiptPage() {
             {data.supplier.name} · {t("grn.store")} {data.store}
           </p>
           {data.confirmed_by && data.confirmed_at && (
-            <p className="muted">{t("grn.confirmedBy", { name: data.confirmed_by, at: data.confirmed_at.slice(0, 16).replace("T", " ") })}</p>
+            <p className="muted">{t("grn.confirmedBy", { name: data.confirmed_by, at: formatDateTime(data.confirmed_at) })}</p>
           )}
           {data.reversal_reason && <p className="notice">{t("grn.reversalReason", { reason: data.reversal_reason })}</p>}
           {data.can_edit ? <ReceiptForm key={`${data.id}-${data.lines.map((l) => l.received_quantity).join()}`} grn={data} /> : <ReadOnly grn={data} />}
@@ -275,7 +276,7 @@ function History({ label, rows }: { label: string; rows: ApprovalStep[] }) {
     <ul className="changes" aria-label={label}>
       {rows.map((h, i) => (
         <li key={i}>
-          {h.at.slice(0, 16).replace("T", " ")} · {h.action_label} · {h.by}
+          {formatDateTime(h.at)} · {h.action_label} · {h.by}
           {h.reason ? ` · ${h.reason}` : ""}
         </li>
       ))}
@@ -377,7 +378,7 @@ function Photos({ grn }: { grn: GRNDetail }) {
               {p.file_name}
             </a>{" "}
             <span className="muted">
-              {p.uploaded_by} · {p.uploaded_at.slice(0, 16).replace("T", " ")}
+              {p.uploaded_by} · {formatDateTime(p.uploaded_at)}
             </span>{" "}
             {grn.can_edit && (
               <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate(p.id)}>

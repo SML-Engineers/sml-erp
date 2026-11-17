@@ -291,7 +291,12 @@
       "supplier_payment_recorded": "Supplier payment recorded",
       "approval_reminder_changed": "Approval reminders changed",
       "role_confirmed": "Role confirmed",
-      "role_refused": "Role refused"
+      "role_refused": "Role refused",
+      "password_reset_requested": "Password reset asked for",
+      "password_reset_approved": "Password reset approved by the Director",
+      "password_reset_refused": "Password reset refused by the Director",
+      "password_reset_done": "Temporary password made",
+      "activity_log_level_changed": "Activity log level changed"
     }
   },
   "menu": {

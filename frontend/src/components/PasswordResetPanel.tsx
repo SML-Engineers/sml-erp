@@ -24,7 +24,12 @@ export default function PasswordResetPanel({ userId, name }: { userId: number; n
   const [authenticator, setAuthenticator] = useState(false);
   const [decisionReason, setDecisionReason] = useState("");
   const [shown, setShown] = useState<string | null>(null);
-  const refresh = () => void queryClient.invalidateQueries({ queryKey: key });
+  // The user's audit trail on the same page shows each step at once (owner, 16 Nov 2026: the
+  // Director's approval was missing from it until the page was reloaded).
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: key });
+    void queryClient.invalidateQueries({ queryKey: ["audit"] });
+  };
   const ask = useMutation({
     mutationFn: () => requestPasswordReset(userId, reason, authenticator),
     onSuccess: () => {

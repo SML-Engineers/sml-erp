@@ -114,6 +114,11 @@ Status: `[ ]` to do · `[x]` done
     shown on Administration → **Views and downloads** to those who read the audit log, with
     filters. One check after every page (`apps/core/activity.py`) decides by the level and
     the address; a failure to record goes to the server log and never stops the page.
+  - Owner, 16 Nov 2026: events are named in plain words in the trails ("Password reset
+    approved by the Director", not `password_reset_approved`); an event without its own
+    wording yet reads as words from its name. A user's trail refreshes as soon as a password
+    reset is asked for, decided or done on the same page (the Director's approval seemed
+    missing until the page was reloaded).
 
 - [x] **P0-06 Application layout**
   Sidebar navigation, top bar with notification bell and user menu, responsive layout

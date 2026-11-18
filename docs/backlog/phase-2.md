@@ -269,6 +269,9 @@ Status: `[ ]` to do · `[x]` done
     changes a rejected, cancelled or ordered one. Defaults you can change: the Director
     approves requests (Settings → Approvals can give it to another role); "at or below" the
     level raises the alert; the check runs hourly.
+  - Owner, 18 Nov 2026: the "New purchase request" form shows only to those who may raise
+    requests (stores or purchasing, enter); someone who can only view sees the list. Each
+    line's item box takes the full width, with the quantity beside it.
 
 ## D. Banking and cash
 

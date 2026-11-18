@@ -193,7 +193,7 @@ export default function App() {
         <Route path="items" element={<ItemsPage />} />
         <Route path="purchase-orders" element={<WithMe page={(me) => <PurchaseOrdersPage me={me} />} />} />
         <Route path="purchase-orders/:id" element={<PurchaseOrderPage />} />
-        <Route path="purchase-requests" element={<PurchaseRequestsPage />} />
+        <Route path="purchase-requests" element={<WithMe page={(me) => <PurchaseRequestsPage me={me} />} />} />
         <Route path="purchase-requests/:id" element={<PurchaseRequestPage />} />
         <Route path="reorder" element={<ReorderPage />} />
         <Route path="cheques" element={<ChequesPage />} />

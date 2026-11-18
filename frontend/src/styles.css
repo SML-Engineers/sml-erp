@@ -1340,6 +1340,21 @@ table.coding-table .check {
   margin: 6px 0;
 }
 
+/* A line of items: the item takes the room, the quantity a fixed width (owner, 18 Nov 2026). */
+.item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12rem;
+  gap: 12px;
+  align-items: end;
+  margin: 6px 0;
+}
+
+@media (max-width: 600px) {
+  .item-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Searchable drop-down (SearchSelect). */
 .search-select {
   position: relative;

@@ -3,7 +3,9 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
+import { can } from "../api/access";
 import { listDivisions } from "../api/admin";
+import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import { itemsKey, listItems } from "../api/items";
 import { listPayees } from "../api/payees";
@@ -14,7 +16,7 @@ const STATUSES = ["draft", "awaiting_approval", "approved", "rejected", "ordered
 
 /** Purchase requests (P2-13): raised by the stores person or purchasing, approved, then made
  * into a draft purchase order. */
-export default function PurchaseRequestsPage() {
+export default function PurchaseRequestsPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const status = params.get("status") ?? "";
@@ -76,7 +78,9 @@ export default function PurchaseRequestsPage() {
           </table>
         </div>
       )}
-      <NewRequest />
+      {/* Owner, 18 Nov 2026: only those who may raise requests (stores or purchasing, enter)
+          see the form; others only see the list. */}
+      {(can(me.access, "stores", "enter") || can(me.access, "purchasing", "enter")) && <NewRequest />}
     </main>
   );
 }
@@ -158,7 +162,7 @@ function NewRequest() {
         <input value={reason} maxLength={2000} onChange={(e) => setReason(e.target.value)} />
       </label>
       {lines.map((line, index) => (
-        <div key={index} className="wide split-row">
+        <div key={index} className="wide item-row">
           <SearchSelect
             label={t("prq.itemOf", { n: String(index + 1) })}
             options={itemOptions}

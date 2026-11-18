@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 
-import { listProformas, proformasKey } from "../api/proformas";
+import { listProformas, proformaStatus, proformasKey } from "../api/proformas";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
@@ -65,7 +65,7 @@ export default function ProformasPage() {
               value: (r) => r.total_amount,
               cell: (r) => `${r.currency} ${formatDecimal(r.total_amount)}`,
             },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`proformas.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => proformaStatus(t, r) },
             { id: "by", header: t("quotations.madeBy"), value: (r) => r.created_by },
           ]}
         />

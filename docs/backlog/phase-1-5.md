@@ -121,6 +121,9 @@ Status: `[ ]` to do · `[x]` done
     changed, database guard) → cancelled with a reason, unless an advance was received
     against it. Customer advances can now be recorded against an issued proforma (P15-09).
     The PDF follows the owner's sample PI191120-02, titled PROFORMA INVOICE.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Dilini", "Issued to the customer",
+    "Issued, order made" (a sales order that is not cancelled was made from it) and
+    "Cancelled by Dilini".
 
 - [x] **P15-09 Customer advances** (spec 5.2)
   An advance received against a proforma (or a sales order) is recorded by the Cashier with

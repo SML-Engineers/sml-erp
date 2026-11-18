@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ProformaDetail } from "../api/proformas";
 import { mockApi, renderAt } from "../test-utils";
 import ProformaPage from "./ProformaPage";
+import ProformasPage from "./ProformasPage";
 
 const draft: ProformaDetail = {
   id: 40,
@@ -137,4 +138,29 @@ test("an issued proforma makes a sales order in one click", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ proforma: 40 }) }),
     ),
   );
+});
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says whose draft it is, whether an order was made and who cancelled", async () => {
+  const row = (id: number, extra: Partial<ProformaDetail>) => ({
+    ...draft,
+    id,
+    number: `PI2611180${id}`,
+    created_by: "Dilini Wijesekara",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/proformas/": {
+      body: [
+        row(1, { status: "draft" }),
+        row(2, { status: "issued", ordered: false }),
+        row(3, { status: "issued", ordered: true }),
+        row(4, { status: "cancelled", cancelled_by: "Dilini Wijesekara" }),
+      ],
+    },
+  });
+  renderAt("/proformas", <ProformasPage />);
+  const table = await screen.findByRole("table");
+  for (const text of ["Draft of Dilini", "Issued to the customer", "Issued, order made", "Cancelled by Dilini"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

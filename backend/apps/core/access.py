@@ -100,13 +100,24 @@ def effective_access(user: User) -> EffectiveAccess:
     and keeps the ones below it (removing Manage keeps Enter and View; removing View removes
     the whole area). Nothing for anonymous users.
     """
-    access = EffectiveAccess()
     if not user or not user.is_authenticated or not user.is_active:
-        return access
+        return EffectiveAccess()
     cached = getattr(user, "_effective_access", None)
     if cached is not None:
         return cached
+    access = access_once_active(user)
+    user._effective_access = access  # cached for the rest of this request
+    return access
 
+
+def access_once_active(user: User) -> EffectiveAccess:
+    """What this user's roles and overrides give, whether or not the account is active.
+
+    Only for showing an administrator what an inactive account will have once activated
+    (owner, 16 Nov 2026); every permission check uses effective_access, which gives an
+    inactive account nothing.
+    """
+    access = EffectiveAccess()
     raw, actions = role_access(user)
     overrides = active_overrides(user)
     for o in overrides:
@@ -124,7 +135,6 @@ def effective_access(user: User) -> EffectiveAccess:
 
     access.areas = _expand(raw)
     access.actions = actions
-    user._effective_access = access  # cached for the rest of this request
     return access
 
 

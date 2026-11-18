@@ -225,3 +225,17 @@ test("copy access says what will change and needs a reason and a second press; t
   const call = api.mock.calls.find(([url]) => url === "/api/v1/users/7/copy-access/");
   expect(JSON.parse(String(call?.[1]?.body))).toEqual({ source_user: 9, reason: "Moves to the cash desk" });
 });
+
+// Owner, 16 Nov 2026: the grid of an account not yet switched on looked empty.
+test("the grid of a switched-off account says what it will have once switched on", async () => {
+  mockApi(accessPageApi({ "GET /api/v1/users/7/access/": { body: { ...grid, inactive: true } } }));
+  renderAt("/admin/users/7", <UserAccessPage me={admin} />, "/admin/users/:id");
+  expect(await screen.findByRole("note")).toHaveTextContent("This account is switched off");
+});
+
+test("the grid of an active account has no switched-off note", async () => {
+  mockApi(accessPageApi());
+  renderAt("/admin/users/7", <UserAccessPage me={admin} />, "/admin/users/:id");
+  await screen.findByText("Effective access");
+  expect(screen.queryByText(/This account is switched off/)).not.toBeInTheDocument();
+});

@@ -53,6 +53,8 @@ export type OverrideStatus = "active" | "pending" | "revoked" | "expired";
 
 export interface AccessGrid {
   user: UserRecord;
+  /** The account is switched off: the grid shows what it will have once switched on. */
+  inactive?: boolean;
   areas: {
     area: string;
     label: string;

@@ -1832,9 +1832,10 @@
     "number": "Proforma no.",
     "statuses": {
       "draft": "Draft",
-      "issued": "Issued",
+      "issued": "Issued to the customer",
       "cancelled": "Cancelled"
     },
+    "issuedOrdered": "Issued, order made",
     "printPdf": "Print with packing list (PDF)",
     "printsAsDraft": "Prints as DRAFT – NOT ISSUED until it is issued.",
     "noSale": "A proforma records no sale and no receivable: nothing is posted to the accounts.",

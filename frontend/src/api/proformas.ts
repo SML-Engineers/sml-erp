@@ -1,3 +1,7 @@
+import type { TFunction } from "i18next";
+
+import { cancelledStatus } from "../lib/cancelled";
+import { firstName } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { EmailDraft, QuotationDetail } from "./quotations";
 import type { SalesOrderStatus } from "./salesOrders";
@@ -17,6 +21,17 @@ export interface ProformaSummary {
   total_amount: string;
   total_lkr: string;
   created_by: string;
+  /** Clear statuses (owner, 16 Nov 2026): who cancelled it, and whether an order was made. */
+  cancelled_by?: string | null;
+  ordered?: boolean;
+}
+
+/** "Draft of Dilini", "Issued to the customer", "Issued, order made", "Cancelled by Dilini". */
+export function proformaStatus(t: TFunction, p: Pick<ProformaSummary, "status" | "created_by" | "cancelled_by" | "ordered">): string {
+  if (p.status === "cancelled") return cancelledStatus(t, p.cancelled_by, t("proformas.statuses.cancelled"));
+  if (p.status === "draft") return t("docStatus.draftOf", { person: firstName(p.created_by) });
+  if (p.ordered) return t("proformas.issuedOrdered");
+  return t("proformas.statuses.issued");
 }
 
 export const PACKING_FIELDS = [
@@ -65,8 +80,7 @@ export interface ProformaDetail extends ProformaSummary {
   subtotal: string;
   tax_total: string;
   cancel_reason: string;
-  /** Who cancelled it and when (owner, 16 Nov 2026). */
-  cancelled_by?: string | null;
+  /** When it was cancelled (owner, 16 Nov 2026); who is on the summary. */
   cancelled_at?: string | null;
   lines: ProformaLine[];
   packing_totals: { cartons: string | null; net_weight_kg: string | null; gross_weight_kg: string | null; volume_m3: string | null };

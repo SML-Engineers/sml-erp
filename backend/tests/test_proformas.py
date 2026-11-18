@@ -454,3 +454,23 @@ def test_the_quotation_must_be_accepted_through_the_api_too(executive, rhino):
     answer = as_user(executive).post("/api/v1/proformas/", {"quotation": q.pk}, format="json")
     assert answer.status_code == 400 and "won first" in answer.json()["detail"]
     assert Quotation.objects.get(pk=q.pk).proformas.count() == 0
+
+
+# Owner, 16 Nov 2026: clear statuses ("Issued, order made", "Cancelled by Dilini").
+def test_the_list_says_when_an_order_was_made_and_who_cancelled(draft, executive):
+    from apps.sales import orders
+
+    issued = proformas.issue(executive, draft)
+    client = as_user(executive)
+
+    def row():
+        return next(r for r in client.get("/api/v1/proformas/").json() if r["id"] == issued.pk)
+
+    assert (row()["ordered"], row()["cancelled_by"]) == (False, None)
+    order = orders.from_proforma(executive, issued)
+    assert row()["ordered"] is True
+    assert client.get(f"/api/v1/proformas/{issued.pk}/").json()["ordered"] is True
+    orders.cancel(executive, order, "Customer changed the quantity")
+    assert row()["ordered"] is False  # a cancelled order does not count
+    proformas.cancel(executive, issued, "Replaced by a new proforma")
+    assert row()["cancelled_by"] == executive.full_name

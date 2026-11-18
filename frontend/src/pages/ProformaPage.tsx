@@ -12,6 +12,7 @@ import {
   issueProforma,
   PACKING_FIELDS,
   proformaPdfUrl,
+  proformaStatus,
   proformasKey,
   sendProformaEmail,
   updateProforma,
@@ -52,7 +53,7 @@ export default function ProformaPage() {
       {data && (
         <>
           <p className="muted">
-            {t(`proformas.statuses.${data.status}`)} · {data.issue_date} · {data.customer.code} {data.customer.name} ·{" "}
+            {proformaStatus(t, data)} · {data.issue_date} · {data.customer.code} {data.customer.name} ·{" "}
             <Link to={`/quotations/${data.quotation.id}`}>{data.quotation.label}</Link>
           </p>
           {data.status === "cancelled" && <p className="notice">{cancelledNote(t, data)}</p>}

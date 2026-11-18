@@ -1,6 +1,7 @@
 """Proforma invoices API (P15-08). Rules live in proformas.py; every endpoint checks Sales
 access and returns only proformas the user may see."""
 
+from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
@@ -11,7 +12,7 @@ from apps.core.permissions import AreaAccess
 from apps.masters.models import CompanyAccount
 
 from . import orders, proforma_email, proforma_printing, proformas, services
-from .models import ProformaInvoice, QuotationLine
+from .models import ProformaInvoice, QuotationLine, SalesOrder
 from .services import SalesError
 from .services import visible as visible_quotations
 
@@ -47,7 +48,18 @@ def _summary(p: ProformaInvoice) -> dict:
         "total_amount": str(p.total_amount),
         "total_lkr": str(p.total_lkr),
         "created_by": p.created_by.full_name,
+        # Clear statuses (owner, 16 Nov 2026): "Cancelled by Dilini", "Issued, order made".
+        "cancelled_by": p.cancelled_by.full_name if p.cancelled_by_id else None,
+        "ordered": _ordered(p),
     }
+
+
+def _ordered(p: ProformaInvoice) -> bool:
+    """Whether a sales order (not cancelled) was made from it."""
+    known = getattr(p, "has_order", None)
+    if known is not None:
+        return known
+    return p.sales_orders.exclude(status=SalesOrder.Status.CANCELLED).exists()
 
 
 def _detail(p: ProformaInvoice, user) -> dict:
@@ -202,8 +214,17 @@ class ProformaInput(serializers.Serializer):
 
 class ProformaListView(_Sales):
     def get(self, request):
-        rows = proformas.visible(request.user).select_related(
-            "division", "customer", "quotation", "currency", "created_by"
+        rows = (
+            proformas.visible(request.user)
+            .select_related("division", "customer", "quotation", "currency", "created_by")
+            .select_related("cancelled_by")
+            .annotate(
+                has_order=Exists(
+                    SalesOrder.objects.filter(proforma=OuterRef("pk")).exclude(
+                        status=SalesOrder.Status.CANCELLED
+                    )
+                )
+            )
         )
         if request.query_params.get("status"):
             rows = rows.filter(status__in=request.query_params["status"].split(","))

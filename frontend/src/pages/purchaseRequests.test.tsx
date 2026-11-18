@@ -1,8 +1,10 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
+import type { CurrentUser } from "../api/auth";
 import type { ReorderRow, RequestDetail } from "../api/purchaseRequests";
-import { mockApi, renderAt } from "../test-utils";
+import { mockApi, renderAt, sampleUser } from "../test-utils";
 import PurchaseRequestPage from "./PurchaseRequestPage";
+import PurchaseRequestsPage from "./PurchaseRequestsPage";
 import ReorderPage from "./ReorderPage";
 
 const low: ReorderRow = {
@@ -83,4 +85,18 @@ test("the approver approves a purchase request", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ comment: "" }) }),
     ),
   );
+});
+
+// Owner, 18 Nov 2026: Kumari could see the form but saving said "You do not have access".
+test("only someone who may raise requests sees the New purchase request form", async () => {
+  mockApi({ "GET /api/v1/purchase-requests/": { body: [] } });
+  const viewer: CurrentUser = { ...sampleUser, access: { areas: { purchasing: ["view"] }, actions: [], divisions: "all" } };
+  const { unmount } = renderAt("/purchase-requests", <PurchaseRequestsPage me={viewer} />);
+  expect(await screen.findByText("No purchase requests.")).toBeInTheDocument();
+  expect(screen.queryByRole("form", { name: "New purchase request" })).not.toBeInTheDocument();
+  unmount();
+
+  const stores: CurrentUser = { ...sampleUser, access: { areas: { stores: ["enter", "view"] }, actions: [], divisions: "all" } };
+  renderAt("/purchase-requests", <PurchaseRequestsPage me={stores} />);
+  expect(await screen.findByRole("form", { name: "New purchase request" })).toBeInTheDocument();
 });

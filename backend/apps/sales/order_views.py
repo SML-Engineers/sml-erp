@@ -65,7 +65,13 @@ def _detail(o: SalesOrder, user) -> dict:
     body |= {
         "quotation": None
         if o.quotation_id is None
-        else {"id": o.quotation_id, "label": o.quotation.label},
+        else {
+            "id": o.quotation_id,
+            "label": o.quotation.label,
+            "valid_until": o.quotation.valid_until,
+            # Expired by the order date: shown to the approver (owner, 16 Nov 2026).
+            "expired": orders.quotation_expired(o),
+        },
         "proforma": None
         if o.proforma_id is None
         else {"id": o.proforma_id, "number": o.proforma.number},
@@ -107,7 +113,7 @@ def _detail(o: SalesOrder, user) -> dict:
             for line in o.lines.select_related("tax_code").prefetch_related("schedule")
         ],
         "quotation_lines": []
-        if o.quotation_id is None
+        if o.quotation_id is None or o.source == SalesOrder.Source.DIRECT
         else [
             {
                 "id": q.id,
@@ -193,6 +199,8 @@ class OrderInput(serializers.Serializer):
     delivery_address = serializers.CharField(required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
     discount_pct = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    # Repeat orders only: the earlier quotation it repeats (owner, 16 Nov 2026).
+    linked_quotation = serializers.IntegerField(required=False, allow_null=True)
     lines = OrderLineInput(many=True)
 
 
@@ -227,8 +235,14 @@ def _lines(rows) -> list[orders.LineInput]:
     return result
 
 
-def _values(data: dict) -> dict:
-    values = {k: v for k, v in data.items() if k not in ("lines", "contact")}
+def _values(data: dict, user) -> dict:
+    values = {k: v for k, v in data.items() if k not in ("lines", "contact", "linked_quotation")}
+    if "linked_quotation" in data:
+        values["linked_quotation"] = (
+            None
+            if data["linked_quotation"] is None
+            else visible_quotations(user).filter(pk=data["linked_quotation"]).first() or "unknown"
+        )
     if "contact" in data:
         values["contact"] = (
             None
@@ -278,7 +292,7 @@ class SalesOrderListView(_Sales):
                     customer=customer,
                     division=division,
                     lines=_lines(body.validated_data["lines"]),
-                    **_values(body.validated_data),
+                    **_values(body.validated_data, request.user),
                 )
         except SalesError as error:
             return _error(error)
@@ -298,7 +312,7 @@ class SalesOrderDetailView(_Sales):
                 request.user,
                 order,
                 lines=_lines(body.validated_data["lines"]),
-                **_values(body.validated_data),
+                **_values(body.validated_data, request.user),
             )
         except SalesError as error:
             return _error(error)

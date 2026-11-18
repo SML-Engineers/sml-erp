@@ -48,7 +48,8 @@ export interface SalesOrderLine {
 }
 
 export interface SalesOrderDetail extends SalesOrderSummary {
-  quotation: { id: number; label: string } | null;
+  /** On a repeat order, the earlier quotation it repeats; expired by the order date is flagged. */
+  quotation: { id: number; label: string; valid_until?: string; expired?: boolean } | null;
   proforma: { id: number; number: string } | null;
   contact: { id: number; name: string } | null;
   po_date: string | null;
@@ -104,6 +105,8 @@ export interface SalesOrderInput {
   delivery_address: string;
   notes: string;
   discount_pct?: string;
+  /** Repeat orders only: the earlier quotation it repeats, or null for none. */
+  linked_quotation?: number | null;
   lines: SalesOrderLineInput[];
 }
 

@@ -157,6 +157,12 @@ Status: `[ ]` to do · `[x]` done
     trigger keeps them fixed once set; documents already cancelled get them from the audit
     log). The page says "Cancelled by Dilini Wijesekara on 2026-11-16 14:52: wrong quantity";
     the sales order list says "Cancelled by Dilini".
+  - Owner, 16 Nov 2026: **a repeat order linked to a quotation.** A repeat order typed in can
+    be linked to an earlier quotation of the same customer that was sent to them (sent,
+    accepted, lost or expired). Its prices stay typed in. The page shows "Repeats quotation
+    QL…"; when that quotation had expired by the order date it is highlighted ("Expired
+    quotation linked"), and with no link it says "Not linked to a quotation", so the Director
+    sees it before approving. The quotation lists the order among its sales orders.
 
 ## D. Reports and go-live
 

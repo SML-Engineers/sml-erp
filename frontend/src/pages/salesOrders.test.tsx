@@ -132,6 +132,8 @@ test("the Director approves a repeat order typed in", async () => {
   });
   renderAt("/sales-orders/50", <SalesOrderPage />, "/sales-orders/:id");
   expect(await screen.findByText(/the Director approves its prices/)).toBeInTheDocument();
+  // Owner, 16 Nov 2026: the approver sees that no quotation is linked.
+  expect(screen.getByRole("note")).toHaveTextContent("Not linked to a quotation.");
   fireEvent.change(screen.getByLabelText("Comment or reason"), { target: { value: "Same as last time" } });
   fireEvent.click(screen.getByRole("button", { name: "Approve the order" }));
   await waitFor(() =>
@@ -211,4 +213,62 @@ test("an order cancelled before who was kept still gives the reason", async () =
   mockApi({ "GET /api/v1/sales-orders/50/": { body: old } });
   renderAt("/sales-orders/50", <SalesOrderPage />, "/sales-orders/:id");
   expect(await screen.findByText("Cancelled: wrong quantity")).toBeInTheDocument();
+});
+
+// Owner, 16 Nov 2026: a repeat order can be linked to an earlier quotation, and the
+// approver sees when that quotation had expired.
+test("the Director sees an expired quotation linked to a repeat order", async () => {
+  const waiting: SalesOrderDetail = {
+    ...draft,
+    source: "direct",
+    quotation: { id: 12, label: "QL26080401 Rev 0", valid_until: "2026-09-03", expired: true },
+    quotation_lines: [],
+    status: "awaiting_approval",
+    can_edit: false,
+    can_cancel: false,
+    can_approve: true,
+  };
+  mockApi({ "GET /api/v1/sales-orders/50/": { body: waiting } });
+  renderAt("/sales-orders/50", <SalesOrderPage />, "/sales-orders/:id");
+  const note = await screen.findByRole("note");
+  expect(note).toHaveTextContent("Repeats quotation QL26080401 Rev 0 · Expired quotation linked (valid until 2026-09-03)");
+  expect(note).toHaveClass("notice-warn");
+  expect(within(note).getByRole("link", { name: "QL26080401 Rev 0" })).toHaveAttribute("href", "/quotations/12");
+});
+
+test("the creator links a repeat order to one of the customer's quotations", async () => {
+  const typed: SalesOrderDetail = { ...draft, source: "direct", quotation: null, quotation_lines: [] };
+  const calls = mockApi({
+    "GET /api/v1/sales-orders/50/": { body: typed },
+    "GET /api/v1/taxes/": { body: { components: [], codes: [] } },
+    "GET /api/v1/quotations/?customer=4&status=sent%2Caccepted%2Clost%2Cexpired": {
+      body: [
+        {
+          id: 12,
+          number: "QL26080401",
+          revision: 0,
+          status: "expired",
+          quote_date: "2026-08-04",
+          valid_until: "2026-09-03",
+          division: "IM",
+          customer: draft.customer,
+          enquiry_ref: "",
+          currency: "LKR",
+          total_amount: "23500.00",
+          total_lkr: "23500.00",
+          created_by: "Sales",
+        },
+      ],
+    },
+    "PUT /api/v1/sales-orders/50/": { body: typed },
+  });
+  renderAt("/sales-orders/50", <SalesOrderPage />, "/sales-orders/:id");
+  const form = await screen.findByRole("form", { name: "Sales order details" });
+  const choose = within(form).getByLabelText("Quotation it repeats");
+  await within(choose).findByRole("option", { name: /QL26080401 Rev 0/ });
+  fireEvent.change(choose, { target: { value: "12" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/sales-orders/50/", expect.objectContaining({ method: "PUT" })));
+  const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/sales-orders/50/" && i?.method === "PUT")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({ linked_quotation: 12 });
 });

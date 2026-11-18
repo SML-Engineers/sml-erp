@@ -1822,7 +1822,9 @@
     "noSalesOrder": "No sales order",
     "against": "Against",
     "fromQuotation": "Quotation",
-    "nothingToSetOff": "No tax invoices of this customer to set off yet."
+    "nothingToSetOff": "No tax invoices of this customer to set off yet.",
+    "setOffPart": "Partly set off",
+    "setOffFull": "Set off in full"
   },
   "proformas": {
     "title": "Proforma invoices",
@@ -2935,7 +2937,8 @@
     "setOffs": "Set off against invoices",
     "setOffNew": "Set off against an invoice",
     "setOff": "Set off",
-    "currencyNote": "Amounts in {{currency}}. The money goes into a {{currency}} account; any exchange difference is posted when approved."
+    "currencyNote": "Amounts in {{currency}}. The money goes into a {{currency}} account; any exchange difference is posted when approved.",
+    "postDatedBy": "Approved by {{person}}, cheque not yet due"
   },
   "ar": {
     "title": "Receivables and statements",

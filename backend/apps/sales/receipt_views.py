@@ -36,8 +36,8 @@ def _get(user, pk) -> CustomerReceipt:
     return get_object_or_404(rows, pk=pk)
 
 
-def _row(r: CustomerReceipt) -> dict:
-    return {
+def _row(r: CustomerReceipt, people=None) -> dict:
+    row = {
         "id": r.id,
         "number": r.number,
         "receipt_date": r.receipt_date,
@@ -51,10 +51,14 @@ def _row(r: CustomerReceipt) -> dict:
         "status": r.status,
         "created_by": r.created_by.full_name,
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Approved by Ruwan"…
+    if people is not None:
+        row["people"] = people.get(r.pk)
+    return row
 
 
 def _detail(r: CustomerReceipt, user) -> dict:
-    body = _row(r)
+    body = _row(r, approvals.people_for(receipts.DOC, [r.pk]))
     body |= {
         "account": None
         if r.account_id is None
@@ -146,7 +150,9 @@ class ReceiptListView(_Receipts):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, receipts.DOC)
             rows = rows.filter(pk__in=[state.document_id for state in waiting])
-        return Response([_row(r) for r in rows[:2000]])
+        rows = list(rows[:2000])
+        people = approvals.people_for(receipts.DOC, [r.pk for r in rows])
+        return Response([_row(r, people) for r in rows])
 
     def post(self, request):
         data = ReceiptInput(data=request.data)

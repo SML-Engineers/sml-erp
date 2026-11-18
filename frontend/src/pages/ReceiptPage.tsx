@@ -11,6 +11,7 @@ import {
   receiptsKey,
   rejectReceipt,
   type ReceiptDetail,
+  receiptStatus,
 } from "../api/receipts";
 import { formatDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
@@ -43,7 +44,7 @@ export default function ReceiptPage() {
       {r && (
         <section className="panel" aria-label={t("advances.details")}>
           <p>
-            <strong>{t(`receipts.statuses.${r.status}`)}</strong> · {r.receipt_date} · {t("vouchers.createdBy", { name: r.created_by })}
+            <strong>{receiptStatus(t, r)}</strong> · {r.receipt_date} · {t("vouchers.createdBy", { name: r.created_by })}
           </p>
           <dl className="details">
             <dt>{t("quotations.customer")}</dt>

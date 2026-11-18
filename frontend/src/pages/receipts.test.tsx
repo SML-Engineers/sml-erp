@@ -276,3 +276,31 @@ test("dollar invoices are paid in dollars into a dollar account (P2-09)", async 
   expect(within(account).getByRole("option", { name: "COM-USD Commercial Bank USD" })).toBeInTheDocument();
   expect(within(account).queryByRole("option", { name: /COM-CUR/ })).not.toBeInTheDocument();
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says who a receipt waits for and who decided", async () => {
+  const nimal = "Nimal Perera";
+  const row = (id: number, extra: Partial<ReceiptDetail>) => ({ ...made, id, number: `RC2611000${id}`, ...extra });
+  const approved = { people: { waiting: null, last: { action: "approve", by: nimal } } };
+  mockApi({
+    "GET /api/v1/receipts/": {
+      body: [
+        row(1, { status: "awaiting_approval", people: { waiting: { person: nimal, role: "Accountant" }, last: null } }),
+        row(2, { status: "posted", ...approved }),
+        row(3, { status: "post_dated", ...approved }),
+        row(4, { status: "rejected", people: { waiting: null, last: { action: "reject", by: nimal } } }),
+        row(5, { status: "returned", ...approved }),
+      ],
+    },
+  });
+  renderAt("/receipts", <ReceiptsPage me={accountant} />);
+  const table = await screen.findByRole("table", { name: "Customer receipts" });
+  for (const text of [
+    "Waiting for Nimal (Accountant)",
+    "Approved by Nimal",
+    "Approved by Nimal, cheque not yet due",
+    "Rejected by Nimal",
+    "Cheque returned",
+  ])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

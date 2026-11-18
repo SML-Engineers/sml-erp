@@ -151,6 +151,10 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 17 Nov 2026: on the advance's page, when the customer has no tax invoice to set
     off yet, it says so ("No tax invoices of this customer to set off yet") instead of an
     empty box; when there are invoices, the list is full width and clear of the history.
+  - Owner, 16 Nov 2026: **clear statuses.** Receipts say "Waiting for Nimal (Accountant)",
+    "Approved by Nimal", "Approved by Nimal, cheque not yet due", "Rejected by Nimal" or
+    "Cheque returned"; advances say who they wait for and who approved or rejected them, then
+    "Partly set off" or "Set off in full".
 
 - [x] **P2-08 Customer statements, aging and credit limits** (spec 6, 7A)
   Statements (PDF, email), receivables aging (current, 30, 60, 90, over 90 days), credit limit

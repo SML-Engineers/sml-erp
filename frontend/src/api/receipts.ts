@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, firstName, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { ReceiptMethod } from "./advances";
 
@@ -20,6 +23,16 @@ export interface ReceiptRow {
   amount_lkr?: string;
   status: ReceiptStatus;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Waiting for Nimal (Accountant)", "Approved by Nimal", "Approved by Nimal, cheque not yet
+ * due", "Rejected by Nimal", "Cheque returned" (owner, 16 Nov 2026). */
+export function receiptStatus(t: TFunction, r: Pick<ReceiptRow, "status" | "created_by" | "people">): string {
+  const last = r.people?.last;
+  if (r.status === "post_dated" && last?.action === "approve") return t("receipts.postDatedBy", { person: firstName(last.by) });
+  return approvalStatus(t, r, "posted") ?? t(`receipts.statuses.${r.status}`);
 }
 
 export interface ReceiptDetail extends ReceiptRow {

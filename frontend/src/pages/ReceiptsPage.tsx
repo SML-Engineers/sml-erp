@@ -14,6 +14,7 @@ import {
   receiptsKey,
   recordReceipt,
   type OpenInvoice,
+  receiptStatus,
 } from "../api/receipts";
 import DataTable from "../components/DataTable";
 import SearchSelect from "../components/SearchSelect";
@@ -99,7 +100,7 @@ export default function ReceiptsPage({ me }: { me: CurrentUser }) {
               value: (r) => r.amount,
               cell: (r) => `${r.currency && r.currency !== "LKR" ? `${r.currency} ` : ""}${formatDecimal(r.amount)}`,
             },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`receipts.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => receiptStatus(t, r) },
           ]}
         />
       )}

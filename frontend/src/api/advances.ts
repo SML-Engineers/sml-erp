@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 
 export type AdvanceStatus = "awaiting_approval" | "approved" | "rejected";
@@ -22,6 +25,18 @@ export interface AdvanceRow {
   method: ReceiptMethod;
   status: AdvanceStatus;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Waiting for Nimal (Accountant)", "Approved by Nimal", "Partly set off", "Set off in full",
+ * "Rejected by Nimal" (owner, 16 Nov 2026). */
+export function advanceStatus(t: TFunction, a: Pick<AdvanceRow, "status" | "created_by" | "people" | "amount_lkr" | "balance_lkr">): string {
+  if (a.status === "approved" && Number(a.amount_lkr) > 0) {
+    if (Number(a.balance_lkr) <= 0) return t("advances.setOffFull");
+    if (a.balance_lkr !== a.amount_lkr) return t("advances.setOffPart");
+  }
+  return approvalStatus(t, a, "approved") ?? t(`advances.statuses.${a.status}`);
 }
 
 export interface AdvanceDetail extends AdvanceRow {

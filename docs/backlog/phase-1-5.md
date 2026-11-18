@@ -133,6 +133,9 @@ Status: `[ ]` to do · `[x]` done
     of the customer's approved quotations, or to a division; the links to proformas and sales
     orders are added with P15-08 and P15-10. The Cashier needs the new "Record customer
     receipts" action (given to the Cashier role, core migration 0017).
+  - Owner, 17 Nov 2026: the advance page shows the sales order and proforma it was taken
+    against (with links), not only the quotation; the list's column is now "Against" (sales
+    order, else proforma, else quotation).
 
 - [x] **P15-10 Sales orders** (spec 5.3)
   Created from an accepted quotation or a proforma, or entered directly for a repeat order:

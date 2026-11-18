@@ -52,10 +52,29 @@ export default function AdvancePage() {
             <dd>
               {a.customer.code} {a.customer.name}
             </dd>
+            {/* Owner, 17 Nov 2026: show what the advance was taken against, sales order first. */}
+            {a.sales_order && (
+              <>
+                <dt>{t("advances.againstSalesOrder")}</dt>
+                <dd>
+                  <Link to={`/sales-orders/${a.sales_order.id}`}>{a.sales_order.number}</Link>
+                </dd>
+              </>
+            )}
+            {a.proforma && (
+              <>
+                <dt>{a.sales_order ? t("proformas.proforma") : t("advances.againstProforma")}</dt>
+                <dd>
+                  <Link to={`/proformas/${a.proforma.id}`}>{a.proforma.number}</Link>
+                </dd>
+              </>
+            )}
             {a.quotation && (
               <>
-                <dt>{t("advances.againstQuotation")}</dt>
-                <dd>{a.quotation.label}</dd>
+                <dt>{a.sales_order || a.proforma ? t("advances.fromQuotation") : t("advances.againstQuotation")}</dt>
+                <dd>
+                  <Link to={`/quotations/${a.quotation.id}`}>{a.quotation.label}</Link>
+                </dd>
               </>
             )}
             <dt>{t("advances.amount")}</dt>

@@ -80,7 +80,11 @@ export default function AdvancesPage({ me }: { me: CurrentUser }) {
             },
             { id: "date", header: t("vouchers.date"), value: (r) => r.receipt_date },
             { id: "customer", header: t("quotations.customer"), value: (r) => r.customer.name },
-            { id: "quotation", header: t("quotations.quotation"), value: (r) => r.quotation?.label ?? "" },
+            {
+              id: "against",
+              header: t("advances.against"),
+              value: (r) => r.sales_order?.number ?? r.proforma?.number ?? r.quotation?.label ?? "",
+            },
             { id: "division", header: t("vouchers.division"), value: (r) => r.division },
             {
               id: "amount",

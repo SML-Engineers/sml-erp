@@ -1816,7 +1816,9 @@
     "againstProforma": "Against proforma invoice",
     "noProforma": "No proforma",
     "againstSalesOrder": "Against sales order",
-    "noSalesOrder": "No sales order"
+    "noSalesOrder": "No sales order",
+    "against": "Against",
+    "fromQuotation": "Quotation"
   },
   "proformas": {
     "title": "Proforma invoices",

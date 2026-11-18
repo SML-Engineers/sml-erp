@@ -19,7 +19,8 @@ import {
 } from "../api/salesOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
-import { formatDateTime } from "../lib/time";
+import { formatDate, formatDateTime } from "../lib/time";
+import { listQuotations } from "../api/quotations";
 import { cancelledNote, cancelledStatus } from "../lib/cancelled";
 
 function ErrorLine({ error }: { error: unknown }) {
@@ -65,6 +66,8 @@ export default function SalesOrderPage() {
             )}
           </p>
           {data.source === "direct" && <p className="notice">{t("salesOrders.directNotice")}</p>}
+          {/* Owner, 16 Nov 2026: the approver sees which quotation a repeat order repeats. */}
+          {data.source === "direct" && <LinkedQuotation order={data} />}
           {data.status === "cancelled" && <p className="notice">{cancelledNote(t, data)}</p>}
           <p className="muted">{t("salesOrders.noSale")}</p>
           {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}-${data.status}`} order={data} /> : <ReadOnly order={data} />}
@@ -88,6 +91,32 @@ type LineState = {
   schedule: Delivery[];
 };
 
+// Quotations a repeat order can be linked to: ones the customer has seen (as on the server).
+const LINKABLE = "sent,accepted,lost,expired";
+
+function LinkedQuotation({ order }: { order: SalesOrderDetail }) {
+  const { t } = useTranslation();
+  const q = order.quotation;
+  if (!q) {
+    return (
+      <p className="notice notice-warn" role="note">
+        {t("salesOrders.notLinked")}
+      </p>
+    );
+  }
+  return (
+    <p className={q.expired ? "notice notice-warn" : "notice"} role="note">
+      {t("salesOrders.linkedQuotation")} <Link to={`/quotations/${q.id}`}>{q.label}</Link>
+      {q.expired && (
+        <strong>
+          {" · "}
+          {t("salesOrders.linkedExpired", { date: q.valid_until ? formatDate(q.valid_until) : "" })}
+        </strong>
+      )}
+    </p>
+  );
+}
+
 function OrderForm({ order }: { order: SalesOrderDetail }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -102,6 +131,12 @@ function OrderForm({ order }: { order: SalesOrderDetail }) {
     delivery_address: order.delivery_address,
     notes: order.notes,
     discount_pct: Number(order.discount_pct) ? order.discount_pct : "",
+    linked_quotation: order.quotation ? String(order.quotation.id) : "",
+  });
+  const sentQuotations = useQuery({
+    queryKey: ["quotations", "list", "customer", order.customer.id],
+    queryFn: () => listQuotations({ customer: String(order.customer.id), status: LINKABLE }),
+    enabled: direct,
   });
   const [lines, setLines] = useState<LineState[]>(
     order.lines.map((l) => ({
@@ -129,7 +164,7 @@ function OrderForm({ order }: { order: SalesOrderDetail }) {
         incoterm: values.incoterm,
         delivery_address: values.delivery_address,
         notes: values.notes,
-        ...(direct ? { discount_pct: values.discount_pct } : {}),
+        ...(direct ? { discount_pct: values.discount_pct, linked_quotation: values.linked_quotation ? Number(values.linked_quotation) : null } : {}),
         lines: lines.map((l) =>
           direct
             ? {
@@ -183,6 +218,22 @@ function OrderForm({ order }: { order: SalesOrderDetail }) {
         <label>
           {t("quotations.discountPct")}
           <input inputMode="decimal" className="num" value={values.discount_pct} placeholder="0" onChange={(e) => set("discount_pct")(e.target.value)} />
+        </label>
+      )}
+      {direct && (
+        <label>
+          {t("salesOrders.linkQuotation")}
+          <select value={values.linked_quotation} onChange={(e) => set("linked_quotation")(e.target.value)}>
+            <option value="">{t("salesOrders.noQuotation")}</option>
+            {(sentQuotations.data ?? []).map((q) => (
+              <option key={q.id} value={q.id}>
+                {q.number} Rev {q.revision} · {t(`quotations.statuses.${q.status}`)} · {formatDate(q.valid_until)}
+              </option>
+            ))}
+            {order.quotation && !(sentQuotations.data ?? []).some((q) => q.id === order.quotation?.id) && (
+              <option value={order.quotation.id}>{order.quotation.label}</option>
+            )}
+          </select>
         </label>
       )}
       <label className="wide">

@@ -161,7 +161,7 @@ export interface QuotationInput {
 
 export const quotationsKey = ["quotations"];
 
-export function listQuotations(filters: { q?: string; status?: string; division?: string; waiting?: string } = {}) {
+export function listQuotations(filters: { q?: string; status?: string; division?: string; waiting?: string; customer?: string } = {}) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value);
   const query = params.toString();

@@ -366,3 +366,96 @@ def test_who_cancelled_and_when_is_kept(from_quote, executive):
         SalesOrder.objects.filter(pk=order.pk).update(cancelled_by=other)
     with pytest.raises(DatabaseError, match="cannot be changed"), transaction.atomic():
         SalesOrder.objects.filter(pk=order.pk).update(cancelled_at=before)
+
+
+# --- A repeat order linked to an earlier quotation (owner, 16 Nov 2026) ---------------------
+
+
+def test_a_repeat_order_can_be_linked_to_an_expired_quotation(executive, director, unilever):
+    old = services.save(
+        executive,
+        None,
+        customer=unilever,
+        division=Division.objects.get(code="IM"),
+        lines=[QuoteLine(description="Cap, PP, white", quantity="10000", unit_price="2.35")],
+    )
+    workflow.submit(executive, old)
+    workflow.approve(director, old)
+    assert workflow.expire_due(old.valid_until + timedelta(days=1)) == 1
+    old.refresh_from_db()
+    won = old
+    order = repeat(executive, unilever, linked_quotation=won)
+    assert (order.source, order.quotation_id) == ("direct", won.pk)
+    assert orders.quotation_expired(order)
+    # It stays a typed-in repeat order: no quotation lines are offered.
+    detail = as_user(executive).get(f"/api/v1/sales-orders/{order.pk}/").json()
+    assert detail["quotation"]["expired"] is True
+    assert detail["quotation_lines"] == []
+
+
+def test_only_this_customers_sent_quotations_can_be_linked(executive, director, won, unilever):
+    other = customers.create_customer(executive, {"name": "Elephant House"})
+    with pytest.raises(SalesError, match="customer's quotations"):
+        orders.direct(
+            executive,
+            customer=other,
+            division=Division.objects.get(code="IM"),
+            lines=[
+                LineInput(
+                    quantity="1", description="X", unit_price="1", schedule=[Delivery(TODAY, "1")]
+                )
+            ],
+            linked_quotation=won,
+        )
+    draft = services.save(
+        executive,
+        None,
+        customer=unilever,
+        division=Division.objects.get(code="IM"),
+        lines=[QuoteLine(description="Lid", quantity="100", unit_price="1.00")],
+    )
+    with pytest.raises(SalesError, match="customer's quotations"):
+        repeat(executive, unilever, linked_quotation=draft)
+
+
+def test_an_order_from_a_quotation_keeps_its_quotation(from_quote, executive, won):
+    line = from_quote.lines.get()
+    kept = orders.save(
+        executive,
+        from_quote,
+        lines=[
+            LineInput(
+                quantity="10000",
+                quotation_line=line.quotation_line,
+                schedule=[Delivery(TODAY, "10000")],
+            )
+        ],
+        linked_quotation=None,
+    )
+    assert kept.quotation_id == won.pk
+
+
+def test_the_api_links_and_unlinks_a_repeat_order(executive, won, unilever):
+    client = as_user(executive)
+    line = {
+        "description": "Cap, PP, white",
+        "quantity": "1000",
+        "unit_price": "2.30",
+        "schedule": [{"due_date": str(TODAY), "quantity": "1000"}],
+    }
+    made = client.post(
+        "/api/v1/sales-orders/",
+        {"customer": unilever.pk, "division": "IM", "linked_quotation": won.pk, "lines": [line]},
+        format="json",
+    )
+    assert made.status_code == 201, made.json()
+    body = made.json()
+    assert body["quotation"]["id"] == won.pk and body["quotation"]["expired"] is False
+    url = f"/api/v1/sales-orders/{body['id']}/"
+    cleared = client.put(url, {"linked_quotation": None, "lines": [line]}, format="json")
+    assert cleared.status_code == 200, cleared.json()
+    assert cleared.json()["quotation"] is None
+    kept = client.put(url, {"lines": [line]}, format="json").json()
+    assert kept["quotation"] is None
+    wrong = client.put(url, {"linked_quotation": 999999, "lines": [line]}, format="json")
+    assert wrong.status_code == 400

@@ -360,7 +360,35 @@ def _header(values: dict, order: SalesOrder) -> dict:
         if discount >= 100:
             raise SalesError("The discount must be below 100%.")
         result["discount_pct"] = discount
+    # A repeat order may be linked to an earlier quotation of the same customer, often an
+    # expired one, so the Director sees which prices it repeats (owner, 16 Nov 2026).
+    if order.source == SalesOrder.Source.DIRECT and "linked_quotation" in values:
+        quotation = values["linked_quotation"]
+        if quotation is not None and (
+            not isinstance(quotation, Quotation)
+            or quotation.customer_id != order.customer_id
+            or quotation.status not in LINKABLE
+        ):
+            raise SalesError("Link one of this customer's quotations that was sent to them.")
+        result["quotation"] = quotation
     return result
+
+
+# Quotations a repeat order can be linked to: ones the customer has seen.
+LINKABLE = (
+    Quotation.Status.SENT,
+    Quotation.Status.ACCEPTED,
+    Quotation.Status.LOST,
+    Quotation.Status.EXPIRED,
+)
+
+
+def quotation_expired(order: SalesOrder) -> bool:
+    """Whether the order's quotation had expired by the order date."""
+    q = order.quotation
+    return q is not None and (
+        q.status == Quotation.Status.EXPIRED or q.valid_until < order.order_date
+    )
 
 
 def _fill(order: SalesOrder, checked: list[dict]) -> None:

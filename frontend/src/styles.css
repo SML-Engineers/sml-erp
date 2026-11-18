@@ -308,6 +308,13 @@ table.grid td {
   padding: 10px 12px;
 }
 
+/* A notice the approver must not miss, e.g. an expired quotation on a repeat order. */
+.notice.notice-warn {
+  background: #fffaeb;
+  border: 1px solid #fedf89;
+  color: #93370d;
+}
+
 .row-actions {
   display: flex;
   gap: 6px;

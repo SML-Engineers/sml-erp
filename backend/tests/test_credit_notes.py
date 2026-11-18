@@ -294,3 +294,81 @@ def test_the_api(invoice, executive, director):
     assert (after["left_amount"], after["left_quantity"]) == ("104175.00", "45.000")
     qc = as_user(person("qc@sml.lk", "qc_inspector"))
     assert qc.get("/api/v1/credit-notes/").status_code == 403
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_credit_note_waits_for_and_who_returned_it(
+    invoice, executive, director
+):
+    client = as_user(executive)
+    note = credit_notes.submit(executive, price(executive, invoice, "1000"))
+
+    def row():
+        return next(r for r in client.get("/api/v1/credit-notes/").json() if r["id"] == note.pk)
+
+    waiting = row()["people"]["waiting"]
+    assert waiting == {"person": director.full_name, "role": waiting["role"]}
+    assert client.get(f"/api/v1/credit-notes/{note.pk}/").json()["people"] == row()["people"]
+    credit_notes.send_back(director, note, "Wrong amount")
+    assert row()["status"] == "draft"
+    assert row()["people"]["last"] == {"action": "return", "by": director.full_name}
+
+
+def test_the_invoice_says_how_far_it_is_paid_or_credited(invoice, executive, director):
+    client = as_user(executive)
+
+    def state():
+        rows = client.get("/api/v1/tax-invoices/").json()
+        listed = next(r for r in rows if r["id"] == invoice.pk)["paid_state"]
+        assert client.get(f"/api/v1/tax-invoices/{invoice.pk}/").json()["paid_state"] == listed
+        return listed
+
+    assert state() == "unpaid"
+    waiting = credit_notes.submit(executive, price(executive, invoice, "1000"))
+    assert state() == "unpaid"  # a credit note counts only once approved
+    credit_notes.approve(director, waiting)
+    assert state() == "part"
+    rest = invoice.lines.get().net - D("1000")
+    credit_notes.approve(
+        director, credit_notes.submit(executive, price(executive, invoice, str(rest)))
+    )
+    assert state() == "credited"
+
+
+def test_a_draft_invoice_has_no_paid_state(executive, director, stores):
+    order = base.make_order(
+        executive,
+        director,
+        QuoteLine(
+            description="Bush",
+            quantity="2",
+            unit_price="100.00",
+            tax_code=TaxCode.objects.get(code="VAT-SSCL"),
+        ),
+    )
+    base.deliver(stores, order, "2")
+    draft = invoices.create(executive, order)
+    assert as_user(executive).get(f"/api/v1/tax-invoices/{draft.pk}/").json()["paid_state"] is None
+
+
+@pytest.mark.parametrize(
+    "credited,received,pending,set_off,expected",
+    [
+        ("0", "0", "0", "0", "unpaid"),
+        ("0", "40", "0", "0", "part"),
+        ("0", "0", "0", "40", "part"),
+        ("0", "0", "40", "0", "part"),
+        ("0", "60", "0", "40", "paid"),
+        ("10", "50", "40", "0", "pending"),
+        ("100", "0", "0", "0", "credited"),
+    ],
+)
+def test_paid_state_from_the_settlement(credited, received, pending, set_off, expected):
+    from apps.sales import receipts
+
+    row = {"total": D("100"), "credited": D(credited), "received": D(received)}
+    row |= {"pending": D(pending), "set_off": D(set_off)}
+    row["open"] = row["total"] - row["credited"] - row["received"] - row["pending"] - row["set_off"]
+    assert receipts.paid_state(row) == expected

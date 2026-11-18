@@ -37,7 +37,7 @@ def _get(user, pk) -> TaxInvoice:
     return get_object_or_404(rows, pk=pk)
 
 
-def _summary(i: TaxInvoice) -> dict:
+def _summary(i: TaxInvoice, paid: dict | None = None) -> dict:
     return {
         "id": i.pk,
         "number": i.number,
@@ -52,11 +52,18 @@ def _summary(i: TaxInvoice) -> dict:
         "currency": i.currency.code,
         "total_amount": f"{i.total_amount:.2f}",
         "created_by": i.created_by.full_name,
+        # Clear statuses (owner, 16 Nov 2026): "Issued, not paid", "Partly paid", "Paid"…
+        "paid_state": None if i.status != TaxInvoice.Status.ISSUED else (paid or {}).get(i.pk),
     }
 
 
+def _paid_states(rows) -> dict[int, str]:
+    issued = [i for i in rows if i.status == TaxInvoice.Status.ISSUED]
+    return {pk: receipts.paid_state(row) for pk, row in receipts.settlement(issued).items()}
+
+
 def _detail(i: TaxInvoice, user) -> dict:
-    body = _summary(i)
+    body = _summary(i, _paid_states([i]))
     lines = list(i.lines.select_related("delivery_line__note", "tax_code", "account"))
     body |= {
         "supply_date": i.supply_date,
@@ -187,7 +194,9 @@ class InvoiceListView(_Invoices):
             rows = rows.filter(status__in=params["status"].split(","))
         if params.get("order", "").isdigit():
             rows = rows.filter(order_id=int(params["order"]))
-        return Response([_summary(i) for i in rows[:1000]])
+        rows = list(rows[:1000])
+        paid = _paid_states(rows)
+        return Response([_summary(i, paid) for i in rows])
 
     def post(self, request):
         body = InvoiceIn(data=request.data)

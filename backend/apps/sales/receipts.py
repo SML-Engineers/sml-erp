@@ -159,6 +159,20 @@ def settlement(invoices) -> dict[int, dict]:
     return rows
 
 
+def paid_state(row: dict) -> str:
+    """How far an issued invoice is settled, from its settlement() row, for clear statuses
+    (owner, 16 Nov 2026): "credited" (credited in full), "paid", "pending" (fully covered,
+    but a receipt still waits for approval or a post-dated cheque's date), "part" (something
+    received, credited or set off) or "unpaid"."""
+    if row["total"] > 0 and row["credited"] >= row["total"]:
+        return "credited"
+    if row["open"] <= 0:
+        return "pending" if row["pending"] > 0 else "paid"
+    if row["credited"] + row["received"] + row["pending"] + row["set_off"] > 0:
+        return "part"
+    return "unpaid"
+
+
 def open_amount(invoice: TaxInvoice) -> Decimal:
     if invoice.status != TaxInvoice.Status.ISSUED:
         return ZERO

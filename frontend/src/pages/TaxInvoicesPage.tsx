@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { ApiError } from "../api/client";
-import { createInvoice, invoicesKey, listInvoices, ordersToInvoice } from "../api/taxInvoices";
+import { createInvoice, invoicesKey, invoiceStatus, listInvoices, ordersToInvoice } from "../api/taxInvoices";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
@@ -61,7 +61,7 @@ export default function TaxInvoicesPage() {
             { id: "division", header: t("vouchers.division"), value: (r) => r.division },
             { id: "total", header: t("ti.total"), value: (r) => r.total_amount, cell: (r) => formatDecimal(r.total_amount) },
             { id: "due", header: t("ti.dueDate"), value: (r) => r.due_date },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`ti.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => invoiceStatus(t, r) },
           ]}
         />
       )}

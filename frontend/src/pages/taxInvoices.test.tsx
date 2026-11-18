@@ -155,3 +155,38 @@ test("the invoice's history shows the customer viewed it, and a OnePay link is r
     expect(calls).toHaveBeenCalledWith("/api/v1/tax-invoices/4/card-links/", expect.objectContaining({ method: "POST" })),
   );
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says whose draft it is and how far each invoice is paid", async () => {
+  const row = (id: number, extra: Partial<InvoiceDetail>) => ({
+    ...draft,
+    id,
+    number: `26NOV_W1_0${id}`,
+    created_by: "Dilini Wijesekara",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/tax-invoices/": {
+      body: [
+        row(1, { status: "draft", number: "" }),
+        row(2, { status: "issued", paid_state: "unpaid" }),
+        row(3, { status: "issued", paid_state: "part" }),
+        row(4, { status: "issued", paid_state: "paid" }),
+        row(5, { status: "issued", paid_state: "pending" }),
+        row(6, { status: "issued", paid_state: "credited" }),
+      ],
+    },
+    "GET /api/v1/tax-invoices/orders/": { body: [] },
+  });
+  renderAt("/tax-invoices", <TaxInvoicesPage />);
+  const table = await screen.findByRole("table");
+  for (const text of [
+    "Draft of Dilini",
+    "Issued, not paid",
+    "Partly paid",
+    "Paid",
+    "Paid, receipt waiting for approval",
+    "Credited in full",
+  ])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

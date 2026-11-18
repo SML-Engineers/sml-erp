@@ -109,6 +109,9 @@ Status: `[ ]` to do · `[x]` done
     Customer / Prepared By / Checked By), emailed with the PDF. Issued invoices, their lines
     and taxes never change (database guard); an invoiced delivery note cannot be cancelled.
     A delivered order is Completed once fully invoiced. LKR only until P2-09.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Dilini"; an issued invoice says how far
+    it is settled: "Issued, not paid", "Partly paid", "Paid", "Paid, receipt waiting for
+    approval" or "Credited in full" (approved credit notes, receipts and advances set off).
 
 - [x] **P2-06 Credit notes**
   Against an issued invoice (returned goods, price correction), with a reason and the
@@ -124,6 +127,8 @@ Status: `[ ]` to do · `[x]` done
     posts Dr Sales, Dr SSCL and VAT payable, Cr Accounts receivable (the customer). Printed;
     approved and rejected notes never change. Returned goods go back into no stock until
     Phase 3.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Dilini", "Waiting for Ruwan
+    (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan".
 
 - [x] **P2-07 Customer receipts and allocation**
   The Cashier records money in (cheque, transfer, cash, card, QR), allocated to one or more

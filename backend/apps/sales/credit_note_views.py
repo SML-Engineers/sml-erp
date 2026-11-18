@@ -40,8 +40,8 @@ def _get(user, pk) -> CreditNote:
     return get_object_or_404(rows, pk=pk)
 
 
-def _summary(n: CreditNote) -> dict:
-    return {
+def _summary(n: CreditNote, people=None) -> dict:
+    row = {
         "id": n.pk,
         "number": n.number,
         "status": n.status,
@@ -55,6 +55,10 @@ def _summary(n: CreditNote) -> dict:
         "total_amount": f"{n.total_amount:.2f}",
         "created_by": n.created_by.full_name,
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Returned by…".
+    if people is not None:
+        row["people"] = people.get(n.pk)
+    return row
 
 
 def _invoice_lines(invoice: TaxInvoice, note: CreditNote | None) -> list[dict]:
@@ -81,7 +85,7 @@ def _invoice_lines(invoice: TaxInvoice, note: CreditNote | None) -> list[dict]:
 
 
 def _detail(n: CreditNote, user) -> dict:
-    body = _summary(n)
+    body = _summary(n, approvals.people_for(credit_notes.DOC, [n.pk]))
     state = approvals.state_of(credit_notes.DOC, n.pk)
     body |= {
         "reason": n.reason,
@@ -171,7 +175,9 @@ class CreditListView(_Credits):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, credit_notes.DOC)
             rows = rows.filter(pk__in=[s.document_id for s in waiting])
-        return Response([_summary(n) for n in rows[:1000]])
+        rows = list(rows[:1000])
+        people = approvals.people_for(credit_notes.DOC, [n.pk for n in rows])
+        return Response([_summary(n, people) for n in rows])
 
     def post(self, request):
         body = NoteIn(data=request.data)

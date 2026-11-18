@@ -2046,7 +2046,14 @@
     "cardLinkNote": "Note (optional)",
     "save": "Save",
     "fromQuickBooks": "brought over from QuickBooks",
-    "openingNote": "Brought over from QuickBooks at go-live: only what was still to be paid. Its printed copy is in QuickBooks."
+    "openingNote": "Brought over from QuickBooks at go-live: only what was still to be paid. Its printed copy is in QuickBooks.",
+    "paid": {
+      "unpaid": "Issued, not paid",
+      "part": "Partly paid",
+      "paid": "Paid",
+      "pending": "Paid, receipt waiting for approval",
+      "credited": "Credited in full"
+    }
   },
   "sa": {
     "title": "Sales accounts",

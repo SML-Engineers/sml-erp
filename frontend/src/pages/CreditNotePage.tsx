@@ -8,6 +8,7 @@ import {
   approveCreditNote,
   cnKey,
   CN_KINDS,
+  creditNoteStatus,
   createCreditNote,
   creditNotePdfUrl,
   deleteCreditNote,
@@ -66,7 +67,7 @@ export default function CreditNotePage() {
       {data && (
         <>
           <p className="muted">
-            {t(`cn.statuses.${data.status}`)} · {data.customer.name} · <Link to={`/tax-invoices/${data.invoice.id}`}>{data.invoice.number}</Link>
+            {creditNoteStatus(t, data)} · {data.customer.name} · <Link to={`/tax-invoices/${data.invoice.id}`}>{data.invoice.number}</Link>
             {data.journal_entry && (
               <>
                 {" · "}

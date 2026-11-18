@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { CNDetail, InvoiceForCredit } from "../api/creditNotes";
 import { mockApi, renderAt } from "../test-utils";
 import CreditNotePage from "./CreditNotePage";
+import CreditNotesPage from "./CreditNotesPage";
 
 const line = {
   id: 21,
@@ -101,4 +102,25 @@ test("the Director approves and the note is numbered", async () => {
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/credit-notes/6/approve/", expect.objectContaining({ method: "POST" })));
   expect(await screen.findByRole("heading", { name: "Credit note CN26110301" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Credit note PDF" })).toHaveAttribute("href", "/api/v1/credit-notes/6/pdf/");
+});
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says who each credit note waits for and who decided", async () => {
+  const row = (id: number, extra: Partial<CNDetail>) => ({ ...draft, id, created_by: "Dilini Wijesekara", ...extra });
+  const ruwan = "Ruwan Jayasinghe";
+  mockApi({
+    "GET /api/v1/credit-notes/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, { status: "awaiting_approval", people: { waiting: { person: ruwan, role: "Director" }, last: null } }),
+        row(3, { status: "draft", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+        row(4, { status: "approved", number: "CN26111801", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        row(5, { status: "rejected", people: { waiting: null, last: { action: "reject", by: ruwan } } }),
+      ],
+    },
+  });
+  renderAt("/credit-notes", <CreditNotesPage />);
+  const table = await screen.findByRole("table");
+  for (const text of ["Draft of Dilini", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

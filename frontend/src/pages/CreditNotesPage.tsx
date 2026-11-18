@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 
-import { cnKey, CN_STATUSES, listCreditNotes } from "../api/creditNotes";
+import { cnKey, CN_STATUSES, creditNoteStatus, listCreditNotes } from "../api/creditNotes";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
@@ -64,7 +64,7 @@ export default function CreditNotesPage() {
             { id: "customer", header: t("dn.customer"), value: (r) => r.customer.name },
             { id: "kind", header: t("cn.kind"), value: (r) => t(`cn.kinds.${r.kind}`) },
             { id: "total", header: t("cn.total"), value: (r) => r.total_amount, cell: (r) => formatDecimal(r.total_amount) },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`cn.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => creditNoteStatus(t, r) },
           ]}
         />
       )}

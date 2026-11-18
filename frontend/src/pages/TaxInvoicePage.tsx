@@ -15,6 +15,7 @@ import {
   issueInvoice,
   sendInvoiceEmail,
   updateInvoice,
+  invoiceStatus,
   type InvoiceDetail,
 } from "../api/taxInvoices";
 import SendEmailForm from "../components/SendEmailForm";
@@ -48,7 +49,7 @@ export default function TaxInvoicePage() {
       {data && (
         <>
           <p className="muted">
-            {t(`ti.statuses.${data.status}`)} · {data.customer.name} ·{" "}
+            {invoiceStatus(t, data)} · {data.customer.name} ·{" "}
             {data.order ? <Link to={`/sales-orders/${data.order.id}`}>{data.order.number}</Link> : t("ti.fromQuickBooks")}
             {data.journal_entry && (
               <>

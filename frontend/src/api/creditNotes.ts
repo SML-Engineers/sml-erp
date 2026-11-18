@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 
 export type CNStatus = "draft" | "awaiting_approval" | "approved" | "rejected";
@@ -19,6 +22,14 @@ export interface CNSummary {
   division: string;
   total_amount: string;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Draft of Dilini", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by
+ * Ruwan", "Rejected by Ruwan" (owner, 16 Nov 2026). */
+export function creditNoteStatus(t: TFunction, n: Pick<CNSummary, "status" | "created_by" | "people">): string {
+  return approvalStatus(t, n, "approved") ?? t(`cn.statuses.${n.status}`);
 }
 
 export interface CNInvoiceLine {

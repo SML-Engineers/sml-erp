@@ -1551,6 +1551,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Clear statuses: proformas (owner, 16 Nov 2026) | Proformas say "Draft of Dilini", "Issued to the customer", "Issued, order made" or "Cancelled by Dilini" | 5.2 |
 | Voucher tax only from a tax code (owner, 18 Nov 2026) | A voucher line's tax comes only from its tax code (NO-TAX or EXEMPT when none); typed-in tax is refused, and L2 cannot approve a line with tax but no code | 4.4, 6.0 |
 | Purchase request form only for those who raise them (owner, 18 Nov 2026) | Someone who can only view purchase requests sees the list, not the New purchase request form; the item box is full width | 6 |
+| Clear statuses: tax invoices and credit notes (owner, 16 Nov 2026) | Tax invoices say "Draft of Dilini", "Issued, not paid", "Partly paid", "Paid", "Paid, receipt waiting for approval" or "Credited in full"; credit notes say whose draft it is, who it waits for and who approved, returned or rejected it | 6.1 |
 
 **Still needed for initial setup**
 

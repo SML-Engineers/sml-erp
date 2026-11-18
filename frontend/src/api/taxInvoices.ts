@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { firstName } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { EmailDraft, EmailToSend } from "./documentEmail";
 
@@ -20,6 +23,18 @@ export interface InvoiceSummary {
   currency?: string;
   total_amount: string;
   created_by: string;
+  /** How far an issued invoice is paid or credited (clear statuses, owner 16 Nov 2026); null for a draft. */
+  paid_state?: PaidState | null;
+}
+
+export type PaidState = "unpaid" | "part" | "paid" | "pending" | "credited";
+
+/** "Draft of Dilini", "Issued, not paid", "Partly paid", "Paid", "Paid, receipt waiting for
+ * approval" or "Credited in full" (owner, 16 Nov 2026). */
+export function invoiceStatus(t: TFunction, i: Pick<InvoiceSummary, "status" | "created_by" | "paid_state">): string {
+  if (i.status === "draft") return t("docStatus.draftOf", { person: firstName(i.created_by) });
+  if (i.paid_state) return t(`ti.paid.${i.paid_state}`);
+  return t(`ti.statuses.${i.status}`);
 }
 
 export interface InvoiceDetail extends InvoiceSummary {

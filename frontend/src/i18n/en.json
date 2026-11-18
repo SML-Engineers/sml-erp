@@ -1818,7 +1818,8 @@
     "againstSalesOrder": "Against sales order",
     "noSalesOrder": "No sales order",
     "against": "Against",
-    "fromQuotation": "Quotation"
+    "fromQuotation": "Quotation",
+    "nothingToSetOff": "No tax invoices of this customer to set off yet."
   },
   "proformas": {
     "title": "Proforma invoices",

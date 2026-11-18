@@ -143,6 +143,9 @@ Status: `[ ]` to do · `[x]` done
     invoice total: Dr Customer advances, Cr Accounts receivable; the Accountant can also set
     off any approved advance of the customer by hand, from the advance's page. The invoice page
     shows what was received, waiting, set off and still open. LKR only until P2-09.
+  - Owner, 17 Nov 2026: on the advance's page, when the customer has no tax invoice to set
+    off yet, it says so ("No tax invoices of this customer to set off yet") instead of an
+    empty box; when there are invoices, the list is full width and clear of the history.
 
 - [x] **P2-08 Customer statements, aging and credit limits** (spec 6, 7A)
   Statements (PDF, email), receivables aging (current, 30, 60, 90, over 90 days), credit limit

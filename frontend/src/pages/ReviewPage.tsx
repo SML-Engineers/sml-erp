@@ -383,7 +383,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                   </td>
                   <td>
                     <select aria-label={t("voucherReview.taxCodeOf", { n })} value={c.tax_code} onChange={(e) => set(index, { tax_code: e.target.value })}>
-                      <option value="">{t("vouchers.enterTax")}</option>
+                      <option value="">{t("vouchers.chooseTaxCode")}</option>
                       {purchaseCodes.map((code) => (
                         <option key={code.code} value={code.code}>
                           {code.code}
@@ -392,16 +392,13 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
                     </select>
                   </td>
                   <td className="num">
+                    {/* Tax comes only from a tax code (owner, 18 Nov 2026). */}
                     {c.tax_code ? (
                       formatDecimal(line.tax_amount)
                     ) : (
-                      <input
-                        inputMode="decimal"
-                        className="num"
-                        aria-label={t("voucherReview.taxOf", { n })}
-                        value={c.tax_amount}
-                        onChange={(e) => set(index, { tax_amount: e.target.value })}
-                      />
+                      <span className="muted" title={t("vouchers.noTaxWithoutCode")}>
+                        0.00
+                      </span>
                     )}
                   </td>
                   <td>

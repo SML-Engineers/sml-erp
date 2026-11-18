@@ -267,6 +267,13 @@ def test_the_accountant_returns_rather_than_changes_amounts(clerk, accountant, d
 
 def test_a_director_tax_change_in_coding_goes_back_to_the_accountant(clerk, accountant, director):
     voucher = at_director(clerk, accountant)
+    import datetime
+
+    from apps.accounting import taxes
+    from apps.accounting.models import TaxCode, TaxComponent
+
+    vat = TaxComponent.objects.get(code="VAT")
+    taxes.add_rate(accountant, vat, effective_from=datetime.date(2024, 1, 1), rate="18")
     services.code_lines(
         director,
         voucher,
@@ -275,7 +282,7 @@ def test_a_director_tax_change_in_coding_goes_back_to_the_accountant(clerk, acco
                 line_no=1,
                 account=Account.objects.get(number="6210"),
                 division=ws(),
-                tax_amount="180.00",
+                tax_code=TaxCode.objects.get(code="VAT"),
             )
         ],
     )

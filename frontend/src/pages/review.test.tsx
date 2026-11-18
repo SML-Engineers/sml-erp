@@ -128,6 +128,9 @@ test("the accountant codes an electricity bill split across divisions and approv
   fireEvent.mouseDown(await within(panel).findByRole("option", { name: "6100 Electricity" }));
   expect(within(panel).getByRole("combobox", { name: "Account, line 1" })).toHaveValue("6100 Electricity");
   expect(within(panel).getByLabelText("Division, line 1")).toHaveValue("HO"); // the account's default
+  // Owner, 18 Nov 2026: tax comes only from a tax code; there is no box to type it.
+  expect(within(panel).queryByLabelText("Tax, line 1")).not.toBeInTheDocument();
+  expect(within(panel).getByLabelText("Tax code, line 1")).toHaveDisplayValue("Choose…");
   fireEvent.click(within(panel).getByLabelText("Split across divisions"));
   const split = within(panel).getByRole("group", { name: "Split of line 1" });
   fireEvent.click(within(split).getByLabelText("By percentage"));

@@ -1313,6 +1313,16 @@ table.coding-table td:nth-child(4) {
   min-width: 13rem;
 }
 
+/* Tax code and tax: wide enough for "VAT-SSCL-R" and "52,200.00" (owner, 18 Nov 2026). */
+table.coding-table td:nth-child(5) {
+  min-width: 8.5rem;
+}
+
+table.coding-table td:nth-child(6) {
+  min-width: 6.5rem;
+  white-space: nowrap;
+}
+
 table.coding-table td input,
 table.coding-table td select {
   width: 100%;

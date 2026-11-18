@@ -443,7 +443,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                     value={line.tax_code ?? ""}
                     onChange={(e) => setLine(index, { tax_code: e.target.value || null })}
                   >
-                    <option value="">{t("vouchers.enterTax")}</option>
+                    <option value="">{t("vouchers.noTaxCodeYet")}</option>
                     {purchaseCodes.map((c) => (
                       <option key={c.code} value={c.code}>
                         {c.code}
@@ -458,13 +458,8 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                   ) : line.tax_code ? (
                     <span className="muted">{t("vouchers.taxOnSave")}</span>
                   ) : (
-                    <input
-                      inputMode="decimal"
-                      className="num"
-                      aria-label={t("vouchers.taxOf", { n: String(index + 1) })}
-                      value={line.tax_amount}
-                      onChange={(e) => setLine(index, { tax_amount: e.target.value })}
-                    />
+                    // Tax comes only from a tax code (owner, 18 Nov 2026).
+                    <span className="muted">{t("vouchers.noTaxWithoutCode")}</span>
                   )}
                 </td>
                 <td>

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { AdvanceDetail, AdvanceOptions } from "../api/advances";
 import type { CurrentUser } from "../api/auth";
@@ -138,4 +138,28 @@ test("the history is in Sri Lanka time", async () => {
   });
   renderAt("/advances/7", <AdvancePage />, "/advances/:id");
   expect(await screen.findByText(/Sunil Fernando · 2026-11-17 14:57/)).toBeInTheDocument();
+});
+
+// Owner, 17 Nov 2026: an advance taken against a sales order said only "Against quotation".
+test("an advance against a sales order shows the order, on its page and in the list", async () => {
+  const onOrder: AdvanceDetail = {
+    ...made,
+    quotation: { id: 12, label: "QL26103104 Rev 0" },
+    proforma: { id: 5, number: "PI26100002" },
+    sales_order: { id: 9, number: "SO26103101" },
+  };
+  mockApi({ "GET /api/v1/advances/7/": { body: onOrder }, "GET /api/v1/advances/": { body: [onOrder] } });
+  renderAt("/advances/7", <AdvancePage />, "/advances/:id");
+  const details = await screen.findByRole("region", { name: "Receipt details" });
+  expect(within(details).getByText("Against sales order")).toBeInTheDocument();
+  expect(within(details).getByRole("link", { name: "SO26103101" })).toHaveAttribute("href", "/sales-orders/9");
+  expect(within(details).getByRole("link", { name: "PI26100002" })).toHaveAttribute("href", "/proformas/5");
+  expect(within(details).getByRole("link", { name: "QL26103104 Rev 0" })).toHaveAttribute("href", "/quotations/12");
+  expect(within(details).queryByText("Against quotation")).not.toBeInTheDocument();
+  cleanup();
+
+  renderAt("/advances", <AdvancesPage me={accountant} />);
+  const table = await screen.findByRole("table", { name: "Customer advances" });
+  expect(within(table).getByRole("columnheader", { name: /Against/ })).toBeInTheDocument();
+  expect(within(table).getByText("SO26103101")).toBeInTheDocument();
 });

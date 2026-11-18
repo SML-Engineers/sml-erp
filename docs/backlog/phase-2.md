@@ -226,6 +226,8 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 17 Nov 2026: on the voucher page each payment row has its own **Cancel…** button
     that opens its reason box ("Why cancel it", then Ask the Director, or Cancel to close);
     the reason boxes are no longer all open under the table.
+  - Owner, 17 Nov 2026: the "Payment saved" message shows the cheque number in bold ("Cheque
+    no. 100002. Write this number on the cheque."), or the reference for other methods.
 
 - [x] **P2-12 Withholding tax on payments** (spec 6, tax)
   Where the law requires it (question 6): WHT worked out on the voucher, the supplier paid the

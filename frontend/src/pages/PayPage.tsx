@@ -217,6 +217,15 @@ function Done({ payment }: { payment: Payment }) {
           entry: payment.journal_entry,
         })}
       </p>
+      {payment.reference && (
+        <p className="saved-reference">
+          <strong>
+            {payment.method === "cheque"
+              ? t("payments.savedCheque", { number: payment.reference })
+              : t("payments.savedReference", { reference: payment.reference })}
+          </strong>
+        </p>
+      )}
       {payment.wht_certificate && (
         <p>
           {t("payments.whtKept", { amount: formatDecimal(payment.wht_amount ?? "0"), number: payment.wht_certificate })}{" "}

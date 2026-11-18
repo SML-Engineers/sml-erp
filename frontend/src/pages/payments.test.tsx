@@ -96,6 +96,8 @@ test("a cheque payment: next cheque and the division's account filled in, then p
   const done = await screen.findByRole("status", { name: "Payment saved" });
   expect(done).toHaveTextContent("PY26100001");
   expect(done).toHaveTextContent("JV26100007");
+  // F8: the Cashier sees the cheque number to write on the cheque.
+  expect(done).toHaveTextContent("Cheque no. 000123. Write this number on the cheque.");
   fireEvent.click(within(done).getByRole("button", { name: "Print payment voucher" }));
   expect(open).toHaveBeenCalledWith("/api/v1/vouchers/1/print/?paper=A4", "_blank", "noopener");
   open.mockRestore();
@@ -127,6 +129,9 @@ test("a QR payment needs its reference and can come from a savings account", asy
     reference: "LQR-55",
     cheque_number: null,
   });
+  const done = await screen.findByRole("status", { name: "Payment saved" });
+  expect(done).toHaveTextContent("Reference: LQR-55");
+  expect(done).not.toHaveTextContent("Cheque no.");
 });
 
 test("a voucher that is not waiting to be paid cannot be paid here", async () => {

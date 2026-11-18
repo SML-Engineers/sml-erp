@@ -107,6 +107,10 @@ test("the clerk creates a draft: division, type, payee with balance, a line", as
   expect(within(form).getByLabelText("Find the payee (name or code)")).toHaveValue("");
   fireEvent.change(within(form).getByLabelText("Invoice no., line 1"), { target: { value: "INV-1001" } });
   fireEvent.change(within(form).getByLabelText("Amount, line 1"), { target: { value: "25000.00" } });
+  // Owner, 18 Nov 2026: tax comes only from a tax code; it is never typed in.
+  expect(within(form).queryByLabelText("Tax, line 1")).not.toBeInTheDocument();
+  expect(within(form).getByText("0.00 until a tax code is chosen")).toBeInTheDocument();
+  expect(within(form).getByRole("option", { name: "No tax code yet" })).toBeInTheDocument();
   fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
 
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/", expect.objectContaining({ method: "POST" })));

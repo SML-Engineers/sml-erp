@@ -288,7 +288,7 @@ def _lines(voucher: Voucher, lines: list[LineInput]) -> list[VoucherLine]:
             except Exception as error:  # noqa: BLE001 - shown to the Clerk as it is
                 raise VoucherError(f"{where}: {error}") from None
         else:
-            tax = _money(line.tax_amount, f"{where} tax", positive=False)
+            tax = _no_tax_without_code(line.tax_amount, where)
         if line.invoice_date and line.invoice_date > timezone.localdate():
             raise VoucherError(f"{where}: the invoice date is in the future.")
         built.append(
@@ -886,7 +886,7 @@ def code_lines(user: User, voucher: Voucher, codings: list[CodingInput]) -> Vouc
                 except Exception as error:  # noqa: BLE001 - shown as it is
                     raise VoucherError(f"{where}: {error}") from None
             else:
-                line.tax_amount = _money(coding.tax_amount, f"{where} tax", positive=False)
+                line.tax_amount = _no_tax_without_code(coding.tax_amount, where)
             line.tax_code = coding.tax_code
             _set_order(line, coding.job_ref, where)
             line.splits.all().delete()
@@ -971,21 +971,52 @@ def payable(voucher: Voucher) -> Decimal:
     return voucher.total_amount - voucher.wht_total
 
 
+def _no_tax_without_code(typed, where: str) -> Decimal:
+    """Tax comes only from a tax code (owner, 18 Nov 2026): a line without one has no tax."""
+    tax = _money(typed or "0", f"{where} tax", positive=False)
+    if tax != 0:
+        raise VoucherError(
+            f"{where}: choose the tax code for its tax (NO-TAX or EXEMPT when there is none)."
+        )
+    return tax
+
+
 def uncoded_lines(voucher: Voucher) -> list[int]:
+    """Lines the Accountant has still to code: an account and a division (or split), and a
+    line with tax its tax code (see untaxed_lines)."""
+    lines = list(voucher.lines.prefetch_related("splits"))
     return [
         line.line_no
-        for line in voucher.lines.prefetch_related("splits")
-        if line.account_id is None or (line.division_id is None and not line.splits.all())
+        for line in lines
+        if line.account_id is None
+        or (line.division_id is None and not line.splits.all())
+        or (line.tax_code_id is None and line.tax_amount != 0)
+    ]
+
+
+def untaxed_lines(voucher: Voucher) -> list[int]:
+    """Lines with tax but no tax code. Tax comes only from a tax code (owner, 18 Nov 2026);
+    a voucher typed before then may hold tax typed in without one."""
+    return [
+        line.line_no
+        for line in voucher.lines.all()
+        if line.tax_code_id is None and line.tax_amount != 0
     ]
 
 
 def approve(user: User, voucher: Voucher, comment: str = "") -> Voucher:
     """Approve at the waiting level. The Accountant (L2) can only approve once every line
-    has its account and division (or division split)."""
+    has its account and division (or division split), and every line with tax its tax code."""
     with transaction.atomic():
         voucher = Voucher.objects.select_for_update().get(pk=voucher.pk)
         state = _acting_state(user, voucher)
         if state.current_level == state.route[0]["level"]:
+            untaxed = untaxed_lines(voucher)
+            if untaxed:
+                raise VoucherError(
+                    "Choose the tax code for the tax before approving (NO-TAX or EXEMPT when"
+                    " there is no tax): line " + ", ".join(str(n) for n in untaxed) + "."
+                )
             missing = uncoded_lines(voucher)
             if missing:
                 raise VoucherError(

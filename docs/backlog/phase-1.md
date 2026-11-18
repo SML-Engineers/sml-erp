@@ -399,6 +399,11 @@ Status: `[ ]` to do · `[x]` done
   - A split by percentage gives the cent left over by rounding to the last division.
   - The Accountant may change a line's tax; the voucher total follows. Amounts stay as entered
     by the Clerk (a wrong amount is returned to the Clerk).
+  - Owner, 18 Nov 2026: **tax only from a tax code.** Tax is never typed in: a line without a
+    tax code has no tax (choose NO-TAX or EXEMPT, or leave it for the Accountant), and the
+    tax of a line with a code is worked out from it. A voucher typed before then that holds
+    tax without a code cannot be approved at L2 until its tax code is chosen. The Tax code
+    and Tax columns of the coding table are wide enough for "VAT-SSCL-R" and "52,200.00".
 
 - [x] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk

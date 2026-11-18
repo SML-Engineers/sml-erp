@@ -121,12 +121,44 @@ def test_an_internal_transfer_is_coded_to_a_bank_account(clerk, accountant):
 
 
 def test_the_accountant_changes_the_tax_and_the_total_follows(accountant, submitted):
+    from datetime import date
+
+    from apps.accounting import taxes
+    from apps.accounting.models import TaxCode, TaxComponent
+
+    vat = TaxComponent.objects.get(code="VAT")
+    taxes.add_rate(accountant, vat, effective_from=date(2024, 1, 1), rate="18")
     voucher = code(
-        accountant, submitted, account=acc("6210"), division=div("WS"), tax_amount="4500.00"
+        accountant,
+        submitted,
+        account=acc("6210"),
+        division=div("WS"),
+        tax_code=TaxCode.objects.get(code="VAT"),
     )
     assert voucher.total_amount == Decimal("29500.00")
-    with pytest.raises(VoucherError, match="negative"):
-        code(accountant, submitted, account=acc("6210"), division=div("WS"), tax_amount="-1")
+    # Owner, 18 Nov 2026: tax comes only from a tax code, never typed in.
+    with pytest.raises(VoucherError, match="choose the tax code for its tax"):
+        code(accountant, submitted, account=acc("6210"), division=div("WS"), tax_amount="4500.00")
+
+
+def test_a_voucher_with_tax_typed_in_before_needs_its_tax_code(accountant, submitted):
+    from apps.accounting.models import TaxCode
+
+    # A voucher entered before 18 Nov 2026 may hold tax typed in without a code.
+    code(accountant, submitted, account=acc("6210"), division=div("WS"))
+    submitted.lines.update(tax_amount=Decimal("360.00"))
+    with pytest.raises(VoucherError, match="Choose the tax code for the tax before approving"):
+        services.approve(accountant, submitted)
+    assert services.uncoded_lines(submitted) == [1]
+    no_tax = code(
+        accountant,
+        submitted,
+        account=acc("6210"),
+        division=div("WS"),
+        tax_code=TaxCode.objects.get(code="NO-TAX"),
+    )
+    assert no_tax.lines.get().tax_amount == Decimal("0.00")
+    assert services.approve(accountant, no_tax).status == "accountant_approved"
 
 
 # --- Splitting a shared bill ------------------------------------------------------------

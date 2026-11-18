@@ -122,12 +122,15 @@ def test_tax_is_worked_out_from_the_tax_code(clerk, accountant, supplier):
         LineInput(
             amount="115750.00", invoice_no="A1", tax_code=TaxCode.objects.get(code="VAT-SSCL")
         ),
-        LineInput(amount="1000.00", invoice_no="A2", tax_amount="50.00"),
+        LineInput(amount="1000.00", invoice_no="A2"),
     )
     first, second = voucher.lines.all()
     assert first.tax_amount == Decimal("23737.43")
-    assert second.tax_amount == Decimal("50.00")
-    assert voucher.total_amount == Decimal("139487.43") + Decimal("1050.00")
+    assert second.tax_amount == Decimal("0.00")
+    assert voucher.total_amount == Decimal("139487.43") + Decimal("1000.00")
+    # Owner, 18 Nov 2026: tax is never typed in without its tax code.
+    with pytest.raises(VoucherError, match="Line 1: choose the tax code for its tax"):
+        draft(clerk, supplier, LineInput(amount="1000.00", invoice_no="A3", tax_amount="50.00"))
 
 
 @pytest.mark.parametrize(

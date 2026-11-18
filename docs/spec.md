@@ -1549,6 +1549,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Repeat order linked to a quotation (owner, 16 Nov 2026) | A repeat order can be linked to an earlier quotation of the customer; the approver sees "Expired quotation linked" highlighted, or "Not linked to a quotation" | 5.3 |
 | Clear statuses: sales orders (owner, 16 Nov 2026) | Sales orders say whose draft it is, who it waits for and who returned it; "Open, to deliver", "All delivered", "Completed and closed" | 5.3 |
 | Clear statuses: proformas (owner, 16 Nov 2026) | Proformas say "Draft of Dilini", "Issued to the customer", "Issued, order made" or "Cancelled by Dilini" | 5.2 |
+| Voucher tax only from a tax code (owner, 18 Nov 2026) | A voucher line's tax comes only from its tax code (NO-TAX or EXEMPT when none); typed-in tax is refused, and L2 cannot approve a line with tax but no code | 4.4, 6.0 |
 
 **Still needed for initial setup**
 

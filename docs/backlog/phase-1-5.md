@@ -163,6 +163,9 @@ Status: `[ ]` to do · `[x]` done
     QL…"; when that quotation had expired by the order date it is highlighted ("Expired
     quotation linked"), and with no link it says "Not linked to a quotation", so the Director
     sees it before approving. The quotation lists the order among its sales orders.
+  - Owner, 16 Nov 2026: **clear statuses.** The list and page say "Draft of Dilini", "Waiting
+    for Ruwan (Director)", "Returned by Ruwan" or "Cancelled by Dilini"; the plain statuses
+    read "Open, to deliver", "Partly delivered", "All delivered" and "Completed and closed".
 
 ## D. Reports and go-live
 

@@ -1547,6 +1547,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Advance set-off box (owner, 17 Nov 2026) | When there is no tax invoice to set an advance off against, its page says so instead of an empty box; the invoice list is full width | 6 |
 | Effective access of a switched-off account (owner, 16 Nov 2026) | The User access grid of an inactive account shows what it will have once switched on, with a note that it can do nothing until then | 1.3 |
 | Repeat order linked to a quotation (owner, 16 Nov 2026) | A repeat order can be linked to an earlier quotation of the customer; the approver sees "Expired quotation linked" highlighted, or "Not linked to a quotation" | 5.3 |
+| Clear statuses: sales orders (owner, 16 Nov 2026) | Sales orders say whose draft it is, who it waits for and who returned it; "Open, to deliver", "All delivered", "Completed and closed" | 5.3 |
 
 **Still needed for initial setup**
 

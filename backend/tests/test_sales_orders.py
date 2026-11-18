@@ -459,3 +459,17 @@ def test_the_api_links_and_unlinks_a_repeat_order(executive, won, unilever):
     assert kept["quotation"] is None
     wrong = client.put(url, {"linked_quotation": 999999, "lines": [line]}, format="json")
     assert wrong.status_code == 400
+
+
+# Owner, 16 Nov 2026: clear statuses ("Waiting for Ruwan (Director)", "Returned by Ruwan").
+def test_the_list_and_page_say_who_a_repeat_order_waits_for(executive, director, unilever):
+    order = orders.confirm(executive, repeat(executive, unilever))
+    client = as_user(executive)
+    row = next(r for r in client.get("/api/v1/sales-orders/").json() if r["id"] == order.pk)
+    assert row["people"]["waiting"] == {"person": director.full_name, "role": "Director"}
+    orders.send_back(director, order, "Price went up in October")
+    page = client.get(f"/api/v1/sales-orders/{order.pk}/").json()
+    assert page["people"] == {
+        "waiting": None,
+        "last": {"action": "return", "by": director.full_name},
+    }

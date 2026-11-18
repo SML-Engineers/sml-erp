@@ -1,3 +1,7 @@
+import type { TFunction } from "i18next";
+
+import { cancelledStatus } from "../lib/cancelled";
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { apiGet, apiSend } from "./client";
 
 export type SalesOrderStatus = "draft" | "awaiting_approval" | "open" | "partly_delivered" | "delivered" | "completed" | "cancelled";
@@ -21,6 +25,8 @@ export interface SalesOrderSummary {
   next_delivery: string | null;
   created_by: string;
   cancelled_by?: string | null;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
 }
 
 export interface Delivery {
@@ -134,3 +140,15 @@ export const approveSalesOrder = (id: number, comment = "") => apiSend<SalesOrde
 export const returnSalesOrder = (id: number, reason: string) => apiSend<SalesOrderDetail>("POST", `/sales-orders/${id}/return/`, { reason });
 export const completeSalesOrder = (id: number) => apiSend<SalesOrderDetail>("POST", `/sales-orders/${id}/complete/`, {});
 export const cancelSalesOrder = (id: number, reason: string) => apiSend<SalesOrderDetail>("POST", `/sales-orders/${id}/cancel/`, { reason });
+
+/** The clear status of a sales order (owner, 16 Nov 2026): "Draft of Dilini", "Waiting for
+ * Ruwan (Director)", "Returned by Ruwan", "Cancelled by Dilini", or its own label. */
+export function salesOrderStatus(
+  t: TFunction,
+  o: Pick<SalesOrderSummary, "status" | "created_by" | "cancelled_by" | "people">,
+): string {
+  if (o.status === "cancelled") return cancelledStatus(t, o.cancelled_by, t("salesOrders.statuses.cancelled"));
+  // Only draft, returned and waiting are worded from the approval; an approved repeat order
+  // is simply open, like any other.
+  return approvalStatus(t, o, "-") ?? t(`salesOrders.statuses.${o.status}`);
+}

@@ -277,6 +277,29 @@ def test_grid_shows_role_default_override_and_result(admin):
     assert manage["effective"] is False
 
 
+# Owner, 16 Nov 2026: Rashani's account was not yet activated and the grid was empty,
+# although she had roles and a grant.
+def test_grid_of_an_inactive_account_shows_what_it_will_have(admin):
+    clerk = person("new.clerk@sml.lk", "clerk")
+    grant(as_user(admin), clerk, area="stores", level="view")
+    User.objects.filter(pk=clerk.pk).update(is_active=False)
+    grid = as_user(admin).get(f"/api/v1/users/{clerk.pk}/access/").json()
+    assert grid["inactive"] is True
+    vouchers = next(a for a in grid["areas"] if a["area"] == "vouchers")
+    assert next(lv for lv in vouchers["levels"] if lv["level"] == "enter")["effective"] is True
+    stores = next(a for a in grid["areas"] if a["area"] == "stores")
+    assert next(lv for lv in stores["levels"] if lv["level"] == "view")["effective"] is True
+    # ...but nothing works until the account is active.
+    assert not rights(clerk).has("vouchers", "enter")
+    assert not rights(clerk).has("stores", "view")
+
+
+def test_grid_of_an_active_account_is_not_marked_inactive(admin):
+    clerk = person("clerk2@sml.lk", "clerk")
+    grid = as_user(admin).get(f"/api/v1/users/{clerk.pk}/access/").json()
+    assert grid["inactive"] is False
+
+
 def test_history_keeps_ended_overrides(admin):
     clerk = person("clerk@sml.lk", "clerk")
     created = grant(as_user(admin), clerk, area="stores", level="view").json()

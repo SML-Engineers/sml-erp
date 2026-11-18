@@ -488,6 +488,11 @@ function GridPanel(props: {
   return (
     <section className="panel">
       <h2>{t("access.effective")}</h2>
+      {props.grid.inactive && (
+        <p className="warning-text" role="note">
+          {t("access.inactiveGrid")}
+        </p>
+      )}
       <p className="muted">{t("access.legend")}</p>
       <div className="table-wrap">
         <table className="grid">

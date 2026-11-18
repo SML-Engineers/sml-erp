@@ -83,6 +83,7 @@
     "savedWithWarnings": "Saved. The conflict and your reason have been recorded.",
     "saveDivisions": "Save divisions",
     "effective": "Effective access",
+    "inactiveGrid": "This account is switched off. Below is what it will have once it is switched on; until then it can do nothing.",
     "legend": "● from roles   + granted for this user   − removed for this user   … waiting for the Director. Click a cell to grant or remove.",
     "area": "Area",
     "actions": "Special actions",

@@ -262,7 +262,11 @@ def access_grid(target: User) -> dict:
     """For every area and level: from roles, any override, and the result (spec 1.3)."""
     raw_roles, role_actions = access.role_access(target)
     from_roles = access._expand(raw_roles)
-    effective = access.effective_access(target)
+    # An inactive account has no access at all; the grid shows what it will have once
+    # activated, and says so (owner, 16 Nov 2026).
+    effective = (
+        access.effective_access(target) if target.is_active else access.access_once_active(target)
+    )
     overrides = list(
         target.access_overrides.filter(revoked_at__isnull=True).exclude(
             ends_on__lt=timezone.localdate()
@@ -276,6 +280,7 @@ def access_grid(target: User) -> dict:
         return None
 
     return {
+        "inactive": not target.is_active,
         "areas": [
             {
                 "area": area,

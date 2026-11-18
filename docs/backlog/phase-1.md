@@ -93,6 +93,9 @@ Status: `[ ]` to do · `[x]` done
   - Every grant, removal, confirmation and expiry is recorded: each override keeps who
     created, confirmed and ended it, when and why, and is never deleted. P0-05 adds these
     events to the general audit log as well.
+  - Owner, 16 Nov 2026: for a switched-off account (not yet activated, or a leaver) the grid
+    shows what its roles and overrides will give once it is switched on, with a note that it
+    can do nothing until then. Every permission check still gives it nothing.
 
 - [x] **P0-05 Audit log** (spec 3)
   Insert-only log of create/update/delete on audited models: user, time, IP, old and new values.

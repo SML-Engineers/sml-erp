@@ -12,6 +12,7 @@ import {
   confirmSalesOrder,
   getSalesOrder,
   returnSalesOrder,
+  salesOrderStatus,
   salesOrdersKey,
   updateSalesOrder,
   type Delivery,
@@ -21,7 +22,7 @@ import { getTaxes, taxesKey } from "../api/taxes";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDate, formatDateTime } from "../lib/time";
 import { listQuotations } from "../api/quotations";
-import { cancelledNote, cancelledStatus } from "../lib/cancelled";
+import { cancelledNote } from "../lib/cancelled";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -51,7 +52,7 @@ export default function SalesOrderPage() {
       {data && (
         <>
           <p className="muted">
-            {data.status === "cancelled" ? cancelledStatus(t, data.cancelled_by, t("salesOrders.statuses.cancelled")) : t(`salesOrders.statuses.${data.status}`)} · {data.order_date} · {data.division} · {data.customer.code} {data.customer.name}
+            {salesOrderStatus(t, data)} · {data.order_date} · {data.division} · {data.customer.code} {data.customer.name}
             {data.quotation && (
               <>
                 {" · "}

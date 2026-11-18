@@ -1918,10 +1918,10 @@
     "statuses": {
       "draft": "Draft",
       "awaiting_approval": "Waiting for the Director",
-      "open": "Open",
+      "open": "Open, to deliver",
       "partly_delivered": "Partly delivered",
-      "delivered": "Delivered",
-      "completed": "Completed",
+      "delivered": "All delivered",
+      "completed": "Completed and closed",
       "cancelled": "Cancelled"
     }
   },

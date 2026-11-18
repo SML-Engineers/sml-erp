@@ -142,7 +142,7 @@ test("the Director approves a repeat order typed in", async () => {
       expect.objectContaining({ method: "POST", body: JSON.stringify({ comment: "Same as last time" }) }),
     ),
   );
-  expect(await screen.findByText(/^Open ·/)).toBeInTheDocument();
+  expect(await screen.findByText(/^Open, to deliver ·/)).toBeInTheDocument();
 });
 
 test("the list links to each order; a repeat order is typed in from it", async () => {
@@ -271,4 +271,33 @@ test("the creator links a repeat order to one of the customer's quotations", asy
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/sales-orders/50/", expect.objectContaining({ method: "PUT" })));
   const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/sales-orders/50/" && i?.method === "PUT")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({ linked_quotation: 12 });
+});
+
+// Owner, 16 Nov 2026: statuses that say who has it ("Waiting for Ruwan (Director)").
+test("the list says whose draft it is and who it waits for", async () => {
+  const row = (id: number, extra: Partial<SalesOrderDetail>) => ({
+    ...draft,
+    id,
+    number: `SO2611180${id}`,
+    created_by: "Dilini Wijesekara",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/sales-orders/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, {
+          status: "awaiting_approval",
+          people: { waiting: { person: "Ruwan Jayasinghe", role: "Director" }, last: { action: "submit", by: "Dilini Wijesekara" } },
+        }),
+        row(3, { status: "draft", people: { waiting: null, last: { action: "return", by: "Ruwan Jayasinghe" } } }),
+        row(4, { status: "open", people: { waiting: null, last: { action: "approve", by: "Ruwan Jayasinghe" } } }),
+        row(5, { status: "delivered", people: null }),
+      ],
+    },
+  });
+  renderAt("/sales-orders", <SalesOrdersPage me={executive} />);
+  const table = await screen.findByRole("table");
+  for (const text of ["Draft of Dilini", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Open, to deliver", "All delivered"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

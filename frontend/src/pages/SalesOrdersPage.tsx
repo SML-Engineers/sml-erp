@@ -8,11 +8,10 @@ import { listDivisions } from "../api/admin";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import { listCustomers } from "../api/customers";
-import { createDirectOrder, listSalesOrders, SALES_ORDER_STATUSES, salesOrdersKey } from "../api/salesOrders";
+import { createDirectOrder, listSalesOrders, SALES_ORDER_STATUSES, salesOrderStatus, salesOrdersKey } from "../api/salesOrders";
 import DataTable from "../components/DataTable";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal } from "../lib/decimal";
-import { cancelledStatus } from "../lib/cancelled";
 
 /** Sales orders (spec 5.3): confirmed customer orders, from a quotation, a proforma or typed in. */
 export default function SalesOrdersPage({ me }: { me: CurrentUser }) {
@@ -104,10 +103,7 @@ export default function SalesOrdersPage({ me }: { me: CurrentUser }) {
             {
               id: "status",
               header: t("vouchers.status"),
-              value: (r) =>
-                r.status === "cancelled"
-                  ? cancelledStatus(t, r.cancelled_by, t("salesOrders.statuses.cancelled"))
-                  : t(`salesOrders.statuses.${r.status}`),
+              value: (r) => salesOrderStatus(t, r),
             },
             { id: "by", header: t("quotations.madeBy"), value: (r) => r.created_by },
           ]}

@@ -32,8 +32,8 @@ def _get(user, pk) -> SalesOrder:
     return get_object_or_404(orders.visible(user), pk=pk)
 
 
-def _summary(o: SalesOrder) -> dict:
-    return {
+def _summary(o: SalesOrder, people=None) -> dict:
+    row = {
         "id": o.id,
         "number": o.number,
         "order_date": o.order_date,
@@ -56,10 +56,14 @@ def _summary(o: SalesOrder) -> dict:
         # Who cancelled it (owner, 16 Nov 2026): "Cancelled by Dilini" in the list.
         "cancelled_by": o.cancelled_by.full_name if o.cancelled_by_id else None,
     }
+    if people is not None:
+        # Who it waits for and who last acted (owner, 16 Nov 2026: clear statuses).
+        row["people"] = people.get(o.pk)
+    return row
 
 
 def _detail(o: SalesOrder, user) -> dict:
-    body = _summary(o)
+    body = _summary(o, approvals.people_for(orders.DOC, [o.pk]))
     state = approvals.state_of(orders.DOC, o.pk)
     done = deliveries.delivered(o)
     body |= {
@@ -265,7 +269,9 @@ class SalesOrderListView(_Sales):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, orders.DOC)
             rows = rows.filter(pk__in=[state.document_id for state in waiting])
-        return Response([_summary(o) for o in rows[:2000]])
+        rows = list(rows[:2000])
+        people = approvals.people_for(orders.DOC, [o.pk for o in rows])
+        return Response([_summary(o, people) for o in rows])
 
     def post(self, request):
         data = request.data

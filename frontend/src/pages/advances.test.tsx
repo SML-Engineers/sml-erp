@@ -163,3 +163,31 @@ test("an advance against a sales order shows the order, on its page and in the l
   expect(within(table).getByRole("columnheader", { name: /Against/ })).toBeInTheDocument();
   expect(within(table).getByText("SO26103101")).toBeInTheDocument();
 });
+
+// Owner, 17 Nov 2026: with no tax invoices yet, the Set off box was a tiny empty list.
+test("with no tax invoice to set off, the advance says so instead of an empty box", async () => {
+  const posted: AdvanceDetail = {
+    ...made,
+    status: "approved",
+    balance_lkr: "75000.00",
+    journal_entry: { id: 3, number: "JE-2026-0003" },
+    can_set_off: true,
+    open_invoices: [],
+  };
+  mockApi({ "GET /api/v1/advances/7/": { body: posted } });
+  renderAt("/advances/7", <AdvancePage />, "/advances/:id");
+  expect(await screen.findByText("No tax invoices of this customer to set off yet.")).toBeInTheDocument();
+  expect(screen.queryByRole("form", { name: "Set off against an invoice" })).not.toBeInTheDocument();
+  cleanup();
+
+  mockApi({
+    "GET /api/v1/advances/7/": {
+      body: { ...posted, open_invoices: [{ id: 2, number: "TI26110001", invoice_date: "2026-11-10", open_amount: "50000.00" }] },
+    },
+  });
+  renderAt("/advances/7", <AdvancePage />, "/advances/:id");
+  const form = await screen.findByRole("form", { name: "Set off against an invoice" });
+  expect(screen.queryByText("No tax invoices of this customer to set off yet.")).not.toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Invoice"), { target: { value: "2" } });
+  expect(within(form).getByLabelText("Amount LKR")).toHaveValue("50000.00");
+});

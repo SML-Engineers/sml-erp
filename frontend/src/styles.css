@@ -187,6 +187,17 @@ button.secondary {
   margin: 8px 0;
 }
 
+/* The advance's Set off form: the invoice list full width, clear of the history below. */
+.set-off-form {
+  margin-bottom: 24px;
+}
+.set-off-form label:first-child {
+  flex: 1 1 100%;
+}
+.set-off-form select {
+  width: 100%;
+}
+
 .checks {
   display: flex;
   flex-wrap: wrap;

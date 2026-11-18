@@ -1544,6 +1544,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Cancel button per payment (owner, 17 Nov 2026) | On the voucher page, each payment row has a Cancel button that opens its reason box | 4.6 |
 | Cheque number when a payment is saved (owner, 17 Nov 2026) | The "Payment saved" message shows the cheque number to write on the cheque, or the reference for other methods | 4.6 |
 | Advance shows its sales order (owner, 17 Nov 2026) | A customer advance's page and list show the sales order and proforma it was taken against, not only the quotation | 5.2 |
+| Advance set-off box (owner, 17 Nov 2026) | When there is no tax invoice to set an advance off against, its page says so instead of an empty box; the invoice list is full width | 6 |
 
 **Still needed for initial setup**
 

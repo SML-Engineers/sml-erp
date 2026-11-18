@@ -137,9 +137,17 @@ export default function AdvancePage() {
               </ul>
             </>
           )}
-          {a.can_set_off && (
+          {/* Owner, 17 Nov 2026: say plainly when there is nothing to set off, and keep the
+              form full width and clear of the history below it. */}
+          {a.can_set_off && <h2>{t("receipts.setOffNew")}</h2>}
+          {a.can_set_off && (a.open_invoices ?? []).length === 0 && (
+            <p className="muted" role="note">
+              {t("advances.nothingToSetOff")}
+            </p>
+          )}
+          {a.can_set_off && (a.open_invoices ?? []).length > 0 && (
             <form
-              className="inline-form"
+              className="inline-form set-off-form"
               aria-label={t("receipts.setOffNew")}
               onSubmit={(e) => {
                 e.preventDefault();

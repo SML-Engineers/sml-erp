@@ -373,3 +373,13 @@ def cancel(user: User, note: DeliveryNote, reason: str) -> DeliveryNote:
 def has_open_notes(order: SalesOrder) -> bool:
     """Draft, issued or signed notes stop an order being cancelled."""
     return order.deliveries.filter(~Q(status=St.CANCELLED)).exists()
+
+
+def invoiced_notes(note_ids) -> set[int]:
+    """The notes whose lines are on an issued tax invoice, for clear statuses (owner, 16 Nov
+    2026). An invoice takes every line of a note, and draft invoices do not count."""
+    return set(
+        DeliveryNoteLine.objects.filter(
+            note_id__in=list(note_ids), invoice_line__invoice__status="issued"
+        ).values_list("note_id", flat=True)
+    )

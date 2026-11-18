@@ -1958,7 +1958,7 @@
     "formHelp": "Leave a line empty if none of it goes on this delivery. No line can deliver more than is still to deliver.",
     "makeDraft": "Make the draft delivery note",
     "details": "Delivery",
-    "issuedBy": "Issued by",
+    "issuedBy": "Issued by {{person}}, not signed yet",
     "receivedBy": "Received by (name)",
     "receivedOn": "Date received",
     "signedCopy": "Signed copy",
@@ -1980,7 +1980,9 @@
     },
     "part": "Part from stock",
     "partOf": "Part from stock, line {{n}}",
-    "stockValue": "Stock value"
+    "stockValue": "Stock value",
+    "signedBy": "Signed by {{person}}",
+    "invoiced": "{{status}}, invoiced"
   },
   "ti": {
     "title": "Tax invoices",

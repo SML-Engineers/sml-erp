@@ -11,6 +11,7 @@ import {
   requestAction,
   requestsKey,
   type RequestDetail,
+  requestStatus,
 } from "../api/purchaseRequests";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
@@ -40,7 +41,7 @@ export default function PurchaseRequestPage() {
         {t("prq.one")} <span className="mono">{r.number}</span>
       </h1>
       <p>
-        <strong>{t(`prq.statuses.${r.status}`)}</strong> · {r.division}
+        <strong>{requestStatus(t, r)}</strong> · {r.division}
         {r.store && ` · ${r.store}`} · {t("prq.raisedByName", { name: r.created_by })}
         {r.from_reorder && ` · ${t("prq.fromReorder")}`}
       </p>

@@ -75,6 +75,9 @@ Status: `[ ]` to do · `[x]` done
     approval the supplier's and items' codes become fixed. A revision is allowed only while
     nothing has been received; the old PO is marked "Replaced by a revision" at once.
     Reminder to the Director after 2 days. Menu: Purchasing and stores → Purchase orders.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kasun", "Waiting for Ruwan
+    (Director)", "Returned by Ruwan", "Approved by Ruwan"; after approval "Partly received",
+    "Received", "Closed short", "Cancelled" or "Replaced by a revision" as before.
 
 - [x] **P16-05 Printing and emailing the PO**
   PDF in the layout of the owner's sample PO26061701, the company letterhead, emailed to the

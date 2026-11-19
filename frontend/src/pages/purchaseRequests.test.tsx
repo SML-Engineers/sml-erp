@@ -100,3 +100,29 @@ test("only someone who may raise requests sees the New purchase request form", a
   renderAt("/purchase-requests", <PurchaseRequestsPage me={stores} />);
   expect(await screen.findByRole("form", { name: "New purchase request" })).toBeInTheDocument();
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says whose draft a request is, who it waits for and who decided", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<RequestDetail>) => ({
+    ...request,
+    id,
+    number: `PR2611000${id}`,
+    created_by: "Kamal Silva",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/purchase-requests/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, { status: "awaiting_approval", people: { waiting: { person: ruwan, role: "Director" }, last: null } }),
+        row(3, { status: "approved", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        row(4, { status: "rejected", people: { waiting: null, last: { action: "reject", by: ruwan } } }),
+      ],
+    },
+  });
+  renderAt("/purchase-requests", <PurchaseRequestsPage me={sampleUser} />);
+  const table = await screen.findByRole("table");
+  for (const text of ["Draft of Kamal", "Waiting for Ruwan (Director)", "Approved by Ruwan", "Rejected by Ruwan"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

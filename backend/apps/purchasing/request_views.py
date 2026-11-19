@@ -123,8 +123,8 @@ class LevelRequestView(_Requests):
 # --- Purchase requests ------------------------------------------------------------------
 
 
-def _summary(r: PurchaseRequest) -> dict:
-    return {
+def _summary(r: PurchaseRequest, people=None) -> dict:
+    row = {
         "id": r.pk,
         "number": r.number,
         "status": r.status,
@@ -139,12 +139,16 @@ def _summary(r: PurchaseRequest) -> dict:
         if r.purchase_order_id is None
         else {"id": r.purchase_order_id, "label": r.purchase_order.label},
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Approved by Ruwan"…
+    if people is not None:
+        row["people"] = people.get(r.pk)
+    return row
 
 
 def _detail(r: PurchaseRequest, user) -> dict:
     lines = list(r.lines.select_related("item"))
     supplier = r.supplier
-    return _summary(r) | {
+    return _summary(r, approvals.people_for(service.DOC, [r.pk])) | {
         "reason": r.reason,
         "end_reason": r.end_reason,
         "approved_at": r.approved_at,
@@ -229,7 +233,9 @@ class RequestListView(_Requests):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, service.DOC)
             rows = rows.filter(pk__in=[s.document_id for s in waiting])
-        return Response([_summary(r) for r in rows[:2000]])
+        rows = list(rows[:2000])
+        people = approvals.people_for(service.DOC, [r.pk for r in rows])
+        return Response([_summary(r, people) for r in rows])
 
     def post(self, request):
         body = RequestIn(data=request.data)

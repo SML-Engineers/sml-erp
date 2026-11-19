@@ -24,6 +24,7 @@ import {
   type PayMode,
   type PODetail,
   type POInput,
+  poStatus,
 } from "../api/purchaseOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
 import SearchSelect from "../components/SearchSelect";
@@ -64,7 +65,7 @@ export default function PurchaseOrderPage() {
       {data && (
         <>
           <p className="muted">
-            {t(`po.statuses.${data.status}`)} · {data.po_date} · {data.division} · {data.supplier.code} {data.supplier.name}
+            {poStatus(t, data)} · {data.po_date} · {data.division} · {data.supplier.code} {data.supplier.name}
             {data.parent && (
               <>
                 {" · "}

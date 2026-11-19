@@ -170,3 +170,31 @@ test("the buyer emails an approved PO to the supplier and can print it", async (
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/purchase-orders/9/email/", expect.objectContaining({ method: "POST" })));
   expect(await screen.findByText(/sales@sddpolymer.lk · Buyer/)).toBeInTheDocument();
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says whose draft a PO is, who it waits for and who decided", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<PODetail>) => ({
+    ...draft,
+    id,
+    number: `PO2611010${id}`,
+    label: `PO2611010${id}`,
+    created_by: "Kasun Bandara",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/purchase-orders/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, { status: "awaiting_approval", people: { waiting: { person: ruwan, role: "Director" }, last: null } }),
+        row(3, { status: "draft", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+        row(4, { status: "approved", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        row(5, { status: "partly_received", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+      ],
+    },
+  });
+  renderAt("/purchase-orders", <PurchaseOrdersPage me={sampleUser} />);
+  const table = await screen.findByRole("table", { name: "Purchase orders" });
+  for (const text of ["Draft of Kasun", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Partly received"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

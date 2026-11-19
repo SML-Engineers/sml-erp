@@ -5,7 +5,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
-import { listPayments, listToPay, paymentsKey } from "../api/payments";
+import { listPayments, listToPay, paymentStatus, paymentsKey } from "../api/payments";
 import DataTable from "../components/DataTable";
 import ExportLinks from "../components/ExportLinks";
 
@@ -113,6 +113,7 @@ export default function PaymentsPage({ me }: { me: CurrentUser }) {
                 { id: "reference", header: t("payments.reference"), value: (p) => p.reference },
                 { id: "amount", header: t("payments.amount"), value: (p) => p.amount, money: true },
                 { id: "entry", header: t("payments.entry"), value: (p) => p.journal_entry },
+                { id: "status", header: t("vouchers.status"), value: (p) => paymentStatus(t, p) },
               ]}
             />
           )}

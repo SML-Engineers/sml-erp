@@ -256,3 +256,27 @@ def test_a_dollar_payment_is_cancelled_with_its_exchange_difference(
         (loss(), 0, D("125000.00")),
     ]
     assert fresh(usd_voucher).status == "director_approved"
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_and_the_voucher_say_who_a_cancellation_waits_for(
+    cashier, director, bank, voucher
+):
+    payment = pay(cashier, voucher, bank, "1000.00")
+    till = as_user(cashier)
+    url = f"/api/v1/payments/?voucher={voucher.pk}"
+    assert till.get(url).json()[0]["cancellation"] is None
+    request = cancellations.request(cashier, payment, "Cheque lost")
+    listed = till.get(url).json()[0]["cancellation"]
+    assert listed["waiting"]["person"] == director.full_name
+    on_voucher = as_user(director).get(f"/api/v1/vouchers/{voucher.pk}/").json()
+    assert on_voucher["payments"][0]["cancellation"]["waiting"] == listed["waiting"]
+    cancellations.reject(director, request, "Find the cheque first")
+    refused = till.get(url).json()[0]["cancellation"]
+    assert (refused["status"], refused["waiting"], refused["decided_by"]) == (
+        "rejected",
+        None,
+        director.full_name,
+    )

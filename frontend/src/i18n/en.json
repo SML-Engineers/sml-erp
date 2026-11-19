@@ -1316,7 +1316,7 @@
     "cancel": "Cancel this payment",
     "cancelReason": "Why cancel it (e.g. cheque spoiled)",
     "askCancel": "Ask the Director",
-    "cancelPending": "Cancellation asked by {{name}}: {{reason}}. Waiting for the Director.",
+    "cancelPending": "Cancellation asked by {{name}}: {{reason}}. Waiting for {{who}}.",
     "cancelDone": "Cancelled by {{name}}: {{reason}} (reversal {{entry}}).",
     "cancelRejected": "Cancellation refused by {{name}}.",
     "approveCancel": "Approve: cancel the payment",
@@ -1328,7 +1328,12 @@
     "whtCertificate": "Print the WHT certificate",
     "whtCertificateNo": "WHT certificate {{number}} ({{amount}})",
     "cancelButton": "Cancel…",
-    "actions": "Actions"
+    "actions": "Actions",
+    "statusPaid": "Paid",
+    "statusPending": "Cancellation waiting for {{who}}",
+    "statusCancelledBy": "Cancelled, approved by {{person}}",
+    "statusRefusedBy": "Paid (cancellation refused by {{person}})",
+    "theDirector": "the Director"
   },
   "exports": {
     "excel": "Excel",

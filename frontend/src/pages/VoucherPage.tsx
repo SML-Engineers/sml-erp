@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { listDivisions } from "../api/admin";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
-import { approvePaymentCancellation, cancelPayment, rejectPaymentCancellation, whtCertificateUrl } from "../api/payments";
+import { approvePaymentCancellation, cancelPayment, rejectPaymentCancellation, waitingFor, whtCertificateUrl } from "../api/payments";
 import { listPayees } from "../api/payees";
 import { getAdvanceOrders, getPayableInvoices } from "../api/supplierInvoices";
 import { getTaxes, taxesKey } from "../api/taxes";
@@ -915,7 +915,7 @@ function PaymentCancel({
   const error = act.error;
   return (
     <div aria-label={t("payments.cancelOf", { number: payment.number })} role="group">
-      {c?.status === "pending" && <p>{t("payments.cancelPending", { name: c.requested_by, reason: c.reason })}</p>}
+      {c?.status === "pending" && <p>{t("payments.cancelPending", { name: c.requested_by, reason: c.reason, who: waitingFor(t, c.waiting) })}</p>}
       {c?.status === "approved" && (
         <p className="muted">{t("payments.cancelDone", { name: c.decided_by ?? "", reason: c.reason, entry: c.reversal_entry ?? "" })}</p>
       )}

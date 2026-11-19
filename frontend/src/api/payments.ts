@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { firstName } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { VoucherStatus } from "./vouchers";
 
@@ -69,7 +72,25 @@ export interface Payment {
     decided_at: string | null;
     reversal_entry: string | null;
     can_decide: boolean;
+    /** Who a pending cancellation waits for (clear statuses, owner 16 Nov 2026). */
+    waiting?: { person: string | null; role: string } | null;
   } | null;
+}
+
+/** "Paid", "Cancellation waiting for Ruwan (Director)", "Cancelled, approved by Ruwan" or "Paid
+ * (cancellation refused by Ruwan)" (owner, 16 Nov 2026). */
+export function paymentStatus(t: TFunction, p: Pick<Payment, "cancelled" | "cancellation">): string {
+  const c = p.cancellation;
+  if (p.cancelled) return c?.decided_by ? t("payments.statusCancelledBy", { person: firstName(c.decided_by) }) : t("payments.cancelled");
+  if (c?.status === "pending") return t("payments.statusPending", { who: waitingFor(t, c.waiting) });
+  if (c?.status === "rejected" && c.decided_by) return t("payments.statusRefusedBy", { person: firstName(c.decided_by) });
+  return t("payments.statusPaid");
+}
+
+/** "Ruwan (Director)", or the role alone when more than one person holds it. */
+export function waitingFor(t: TFunction, waiting: { person: string | null; role: string } | null | undefined): string {
+  if (!waiting) return t("payments.theDirector");
+  return waiting.person ? `${firstName(waiting.person)} (${waiting.role})` : waiting.role;
 }
 
 export interface PaymentInput {

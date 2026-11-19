@@ -9,7 +9,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core import exports
+from apps.core import approvals, exports
 from apps.core.permissions import AreaAccess
 from apps.masters import banking
 from apps.masters.models import CompanyAccount
@@ -24,11 +24,25 @@ def _error(error):
     return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def _cancellation(p: SupplierPayment, user) -> dict | None:
+def waiting_people(payments) -> dict[int, dict]:
+    """Who each pending cancellation waits for, by cancellation id, for a whole list at once
+    (clear statuses, owner 16 Nov 2026)."""
+    pending = PaymentCancellation.objects.filter(
+        payment__in=list(payments), status=PaymentCancellation.Status.PENDING
+    ).values_list("pk", flat=True)
+    return approvals.people_for(cancellations.DOC, pending)
+
+
+def _cancellation(p: SupplierPayment, user, people=None) -> dict | None:
     """The latest cancellation request of the payment, and what the user may do (P2-11)."""
     latest = p.cancellations.select_related("requested_by", "decided_by").first()
     if latest is None:
         return None
+    waiting = None
+    if latest.status == PaymentCancellation.Status.PENDING:
+        if people is None:
+            people = approvals.people_for(cancellations.DOC, [latest.pk])
+        waiting = (people.get(latest.pk) or {}).get("waiting")
     return {
         "id": latest.pk,
         "status": latest.status,
@@ -39,10 +53,12 @@ def _cancellation(p: SupplierPayment, user) -> dict | None:
         "decided_at": latest.decided_at,
         "reversal_entry": latest.reversal_entry.number if latest.reversal_entry_id else None,
         "can_decide": user is not None and cancellations.can_decide(user, latest),
+        # Clear statuses (owner, 16 Nov 2026): "Cancellation waiting for Ruwan (Director)".
+        "waiting": waiting,
     }
 
 
-def payment_row(p: SupplierPayment, user=None) -> dict:
+def payment_row(p: SupplierPayment, user=None, people=None) -> dict:
     return {
         "id": p.pk,
         "number": p.number,
@@ -63,7 +79,7 @@ def payment_row(p: SupplierPayment, user=None) -> dict:
         "wht_certificate": p.wht_certificate,
         "exchange_rate": f"{p.exchange_rate.normalize():f}",
         "cancelled": p.cancelled,
-        "cancellation": _cancellation(p, user),
+        "cancellation": _cancellation(p, user, people),
         "can_cancel": user is not None
         and not p.cancelled
         and cancellations.can_request(user)
@@ -214,7 +230,9 @@ class PaymentListView(_Payments):
                 filename="payments",
                 user=request.user,
             )
-        return Response([payment_row(p, request.user) for p in rows[:1000]])
+        rows = list(rows[:1000])
+        people = waiting_people(rows)
+        return Response([payment_row(p, request.user, people) for p in rows])
 
     def post(self, request):
         data = PaymentInput(data=request.data)

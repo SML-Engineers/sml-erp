@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 export type MJStatus = "draft" | "awaiting_approval" | "posted" | "rejected";
@@ -19,6 +22,14 @@ export interface MJSummary {
   reverse_on?: string | null;
   /** The recurring journal that made this draft, if any. */
   recurring?: { id: number; name: string } | null;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Draft of Nimal", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan",
+ * "Rejected by Ruwan" (owner, 16 Nov 2026). */
+export function journalStatus(t: TFunction, j: { status: MJStatus; created_by: string; people?: StatusPeople | null }): string {
+  return approvalStatus(t, j, "posted") ?? t(`mj.statuses.${j.status}`);
 }
 
 export interface MJLine {

@@ -328,3 +328,23 @@ def test_the_api_from_entry_to_posting(accountant, director, clerk):
     export = client.get("/api/v1/manual-journals/?export=xlsx")
     assert export.status_code == 200
     assert export["Content-Disposition"].endswith('manual-journals.xlsx"')
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_journal_waits_for_and_who_decided(accountant, director):
+    client = as_user(accountant)
+
+    def people(mj):
+        rows = client.get("/api/v1/manual-journals/").json()
+        listed = next(r for r in rows if r["id"] == mj.pk)["people"]
+        assert client.get(f"/api/v1/manual-journals/{mj.pk}/").json()["people"] == listed
+        return listed
+
+    mj = manual.submit(accountant, make(accountant))
+    assert people(mj)["waiting"]["person"] == director.full_name
+    mj = manual.send_back(director, mj, "Use the repairs account for machines")
+    assert people(mj)["last"] == {"action": "return", "by": director.full_name}
+    mj = manual.approve(director, manual.submit(accountant, mj))
+    assert people(mj) == {"waiting": None, "last": {"action": "approve", "by": director.full_name}}

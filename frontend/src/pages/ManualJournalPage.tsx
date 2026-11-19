@@ -16,6 +16,7 @@ import {
   removeJournalFile,
   returnManualJournal,
   submitManualJournal,
+  journalStatus,
   updateManualJournal,
   type MJDetail,
   type MJInput,
@@ -60,7 +61,7 @@ export default function ManualJournalPage() {
       {data && (
         <>
           <p className="muted">
-            {t(`mj.statuses.${data.status}`)} · {data.entry_date} · {t("mj.enteredBy")} {data.created_by}
+            {journalStatus(t, data)} · {data.entry_date} · {t("mj.enteredBy")} {data.created_by}
             {data.reverse_on && ` · ${t("mj.reversesOn", { date: data.reverse_on })}`}
             {data.recurring && (
               <>

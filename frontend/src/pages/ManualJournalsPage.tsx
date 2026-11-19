@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
-import { listManualJournals, manualJournalsExportUrl, MJ_STATUSES, mjKey } from "../api/manualJournals";
+import { journalStatus, listManualJournals, manualJournalsExportUrl, MJ_STATUSES, mjKey } from "../api/manualJournals";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
@@ -75,7 +75,7 @@ export default function ManualJournalsPage({ me }: { me: CurrentUser }) {
             { id: "date", header: t("vouchers.date"), value: (r) => r.entry_date },
             { id: "narration", header: t("mj.narration"), value: (r) => r.narration },
             { id: "amount", header: t("mj.amount"), value: (r) => r.total_debit, cell: (r) => formatDecimal(r.total_debit) },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`mj.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => journalStatus(t, r) },
             { id: "by", header: t("mj.enteredBy"), value: (r) => r.created_by },
             { id: "entry", header: t("mj.postedAs"), value: (r) => r.journal_entry?.number ?? "" },
           ]}

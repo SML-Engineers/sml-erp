@@ -445,3 +445,30 @@ def test_the_api_enters_matches_and_posts(clerk, supplier, grn_line):
 
 def test_people_without_vouchers_or_accounting_see_nothing(stores):
     assert as_user(stores).get("/api/v1/supplier-invoices/").status_code == 403
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_an_exception_waits_for_and_who_cancelled_the_invoice(
+    clerk, accountant, director, supplier, grn_line
+):
+    client = as_user(clerk)
+
+    def row(invoice):
+        rows = client.get("/api/v1/supplier-invoices/").json()
+        listed = next(r for r in rows if r["id"] == invoice.pk)
+        detail = client.get(f"/api/v1/supplier-invoices/{invoice.pk}/").json()
+        assert (detail["people"], detail["cancelled_by"]) == (
+            listed["people"],
+            listed["cancelled_by"],
+        )
+        return listed
+
+    invoice = invoices.match(clerk, enter(clerk, supplier, grn_line, price="13.00"))
+    invoices.request_exception(accountant, invoice, "Please approve")
+    assert row(invoice)["people"]["waiting"]["person"] == director.full_name
+    invoice = invoices.send_back(director, invoice, "Ask for a credit note")
+    assert row(invoice)["people"]["last"] == {"action": "return", "by": director.full_name}
+    invoice = invoices.cancel(clerk, invoice, "Supplier sends a new invoice")
+    assert row(invoice)["cancelled_by"] == clerk.full_name

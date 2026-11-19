@@ -33,8 +33,8 @@ def _error(error):
     return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def _summary(i: SupplierInvoice) -> dict:
-    return {
+def _summary(i: SupplierInvoice, people=None) -> dict:
+    row = {
         "id": i.id,
         "number": i.number,
         "invoice_no": i.invoice_no,
@@ -47,7 +47,13 @@ def _summary(i: SupplierInvoice) -> dict:
         "total_amount": str(i.total_amount),
         "total_lkr": str(i.total_lkr),
         "created_by": i.created_by.full_name,
+        # Clear statuses (owner, 16 Nov 2026): "Exception waiting for Ruwan (Director)",
+        # "Cancelled by Kumari"…
+        "cancelled_by": i.cancelled_by.full_name if i.cancelled_by_id else None,
     }
+    if people is not None:
+        row["people"] = people.get(i.pk)
+    return row
 
 
 def _open_row(row) -> dict:
@@ -70,7 +76,7 @@ def _open_row(row) -> dict:
 
 
 def _detail(i: SupplierInvoice, user) -> dict:
-    return _summary(i) | {
+    return _summary(i, approvals.people_for(invoices.DOC, [i.pk])) | {
         "stated_total": None if i.stated_total is None else str(i.stated_total),
         "subtotal": str(i.subtotal),
         "tax_total": str(i.tax_total),
@@ -78,7 +84,6 @@ def _detail(i: SupplierInvoice, user) -> dict:
         "notes": i.notes,
         "exception_reason": i.exception_reason,
         "cancel_reason": i.cancel_reason,
-        "cancelled_by": i.cancelled_by.full_name if i.cancelled_by_id else None,
         "cancelled_at": i.cancelled_at,
         "journal": None if i.journal_entry_id is None else i.journal_entry.number,
         "set_offs": [
@@ -315,7 +320,9 @@ class InvoiceListView(_Invoices):
         if params.get("waiting") == "me":
             ids = [s.document_id for s in approvals.waiting_for(request.user, invoices.DOC)]
             rows = rows.filter(pk__in=ids)
-        return Response([_summary(i) for i in rows[:2000]])
+        rows = list(rows.select_related("cancelled_by")[:2000])
+        people = approvals.people_for(invoices.DOC, [i.pk for i in rows])
+        return Response([_summary(i, people) for i in rows])
 
     def post(self, request):
         body = InvoiceIn(data=request.data)

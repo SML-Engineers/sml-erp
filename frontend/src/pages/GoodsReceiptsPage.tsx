@@ -5,7 +5,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
-import { createGoodsReceipt, grnKey, GRN_STATUSES, listGoodsReceipts, listReceivable } from "../api/goodsReceipts";
+import { createGoodsReceipt, grnKey, GRN_STATUSES, grnStatus, listGoodsReceipts, listReceivable } from "../api/goodsReceipts";
 import DataTable from "../components/DataTable";
 
 /** Goods receiving notes (spec 5A.2): the stores person receives against approved POs. */
@@ -81,7 +81,7 @@ export default function GoodsReceiptsPage({ me }: { me: CurrentUser }) {
             { id: "supplier", header: t("po.supplier"), value: (r) => r.supplier.name },
             { id: "division", header: t("vouchers.division"), value: (r) => r.division },
             { id: "note", header: t("grn.deliveryNote"), value: (r) => r.delivery_note_no },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`grn.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => grnStatus(t, r) },
             { id: "by", header: t("grn.receivedBy"), value: (r) => r.created_by },
           ]}
         />

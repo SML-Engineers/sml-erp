@@ -25,6 +25,7 @@ import {
   updateSupplierInvoice,
   type InvoiceDetail,
   type InvoiceInput,
+  supplierInvoiceStatus,
 } from "../api/supplierInvoices";
 import SearchSelect from "../components/SearchSelect";
 import Trail from "../components/Trail";
@@ -68,7 +69,7 @@ export default function SupplierInvoicePage() {
       {data && (
         <>
           <p className="muted">
-            {t(`si.statuses.${data.status}`)} · {data.number} · {data.division} · {t("si.dueOn", { date: data.due_date })}
+            {supplierInvoiceStatus(t, data)} · {data.number} · {data.division} · {t("si.dueOn", { date: data.due_date })}
             {data.journal && ` · ${t("si.posted", { journal: data.journal })}`}
           </p>
           {data.discrepancies.length > 0 && data.status !== "posted" && (

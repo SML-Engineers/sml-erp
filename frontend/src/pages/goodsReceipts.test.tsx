@@ -193,3 +193,32 @@ test("the stores person adds 2 bags of 25 kg at once, weighs them and sees the v
     "/api/v1/goods-receipts/4/labels/?line=1",
   );
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says who confirmed a GRN and who an excess or reversal waits for", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const waiting = { waiting: { person: ruwan, role: "Director" }, last: null };
+  const row = (id: number, extra: Partial<GRNDetail>) => ({ ...draft, id, number: `GRN2611010${id}`, created_by: "Kamal Silva", ...extra });
+  mockApi({
+    "GET /api/v1/goods-receipts/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, { status: "awaiting_approval", people: waiting }),
+        row(3, { status: "confirmed", confirmed_by: "Kamal Silva", people: null }),
+        row(4, { status: "reversal_requested", confirmed_by: "Kamal Silva", people: waiting }),
+        row(5, { status: "reversed", confirmed_by: "Kamal Silva", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+      ],
+    },
+    "GET /api/v1/goods-receipts/receivable/": { body: [] },
+  });
+  renderAt("/goods-receipts", <GoodsReceiptsPage me={sampleUser} />);
+  const table = await screen.findByRole("table", { name: "Goods receipts" });
+  for (const text of [
+    "Draft of Kamal",
+    "Excess, waiting for Ruwan (Director)",
+    "Confirmed by Kamal",
+    "Reversal, waiting for Ruwan (Director)",
+    "Reversed, approved by Ruwan",
+  ])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

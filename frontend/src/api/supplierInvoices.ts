@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, firstName, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 export type InvoiceStatus = "draft" | "held" | "exception_requested" | "posted" | "cancelled";
@@ -16,6 +19,28 @@ export interface InvoiceSummary {
   total_amount: string;
   total_lkr: string;
   created_by: string;
+  /** For clear statuses (owner, 16 Nov 2026). */
+  cancelled_by?: string | null;
+  people?: StatusPeople | null;
+}
+
+/** "Waiting for Ruwan (Director)" → "waiting for Ruwan (Director)", to follow "Exception, ". */
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+
+/** "Draft of Kumari", "Exception, waiting for Ruwan (Director)", "Held: exception returned by
+ * Ruwan", "Matched and posted, exception approved by Ruwan", "Cancelled by Kumari" (owner, 16 Nov 2026). */
+export function supplierInvoiceStatus(t: TFunction, i: Pick<InvoiceSummary, "status" | "created_by" | "cancelled_by" | "people">): string {
+  const last = i.people?.last;
+  if (i.status === "draft") return t("docStatus.draftOf", { person: firstName(i.created_by) });
+  if (i.status === "exception_requested") {
+    const waiting = approvalStatus(t, i, "");
+    if (waiting) return t("si.exceptionWaiting", { status: lowerFirst(waiting) });
+  }
+  if (i.status === "held" && last?.action === "return") return t("si.exceptionReturnedBy", { person: firstName(last.by) });
+  if (i.status === "held" && last?.action === "reject") return t("si.exceptionRefusedBy", { person: firstName(last.by) });
+  if (i.status === "posted" && last?.action === "approve") return t("si.exceptionApprovedBy", { person: firstName(last.by) });
+  if (i.status === "cancelled" && i.cancelled_by) return t("cancelled.by", { person: firstName(i.cancelled_by) });
+  return t(`si.statuses.${i.status}`);
 }
 
 export interface OpenLine {
@@ -55,8 +80,6 @@ export interface InvoiceDetail extends InvoiceSummary {
   notes: string;
   exception_reason: string;
   cancel_reason: string;
-  /** Who cancelled it and when (owner, 16 Nov 2026). */
-  cancelled_by?: string | null;
   cancelled_at?: string | null;
   journal: string | null;
   posted_at: string | null;

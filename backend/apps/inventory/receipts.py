@@ -591,3 +591,17 @@ def remove_photo(user: User, photo: GoodsReceiptPhoto) -> None:
             )
         photo.file.delete(save=False)
         photo.delete()
+
+
+def people(grns) -> dict[int, dict]:
+    """Who each GRN waits for and who last acted, for clear statuses (owner, 16 Nov 2026): the
+    excess approval, or the reversal once one was asked for."""
+    grns = list(grns)
+    excess = approvals.people_for(DOC, [g.pk for g in grns])
+    reversal = approvals.people_for(REVERSAL, [g.pk for g in grns])
+    later = (St.REVERSAL_REQUESTED, St.REVERSED)
+    return {
+        g.pk: found
+        for g in grns
+        if (found := (reversal if g.status in later else excess).get(g.pk)) is not None
+    }

@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, firstName, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 export type GRNStatus = "draft" | "awaiting_approval" | "confirmed" | "reversal_requested" | "reversed";
@@ -14,6 +17,25 @@ export interface GRNSummary {
   supplier: { id: number; code: string; name: string };
   delivery_note_no: string;
   created_by: string;
+  /** For clear statuses (owner, 16 Nov 2026). */
+  confirmed_by: string | null;
+  people?: StatusPeople | null;
+}
+
+/** "Waiting for Ruwan (Director)" → "waiting for Ruwan (Director)", to follow "Excess, ". */
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+
+/** "Draft of Kamal", "Returned by Ruwan", "Excess, waiting for Ruwan (Director)", "Confirmed by
+ * Kamal", "Reversal, waiting for Ruwan (Director)", "Reversed, approved by Ruwan" (owner, 16 Nov 2026). */
+export function grnStatus(t: TFunction, g: Pick<GRNSummary, "status" | "created_by" | "confirmed_by" | "people">): string {
+  const last = g.people?.last;
+  if (g.status === "awaiting_approval" || g.status === "reversal_requested") {
+    const waiting = approvalStatus(t, g, "");
+    if (waiting) return t(g.status === "awaiting_approval" ? "grn.excessWaiting" : "grn.reversalWaiting", { status: lowerFirst(waiting) });
+  }
+  if (g.status === "confirmed" && g.confirmed_by) return t("grn.confirmedByShort", { person: firstName(g.confirmed_by) });
+  if (g.status === "reversed" && last?.action === "approve") return t("grn.reversedBy", { person: firstName(last.by) });
+  return approvalStatus(t, g, "") ?? t(`grn.statuses.${g.status}`);
 }
 
 export type PackageType = "none" | "bag" | "bar" | "plate" | "coil" | "counted";
@@ -79,7 +101,6 @@ export interface GRNDetail extends GRNSummary {
   vehicle_no: string;
   supplier_invoice_no: string;
   notes: string;
-  confirmed_by: string | null;
   confirmed_at: string | null;
   reversal_reason: string;
   reversed_at: string | null;

@@ -111,6 +111,9 @@ Status: `[ ]` to do · `[x]` done
     accepts the excess or sends the GRN back. A confirmed GRN, its lines and photos never
     change (database guard); photos can still be added. A reversal needs a reason and the
     Director, takes the quantities off the PO again, and is final. Reminders after 1 day.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kamal", "Returned by Ruwan", "Excess,
+    waiting for Ruwan (Director)", "Confirmed by Kamal", "Reversal, waiting for Ruwan
+    (Director)", "Reversed, approved by Ruwan".
 
 - [x] **P16-07 Package-level receiving** (spec 6A.2)
   Bags, bars, plates, coils, boxes: one row per package with lot or heat number, gross, tare,
@@ -197,6 +200,9 @@ Status: `[ ]` to do · `[x]` done
     Accounts payable for the supplier; due date from the supplier's terms. Supplier +
     invoice number is unique across supplier invoices and vouchers (service and database,
     both ways). A posted or cancelled invoice never changes (database guard).
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kumari", "Exception, waiting for Ruwan
+    (Director)", "Held: exception returned by Ruwan" (or refused), "Matched and posted,
+    exception approved by Ruwan", "Cancelled by Kumari"; otherwise as before.
 
 - [x] **P16-11 Payment vouchers from matched invoices** (spec 5A.5)
   A voucher for PO goods is made from matched or exception-approved invoices, carries the PO,
@@ -243,6 +249,9 @@ Status: `[ ]` to do · `[x]` done
     a replacement. Confirmed returns and debit notes never change (database guards). Short
     deliveries need no return: only what arrived is received and invoiced. A printed return
     note can follow with the reports (P16-13).
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kamal", "Waiting for Ruwan
+    (Director)", "Sent back by Ruwan" (not "Returned by", which would read as the goods),
+    "Goods returned" or "Goods returned, approved by Ruwan".
 
 ## G. Reports and go-live
 

@@ -26,8 +26,8 @@ def _error(error):
     return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def _summary(r: SupplierReturn) -> dict:
-    return {
+def _summary(r: SupplierReturn, people=None) -> dict:
+    row = {
         "id": r.id,
         "number": r.number,
         "kind": r.kind,
@@ -39,6 +39,10 @@ def _summary(r: SupplierReturn) -> dict:
         "reason": r.reason,
         "created_by": r.created_by.full_name,
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Returned, approved…".
+    if people is not None:
+        row["people"] = people.get(r.pk)
+    return row
 
 
 def _lots(grn, kind) -> list[dict]:
@@ -62,7 +66,7 @@ def _lots(grn, kind) -> list[dict]:
 
 
 def _detail(r: SupplierReturn, user) -> dict:
-    return _summary(r) | {
+    return _summary(r, approvals.people_for(returns.DOC, [r.pk])) | {
         "vehicle_no": r.vehicle_no,
         "confirmed_at": r.confirmed_at,
         "journal": None if r.journal_entry_id is None else r.journal_entry.number,
@@ -153,7 +157,9 @@ class ReturnListView(_Returns):
         if params.get("waiting") == "me":
             ids = [s.document_id for s in approvals.waiting_for(request.user, returns.DOC)]
             rows = rows.filter(pk__in=ids)
-        return Response([_summary(r) for r in rows[:2000]])
+        rows = list(rows[:2000])
+        people = approvals.people_for(returns.DOC, [r.pk for r in rows])
+        return Response([_summary(r, people) for r in rows])
 
     def post(self, request):
         body = ReturnIn(data=request.data)

@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
-import { INVOICE_STATUSES, listSupplierInvoices, siKey } from "../api/supplierInvoices";
+import { INVOICE_STATUSES, listSupplierInvoices, siKey, supplierInvoiceStatus } from "../api/supplierInvoices";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
@@ -66,7 +66,7 @@ export default function SupplierInvoicesPage({ me }: { me: CurrentUser }) {
             { id: "supplier", header: t("po.supplier"), value: (r) => r.supplier.name },
             { id: "due", header: t("si.due"), value: (r) => r.due_date },
             { id: "total", header: t("vouchers.total"), value: (r) => r.total_amount, cell: (r) => `${r.currency} ${formatDecimal(r.total_amount)}` },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`si.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => supplierInvoiceStatus(t, r) },
           ]}
         />
       )}

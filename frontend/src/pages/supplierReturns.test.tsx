@@ -112,3 +112,36 @@ test("the Director approves a return of accepted goods and sees the debit note",
   );
   expect(await screen.findByText(/DN26110201: LKR 1,000.00 for 10 returned/)).toBeInTheDocument();
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says who a return waits for and who approved it", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<ReturnDetail>) => ({
+    ...made,
+    id,
+    number: `SR2611000${id}`,
+    created_by: "Kamal Silva",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/supplier-returns/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, { status: "awaiting_approval", people: { waiting: { person: ruwan, role: "Director" }, last: null } }),
+        row(3, { status: "draft", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+        row(4, { status: "confirmed", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        row(5, { status: "confirmed", people: null }),
+      ],
+    },
+  });
+  renderAt("/supplier-returns", <SupplierReturnsPage me={stores} />);
+  const table = await screen.findByRole("table", { name: "Supplier returns" });
+  for (const text of [
+    "Draft of Kamal",
+    "Waiting for Ruwan (Director)",
+    "Sent back by Ruwan",
+    "Goods returned, approved by Ruwan",
+    "Goods returned",
+  ])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

@@ -7,7 +7,7 @@ import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import { listGoodsReceipts } from "../api/goodsReceipts";
-import { createReturn, getReturnLots, listReturns, rtnKey, type ReturnKind } from "../api/supplierReturns";
+import { createReturn, getReturnLots, listReturns, rtnKey, supplierReturnStatus, type ReturnKind } from "../api/supplierReturns";
 import DataTable from "../components/DataTable";
 import { formatQuantity } from "../lib/decimal";
 
@@ -56,7 +56,7 @@ export default function SupplierReturnsPage({ me }: { me: CurrentUser }) {
             { id: "grn", header: t("grn.number"), value: (r) => r.grn.number },
             { id: "supplier", header: t("po.supplier"), value: (r) => r.supplier.name },
             { id: "kind", header: t("rtn.kind"), value: (r) => t(`rtn.kinds.${r.kind}`) },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`rtn.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => supplierReturnStatus(t, r) },
           ]}
         />
       )}

@@ -339,3 +339,19 @@ def test_drawings_are_attached_to_a_line(executive, other_executive, unilever):
     assert "Only PDF, JPG and PNG" in not_pdf.json()["detail"]
     removed = client.delete(f"{url}{stored['id']}/")
     assert removed.status_code == 200 and removed.json()["files"] == []
+
+
+# --- A missing tax rate (owner, 19 Nov 2026) ---------------------------------------------------
+
+
+def test_a_tax_code_without_a_rate_today_says_so_and_saves_nothing(executive, unilever, vat):
+    """VAT-SSCL-M with no SSCL-M rate entered: the page showed "Something went wrong"."""
+    client = as_user(executive)
+    data = body(unilever)
+    data["lines"][0]["tax_code"] = "VAT-SSCL-M"
+    answer = client.post("/api/v1/quotations/", data, format="json")
+    assert answer.status_code == 400
+    assert answer.json()["detail"].startswith("SSCL-M has no rate on ")
+    assert "Settings → Tax rates" in answer.json()["detail"]
+    assert not Quotation.objects.exists()
+    assert client.post("/api/v1/quotations/", body(unilever), format="json").status_code == 201

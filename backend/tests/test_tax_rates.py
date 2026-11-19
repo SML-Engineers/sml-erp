@@ -140,3 +140,35 @@ def test_the_control_panel(admin, director, in_use):
     assert row["current"]["rate"] == "2.5" and row["pending"] == []
     clerk = person("clerk@sml.lk", "clerk")
     assert as_user(clerk).get("/api/v1/settings/tax-rates/").status_code == 403
+
+
+# --- The Director is told (owner, 19 Nov 2026) -------------------------------------------------
+
+
+def test_the_director_is_told_a_change_waits_and_the_proposer_hears_the_decision(
+    accountant, director, in_use
+):
+    from apps.core.models import Notification
+
+    change = taxes.propose_rate(
+        accountant, in_use, effective_from=TODAY, rate="2.5", reason="Gazette 2499/01"
+    )
+    told = Notification.objects.get(user=director, event="approval_waiting")
+    assert told.title == (
+        f"Tax rate {in_use.code} 2.5% from {TODAY:%d/%m/%Y} is waiting for you to confirm"
+    )
+    assert told.link == "/settings/tax-rates"
+    assert "Gazette 2499/01" in told.body
+    assert not Notification.objects.filter(user=accountant, event="approval_waiting").exists()
+    taxes.confirm_rate(director, change)
+    heard = Notification.objects.get(user=accountant, event="document_approved")
+    assert heard.title.endswith(f"was confirmed by {director.full_name}")
+    again = taxes.propose_rate(
+        accountant, in_use, effective_from=TODAY + timedelta(days=5), rate="3", reason="Draft"
+    )
+    taxes.reject_rate(director, again, "Not in the gazette")
+    refused = Notification.objects.get(user=accountant, event="document_rejected")
+    assert (refused.title, refused.body) == (
+        f"Tax rate {in_use.code} 3% was rejected by {director.full_name}",
+        "Not in the gazette",
+    )

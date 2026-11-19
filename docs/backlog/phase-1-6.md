@@ -349,6 +349,10 @@ The owner's answers to the open go-live questions (also in spec 8.4):
     Director action "confirm_tax_rates" (core migration 0020); database guard: confirmed,
     rejected and withdrawn rates never change status, and a confirmed rate in force on a
     used tax never changes.
+  - Owner, 19 Nov 2026: **the Director is told.** A proposed rate sends a bell notice (and
+    email, as each person chose) to everyone who may confirm it, except the person who
+    entered it: "Tax rate SSCL-M 2.125% from 19/11/2026 is waiting for you to confirm". The
+    person who entered it hears when it is confirmed or rejected.
 
 - [x] **P16-18 Price differences into the cost of stock (IAS 2)**
   An invoice price different from the PO price adjusts the value of the goods still in

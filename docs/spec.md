@@ -1561,6 +1561,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Quotation validity in days; 14 days by default (owner, 19 Nov 2026) | "Valid for (days)" beside "Valid until", each filling the other from the quotation's date; a new quotation is valid for 14 days unless changed (was 7) | 5.1 |
 | EXW is every customer's default delivery term (owner, 19 Nov 2026) | New customers, customers without a term and new quotations and sales orders are EXW – Ex works unless changed; payment terms stay the customer's own (days) | 5.4, 5.1 |
 | The Director is told about a tax rate change (owner, 19 Nov 2026) | A proposed rate notifies everyone who may confirm it (not its author); its author is told when it is confirmed or rejected; the notice opens Settings → Tax rates | 4.4 |
+| "Costing for" reads Machining and Production (owner, 19 Nov 2026) | The quotation costing's second choice is called Production (was Moulding); the moulding costing behind it is unchanged | 5.1 |
 
 **Still needed for initial setup**
 

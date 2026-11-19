@@ -501,6 +501,12 @@ test("a moulded line is costed from resin, cavities, cycle time, packing and the
   renderAt("/quotations/12/costing", <QuotationCostingPage />, "/quotations/:id/costing");
   const form = await screen.findByRole("form", { name: "Costing of line 1" });
   expect(within(form).getByLabelText("Costing for")).toHaveValue("moulding"); // IM moulds
+  // Owner, 19 Nov 2026: the choices read "Machining" and "Production".
+  expect(
+    within(within(form).getByLabelText("Costing for"))
+      .getAllByRole("option")
+      .map((o) => o.textContent),
+  ).toEqual(["Machining", "Production"]);
   fireEvent.change(within(form).getByLabelText("Resin"), { target: { value: "8" } });
   expect(within(within(form).getByLabelText("Resin")).queryByRole("option", { name: /MB-WHITE/ })).not.toBeInTheDocument();
   fireEvent.change(within(form).getByLabelText("Part weight (g)"), { target: { value: "10" } });

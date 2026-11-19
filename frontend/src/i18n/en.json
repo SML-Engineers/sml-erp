@@ -1748,7 +1748,7 @@
     "method": "Costing for",
     "methods": {
       "machining": "Machining",
-      "moulding": "Moulding"
+      "moulding": "Production"
     },
     "resin": "Resin",
     "partWeight": "Part weight (g)",

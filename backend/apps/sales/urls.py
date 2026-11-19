@@ -57,6 +57,11 @@ urlpatterns = [
         name="quotation-line-costing",
     ),
     path(
+        "quotations/<int:pk>/costing/<int:line_no>/use-price/",
+        views.QuotationLineUsePriceView.as_view(),
+        name="quotation-line-use-price",
+    ),
+    path(
         "quotations/<int:pk>/submit/",
         views.QuotationSubmitView.as_view(),
         name="quotation-submit",

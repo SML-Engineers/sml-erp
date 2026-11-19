@@ -619,6 +619,66 @@ def remove(user: User, quotation: Quotation, line_no: int) -> None:
         QuotationCosting.objects.filter(line__quotation=quotation, line__line_no=line_no).delete()
 
 
+def use_price(user: User, quotation: Quotation, line_no: int, quantity) -> Quotation:
+    """Put the suggested price for one quantity (the line's own, or one of its quantity
+    breaks) on the quotation, as the saved costing works it out (owner, 19 Nov 2026: the
+    "Use this price" button). The quotation is saved again as usual (taxes, totals); with a
+    quotation discount the price before the discount is set, so the net price is the
+    suggested one."""
+    from . import services
+
+    with transaction.atomic():
+        return _use_price(services, user, quotation, line_no, quantity)
+
+
+def _use_price(services, user: User, quotation: Quotation, line_no: int, quantity) -> Quotation:
+    quotation = Quotation.objects.select_for_update().get(pk=quotation.pk)
+    if not can_edit(user, quotation):
+        raise SalesError(
+            "Only the person who made the quotation changes its prices, while it is a draft."
+        )
+    lines = list(quotation.lines.select_related("tax_code").prefetch_related("breaks"))
+    line = next((x for x in lines if x.line_no == line_no), None)
+    if line is None:
+        raise SalesError(f"The quotation has no line {line_no}.")
+    saved = QuotationCosting.objects.filter(line=line).first()
+    if saved is None:
+        raise SalesError("Save the costing of this line first.")
+    quantity = _number(quantity, "quantity", 3, positive=True)
+    if quantity != line.quantity and quantity not in {b.quantity for b in line.breaks.all()}:
+        raise SalesError(f"Line {line_no} has no price for {quantity.normalize():f} pieces.")
+    suggested = figures(saved, quantity, 0, quotation.exchange_rate)["suggested_price"]
+    keep = 1 - quotation.discount_pct / HUNDRED
+    price = (suggested / keep).quantize(CENT, ROUND_HALF_UP) if keep > 0 else suggested
+
+    inputs = []
+    for x in lines:
+        own = price if (x.pk == line.pk and x.quantity == quantity) else x.unit_price
+        breaks = [
+            services.BreakInput(
+                quantity=b.quantity,
+                unit_price=price if (x.pk == line.pk and b.quantity == quantity) else b.unit_price,
+            )
+            for b in x.breaks.all()
+        ]
+        inputs.append(
+            services.LineInput(
+                id=x.pk,
+                description=x.description,
+                quantity=x.quantity,
+                unit_price=own,
+                drawing_no=x.drawing_no,
+                drawing_rev=x.drawing_rev,
+                unit=x.unit,
+                min_order_qty=x.min_order_qty,
+                tax_code=x.tax_code,
+                breaks=breaks,
+                is_tooling=x.is_tooling,
+            )
+        )
+    return services.save(user, quotation, lines=inputs)
+
+
 # --- What the costing page shows --------------------------------------------------------
 
 

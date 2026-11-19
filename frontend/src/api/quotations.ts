@@ -343,6 +343,9 @@ export const saveLineCosting = (id: number, lineNo: number, input: CostingInput)
   apiSend<CostingPage>("PUT", `/quotations/${id}/costing/${lineNo}/`, input);
 export const removeLineCosting = (id: number, lineNo: number) =>
   apiSend<CostingPage>("DELETE", `/quotations/${id}/costing/${lineNo}/`);
+/** "Use this price": the costing's suggested price for one quantity goes on the line (owner, 19 Nov 2026). */
+export const applyCostingPrice = (id: number, lineNo: number, quantity: string) =>
+  apiSend<CostingPage>("POST", `/quotations/${id}/costing/${lineNo}/use-price/`, { quantity });
 
 // --- Approval, sending, outcome and revisions (P15-06) ----------------------------------
 

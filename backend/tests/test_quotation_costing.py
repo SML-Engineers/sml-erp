@@ -506,3 +506,46 @@ def test_the_quotation_itself_never_carries_costing(costed, executive, manager):
     listing = as_user(executive).get("/api/v1/quotations/").json()
     assert all("costing" not in row for row in listing)
     assert as_user(executive).get(f"/api/v1/quotations/{costed.pk}/").json()["can_see_costing"]
+
+
+# --- "Use this price" (owner, 19 Nov 2026) -----------------------------------------------------
+
+
+def test_use_this_price_puts_the_suggested_price_on_the_line_or_the_break(costed, executive):
+    at_10, at_50 = results(costed)
+    client = as_user(executive)
+    url = f"/api/v1/quotations/{costed.pk}/costing/1/use-price/"
+    answer = client.post(url, {"quantity": "10"}, format="json")
+    assert answer.status_code == 200, answer.json()
+    line = costed.lines.get()
+    assert line.unit_price == at_10["suggested_price"] == Decimal("2971.52")
+    assert [b.unit_price for b in line.breaks.all()] == [Decimal("2700.00")]  # unchanged
+    assert line.amount == Decimal("29715.20")  # the quotation is worked out again
+    assert line.costing is not None  # the costing stays
+    client.post(url, {"quantity": "50"}, format="json")
+    assert costed.lines.get().breaks.get().unit_price == at_50["suggested_price"]
+    assert costed.lines.get().unit_price == Decimal("2971.52")
+
+
+def test_use_this_price_allows_for_the_quotation_discount(executive, unilever, rates, lathe, mill):
+    q = quotation(executive, unilever, discount_pct="10")
+    costing.save(executive, q, 1, shaft(rates, lathe, mill))
+    costing.use_price(executive, q, 1, "10")
+    line = q.lines.get()
+    assert line.unit_price == Decimal("3301.69")  # 2,971.52 ÷ 0.9
+    assert results(q)[0]["quoted_price"] == Decimal("2971.52")  # after the discount
+
+
+def test_use_this_price_is_refused_when_it_cannot_apply(
+    costed, executive, other_executive, unilever, rates
+):
+    with pytest.raises(SalesError, match="no price for 20 pieces"):
+        costing.use_price(executive, costed, 1, "20")
+    with pytest.raises(SalesError, match="no line 2"):
+        costing.use_price(executive, costed, 2, "10")
+    with pytest.raises(SalesError, match="Only the person who made the quotation"):
+        costing.use_price(other_executive, costed, 1, "10")
+    bare = quotation(executive, unilever)
+    with pytest.raises(SalesError, match="Save the costing of this line first"):
+        costing.use_price(executive, bare, 1, "10")
+    assert costed.lines.get().unit_price == Decimal("3000.00")

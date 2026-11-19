@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router";
 
 import { ApiError } from "../api/client";
 import {
+  applyCostingPrice,
   getCosting,
   quotationsKey,
   removeLineCosting,
@@ -551,6 +552,18 @@ function Results({ page, line, results }: { page: CostingPage; line: CostingLine
   rows.push(["quoted", (r) => (foreign ? `${page.currency} ${formatDecimal(r.quoted_price)} = ${formatDecimal(r.quoted_price_lkr)}` : formatDecimal(r.quoted_price_lkr))]);
   rows.push(["quotedMargin", (r) => (r.quoted_margin_pct === null ? "—" : `${r.quoted_margin_pct}%`), true]);
 
+  // "Use this price" (owner, 19 Nov 2026): the suggested price goes on the quotation line, or
+  // on that quantity break, and the quotation is saved again.
+  const queryClient = useQueryClient();
+  const applyPrice = useMutation({
+    mutationFn: (quantity: string) => applyCostingPrice(page.quotation_id, line.line_no, quantity),
+    onSuccess: (latest) => {
+      queryClient.setQueryData([...quotationsKey, "costing", String(page.quotation_id)], latest);
+      void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "one", String(page.quotation_id)] });
+      void queryClient.invalidateQueries({ queryKey: [...quotationsKey, "list"] });
+    },
+  });
+
   return (
     <div className="table-wrap">
       <table aria-label={t("quoteCosting.resultsOf", { n: String(line.line_no) })}>
@@ -576,7 +589,28 @@ function Results({ page, line, results }: { page: CostingPage; line: CostingLine
             </tr>
           ))}
         </tbody>
+        {page.can_edit && line.costing && (
+          <tfoot>
+            <tr>
+              <th scope="row" />
+              {results.map((r) => (
+                <td key={r.quantity} className="num">
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={applyPrice.isPending}
+                    aria-label={t("quoteCosting.usePriceFor", { quantity: formatQuantity(r.quantity), unit: line.unit })}
+                    onClick={() => applyPrice.mutate(r.quantity)}
+                  >
+                    {t("quoteCosting.usePrice")}
+                  </button>
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
       </table>
+      <ErrorLine error={applyPrice.error} />
       {moulding && results[0].hours_per_1000 && (
         <p className="muted">{t("quoteCosting.hoursPer1000", { hours: results[0].hours_per_1000 })}</p>
       )}

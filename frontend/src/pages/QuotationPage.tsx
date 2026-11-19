@@ -39,7 +39,7 @@ import { getTaxes, taxesKey } from "../api/taxes";
 import OrderLinks from "../components/OrderLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
-import { formatDateTime } from "../lib/time";
+import { addDays, daysBetween, factoryToday, formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -65,6 +65,9 @@ const emptyLine = (): LineInput => ({
 });
 
 /** A quotation: entered and changed by its creator while a draft (spec 5.1). */
+/** A new quotation is valid for 14 days unless changed (owner, 19 Nov 2026; the server agrees). */
+const DEFAULT_VALID_DAYS = 14;
+
 export default function QuotationPage() {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -133,11 +136,19 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
     queryFn: () => listContacts(Number(customerId)),
     enabled: customerId !== "",
   });
+  // Owner, 19 Nov 2026: validity as a date or as a number of days from the quotation's date;
+  // either box fills the other. Only the date is saved (the printout shows both).
+  const quoteDate = quotation?.quote_date ?? factoryToday();
+  const [validDays, setValidDays] = useState(() => {
+    if (!quotation) return String(DEFAULT_VALID_DAYS);
+    const days = daysBetween(quotation.quote_date, quotation.valid_until);
+    return days === null ? "" : String(days);
+  });
   const [values, setValues] = useState({
     division: quotation?.division ?? "",
     contact: quotation?.contact ? String(quotation.contact.id) : "",
     currency: quotation?.currency ?? "",
-    valid_until: quotation?.valid_until ?? "",
+    valid_until: quotation?.valid_until ?? addDays(quoteDate, DEFAULT_VALID_DAYS),
     enquiry_ref: quotation?.enquiry_ref ?? "",
     payment_terms: quotation?.payment_terms ?? "",
     delivery_lead_time: quotation?.delivery_lead_time ?? "",
@@ -261,7 +272,35 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
       </label>
       <label>
         {t("quotations.validUntil")}
-        <input type="date" value={values.valid_until} placeholder={t("quotations.sevenDays")} onChange={(e) => set("valid_until")(e.target.value)} />
+        <input
+          type="date"
+          value={values.valid_until}
+          min={quoteDate}
+          placeholder={t("quotations.defaultDays")}
+          onChange={(e) => {
+            set("valid_until")(e.target.value);
+            const days = daysBetween(quoteDate, e.target.value);
+            setValidDays(days === null || days < 0 ? "" : String(days));
+          }}
+        />
+      </label>
+      <label>
+        {t("quotations.validDays")}
+        <input
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={365}
+          step={1}
+          value={validDays}
+          placeholder={String(DEFAULT_VALID_DAYS)}
+          onChange={(e) => {
+            const text = e.target.value;
+            setValidDays(text);
+            const days = Number(text);
+            set("valid_until")(text !== "" && Number.isInteger(days) && days >= 0 && days <= 365 ? addDays(quoteDate, days) : "");
+          }}
+        />
       </label>
       <label>
         {t("quotations.enquiryRef")}

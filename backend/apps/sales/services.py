@@ -36,7 +36,8 @@ CENT = Decimal("0.01")
 QTY = Decimal("0.001")
 MAX_LINES = 200
 MAX_BREAKS = 10
-DEFAULT_VALIDITY_DAYS = 7
+# Owner, 19 Nov 2026: 14 days for every customer (was 7).
+DEFAULT_VALIDITY_DAYS = 14
 MAX_FILES = 30
 MAX_FILE_BYTES = 20 * 1024 * 1024
 FILE_TYPES = {  # what the file really is, read from its first bytes

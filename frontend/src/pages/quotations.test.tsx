@@ -171,6 +171,27 @@ test("a quotation for an export customer starts from the customer's terms", asyn
   expect(screen.getByText(/1 EUR = LKR 325.400000/)).toBeInTheDocument();
 });
 
+// Owner, 19 Nov 2026: validity as a date or as a number of days; either box fills the other.
+test("the validity is typed as a number of days or picked as a date", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-19T04:00:00Z"));
+  mockApi(formApi());
+  renderAt("/quotations/new", <QuotationPage />, "/quotations/:id");
+  const form = await screen.findByRole("form", { name: "Quotation details" });
+  const days = within(form).getByLabelText("Valid for (days)");
+  const until = within(form).getByLabelText("Valid until");
+  // A new quotation starts at 14 days (owner, 19 Nov 2026).
+  expect(days).toHaveValue(14);
+  expect(until).toHaveValue("2026-12-03");
+  fireEvent.change(days, { target: { value: "21" } });
+  expect(until).toHaveValue("2026-12-10");
+  fireEvent.change(until, { target: { value: "2026-12-19" } });
+  expect(days).toHaveValue(30);
+  fireEvent.change(days, { target: { value: "" } });
+  expect(until).toHaveValue(""); // empty: the server's 14 days
+  vi.useRealTimers();
+});
+
 test("a quotation the user cannot change is shown read-only", async () => {
   mockApi(formApi({ "GET /api/v1/quotations/12/": { body: { ...saved, status: "sent", can_edit: false } } }));
   renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");

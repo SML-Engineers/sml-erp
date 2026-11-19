@@ -62,6 +62,10 @@ Status: `[ ]` to do · `[x]` done
     (e.g. VAT-SSCL-M without an SSCL-M rate) showed "Something went wrong". Now every page
     shows the accounting rule's own message ("SSCL-M has no rate on 2026-11-19. The Admin or
     the Accountant enters it under Settings → Tax rates.") and nothing is saved.
+  - Owner, 19 Nov 2026: **validity in days.** Beside "Valid until" is "Valid for (days)";
+    typing 14 fills the date, picking a date fills the days (counted from the quotation's
+    date). Only the date is saved; the printout already shows both. A new quotation starts
+    at **14 days** for every customer (was 7), on the page and on the server.
 
 - [x] **P15-04 Machining costing** (spec 5.1)
   Per line, internal only: material (stock size and weight × material rate + cutting

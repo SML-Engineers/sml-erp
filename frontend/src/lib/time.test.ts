@@ -1,4 +1,4 @@
-import { factoryToday, formatDate, formatDateTime, formatTime, normaliseTime } from "./time";
+import { addDays, daysBetween, factoryToday, formatDate, formatDateTime, formatTime, normaliseTime } from "./time";
 
 test("moments show in Sri Lanka time on the 24-hour clock, whatever the PC's time zone", () => {
   // 15:30 UTC is 21:00 in Sri Lanka (UTC+05:30); 18:31 UTC crosses midnight there.
@@ -24,4 +24,14 @@ test("a typed time is tidied into HH:MM", () => {
   expect(normaliseTime("08.30")).toBe("08:30");
   expect(normaliseTime("25:00")).toBe("25:00");
   expect(normaliseTime("")).toBe("");
+});
+
+test("days are added to a date and counted between dates", () => {
+  expect(addDays("2026-11-19", 14)).toBe("2026-12-03");
+  expect(addDays("2026-12-25", 7)).toBe("2027-01-01");
+  expect(addDays("2027-02-27", 2)).toBe("2027-03-01");
+  expect(daysBetween("2026-11-19", "2026-12-03")).toBe(14);
+  expect(daysBetween("2026-11-19", "2026-11-19")).toBe(0);
+  expect(daysBetween("2026-11-19", "2026-11-18")).toBe(-1);
+  expect(daysBetween("", "2026-11-18")).toBeNull();
 });

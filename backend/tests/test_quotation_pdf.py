@@ -154,7 +154,7 @@ def test_the_quotation_prints_like_the_owners_sample(approved):
         b"Drawing AL-221",
         b"For 5 pcs: LKR 11,000.00 each",
         b"EXW",
-        b"07 Days",
+        b"14 Days",  # the default validity (owner, 19 Nov 2026; was 07)
         b"Managing Director",
         b"EXCELLENCE THROUGH EXPERTISE",
     ):

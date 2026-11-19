@@ -32,6 +32,11 @@ Status: `[ ]` to do · `[x]` done
     deactivated, never deleted (rule 9, database guard); every change is in the audit log.
   - Duplicate warning on the same name or VAT number.
   - The Sales Executive and Sales Manager roles are switched on so they can be assigned.
+  - Owner, 19 Nov 2026: **EXW by default.** Every customer's delivery term is "EXW – Ex
+    works" unless changed (e.g. FOB for an export customer); a blank term is saved as EXW,
+    and customers without one were given EXW (masters migration 0012). Quotations and
+    direct sales orders use EXW when the customer has no other term. Payment terms were
+    already the customer's own ("Payment terms (days)", 30 unless changed).
 
 - [x] **P15-02 Costing rates** (spec 5.1, rule 11)
   Dated rate tables maintained by the Accountant: material rates (material or resin grade,

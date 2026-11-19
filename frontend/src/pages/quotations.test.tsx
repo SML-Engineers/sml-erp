@@ -192,6 +192,17 @@ test("the validity is typed as a number of days or picked as a date", async () =
   vi.useRealTimers();
 });
 
+// Owner, 19 Nov 2026: EXW unless the customer has another delivery term.
+test("a new quotation is ex works until a customer with another term is chosen", async () => {
+  mockApi(formApi());
+  renderAt("/quotations/new", <QuotationPage />, "/quotations/:id");
+  const form = await screen.findByRole("form", { name: "Quotation details" });
+  expect(within(form).getByLabelText("Delivery term (Incoterm)")).toHaveValue("EXW");
+  fireEvent.change(within(form).getByRole("combobox", { name: "Customer" }), { target: { value: "nordic" } });
+  fireEvent.mouseDown(await within(form).findByRole("option", { name: "C0004 Nordic Plast AB" }));
+  await waitFor(() => expect(within(form).getByLabelText("Delivery term (Incoterm)")).toHaveValue("FOB"));
+});
+
 test("a quotation the user cannot change is shown read-only", async () => {
   mockApi(formApi({ "GET /api/v1/quotations/12/": { body: { ...saved, status: "sent", can_edit: false } } }));
   renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");

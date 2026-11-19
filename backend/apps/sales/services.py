@@ -239,7 +239,8 @@ def _header(user: User, quotation: Quotation | None, values: dict) -> dict:
         value = values.get(name, getattr(quotation, name) if quotation else default)
         return (value or "").strip()[:limit]
 
-    incoterm = text("incoterm", customer.incoterm, 3).upper()
+    # Owner, 19 Nov 2026: EXW unless the customer has another delivery term.
+    incoterm = text("incoterm", customer.incoterm or "EXW", 3).upper()
     if incoterm and incoterm not in Customer.Incoterm.values:
         raise SalesError("The delivery term must be an Incoterm, for example EXW or FOB.")
     terms = f"{customer.payment_terms_days} days" if customer.payment_terms_days else "On receipt"

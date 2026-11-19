@@ -88,6 +88,8 @@ test("an export customer is added with its currency, country and delivery term",
   expect(within(form).queryByLabelText("Country")).not.toBeInTheDocument(); // only for export customers
   fireEvent.click(within(form).getByLabelText("Export customer"));
   fireEvent.change(within(form).getByLabelText("Country"), { target: { value: "Sweden" } });
+  // EXW for every customer unless changed (owner, 19 Nov 2026).
+  expect(within(form).getByLabelText("Delivery term (Incoterm)")).toHaveValue("EXW");
   fireEvent.change(within(form).getByLabelText("Delivery term (Incoterm)"), { target: { value: "FOB" } });
   expect(within(form).getByLabelText("Credit limit")).toBeDisabled(); // the Accountant's or the Director's
   fireEvent.click(within(form).getByRole("button", { name: "Save" }));

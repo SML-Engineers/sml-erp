@@ -152,7 +152,7 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
     enquiry_ref: quotation?.enquiry_ref ?? "",
     payment_terms: quotation?.payment_terms ?? "",
     delivery_lead_time: quotation?.delivery_lead_time ?? "",
-    incoterm: quotation?.incoterm ?? "",
+    incoterm: quotation?.incoterm ?? "EXW",
     notes: quotation?.notes ?? "",
     discount_pct: quotation && Number(quotation.discount_pct) !== 0 ? quotation.discount_pct : "",
   });
@@ -186,7 +186,7 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
         ...now,
         contact: chosen.main_contact ? String(chosen.main_contact.id) : "",
         currency: chosen.currency,
-        incoterm: chosen.incoterm,
+        incoterm: chosen.incoterm || "EXW", // EXW unless the customer has another (owner, 19 Nov 2026)
         payment_terms: chosen.payment_terms_days ? `${chosen.payment_terms_days} days` : t("quotations.onReceipt"),
       }));
     }

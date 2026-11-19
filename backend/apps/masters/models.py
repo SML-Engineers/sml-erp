@@ -717,7 +717,10 @@ class Customer(models.Model):
     )
     is_export = models.BooleanField("Export customer", default=False)
     country = models.CharField(max_length=60, blank=True)
-    incoterm = models.CharField(max_length=3, choices=Incoterm.choices, blank=True)
+    # Owner, 19 Nov 2026: EXW for every customer unless changed (migration 0012).
+    incoterm = models.CharField(
+        max_length=3, choices=Incoterm.choices, blank=True, default=Incoterm.EXW
+    )
     port_of_destination = models.CharField(max_length=100, blank=True)
     notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)

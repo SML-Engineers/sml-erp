@@ -108,7 +108,7 @@ def _check_details(values: dict) -> dict:
             raise MastersError(
                 "The delivery term must be an Incoterm: " + ", ".join(Customer.Incoterm.values)
             )
-        cleaned["incoterm"] = term
+        cleaned["incoterm"] = term or Customer.Incoterm.EXW  # owner, 19 Nov 2026
     return cleaned
 
 

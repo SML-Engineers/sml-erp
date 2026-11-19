@@ -355,3 +355,15 @@ def test_a_tax_code_without_a_rate_today_says_so_and_saves_nothing(executive, un
     assert "Settings → Tax rates" in answer.json()["detail"]
     assert not Quotation.objects.exists()
     assert client.post("/api/v1/quotations/", body(unilever), format="json").status_code == 201
+
+
+def test_a_quotation_is_ex_works_unless_the_customer_or_the_user_says_otherwise(
+    executive, unilever, vat
+):
+    """Owner, 19 Nov 2026: EXW by default for every customer."""
+    client = as_user(executive)
+    Customer.objects.filter(pk=unilever.pk).update(incoterm="")  # an old customer, no term
+    made = client.post("/api/v1/quotations/", body(unilever), format="json").json()
+    assert made["incoterm"] == "EXW"
+    chosen = client.post("/api/v1/quotations/", body(unilever, incoterm="CIF"), format="json")
+    assert chosen.json()["incoterm"] == "CIF"

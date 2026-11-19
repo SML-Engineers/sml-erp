@@ -372,3 +372,38 @@ def test_the_credit_terms_api(executive, accountant, unilever):
         path, {"credit_limit": "", "payment_terms_days": 60, "reason": "No limit"}, format="json"
     )
     assert cleared.json()["credit_limit"] is None
+
+
+# --- EXW by default (owner, 19 Nov 2026) -------------------------------------------------------
+
+
+def test_every_customer_starts_with_exw_and_may_change_it(executive):
+    plain = customers.create_customer(executive, {"name": "Local Moulders"})
+    assert plain.incoterm == "EXW"
+    cleared = customers.create_customer(executive, {"name": "Cleared Ltd", "incoterm": ""})
+    assert cleared.incoterm == "EXW"
+    export = customers.create_customer(
+        executive,
+        {"name": "Nordic AB", "currency": "EUR", "is_export": True, "country": "Sweden"}
+        | {"incoterm": "FOB"},
+    )
+    assert export.incoterm == "FOB"
+
+
+def test_customers_without_a_delivery_term_get_exw_once(executive):
+    from importlib import import_module
+
+    from django.apps import apps
+
+    step = import_module("apps.masters.migrations.0012_customer_delivery_term_exw")
+    blank = customers.create_customer(executive, {"name": "Old Customer"})
+    fob = customers.create_customer(
+        executive,
+        {"name": "Old Exporter", "currency": "EUR", "is_export": True, "country": "Sweden"}
+        | {"incoterm": "FOB"},
+    )
+    Customer.objects.filter(pk=blank.pk).update(incoterm="")
+    step.blank_to_exw(apps, None)
+    blank.refresh_from_db()
+    fob.refresh_from_db()
+    assert (blank.incoterm, fob.incoterm) == ("EXW", "FOB")

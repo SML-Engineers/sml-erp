@@ -151,7 +151,7 @@ function CustomerForm(props: { me: CurrentUser; customer?: Customer; onDone: (id
     start.currency = customer?.currency ?? "LKR";
     start.payment_terms_days = String(customer?.payment_terms_days ?? 30);
     start.credit_limit = customer?.credit_limit ?? "";
-    start.incoterm = customer?.incoterm ?? "";
+    start.incoterm = customer?.incoterm || "EXW"; // EXW unless changed (owner, 19 Nov 2026)
     return start;
   });
   const [isExport, setIsExport] = useState(customer?.is_export ?? false);

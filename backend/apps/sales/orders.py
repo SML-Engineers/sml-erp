@@ -242,7 +242,7 @@ def direct(
             payment_terms=(
                 f"{customer.payment_terms_days} days" if customer.payment_terms_days else ""
             ),
-            incoterm=customer.incoterm,
+            incoterm=customer.incoterm or "EXW",  # owner, 19 Nov 2026
             contact=customer.contacts.filter(is_main=True, is_active=True).first(),
         )
         for key, value in _header(values, order).items():

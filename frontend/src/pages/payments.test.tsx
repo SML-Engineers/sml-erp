@@ -181,3 +181,49 @@ test("a voucher of dollar invoices can be paid from the dollar account, in dolla
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "POST")!;
   expect(JSON.parse(String(init!.body))).toMatchObject({ account: 4, amount: "12500.00" });
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list of payments made.
+test("the payments made say paid, who a cancellation waits for and who decided", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const asked = { id: 1, reason: "Cheque lost", requested_by: "Sunil Perera", requested_at: "2026-11-18T10:00:00+05:30" };
+  const decided = { decided_at: "2026-11-18T11:00:00+05:30", reversal_entry: null, can_decide: false };
+  const made = (id: number, extra: Partial<Payment>): Payment => ({
+    ...payment,
+    id,
+    number: `PAY2611000${id}`,
+    journal_entry: `JV2611000${id}`,
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/payments/to-pay/": { body: [] },
+    "GET /api/v1/payments/": {
+      body: [
+        made(1, { cancelled: false, cancellation: null }),
+        made(2, {
+          cancellation: {
+            ...asked,
+            ...decided,
+            status: "pending",
+            decided_by: null,
+            decided_at: null,
+            waiting: { person: ruwan, role: "Director" },
+          },
+        }),
+        made(3, {
+          cancelled: true,
+          cancellation: { ...asked, ...decided, status: "approved", decided_by: ruwan, reversal_entry: "JV26110099" },
+        }),
+        made(4, { cancellation: { ...asked, ...decided, status: "rejected", decided_by: ruwan } }),
+      ],
+    },
+  });
+  renderAt("/payments", <PaymentsPage me={cashier} />);
+  const table = await screen.findByRole("table", { name: "Payments made" });
+  for (const text of [
+    "Paid",
+    "Cancellation waiting for Ruwan (Director)",
+    "Cancelled, approved by Ruwan",
+    "Paid (cancellation refused by Ruwan)",
+  ])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

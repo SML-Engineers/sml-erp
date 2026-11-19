@@ -271,3 +271,24 @@ def test_the_api_raises_sends_and_approves(buyer, director, sdd, masterbatch):
     assert done["approval"]["history"][-1]["by"] == director.full_name
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     assert as_user(clerk).get("/api/v1/purchase-orders/").status_code == 403
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_po_waits_for_and_who_returned_or_approved_it(draft, buyer, director):
+    client = as_user(buyer)
+
+    def people():
+        rows = client.get("/api/v1/purchase-orders/").json()
+        listed = next(r for r in rows if r["id"] == draft.pk)["people"]
+        assert client.get(f"/api/v1/purchase-orders/{draft.pk}/").json()["people"] == listed
+        return listed
+
+    orders.submit(buyer, draft)
+    assert people()["waiting"]["person"] == director.full_name
+    orders.send_back(director, draft, "Ask for a better price")
+    assert people()["last"] == {"action": "return", "by": director.full_name}
+    orders.submit(buyer, draft)
+    orders.approve(director, draft)
+    assert people() == {"waiting": None, "last": {"action": "approve", "by": director.full_name}}

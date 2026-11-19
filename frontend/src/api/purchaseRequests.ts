@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { apiGet, apiSend } from "./client";
 
 /** Reorder levels and purchase requests (P2-13). */
@@ -39,6 +42,14 @@ export interface RequestSummary {
   created_by: string;
   created_at: string;
   purchase_order: { id: number; label: string } | null;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Draft of Kamal", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan",
+ * "Rejected by Ruwan" (owner, 16 Nov 2026). */
+export function requestStatus(t: TFunction, r: Pick<RequestSummary, "status" | "created_by" | "people">): string {
+  return approvalStatus(t, r, "approved") ?? t(`prq.statuses.${r.status}`);
 }
 
 export interface RequestDetail extends RequestSummary {

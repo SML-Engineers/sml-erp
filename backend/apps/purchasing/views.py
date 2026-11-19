@@ -33,8 +33,8 @@ def _get(user, pk) -> PurchaseOrder:
     return get_object_or_404(orders.visible(user), pk=pk)
 
 
-def _summary(o: PurchaseOrder) -> dict:
-    return {
+def _summary(o: PurchaseOrder, people=None) -> dict:
+    row = {
         "id": o.id,
         "number": o.number,
         "revision": o.revision,
@@ -49,11 +49,15 @@ def _summary(o: PurchaseOrder) -> dict:
         "total_lkr": str(o.total_lkr),
         "created_by": o.created_by.full_name,
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Approved by Ruwan"…
+    if people is not None:
+        row["people"] = people.get(o.pk)
+    return row
 
 
 def _detail(o: PurchaseOrder, user) -> dict:
     state = approvals.state_of(orders.DOC, o.pk)
-    return _summary(o) | {
+    return _summary(o, approvals.people_for(orders.DOC, [o.pk])) | {
         "deliver_to": o.deliver_to,
         "pay_mode": o.pay_mode,
         "payment_terms": o.payment_terms,
@@ -163,7 +167,9 @@ class OrderListView(_Purchasing):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, orders.DOC)
             rows = rows.filter(pk__in=[s.document_id for s in waiting])
-        return Response([_summary(o) for o in rows[:2000]])
+        rows = list(rows[:2000])
+        people = approvals.people_for(orders.DOC, [o.pk for o in rows])
+        return Response([_summary(o, people) for o in rows])
 
     def post(self, request):
         body = OrderIn(data=request.data)

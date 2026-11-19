@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { can } from "../api/access";
 import type { CurrentUser } from "../api/auth";
-import { listPurchaseOrders, PO_STATUSES, poKey } from "../api/purchaseOrders";
+import { listPurchaseOrders, PO_STATUSES, poKey, poStatus } from "../api/purchaseOrders";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
 
@@ -73,7 +73,7 @@ export default function PurchaseOrdersPage({ me }: { me: CurrentUser }) {
             { id: "division", header: t("vouchers.division"), value: (r) => r.division },
             { id: "delivery", header: t("po.deliveryDate"), value: (r) => r.delivery_date ?? "" },
             { id: "total", header: t("vouchers.total"), value: (r) => r.total_amount, cell: (r) => `${r.currency} ${formatDecimal(r.total_amount)}` },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`po.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => poStatus(t, r) },
             { id: "by", header: t("po.raisedBy"), value: (r) => r.created_by },
           ]}
         />

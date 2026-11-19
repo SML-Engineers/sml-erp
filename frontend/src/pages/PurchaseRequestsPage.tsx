@@ -9,7 +9,7 @@ import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import { itemsKey, listItems } from "../api/items";
 import { listPayees } from "../api/payees";
-import { createRequest, listRequests, requestsKey } from "../api/purchaseRequests";
+import { createRequest, listRequests, requestsKey, requestStatus } from "../api/purchaseRequests";
 import SearchSelect from "../components/SearchSelect";
 
 const STATUSES = ["draft", "awaiting_approval", "approved", "rejected", "ordered", "cancelled"] as const;
@@ -66,7 +66,7 @@ export default function PurchaseRequestsPage({ me }: { me: CurrentUser }) {
                     </Link>
                     {r.from_reorder && <div className="muted">{t("prq.fromReorder")}</div>}
                   </td>
-                  <td>{t(`prq.statuses.${r.status}`)}</td>
+                  <td>{requestStatus(t, r)}</td>
                   <td>{r.division}</td>
                   <td>{r.supplier?.name ?? "—"}</td>
                   <td>{r.needed_by ?? ""}</td>

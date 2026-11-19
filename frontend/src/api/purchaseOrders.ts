@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { EmailDraft } from "./quotations";
 
@@ -20,6 +23,14 @@ export interface POSummary {
   total_amount: string;
   total_lkr: string;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Draft of Kasun", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan";
+ * after that "Partly received", "Received" and so on (owner, 16 Nov 2026). */
+export function poStatus(t: TFunction, o: Pick<POSummary, "status" | "created_by" | "people">): string {
+  return approvalStatus(t, o, "approved") ?? t(`po.statuses.${o.status}`);
 }
 
 export interface POLine {

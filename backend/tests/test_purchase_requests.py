@@ -261,3 +261,24 @@ def test_the_stores_person_sets_a_level_through_the_api(storeman, masterbatch, s
     )
     assert response.status_code == 201, response.content
     assert response.json()["level"] == "50.000"
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_request_waits_for_and_who_decided(level, storeman, director):
+    client = as_user(storeman)
+
+    def people(request):
+        rows = client.get("/api/v1/purchase-requests/").json()
+        listed = next(r for r in rows if r["id"] == request.pk)["people"]
+        assert client.get(f"/api/v1/purchase-requests/{request.pk}/").json()["people"] == listed
+        return listed
+
+    request = pr.submit(storeman, pr.from_level(storeman, level))
+    assert people(request)["waiting"]["person"] == director.full_name
+    pr.approve(director, request)
+    assert people(request)["last"] == {"action": "approve", "by": director.full_name}
+    refused = pr.submit(storeman, pr.from_level(storeman, level))
+    pr.reject(director, refused, "Enough in the other store")
+    assert people(refused)["last"] == {"action": "reject", "by": director.full_name}

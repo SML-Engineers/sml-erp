@@ -284,6 +284,8 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 18 Nov 2026: the "New purchase request" form shows only to those who may raise
     requests (stores or purchasing, enter); someone who can only view sees the list. Each
     line's item box takes the full width, with the quantity beside it.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kamal", "Waiting for Ruwan
+    (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan".
 
 ## D. Banking and cash
 

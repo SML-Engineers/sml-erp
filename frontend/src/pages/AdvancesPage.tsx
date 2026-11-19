@@ -10,6 +10,7 @@ import {
   RECEIPT_METHODS,
   recordAdvance,
   type ReceiptMethod,
+  advanceStatus,
 } from "../api/advances";
 import { can, canDo } from "../api/access";
 import type { CurrentUser } from "../api/auth";
@@ -93,7 +94,7 @@ export default function AdvancesPage({ me }: { me: CurrentUser }) {
               cell: (r) => `${r.currency} ${formatDecimal(r.amount)}`,
             },
             { id: "lkr", header: t("advances.amountLkr"), value: (r) => r.amount_lkr, money: true },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`advances.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => advanceStatus(t, r) },
           ]}
         />
       )}

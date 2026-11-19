@@ -11,6 +11,7 @@ import {
   rejectAdvance,
   setOffAdvance,
   type AdvanceDetail,
+  advanceStatus,
 } from "../api/advances";
 import { ApiError } from "../api/client";
 import { compareDecimal, formatDecimal } from "../lib/decimal";
@@ -44,7 +45,7 @@ export default function AdvancePage() {
       {a && (
         <section className="panel" aria-label={t("advances.details")}>
           <p>
-            <strong>{t(`advances.statuses.${a.status}`)}</strong> · {a.receipt_date} · {a.division} ·{" "}
+            <strong>{advanceStatus(t, a)}</strong> · {a.receipt_date} · {a.division} ·{" "}
             {t("vouchers.createdBy", { name: a.created_by })}
           </p>
           <dl className="details">

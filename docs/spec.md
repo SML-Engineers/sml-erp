@@ -1552,6 +1552,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Voucher tax only from a tax code (owner, 18 Nov 2026) | A voucher line's tax comes only from its tax code (NO-TAX or EXEMPT when none); typed-in tax is refused, and L2 cannot approve a line with tax but no code | 4.4, 6.0 |
 | Purchase request form only for those who raise them (owner, 18 Nov 2026) | Someone who can only view purchase requests sees the list, not the New purchase request form; the item box is full width | 6 |
 | Clear statuses: tax invoices and credit notes (owner, 16 Nov 2026) | Tax invoices say "Draft of Dilini", "Issued, not paid", "Partly paid", "Paid", "Paid, receipt waiting for approval" or "Credited in full"; credit notes say whose draft it is, who it waits for and who approved, returned or rejected it | 6.1 |
+| Clear statuses: customer advances and receipts (owner, 16 Nov 2026) | Receipts say who they wait for, who approved or rejected them, "cheque not yet due" or "Cheque returned"; advances also say "Partly set off" or "Set off in full" | 5.2, 6 |
 
 **Still needed for initial setup**
 

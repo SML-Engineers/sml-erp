@@ -33,8 +33,8 @@ def _get(user, pk) -> CustomerAdvance:
     return get_object_or_404(advances.visible(user), pk=pk)
 
 
-def _row(a: CustomerAdvance) -> dict:
-    return {
+def _row(a: CustomerAdvance, people=None) -> dict:
+    row = {
         "id": a.id,
         "number": a.number,
         "receipt_date": a.receipt_date,
@@ -57,10 +57,14 @@ def _row(a: CustomerAdvance) -> dict:
         "status": a.status,
         "created_by": a.created_by.full_name,
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Approved by Ruwan"…
+    if people is not None:
+        row["people"] = people.get(a.pk)
+    return row
 
 
 def _detail(a: CustomerAdvance, user) -> dict:
-    body = _row(a)
+    body = _row(a, approvals.people_for(advances.DOC, [a.pk]))
     can_set_off = (
         a.status == CustomerAdvance.Status.APPROVED
         and advances.balance_lkr(a) > 0
@@ -141,7 +145,9 @@ class AdvanceListView(_Advances):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, advances.DOC)
             rows = rows.filter(pk__in=[state.document_id for state in waiting])
-        return Response([_row(a) for a in rows[:2000]])
+        rows = list(rows[:2000])
+        people = approvals.people_for(advances.DOC, [a.pk for a in rows])
+        return Response([_row(a, people) for a in rows])
 
     def post(self, request):
         data = AdvanceInput(data=request.data)

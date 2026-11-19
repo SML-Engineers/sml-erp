@@ -639,3 +639,55 @@ def test_money_on_account_is_set_off_against_the_next_invoice(
     assert advances.balance_lkr(on_account) == D("200000.00") - (
         invoice.total_amount - D("40000.00")
     )
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def _people(client, url, pk):
+    listed = next(r for r in client.get(url).json() if r["id"] == pk)["people"]
+    assert client.get(f"{url}{pk}/").json()["people"] == listed
+    return listed
+
+
+def test_receipts_say_who_they_wait_for_and_who_decided(two, cashier, accountant, bank):
+    one, other = two
+    client = as_user(cashier)
+    url = "/api/v1/receipts/"
+    made = pay(cashier, bank, (one, "1000.00"))
+    waiting = _people(client, url, made.pk)["waiting"]
+    assert waiting["person"] == accountant.full_name
+    receipts.approve(accountant, made)
+    assert _people(client, url, made.pk) == {
+        "waiting": None,
+        "last": {"action": "approve", "by": accountant.full_name},
+    }
+    refused = pay(cashier, bank, (other, "500.00"))
+    receipts.reject(accountant, refused, "Not in the bank")
+    assert _people(client, url, refused.pk)["last"] == {
+        "action": "reject",
+        "by": accountant.full_name,
+    }
+
+
+def test_advances_say_who_they_wait_for_and_who_decided(two, cashier, accountant, bank):
+    one, _ = two
+    client = as_user(cashier)
+    url = "/api/v1/advances/"
+    ws = Division.objects.get(code="WS")
+    made = advances.record(
+        cashier,
+        customer=one.customer,
+        account=bank,
+        method="transfer",
+        amount="25000.00",
+        receipt_date=TODAY,
+        reference="CEFT 70002",
+        division=ws,
+    )
+    assert _people(client, url, made.pk)["waiting"]["person"] == accountant.full_name
+    advances.approve(accountant, made)
+    assert _people(client, url, made.pk)["last"] == {
+        "action": "approve",
+        "by": accountant.full_name,
+    }

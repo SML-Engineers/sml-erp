@@ -139,6 +139,8 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 17 Nov 2026: the advance page shows the sales order and proforma it was taken
     against (with links), not only the quotation; the list's column is now "Against" (sales
     order, else proforma, else quotation).
+  - Owner, 16 Nov 2026: **clear statuses** (see P2-07): "Waiting for Nimal (Accountant)",
+    "Approved by Nimal", "Partly set off", "Set off in full", "Rejected by Nimal".
 
 - [x] **P15-10 Sales orders** (spec 5.3)
   Created from an accepted quotation or a proforma, or entered directly for a repeat order:

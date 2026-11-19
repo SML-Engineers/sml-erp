@@ -191,3 +191,25 @@ test("with no tax invoice to set off, the advance says so instead of an empty bo
   fireEvent.change(within(form).getByLabelText("Invoice"), { target: { value: "2" } });
   expect(within(form).getByLabelText("Amount LKR")).toHaveValue("50000.00");
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says who an advance waits for, who decided and how much is set off", async () => {
+  const nimal = "Nimal Perera";
+  const row = (id: number, extra: Partial<AdvanceDetail>) => ({ ...made, id, number: `RC2610000${id}`, ...extra });
+  const approved = { people: { waiting: null, last: { action: "approve", by: nimal } } };
+  mockApi({
+    "GET /api/v1/advances/": {
+      body: [
+        row(1, { status: "awaiting_approval", people: { waiting: { person: nimal, role: "Accountant" }, last: null } }),
+        row(2, { status: "approved", amount_lkr: "75000.00", balance_lkr: "75000.00", ...approved }),
+        row(3, { status: "approved", amount_lkr: "75000.00", balance_lkr: "25000.00", ...approved }),
+        row(4, { status: "approved", amount_lkr: "75000.00", balance_lkr: "0.00", ...approved }),
+        row(5, { status: "rejected", people: { waiting: null, last: { action: "reject", by: nimal } } }),
+      ],
+    },
+  });
+  renderAt("/advances", <AdvancesPage me={accountant} />);
+  const table = await screen.findByRole("table", { name: "Customer advances" });
+  for (const text of ["Waiting for Nimal (Accountant)", "Approved by Nimal", "Partly set off", "Set off in full", "Rejected by Nimal"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

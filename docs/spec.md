@@ -1555,6 +1555,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Clear statuses: customer advances and receipts (owner, 16 Nov 2026) | Receipts say who they wait for, who approved or rejected them, "cheque not yet due" or "Cheque returned"; advances also say "Partly set off" or "Set off in full" | 5.2, 6 |
 | Clear statuses: delivery notes (owner, 16 Nov 2026) | Delivery notes say whose draft it is, "Issued by Kamal, not signed yet", "Signed by Sunil Fernando", ", invoiced" once on an issued tax invoice, or "Cancelled by Kamal" | 5.3 |
 | Clear statuses: purchase orders and purchase requests (owner, 16 Nov 2026) | Both say whose draft it is, who it waits for and who returned, approved or rejected it; purchase orders then show their receiving stage as before | 5A.1, 6 |
+| Clear statuses: GRNs, supplier invoices and supplier returns (owner, 16 Nov 2026) | GRNs say who confirmed them and who an excess or reversal waits for; supplier invoices say who an exception waits for, who returned, refused or approved it and who cancelled the invoice; supplier returns say who they wait for, "Sent back by" and "Goods returned, approved by" | 5A.2, 5A.4, 6 |
 
 **Still needed for initial setup**
 

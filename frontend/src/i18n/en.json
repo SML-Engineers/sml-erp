@@ -2404,7 +2404,11 @@
     "savePackages": "Save the packages",
     "savePackagesHelp": "The line's received and damaged quantities become the totals of its packages. Damaged packages count as damaged.",
     "qc": "QC",
-    "waitingForQc": "Waiting for QC"
+    "waitingForQc": "Waiting for QC",
+    "excessWaiting": "Excess, {{status}}",
+    "reversalWaiting": "Reversal, {{status}}",
+    "reversedBy": "Reversed, approved by {{person}}",
+    "confirmedByShort": "Confirmed by {{person}}"
   },
   "qc": {
     "title": "QC inspection",
@@ -2597,7 +2601,11 @@
     "advancesWaiting": "LKR {{amount}} paid in advance on these purchase orders is not yet set off.",
     "setOffNow": "Set off advances",
     "order": "Job / production order",
-    "orderOf": "Job or production order for {{item}}"
+    "orderOf": "Job or production order for {{item}}",
+    "exceptionWaiting": "Exception, {{status}}",
+    "exceptionReturnedBy": "Held: exception returned by {{person}}",
+    "exceptionRefusedBy": "Held: exception refused by {{person}}",
+    "exceptionApprovedBy": "Matched and posted, exception approved by {{person}}"
   },
   "rtn": {
     "title": "Supplier returns",
@@ -2637,7 +2645,10 @@
     "sendToDirector": "Send to the Director",
     "delete": "Delete the draft",
     "approve": "Approve the return",
-    "print": "Print the return note (PDF)"
+    "print": "Print the return note (PDF)",
+    "approvedBy": "Goods returned, approved by {{person}}",
+    "goodsReturned": "Goods returned",
+    "sentBackBy": "Sent back by {{person}}"
   },
   "pr": {
     "title": "Purchasing reports",

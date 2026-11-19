@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { InvoiceDetail } from "../api/supplierInvoices";
-import { mockApi, renderAt } from "../test-utils";
+import { mockApi, renderAt, sampleUser } from "../test-utils";
 import SupplierInvoicePage from "./SupplierInvoicePage";
+import SupplierInvoicesPage from "./SupplierInvoicesPage";
 
 const draft: InvoiceDetail = {
   id: 3,
@@ -118,4 +119,37 @@ test("the Director sees the differences and approves the exception", async () =>
     expect(calls).toHaveBeenCalledWith("/api/v1/supplier-invoices/3/approve/", expect.objectContaining({ method: "POST" })),
   );
   expect(await screen.findByText(/posted as JE26110004/)).toBeInTheDocument();
+});
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says who an exception waits for, who decided and who cancelled", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<InvoiceDetail>) => ({
+    ...draft,
+    id,
+    number: `SI2611000${id}`,
+    created_by: "Kumari Dias",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/supplier-invoices/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, { status: "exception_requested", people: { waiting: { person: ruwan, role: "Director" }, last: null } }),
+        row(3, { status: "held", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+        row(4, { status: "posted", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        row(5, { status: "cancelled", cancelled_by: "Kumari Dias", people: null }),
+      ],
+    },
+  });
+  renderAt("/supplier-invoices", <SupplierInvoicesPage me={sampleUser} />);
+  const table = await screen.findByRole("table", { name: "Supplier invoices" });
+  for (const text of [
+    "Draft of Kumari",
+    "Exception, waiting for Ruwan (Director)",
+    "Held: exception returned by Ruwan",
+    "Matched and posted, exception approved by Ruwan",
+    "Cancelled by Kumari",
+  ])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

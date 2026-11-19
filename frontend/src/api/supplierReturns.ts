@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, firstName, type StatusPeople } from "../lib/docStatus";
 import { apiGet, apiSend } from "./client";
 
 export type ReturnKind = "rejected" | "accepted";
@@ -14,6 +17,19 @@ export interface ReturnSummary {
   grn: { id: number; number: string };
   reason: string;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Draft of Kamal", "Waiting for Ruwan (Director)", "Sent back by Ruwan" (not "Returned by",
+ * which would read as the goods), "Goods returned" or "Goods returned, approved by Ruwan"
+ * (owner, 16 Nov 2026). */
+export function supplierReturnStatus(t: TFunction, r: Pick<ReturnSummary, "status" | "created_by" | "people">): string {
+  const last = r.people?.last;
+  if (r.status === "confirmed")
+    return last?.action === "approve" ? t("rtn.approvedBy", { person: firstName(last.by) }) : t("rtn.goodsReturned");
+  if (r.status === "draft" && last?.action === "return") return t("rtn.sentBackBy", { person: firstName(last.by) });
+  return approvalStatus(t, r, "") ?? t(`rtn.statuses.${r.status}`);
 }
 
 export interface ReturnLot {

@@ -21,6 +21,7 @@ import {
   updateGoodsReceipt,
   type ApprovalStep,
   type GRNDetail,
+  grnStatus,
 } from "../api/goodsReceipts";
 import { poKey } from "../api/purchaseOrders";
 import PackagesPanel from "../components/PackagesPanel";
@@ -64,7 +65,7 @@ export default function GoodsReceiptPage() {
       {data && (
         <>
           <p className="muted">
-            {t(`grn.statuses.${data.status}`)} · {data.receipt_date} · {data.division} · {t("grn.po")}{" "}
+            {grnStatus(t, data)} · {data.receipt_date} · {data.division} · {t("grn.po")}{" "}
             <Link to={`/purchase-orders/${data.purchase_order.id}`}>{data.purchase_order.label}</Link> · {data.supplier.code}{" "}
             {data.supplier.name} · {t("grn.store")} {data.store}
           </p>

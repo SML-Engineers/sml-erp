@@ -362,3 +362,31 @@ def test_people_without_stores_access_see_no_grns(po, stores):
     client = as_user(clerk)
     assert client.get("/api/v1/goods-receipts/").status_code == 403
     assert client.post(f"/api/v1/goods-receipts/{grn.pk}/confirm/").status_code == 403
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_confirmed_a_grn_and_who_an_excess_or_reversal_waits_for(
+    po, stores, director
+):
+    client = as_user(stores)
+
+    def row(grn):
+        listed = next(r for r in client.get("/api/v1/goods-receipts/").json() if r["id"] == grn.pk)
+        detail = client.get(f"/api/v1/goods-receipts/{grn.pk}/").json()
+        assert (detail["people"], detail["confirmed_by"]) == (
+            listed["people"],
+            listed["confirmed_by"],
+        )
+        return listed
+
+    grn = receipts.confirm(stores, receive(stores, po, ("320", "0"), ("1000", "0")))
+    assert row(grn)["people"]["waiting"]["person"] == director.full_name
+    grn = receipts.approve_excess(director, grn)
+    assert row(grn)["confirmed_by"] == stores.full_name
+    grn = receipts.request_reversal(stores, grn, "Entered against the wrong PO")
+    # The reversal's own approval, not the excess one already approved.
+    assert row(grn)["people"]["waiting"]["person"] == director.full_name
+    grn = receipts.approve_reversal(director, grn, "Agreed")
+    assert row(grn)["people"]["last"] == {"action": "approve", "by": director.full_name}

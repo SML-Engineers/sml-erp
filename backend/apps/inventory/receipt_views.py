@@ -40,8 +40,8 @@ def _get(user, pk) -> GoodsReceipt:
     return get_object_or_404(receipts.visible(user), pk=pk)
 
 
-def _summary(g: GoodsReceipt) -> dict:
-    return {
+def _summary(g: GoodsReceipt, people=None) -> dict:
+    row = {
         "id": g.id,
         "number": g.number,
         "receipt_date": g.receipt_date,
@@ -52,7 +52,12 @@ def _summary(g: GoodsReceipt) -> dict:
         "supplier": {"id": g.supplier_id, "code": g.supplier.code, "name": g.supplier.name},
         "delivery_note_no": g.delivery_note_no,
         "created_by": g.created_by.full_name,
+        # Clear statuses (owner, 16 Nov 2026): "Confirmed by Kamal", "Excess, waiting for…".
+        "confirmed_by": g.confirmed_by.full_name if g.confirmed_by_id else None,
     }
+    if people is not None:
+        row["people"] = people.get(g.pk)
+    return row
 
 
 def _history(kind: str, pk: int) -> list[dict]:
@@ -158,11 +163,10 @@ def _line(g: GoodsReceipt, line: GoodsReceiptLine) -> dict:
 
 
 def _detail(g: GoodsReceipt, user) -> dict:
-    return _summary(g) | {
+    return _summary(g, receipts.people([g])) | {
         "vehicle_no": g.vehicle_no,
         "supplier_invoice_no": g.supplier_invoice_no,
         "notes": g.notes,
-        "confirmed_by": g.confirmed_by.full_name if g.confirmed_by_id else None,
         "confirmed_at": g.confirmed_at,
         "reversal_reason": g.reversal_reason,
         "reversed_at": g.reversed_at,
@@ -247,7 +251,7 @@ class ReceivableView(_Receipts):
 class ReceiptListView(_Receipts):
     def get(self, request):
         rows = receipts.visible(request.user).select_related(
-            "division", "store", "purchase_order", "supplier", "created_by"
+            "division", "store", "purchase_order", "supplier", "created_by", "confirmed_by"
         )
         params = request.query_params
         if params.get("status"):
@@ -261,7 +265,9 @@ class ReceiptListView(_Receipts):
                 for s in approvals.waiting_for(request.user, kind)
             ]
             rows = rows.filter(pk__in=ids)
-        return Response([_summary(g) for g in rows[:2000]])
+        rows = list(rows[:2000])
+        people = receipts.people(rows)
+        return Response([_summary(g, people) for g in rows])
 
     def post(self, request):
         body = ReceiptIn(data=request.data)

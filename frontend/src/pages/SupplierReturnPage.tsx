@@ -4,7 +4,16 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { ApiError } from "../api/client";
-import { approveReturn, confirmReturn, deleteReturn, getReturn, rtnKey, sendBackReturn, type ReturnDetail } from "../api/supplierReturns";
+import {
+  approveReturn,
+  confirmReturn,
+  deleteReturn,
+  getReturn,
+  rtnKey,
+  sendBackReturn,
+  supplierReturnStatus,
+  type ReturnDetail,
+} from "../api/supplierReturns";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 
@@ -41,7 +50,7 @@ export default function SupplierReturnPage() {
       {data && (
         <>
           <p className="muted">
-            {t(`rtn.statuses.${data.status}`)} · {t(`rtn.kinds.${data.kind}`)} · {data.return_date} · {data.supplier.name} ·{" "}
+            {supplierReturnStatus(t, data)} · {t(`rtn.kinds.${data.kind}`)} · {data.return_date} · {data.supplier.name} ·{" "}
             <Link to={`/goods-receipts/${data.grn.id}`}>{data.grn.number}</Link>
             {data.vehicle_no && ` · ${data.vehicle_no}`}
             {data.journal && ` · ${t("si.posted", { journal: data.journal })}`}

@@ -260,3 +260,22 @@ def test_the_api_lists_lots_and_returns_goods(stores, qc, line):
     assert made.status_code == 201, made.json()
     done = client.post(f"/api/v1/supplier-returns/{made.json()['id']}/confirm/", {}, format="json")
     assert done.json()["status"] == "confirmed"
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_return_waits_for_and_who_approved_it(stores, qc, director, line):
+    client = as_user(stores)
+
+    def people(ret):
+        rows = client.get("/api/v1/supplier-returns/").json()
+        listed = next(r for r in rows if r["id"] == ret.pk)["people"]
+        assert client.get(f"/api/v1/supplier-returns/{ret.pk}/").json()["people"] == listed
+        return listed
+
+    inspect(qc, line)
+    ret = returns.confirm(stores, give_back(stores, line, "accepted", "10"))
+    assert people(ret)["waiting"]["person"] == director.full_name
+    ret = returns.approve(director, ret, "Agreed with supplier")
+    assert people(ret) == {"waiting": None, "last": {"action": "approve", "by": director.full_name}}

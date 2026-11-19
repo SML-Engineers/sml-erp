@@ -170,6 +170,26 @@ def can_confirm_rates(user: User) -> bool:
     return effective_access(user).can("confirm_tax_rates")
 
 
+def _confirmers(rate: TaxRate) -> list[User]:
+    """Everyone who may confirm a rate change, except the person who entered it."""
+    return [
+        u
+        for u in User.objects.filter(is_active=True).exclude(pk=rate.created_by_id)
+        if can_confirm_rates(u)
+    ]
+
+
+def _pct(rate) -> str:
+    """2.5000 -> "2.5", 18.0000 -> "18"."""
+    return f"{rate:f}".rstrip("0").rstrip(".") if "." in f"{rate:f}" else f"{rate:f}"
+
+
+def _tell(users, event: str, title: str, body: str = "") -> None:
+    from apps.core import notifications
+
+    notifications.notify(users, event, title=title, body=body, link="/settings/tax-rates")
+
+
 def propose_rate(
     user: User, component: TaxComponent, *, effective_from: date, rate, reason: str
 ) -> TaxRate:
@@ -192,7 +212,7 @@ def propose_rate(
             )
         if component.rates.filter(status=RS.CONFIRMED, effective_from=effective_from).exists():
             raise AccountingError(f"{component.code} already has a rate from {effective_from}.")
-        return TaxRate.objects.create(
+        proposed = TaxRate.objects.create(
             component=component,
             effective_from=effective_from,
             rate=rate,
@@ -200,6 +220,15 @@ def propose_rate(
             reason=reason,
             created_by=user,
         )
+    # Owner, 19 Nov 2026: the Director was never told a change was waiting for him.
+    _tell(
+        _confirmers(proposed),
+        "approval_waiting",
+        f"Tax rate {component.code} {_pct(rate)}% from {effective_from:%d/%m/%Y} is waiting "
+        "for you to confirm",
+        f"Entered by {user.full_name}: {reason}",
+    )
+    return proposed
 
 
 def _pending(rate: TaxRate) -> TaxRate:
@@ -231,7 +260,13 @@ def confirm_rate(user: User, rate: TaxRate) -> TaxRate:
         rate.decided_by = user
         rate.decided_at = timezone.now()
         rate.save()
-        return rate
+    _tell(
+        [rate.created_by],
+        "document_approved",
+        f"Tax rate {rate.component.code} {_pct(rate.rate)}% from "
+        f"{rate.effective_from:%d/%m/%Y} was confirmed by {user.full_name}",
+    )
+    return rate
 
 
 def reject_rate(user: User, rate: TaxRate, note: str) -> TaxRate:
@@ -249,7 +284,13 @@ def reject_rate(user: User, rate: TaxRate, note: str) -> TaxRate:
         rate.decided_at = timezone.now()
         rate.decision_note = note
         rate.save()
-        return rate
+    _tell(
+        [rate.created_by],
+        "document_rejected",
+        f"Tax rate {rate.component.code} {_pct(rate.rate)}% was rejected by {user.full_name}",
+        note,
+    )
+    return rate
 
 
 def withdraw_rate(user: User, rate: TaxRate) -> TaxRate:

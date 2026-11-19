@@ -16,6 +16,7 @@ import {
   recordReceipt,
   signedCopyUrl,
   updateDeliveryNote,
+  deliveryNoteStatus,
   type DNDetail,
   type DNOrderLine,
 } from "../api/deliveryNotes";
@@ -65,7 +66,7 @@ export default function DeliveryNotePage() {
       {data && (
         <>
           <p className="muted">
-            {t(`dn.statuses.${data.status}`)} · {data.delivery_date} · {data.customer.name} ·{" "}
+            {deliveryNoteStatus(t, data)} · {data.delivery_date} · {data.customer.name} ·{" "}
             <Link to={`/sales-orders/${data.order.id}`}>{data.order.number}</Link>
             {data.order.customer_po && ` · ${t("dn.customerPo")} ${data.order.customer_po}`}
             {(data.invoices ?? []).map((i) => (

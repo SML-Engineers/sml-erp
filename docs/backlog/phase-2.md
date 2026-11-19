@@ -90,6 +90,9 @@ Status: `[ ]` to do · `[x]` done
     it and when are recorded when it comes back. An issued note never changes; the Sales
     Manager or the stores cancel it with a reason and its quantities are open again. An order
     with delivery notes is completed, not cancelled. No finished-goods stock (question 4).
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Dilini", "Issued by Kamal, not signed
+    yet", "Signed by Sunil Fernando" (the customer's person, in full), with ", invoiced" once
+    on an issued tax invoice, and "Cancelled by Kamal".
 
 - [x] **P2-05 Tax invoices** (spec 6.1)
   From delivered quantities: the Inland Revenue format exactly (Gazette 2481/22), numbered

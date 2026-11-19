@@ -394,3 +394,40 @@ def test_the_sales_accounts(accountant, executive):
     bad = {"division": "IM", "account": acc("1010").pk, "tooling_account": acc("4030").pk}
     assert client.put("/api/v1/sales-accounts/", bad, format="json").status_code == 400
     assert client.put("/api/v1/sales-accounts/", body, format="json").status_code == 200
+
+
+# --- Clear statuses of delivery notes (owner, 16 Nov 2026) -------------------------------------
+
+
+def test_delivery_notes_say_who_issued_signed_cancelled_and_if_invoiced(
+    order, stores, executive, accountant
+):
+    client = as_user(stores)
+
+    def row(note):
+        listed = next(r for r in client.get("/api/v1/delivery-notes/").json() if r["id"] == note.pk)
+        detail = client.get(f"/api/v1/delivery-notes/{note.pk}/").json()
+        for key in ("issued_by", "received_by", "cancelled_by", "invoiced"):
+            assert detail[key] == listed[key]
+        keys = ("status", "issued_by", "received_by", "cancelled_by", "invoiced")
+        return {k: listed[k] for k in keys}
+
+    draft = deliveries.create(stores, order, lines=[DeliveryLine(order.lines.get(), "5")])
+    assert row(draft) == {
+        "status": "draft",
+        "issued_by": None,
+        "received_by": "",
+        "cancelled_by": None,
+        "invoiced": False,
+    }
+    first = deliveries.issue(stores, draft)
+    assert row(first)["issued_by"] == stores.full_name
+    deliveries.record_receipt(stores, first, received_by="Sunil Fernando", received_on=TODAY)
+    assert (row(first)["status"], row(first)["received_by"]) == ("received", "Sunil Fernando")
+    invoice = invoices.create(executive, order)
+    assert row(first)["invoiced"] is False  # a draft invoice does not count
+    invoices.issue(accountant, invoice)
+    assert row(first)["invoiced"] is True
+    second = deliver(stores, order, "5")
+    deliveries.cancel(stores, second, "Lorry broke down")
+    assert (row(second)["cancelled_by"], row(second)["invoiced"]) == (stores.full_name, False)

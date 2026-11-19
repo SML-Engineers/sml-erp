@@ -1553,6 +1553,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Purchase request form only for those who raise them (owner, 18 Nov 2026) | Someone who can only view purchase requests sees the list, not the New purchase request form; the item box is full width | 6 |
 | Clear statuses: tax invoices and credit notes (owner, 16 Nov 2026) | Tax invoices say "Draft of Dilini", "Issued, not paid", "Partly paid", "Paid", "Paid, receipt waiting for approval" or "Credited in full"; credit notes say whose draft it is, who it waits for and who approved, returned or rejected it | 6.1 |
 | Clear statuses: customer advances and receipts (owner, 16 Nov 2026) | Receipts say who they wait for, who approved or rejected them, "cheque not yet due" or "Cheque returned"; advances also say "Partly set off" or "Set off in full" | 5.2, 6 |
+| Clear statuses: delivery notes (owner, 16 Nov 2026) | Delivery notes say whose draft it is, "Issued by Kamal, not signed yet", "Signed by Sunil Fernando", ", invoiced" once on an issued tax invoice, or "Cancelled by Kamal" | 5.3 |
 
 **Still needed for initial setup**
 

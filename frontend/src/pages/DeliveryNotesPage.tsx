@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
-import { dnKey, DN_STATUSES, listDeliveryNotes, ordersToDeliver } from "../api/deliveryNotes";
+import { deliveryNoteStatus, dnKey, DN_STATUSES, listDeliveryNotes, ordersToDeliver } from "../api/deliveryNotes";
 import DataTable from "../components/DataTable";
 import SearchSelect from "../components/SearchSelect";
 
@@ -77,7 +77,7 @@ export default function DeliveryNotesPage() {
             { id: "po", header: t("dn.customerPo"), value: (r) => r.order.customer_po },
             { id: "division", header: t("vouchers.division"), value: (r) => r.division },
             { id: "vehicle", header: t("dn.vehicle"), value: (r) => r.vehicle_no },
-            { id: "status", header: t("vouchers.status"), value: (r) => t(`dn.statuses.${r.status}`) },
+            { id: "status", header: t("vouchers.status"), value: (r) => deliveryNoteStatus(t, r) },
           ]}
         />
       )}

@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { DNDetail, OrderForDelivery } from "../api/deliveryNotes";
 import { mockApi, renderAt } from "../test-utils";
 import DeliveryNotePage from "./DeliveryNotePage";
+import DeliveryNotesPage from "./DeliveryNotesPage";
 
 const caps = {
   id: 11,
@@ -134,4 +135,37 @@ test("an issued note is printed, then the signed copy is recorded", async () => 
     expect(calls).toHaveBeenCalledWith("/api/v1/delivery-notes/8/received/", expect.objectContaining({ method: "POST" })),
   );
   expect(await screen.findByRole("link", { name: "Signed copy" })).toBeInTheDocument();
+});
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says who made, issued, signed or cancelled each note and if it is invoiced", async () => {
+  const row = (id: number, extra: Partial<DNDetail>) => ({
+    ...draft,
+    id,
+    number: `DN2611000${id}`,
+    created_by: "Dilini Wijesekara",
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/delivery-notes/": {
+      body: [
+        row(1, { status: "draft", number: "" }),
+        row(2, { status: "issued", issued_by: "Kamal Silva" }),
+        row(3, { status: "received", issued_by: "Kamal Silva", received_by: "Sunil Fernando" }),
+        row(4, { status: "received", issued_by: "Kamal Silva", received_by: "N. Perera", invoiced: true }),
+        row(5, { status: "cancelled", issued_by: "Kamal Silva", cancelled_by: "Kamal Silva" }),
+      ],
+    },
+    "GET /api/v1/delivery-notes/orders/": { body: [] },
+  });
+  renderAt("/delivery-notes", <DeliveryNotesPage />);
+  const table = await screen.findByRole("table");
+  for (const text of [
+    "Draft of Dilini",
+    "Issued by Kamal, not signed yet",
+    "Signed by Sunil Fernando",
+    "Signed by N. Perera, invoiced",
+    "Cancelled by Kamal",
+  ])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

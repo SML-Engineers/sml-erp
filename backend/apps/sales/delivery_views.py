@@ -34,7 +34,7 @@ def _get(user, pk) -> DeliveryNote:
     return get_object_or_404(rows, pk=pk)
 
 
-def _summary(n: DeliveryNote) -> dict:
+def _summary(n: DeliveryNote, invoiced: set[int] | None = None) -> dict:
     return {
         "id": n.pk,
         "number": n.number,
@@ -46,6 +46,12 @@ def _summary(n: DeliveryNote) -> dict:
         "customer": {"id": n.order.customer_id, "name": n.order.customer.name},
         "vehicle_no": n.vehicle_no,
         "created_by": n.created_by.full_name,
+        # Clear statuses (owner, 16 Nov 2026): "Issued by Kamal, not signed yet", "Signed by
+        # Sunil, invoiced", "Cancelled by Kamal"…
+        "issued_by": n.issued_by.full_name if n.issued_by_id else None,
+        "received_by": n.received_by,
+        "cancelled_by": n.cancelled_by.full_name if n.cancelled_by_id else None,
+        "invoiced": n.pk in (invoiced or set()),
     }
 
 
@@ -83,18 +89,15 @@ def _order_lines(order: SalesOrder, note: DeliveryNote | None) -> list[dict]:
 
 
 def _detail(n: DeliveryNote, user) -> dict:
-    body = _summary(n)
+    body = _summary(n, deliveries.invoiced_notes([n.pk]))
     body |= {
         "driver": n.driver,
         "delivery_address": n.delivery_address,
         "notes": n.notes,
-        "issued_by": n.issued_by.full_name if n.issued_by else None,
         "issued_at": n.issued_at,
-        "received_by": n.received_by,
         "received_on": n.received_on,
         "signed_copy": n.signed_copy_name or None,
         "cancel_reason": n.cancel_reason,
-        "cancelled_by": n.cancelled_by.full_name if n.cancelled_by_id else None,
         "cancelled_at": n.cancelled_at,
         "invoices": [
             {"id": i.pk, "number": i.number, "status": i.status}
@@ -157,14 +160,16 @@ class DeliveryListView(_Deliveries):
 
     def get(self, request):
         rows = deliveries.visible(request.user).select_related(
-            "order__customer", "order__division", "created_by"
+            "order__customer", "order__division", "created_by", "issued_by", "cancelled_by"
         )
         params = request.query_params
         if params.get("status"):
             rows = rows.filter(status__in=params["status"].split(","))
         if params.get("order", "").isdigit():
             rows = rows.filter(order_id=int(params["order"]))
-        return Response([_summary(n) for n in rows[:1000]])
+        rows = list(rows[:1000])
+        invoiced = deliveries.invoiced_notes(n.pk for n in rows)
+        return Response([_summary(n, invoiced) for n in rows])
 
     def post(self, request):
         body = NoteIn(data=request.data)

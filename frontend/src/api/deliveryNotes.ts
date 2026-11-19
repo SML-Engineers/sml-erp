@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { firstName } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 export type DNStatus = "draft" | "issued" | "received" | "cancelled";
@@ -14,6 +17,27 @@ export interface DNSummary {
   customer: { id: number; name: string };
   vehicle_no: string;
   created_by: string;
+  /** For clear statuses (owner, 16 Nov 2026). */
+  issued_by: string | null;
+  received_by: string;
+  cancelled_by?: string | null;
+  /** On an issued tax invoice. */
+  invoiced?: boolean;
+}
+
+/** "Draft of Dilini", "Issued by Kamal, not signed yet", "Signed by Sunil Fernando" (the
+ * customer's person, in full), "…, invoiced" or "Cancelled by Kamal" (owner, 16 Nov 2026). */
+export function deliveryNoteStatus(
+  t: TFunction,
+  n: Pick<DNSummary, "status" | "created_by" | "issued_by" | "received_by" | "cancelled_by" | "invoiced">,
+): string {
+  let text: string;
+  if (n.status === "draft") text = t("docStatus.draftOf", { person: firstName(n.created_by) });
+  else if (n.status === "cancelled" && n.cancelled_by) text = t("cancelled.by", { person: firstName(n.cancelled_by) });
+  else if (n.status === "issued" && n.issued_by) text = t("dn.issuedBy", { person: firstName(n.issued_by) });
+  else if (n.status === "received" && n.received_by) text = t("dn.signedBy", { person: n.received_by });
+  else text = t(`dn.statuses.${n.status}`);
+  return n.invoiced && (n.status === "issued" || n.status === "received") ? t("dn.invoiced", { status: text }) : text;
 }
 
 /** An order line as a delivery note sees it. Quantities are decimals as text. */
@@ -39,14 +63,11 @@ export interface DNDetail extends DNSummary {
   driver: string;
   delivery_address: string;
   notes: string;
-  issued_by: string | null;
   issued_at: string | null;
-  received_by: string;
   received_on: string | null;
   signed_copy: string | null;
   cancel_reason: string;
-  /** Who cancelled it and when (owner, 16 Nov 2026). */
-  cancelled_by?: string | null;
+  /** When it was cancelled (owner, 16 Nov 2026). */
   cancelled_at?: string | null;
   /** Tax invoices of this note (P2-05). */
   invoices?: { id: number; number: string; status: string }[];

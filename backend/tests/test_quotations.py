@@ -103,7 +103,7 @@ def test_a_draft_gets_its_number_and_the_customers_defaults(executive, unilever)
     assert (q.revision, q.status) == (0, "draft")
     assert q.currency.code == "LKR" and q.exchange_rate == Decimal("1")
     assert q.contact.name == "Nimali"  # the main contact
-    assert q.valid_until == TODAY + timedelta(days=7)
+    assert q.valid_until == TODAY + timedelta(days=14)  # owner, 19 Nov 2026
     assert q.payment_terms == "30 days"
     second = draft(executive, unilever)
     assert second.number == f"QL{TODAY:%y%m%d}02"

@@ -1562,7 +1562,6 @@
     "form": "Quotation details",
     "contact": "Contact",
     "validUntil": "Valid until",
-    "sevenDays": "7 days if left empty",
     "paymentTerms": "Payment terms",
     "leadTime": "Delivery lead time",
     "onReceipt": "On receipt",
@@ -1660,7 +1659,9 @@
     "picturesHelp": "Up to 3 pictures, JPG or PNG, at most 1 MB each. The approver sees them, and they can be emailed with the quotation. They can be changed only while the quotation is a draft.",
     "addPicture": "Add a picture",
     "pictureTooBig": "{{name}} is larger than 1 MB. Make it smaller and try again.",
-    "attachPictures": "Also attach the pictures ({{count}}): {{names}}"
+    "attachPictures": "Also attach the pictures ({{count}}): {{names}}",
+    "validDays": "Valid for (days)",
+    "defaultDays": "14 days if left empty"
   },
   "quoteCosting": {
     "open": "Costing",

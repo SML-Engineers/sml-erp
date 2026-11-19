@@ -64,3 +64,19 @@ export function normaliseTime(text: string): string {
   if (hours > 23 || minutes > 59) return value;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
+
+/** A "YYYY-MM-DD" date plus a number of days, e.g. ("2026-11-19", 14) -> "2026-12-03". */
+export function addDays(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** Whole days from one "YYYY-MM-DD" date to another; null when either is missing. */
+export function daysBetween(from: string, to: string): number | null {
+  if (!from || !to) return null;
+  const [a, b] = [from, to].map((x) => {
+    const [y, m, d] = x.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  });
+  return Number.isNaN(a) || Number.isNaN(b) ? null : Math.round((b - a) / 86400000);
+}

@@ -1558,6 +1558,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Clear statuses: GRNs, supplier invoices and supplier returns (owner, 16 Nov 2026) | GRNs say who confirmed them and who an excess or reversal waits for; supplier invoices say who an exception waits for, who returned, refused or approved it and who cancelled the invoice; supplier returns say who they wait for, "Sent back by" and "Goods returned, approved by" | 5A.2, 5A.4, 6 |
 | Clear statuses: payments (owner, 16 Nov 2026) | Payments made have a Status column: "Paid", "Cancellation waiting for Ruwan (Director)", "Cancelled, approved by Ruwan" or "Paid (cancellation refused by Ruwan)"; the voucher page names who a cancellation waits for | 4.6 |
 | A missing tax rate is named, not 'Something went wrong' (owner, 19 Nov 2026) | When a tax code has no rate in force (e.g. SSCL-M), quotations, proformas, sales orders and any other page show the accounting message saying which rate to enter under Settings → Tax rates; nothing is saved | 4.4, 5.1 |
+| Quotation validity in days; 14 days by default (owner, 19 Nov 2026) | "Valid for (days)" beside "Valid until", each filling the other from the quotation's date; a new quotation is valid for 14 days unless changed (was 7) | 5.1 |
 
 **Still needed for initial setup**
 

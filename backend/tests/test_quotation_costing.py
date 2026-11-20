@@ -549,3 +549,57 @@ def test_use_this_price_is_refused_when_it_cannot_apply(
     with pytest.raises(SalesError, match="Save the costing of this line first"):
         costing.use_price(executive, bare, 1, "10")
     assert costed.lines.get().unit_price == Decimal("3000.00")
+
+
+# --- T5 (testing, 21 Nov 2026): no empty costing; a margin of costed lines only is said so --
+
+
+def test_an_empty_costing_is_refused(executive, unilever, rates, lathe, mill):
+    q = quotation(executive, unilever)
+    with pytest.raises(SalesError, match="Line 1: the costing has no material, operations"):
+        costing.save(executive, q, 1, CostingInput())
+    assert not QuotationCosting.objects.exists()
+    # Setup time alone is a cost, so that costing is kept (free-issue material).
+    assert costing.save(executive, q, 1, CostingInput(setup_hours="1")).pk
+    # Emptying a saved costing is refused too; it stays as it was.
+    with pytest.raises(SalesError, match="Remove costing"):
+        costing.save(executive, q, 1, CostingInput(setup_hours="0"))
+    assert QuotationCosting.objects.get().setup_hours == Decimal("1.00")
+
+
+def test_the_margin_says_when_it_counts_the_costed_lines_only(
+    executive, unilever, rates, lathe, mill
+):
+    from apps.sales import workflow
+
+    q = services.save(
+        executive,
+        None,
+        customer=unilever,
+        division=Division.objects.get(code="WS"),
+        lines=[
+            LineInput(description="Shaft", quantity="10", unit_price="3000"),
+            LineInput(description="Bush", quantity="100", unit_price="750"),
+        ],
+    )
+    costing.save(executive, q, 1, shaft(rates, lathe, mill))
+    found = workflow.review(q)
+    assert "Line 2 has no costing." in found["warnings"]
+    assert found["margin_costed_lines_only"] is True and found["margin_pct"] is not None
+    # A costing saved empty before this check counts as no costing, not as zero cost.
+    line = q.lines.get(line_no=2)
+    QuotationCosting.objects.create(
+        line=line,
+        rates_date=q.quote_date,
+        setup_rate=Decimal("1500"),
+        overhead_pct=Decimal("15"),
+        margin_pct=Decimal("20"),
+        updated_by=executive,
+    )
+    again = workflow.review(q)
+    assert "Line 2 has no costing." in again["warnings"]
+    assert again["margin_pct"] == found["margin_pct"]
+    costing.save(executive, q, 2, CostingInput(setup_hours="1"))
+    assert workflow.review(q)["margin_costed_lines_only"] is False
+    response = as_user(executive).get(f"/api/v1/quotations/{q.pk}/").json()
+    assert response["review"]["margin_costed_lines_only"] is False

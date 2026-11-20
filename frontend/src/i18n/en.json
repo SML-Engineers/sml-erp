@@ -1686,7 +1686,8 @@
     "printsExpired": "Prints marked EXPIRED: the validity date has passed.",
     "printsNotValid": "Prints marked NOT VALID: the customer did not accept it.",
     "printsReplaced": "Prints marked REPLACED BY A REVISION.",
-    "expiredNote": "Expired: it was valid until {{date}}. To offer it again, make a revision with a new validity date."
+    "expiredNote": "Expired: it was valid until {{date}}. To offer it again, make a revision with a new validity date.",
+    "overallMarginCostedOnly": "Margin of the prices quoted (costed lines only)"
   },
   "quoteCosting": {
     "open": "Costing",

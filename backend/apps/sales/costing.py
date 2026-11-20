@@ -600,6 +600,13 @@ def save(user: User, quotation: Quotation, line_no: int, data: CostingInput) -> 
         QuotationCostingExtra.objects.bulk_create(
             QuotationCostingExtra(costing=costing, **extra) for extra in extras
         )
+        # T5 (testing, 21 Nov 2026): an empty costing would count the line at no cost and hide
+        # the "no costing" warning, so the Director would see a margin that isn't real.
+        if is_empty(costing, line, quotation.exchange_rate):
+            raise SalesError(
+                f"Line {line_no}: the costing has no material, operations or other costs. "
+                "Enter them, or use Remove costing to leave the line without one."
+            )
         # From now on their codes are fixed (rule 9).
         for material in (costing.material, costing.masterbatch):
             if material is not None:
@@ -607,6 +614,12 @@ def save(user: User, quotation: Quotation, line_no: int, data: CostingInput) -> 
         for machine in {op["machine"] for op in operations} | {costing.machine} - {None}:
             masters.mark_used(machine)
         return costing
+
+
+def is_empty(costing: QuotationCosting, line: QuotationLine, exchange_rate) -> bool:
+    """No cost at all for the line's quantity: no material, time, setup, extras or tooling."""
+    first = figures(costing, line.quantity, line.unit_price, exchange_rate)
+    return first["cost"] <= 0 and first["tooling"] <= 0
 
 
 def remove(user: User, quotation: Quotation, line_no: int) -> None:

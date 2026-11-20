@@ -1566,6 +1566,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Clear statuses: manual journals (owner, 16 Nov 2026) | Manual journals say whose draft it is, who it waits for and who returned, approved or rejected it; recurring journals keep their next date or "Stopped" | 6 |
 | Clear statuses: payroll runs (owner, 16 Nov 2026) | Payroll runs say whose draft it is, who it waits for and who returned, approved or rejected it | 6 |
 | Clear statuses: routings, BOMs and shift reports (owner, 16 Nov 2026) | Each says whose draft it is, who it waits for and who returned or approved it; job orders and production orders keep their stage (Draft, Released, Completed, Closed), as they have no approval of their own | 7 |
+| Template designer: saved layouts, delivery note first (owner, 13 Nov 2026) | Printed documents can be laid out by the Admin and the Director: blocks placed and sized on the page, hidden or added as own text; each save is a version kept for the history; reset and bring back; the items table runs onto more pages and what follows prints after it | 0.x, 5.3 |
 
 **Still needed for initial setup**
 

@@ -834,3 +834,30 @@ italics is used and recorded, and can be changed.
    the online pages).
 10. Sinhala and Tamil: the owner arranges them; English first. Default accepted.
 
+
+## Template designer for printed documents (owner, 13 Nov 2026)
+
+The owner chose a free drag-and-drop designer over layout settings: no new library; the
+delivery note first; the items table runs onto more pages; the tax invoice keeps its required
+boxes; preview, reset and history; the Admin and the Director edit. About 15 PRs.
+
+- [x] **TD-01 Saved layouts and the delivery note printed from one**
+  - A layout is a list of blocks on the A4 page (place and size in mm, text size,
+    alignment, hidden), plus the user's own text blocks. Blocks above the items table print
+    where they are put; the table starts where it is put and runs onto more pages with its
+    heading repeated; blocks below it print after its end, together, on a new page if they
+    no longer fit. A block keeps to its box.
+  - Each save is a new version (insert-only, database guard); the newest is printed; with
+    none, the standard print. Reset saves the standard layout; an old version can be brought
+    back (as a new version). Preview prints the latest delivery note with an unsaved layout.
+  - Only the Admin and the Director ("edit_print_templates", core migration 0031) save,
+    reset, bring back and preview; Settings viewers see the layouts and the history.
+  - Checks: every block present; the items table, customer, title and references never
+    hidden; nothing past the page edge; text size 6–24; at most 10 text blocks.
+  - Done: API `/api/v1/print-templates/`, `apps/core/print_layout.py`,
+    `apps/core/print_templates.py`, `apps/sales/delivery_layout.py`.
+- [ ] **TD-02 The designer page for the delivery note**: drag, resize, hide, add text,
+  preview, save, reset, history (Settings → Printed documents).
+- [ ] **TD-03 onwards**: the other printed documents, one per PR (quotation, proforma,
+  tax invoice with its required boxes, credit note, purchase order, supplier return, payment
+  voucher, payslip, …).

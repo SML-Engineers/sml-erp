@@ -2,15 +2,16 @@
 than the Payment of Gratuity Act (half a month's wage per completed year after 5 years), and
 each approved payroll's monthly provision."""
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal as D
 
 import pytest
 from django.db import transaction
 from django.db.utils import DatabaseError
+from django.utils import timezone
 
 from apps.accounting.models import JournalLine
-from apps.payroll import employees, gratuity, payroll
+from apps.payroll import employees, gratuity, payroll, periods
 from apps.payroll.gratuity import GratuityError
 from apps.payroll.models import GratuitySetting
 
@@ -88,15 +89,22 @@ def test_each_approved_payroll_provides_for_it(hr, director, kamal, senior):  # 
     assert gratuity.provided(senior, date(2026, 10, 1)) == D("0.00")
 
 
+# Settings start in the current pay month or later, so these tests use the pay month of the
+# day they run (they used November 2026, which stopped working on 21 Nov 2026).
+def this_pay_month() -> date:
+    return periods.pay_month_of(timezone.localdate())
+
+
 def test_the_accountant_enters_settings_and_the_director_approves(
     accountant,
     director,  # noqa: F811
     hr,  # noqa: F811
     senior,
 ):
+    month = this_pay_month()
     body = {
         "employee_id": senior.pk,
-        "effective_from": "2026-11",
+        "effective_from": f"{month:%Y-%m}",
         "service_from": "2019-06-01",
         "months_per_year": "1",
         "after_years": "3",
@@ -129,14 +137,16 @@ def test_the_accountant_enters_settings_and_the_director_approves(
     assert done.status_code == 200
     setting.refresh_from_db()
     assert setting.status == "approved"
-    # From November: service from June 2019 (7 years), one month a year after 3 years.
-    t = gratuity.terms(senior, date(2026, 11, 1))
+    # From this pay month: service from June 2019, one month a year after 3 years
+    # (7 years on 20 Nov 2026).
+    t = gratuity.terms(senior, month)
     assert (t.service_from, t.months_per_year, t.after_years) == (date(2019, 6, 1), D("1"), 3)
-    assert gratuity.liability(senior, date(2026, 11, 1), date(2026, 11, 20), D("66000")) == (
+    assert gratuity.liability(senior, month, date(2026, 11, 20), D("66000")) == (
         7,
         D("462000.00"),
     )
-    assert gratuity.terms(senior, date(2026, 10, 1)).setting is None  # earlier months: the Act
+    earlier = (month - timedelta(days=1)).replace(day=1)
+    assert gratuity.terms(senior, earlier).setting is None  # earlier months: the Act
     with pytest.raises(DatabaseError), transaction.atomic():
         GratuitySetting.objects.filter(pk=setting.pk).update(months_per_year=D("2"))
     with pytest.raises(DatabaseError), transaction.atomic():
@@ -144,7 +154,7 @@ def test_the_accountant_enters_settings_and_the_director_approves(
     with pytest.raises(DatabaseError), transaction.atomic():
         GratuitySetting.objects.create(
             employee=senior,
-            effective_from=date(2026, 12, 1),
+            effective_from=periods.next_month(month),
             service_from=date(2020, 1, 15),
             months_per_year=D("0.25"),
             after_years=5,
@@ -154,7 +164,8 @@ def test_the_accountant_enters_settings_and_the_director_approves(
 
 
 def test_settings_may_be_withdrawn_or_rejected(accountant, director, senior):  # noqa: F811
-    body = {"effective_from": "2026-11", "months_per_year": "0.75", "reason": "Staff policy"}
+    month = this_pay_month()
+    body = {"effective_from": f"{month:%Y-%m}", "months_per_year": "0.75", "reason": "Staff policy"}
     first = gratuity.propose(accountant, senior, body)
     with pytest.raises(GratuityError, match="reason for withdrawing"):
         gratuity.decide(accountant, first.pk, "withdraw")
@@ -165,4 +176,4 @@ def test_settings_may_be_withdrawn_or_rejected(accountant, director, senior):  #
         "withdrawn",
         "rejected",
     ]
-    assert gratuity.terms(senior, date(2026, 11, 1)).setting is None
+    assert gratuity.terms(senior, month).setting is None

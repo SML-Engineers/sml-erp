@@ -180,6 +180,7 @@ def _detail(v: Voucher, user) -> dict:
                     "line_no": line.line_no,
                     "invoice_no": line.invoice_no,
                     "invoice_date": line.invoice_date,
+                    "old_date_confirmed": line.old_date_confirmed,
                     "description": line.description,
                     "amount": f"{line.amount:.2f}",
                     "tax_code": line.tax_code.code if line.tax_code else None,
@@ -324,6 +325,8 @@ class LineInputSerializer(serializers.Serializer):
     tax_amount = serializers.CharField(max_length=30, required=False, allow_blank=True, default="0")
     supplier_invoice = serializers.IntegerField(required=False, allow_null=True, default=None)
     advance_order = serializers.IntegerField(required=False, allow_null=True, default=None)
+    # "Yes, the date is right" for an invoice more than 2 months old (owner, 20 Nov 2026).
+    date_confirmed = serializers.BooleanField(required=False, default=False)
 
 
 class VoucherInput(serializers.Serializer):
@@ -384,6 +387,7 @@ def _resolve(data: dict) -> dict:
                 amount=line["amount"],
                 invoice_no=line["invoice_no"],
                 invoice_date=line["invoice_date"],
+                date_confirmed=line["date_confirmed"],
                 description=line["description"],
                 tax_code=code,
                 tax_amount=line["tax_amount"],

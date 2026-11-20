@@ -1,7 +1,7 @@
 """The Clerk's payment voucher: entry, attachments, submission (backlog P1-02)."""
 
 import itertools
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
@@ -390,3 +390,103 @@ def test_each_role_sees_the_right_vouchers(clerk, accountant, director, supplier
         "/api/v1/vouchers/", {"voucher_type": "CHQ", "division": "WS", "lines": []}, format="json"
     )
     assert response.status_code == 400 and "do not work in division WS" in response.json()["detail"]
+
+
+# --- Old invoice dates (owner, 20 Nov 2026) ---------------------------------------------
+
+
+def test_months_back_keeps_the_day_or_takes_the_month_end():
+    assert services.months_back(date(2026, 11, 20), 2) == date(2026, 9, 20)
+    assert services.months_back(date(2026, 12, 31), 2) == date(2026, 10, 31)
+    assert services.months_back(date(2027, 4, 30), 2) == date(2027, 2, 28)
+    assert services.months_back(date(2027, 1, 15), 12) == date(2026, 1, 15)
+    assert services.months_back(date(2028, 2, 29), 12) == date(2027, 2, 28)
+
+
+def test_how_old_an_invoice_date_is():
+    today = date(2026, 11, 20)
+    age = services.invoice_date_age
+    assert age(None, today) == "ok"
+    assert age(date(2026, 9, 20), today) == "ok"  # exactly 2 months
+    assert age(date(2026, 9, 19), today) == "old"
+    assert age(date(2025, 11, 20), today) == "old"  # exactly a year
+    assert age(date(2025, 11, 19), today) == "too_old"
+    assert age(date(2006, 11, 13), today) == "too_old"  # the owner's typing mistake
+
+
+def old_day(months, days=1):
+    return services.months_back(TODAY, months) - timedelta(days=days)
+
+
+def test_an_invoice_more_than_2_months_old_needs_the_clerks_yes(clerk, supplier):
+    day = old_day(2)
+    with pytest.raises(VoucherError, match=r"Line 1: this invoice .* is more than 2 months old"):
+        draft(clerk, supplier, LineInput(amount="100.00", invoice_no="OLD-1", invoice_date=day))
+    assert not Voucher.objects.exists()
+
+    voucher = draft(
+        clerk,
+        supplier,
+        LineInput(amount="100.00", invoice_no="OLD-1", invoice_date=day, date_confirmed=True),
+        LineInput(amount="50.00", invoice_no="NEW-1", invoice_date=TODAY, date_confirmed=True),
+    )
+    old, new = voucher.lines.all()
+    assert (old.invoice_date, old.old_date_confirmed) == (day, True)
+    assert new.old_date_confirmed is False  # a recent date carries no note
+
+
+def test_an_invoice_more_than_a_year_old_is_refused_even_with_the_yes(clerk, supplier):
+    for confirmed in (False, True):
+        with pytest.raises(VoucherError, match="more than a year old and cannot be entered"):
+            draft(
+                clerk,
+                supplier,
+                LineInput(
+                    amount="100.00",
+                    invoice_no="OLD-2",
+                    invoice_date=date(2006, 11, 13),
+                    date_confirmed=confirmed,
+                ),
+            )
+    assert not Voucher.objects.exists()
+    # Exactly a year old is still accepted (with the yes).
+    voucher = draft(
+        clerk,
+        supplier,
+        LineInput(
+            amount="100.00",
+            invoice_no="OLD-3",
+            invoice_date=services.months_back(TODAY, 12),
+            date_confirmed=True,
+        ),
+    )
+    assert voucher.lines.get().old_date_confirmed is True
+
+
+def test_changing_a_draft_checks_the_dates_again(clerk, supplier):
+    voucher = draft(clerk, supplier, LineInput(amount="100.00", invoice_no="D-1"))
+    old = LineInput(amount="100.00", invoice_no="D-1", invoice_date=old_day(3))
+    save = {"voucher_type": vt("CHQ"), "payee": supplier, "description": "Steel"}
+    with pytest.raises(VoucherError, match="more than 2 months old"):
+        services.save(clerk, voucher, lines=[old], **save)
+    old.date_confirmed = True
+    services.save(clerk, voucher, lines=[old], **save)
+    assert voucher.lines.get().old_date_confirmed is True
+
+
+def test_the_api_asks_for_the_yes_and_shows_the_note(clerk, supplier):
+    client = as_user(clerk)
+    line = {"invoice_no": "INV-OLD", "invoice_date": old_day(4).isoformat(), "amount": "900.00"}
+    body = {"voucher_type": "chq", "division": "WS", "payee": supplier.pk, "lines": [line]}
+    refused = client.post("/api/v1/vouchers/", body, format="json")
+    assert refused.status_code == 400
+    assert "Is the date right?" in str(refused.json())
+
+    line["date_confirmed"] = True
+    created = client.post("/api/v1/vouchers/", body, format="json")
+    assert created.status_code == 201, created.json()
+    assert created.json()["lines"][0]["old_date_confirmed"] is True
+
+    line["invoice_date"] = "2006-11-13"
+    too_old = client.post("/api/v1/vouchers/", body, format="json")
+    assert too_old.status_code == 400 and "more than a year old" in str(too_old.json())

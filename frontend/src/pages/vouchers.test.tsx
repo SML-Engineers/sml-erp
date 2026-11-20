@@ -2,6 +2,8 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { CurrentUser } from "../api/auth";
 import type { VoucherDetail, VoucherType } from "../api/vouchers";
+import { monthsBack } from "../lib/invoiceDates";
+import { addDays, factoryToday } from "../lib/time";
 import { mockApi, renderAt, sampleUser } from "../test-utils";
 import VoucherPage from "./VoucherPage";
 
@@ -254,4 +256,51 @@ test("each payment has its own Cancel button that opens the reason box", async (
   );
   // Only one box at a time, and none for the other payment.
   expect(screen.queryByRole("form", { name: "Cancelling payment PY26100001" })).not.toBeInTheDocument();
+});
+
+// Owner, 20 Nov 2026: more than 2 months old needs "Yes, the date is right"; more than a year
+// old cannot be entered; the Accountant and the Director see a note.
+test("an old invoice date asks the clerk to confirm it, a very old one is refused", async () => {
+  const today = factoryToday();
+  const old = addDays(monthsBack(today, 2), -1);
+  const calls = mockApi({
+    ...formApi,
+    "GET /api/v1/vouchers/9/": { body: draft },
+    "PATCH /api/v1/vouchers/9/": { body: draft },
+  });
+  renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+
+  const form = await screen.findByRole("form", { name: "Voucher details" });
+  expect(within(form).queryByText(/more than 2 months old/)).not.toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Invoice date, line 1"), { target: { value: old } });
+  expect(within(form).getByText("This invoice is more than 2 months old. Is the date right?")).toBeInTheDocument();
+  fireEvent.click(within(form).getByLabelText("Yes, the date is right, line 1"));
+  fireEvent.click(within(form).getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/", expect.objectContaining({ method: "PATCH" })));
+  const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PATCH")!;
+  expect(JSON.parse(String(init!.body)).lines[0]).toMatchObject({ invoice_date: old, date_confirmed: true });
+
+  // A new date clears the tick; a date more than a year old is refused.
+  fireEvent.change(within(form).getByLabelText("Invoice date, line 1"), { target: { value: "2006-11-13" } });
+  expect(within(form).getByRole("alert")).toHaveTextContent("more than a year old and cannot be entered");
+  expect(within(form).queryByLabelText("Yes, the date is right, line 1")).not.toBeInTheDocument();
+});
+
+test("the approvers see a note on an old invoice date the clerk confirmed", async () => {
+  mockApi({
+    ...formApi,
+    "GET /api/v1/vouchers/9/": {
+      body: {
+        ...draft,
+        status: "submitted",
+        can_edit: false,
+        lines: [{ ...draft.lines[0], invoice_date: "2026-08-13", old_date_confirmed: true }],
+      },
+    },
+  });
+  renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+
+  const note = await screen.findByRole("note", { name: "Old invoice dates" });
+  expect(note).toHaveTextContent("Line 1: the invoice is dated 13/08/2026, more than 2 months old when it was entered.");
+  expect(note).toHaveTextContent("The Clerk confirmed the date is right.");
 });

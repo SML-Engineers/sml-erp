@@ -6,6 +6,7 @@ divisions; the Clerk their own; the Cashier approved ones; view-only roles (Audi
 Admin) all of their divisions.
 """
 
+import calendar
 import hashlib
 import re
 from dataclasses import dataclass
@@ -246,6 +247,55 @@ class LineInput:
     tax_amount: object = "0"
     supplier_invoice: object = None  # apps.purchasing.models.SupplierInvoice (P16-11)
     advance_order: object = None  # apps.purchasing.models.PurchaseOrder (P16-11a)
+    # The Clerk ticked "Yes, the date is right" for an invoice more than 2 months old.
+    date_confirmed: bool = False
+    # The date comes from a record already kept elsewhere (the petty cash book), not typed.
+    dated_elsewhere: bool = False
+
+
+# Invoice dates (owner, 20 Nov 2026): more than 2 months old needs the Clerk's "Yes, the date
+# is right"; more than a year old cannot be entered at all (catches typing mistakes).
+CONFIRM_AFTER_MONTHS = 2
+REFUSE_AFTER_MONTHS = 12
+
+
+def months_back(day: date, months: int) -> date:
+    """The same day of the month `months` earlier (the last day if that month is shorter)."""
+    total = day.year * 12 + day.month - 1 - months
+    year, month = divmod(total, 12)
+    month += 1
+    return date(year, month, min(day.day, calendar.monthrange(year, month)[1]))
+
+
+def invoice_date_age(invoice_date: date | None, today: date | None = None) -> str:
+    """ "ok", "old" (more than 2 months: needs the Clerk's confirmation) or "too_old" (more
+    than a year: refused)."""
+    if invoice_date is None:
+        return "ok"
+    today = today or timezone.localdate()
+    if invoice_date < months_back(today, REFUSE_AFTER_MONTHS):
+        return "too_old"
+    if invoice_date < months_back(today, CONFIRM_AFTER_MONTHS):
+        return "old"
+    return "ok"
+
+
+def _check_invoice_date(line: LineInput, where: str) -> bool:
+    """Refuse a date more than a year old; ask for the confirmation of one more than 2 months
+    old. True when the line is to carry the note for the Accountant and the Director."""
+    age = invoice_date_age(line.invoice_date)
+    shown = f"{line.invoice_date:%d/%m/%Y}" if line.invoice_date else ""
+    if age == "too_old":
+        raise VoucherError(
+            f"{where}: the invoice date {shown} is more than a year old and cannot be entered. "
+            "Check the date on the invoice."
+        )
+    if age == "old" and not line.date_confirmed:
+        raise VoucherError(
+            f"{where}: this invoice ({shown}) is more than 2 months old. Is the date right? "
+            'Tick "Yes, the date is right" to save it.'
+        )
+    return age == "old"
 
 
 def _money(value, where: str, *, positive: bool) -> Decimal:
@@ -266,7 +316,11 @@ def _money(value, where: str, *, positive: bool) -> Decimal:
     return amount
 
 
-def _lines(voucher: Voucher, lines: list[LineInput]) -> list[VoucherLine]:
+def _lines(
+    voucher: Voucher, lines: list[LineInput], unchanged: dict | None = None
+) -> list[VoucherLine]:
+    """The lines to save. `unchanged` (line number → saved line) is given for an approver's
+    edit: a line keeping its saved invoice date is not checked again."""
     if len(lines) > MAX_LINES:
         raise VoucherError(f"A voucher can have at most {MAX_LINES} lines.")
     built = []
@@ -291,12 +345,21 @@ def _lines(voucher: Voucher, lines: list[LineInput]) -> list[VoucherLine]:
             tax = _no_tax_without_code(line.tax_amount, where)
         if line.invoice_date and line.invoice_date > timezone.localdate():
             raise VoucherError(f"{where}: the invoice date is in the future.")
+        before = (unchanged or {}).get(number)
+        if line.dated_elsewhere:
+            confirmed = False
+        elif before is not None and before.invoice_date == line.invoice_date:
+            # An approver's edit keeps a date already accepted: not checked again.
+            confirmed = before.old_date_confirmed
+        else:
+            confirmed = _check_invoice_date(line, where)
         built.append(
             VoucherLine(
                 voucher=voucher,
                 line_no=number,
                 invoice_no=(line.invoice_no or "").strip()[:50],
                 invoice_date=line.invoice_date,
+                old_date_confirmed=confirmed,
                 description=(line.description or "").strip()[:500],
                 amount=amount,
                 tax_code=line.tax_code,
@@ -1326,7 +1389,8 @@ def revise(
             raise VoucherError("Choose the payee.")
         if not vt.needs_payee and transfer_to is None:
             raise VoucherError("Choose the company account the money goes to.")
-        new_lines = _lines(voucher, list(lines))
+        saved = {line.line_no: line for line in voucher.lines.all()}
+        new_lines = _lines(voucher, list(lines), saved)
         if not new_lines:
             raise VoucherError("Add at least one invoice line.")
         changes = _changes(voucher, payee, transfer_to, new_lines)

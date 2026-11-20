@@ -86,6 +86,8 @@ export interface VoucherLineData {
   line_no: number;
   invoice_no: string;
   invoice_date: string | null;
+  /** The date was more than 2 months old and the Clerk confirmed it (owner, 20 Nov 2026). */
+  old_date_confirmed?: boolean;
   description: string;
   amount: string;
   tax_code: string | null;
@@ -175,6 +177,8 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
 export interface VoucherLineInput {
   invoice_no: string;
   invoice_date: string | null;
+  /** "Yes, the date is right" for an invoice more than 2 months old. */
+  date_confirmed?: boolean;
   description: string;
   amount: string;
   tax_code: string | null;

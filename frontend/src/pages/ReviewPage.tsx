@@ -8,6 +8,7 @@ import { listDivisions } from "../api/admin";
 import { ApiError, apiGet, apiSend } from "../api/client";
 import { getTaxes, taxesKey } from "../api/taxes";
 import MatchedInvoice from "../components/MatchedInvoice";
+import OldInvoiceDates from "../components/OldInvoiceDates";
 import SearchSelect from "../components/SearchSelect";
 import { SentBackNotice } from "../components/SentBackNotice";
 import {
@@ -267,6 +268,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         .map((l) => (
           <MatchedInvoice key={l.line_no} invoice={l.supplier_invoice!} />
         ))}
+      <OldInvoiceDates lines={voucher.lines} />
       <div className="table-wrap no-clip">
         <table aria-label={t("voucherReview.coding")} className="coding-table">
           <thead>

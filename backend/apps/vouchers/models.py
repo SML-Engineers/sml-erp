@@ -152,6 +152,9 @@ class VoucherLine(models.Model):
     line_no = models.PositiveSmallIntegerField()
     invoice_no = models.CharField(max_length=50, blank=True)
     invoice_date = models.DateField(null=True, blank=True)
+    # The invoice date was more than 2 months old when entered and the Clerk ticked "Yes,
+    # the date is right"; the Accountant and the Director see a note (owner, 20 Nov 2026).
+    old_date_confirmed = models.BooleanField(default=False)
     description = models.CharField(max_length=500, blank=True)
     amount = models.DecimalField(max_digits=18, decimal_places=2)
     tax_code = models.ForeignKey(

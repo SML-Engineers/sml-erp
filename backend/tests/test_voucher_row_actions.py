@@ -363,3 +363,31 @@ def test_amounts_in_words(amount, words):
     assert amount_in_words(Decimal(amount)) == words
     with pytest.raises(TypeError):
         amount_in_words(1.5)
+
+
+def test_an_approvers_edit_does_not_ask_again_for_a_confirmed_old_date(clerk, accountant, director):
+    # Owner, 20 Nov 2026: the Clerk's "Yes, the date is right" stays with the line.
+    day = services.months_back(timezone.localdate(), 3)
+    voucher = draft(
+        clerk,
+        payee(code="S0007"),
+        LineInput(amount="1000.00", invoice_no="OLD-77", invoice_date=day, date_confirmed=True),
+    )
+    attach(clerk, voucher)
+    services.submit(clerk, voucher)
+    services.code_lines(
+        accountant,
+        voucher,
+        [CodingInput(line_no=1, account=Account.objects.get(number="6210"), division=ws())],
+    )
+    voucher = services.approve(accountant, voucher, "coded")
+    services.revise(
+        director, voucher, payee=voucher.payee, description="Old steel", lines=lines_of(voucher)
+    )
+    line = fresh(voucher).lines.get()
+    assert (line.invoice_date, line.old_date_confirmed) == (day, True)
+
+    changed = lines_of(voucher)
+    changed[0].invoice_date = services.months_back(timezone.localdate(), 13)
+    with pytest.raises(VoucherError, match="more than a year old"):
+        services.revise(director, voucher, payee=voucher.payee, description="", lines=changed)

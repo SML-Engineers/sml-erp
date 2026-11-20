@@ -542,6 +542,8 @@ A return at either level sends the voucher back to the clerk, and approval resta
 3. Upload scanned invoices (PDF, JPG, PNG; multiple files; drag and drop, or camera on a phone).
 4. Save as draft or submit.
 
+**Invoice dates** (owner, 20 Nov 2026): a date in the future or more than a year old is refused; a date more than 2 months old is saved only when the Clerk ticks "Yes, the date is right", and the voucher then shows the Accountant and the Director a note for that line. An approver's edit that keeps a line's date does not ask again. Lines paying a matched supplier invoice and petty cash top-ups keep the date of their own record.
+
 The system **refuses** the same supplier and invoice number (ignoring case and spaces) if it is already on another voucher, checked by the service and by the database; the same number from a different supplier is accepted, and a deleted, rejected, amended or cancelled voucher frees its invoices (owner's decision, 31 Oct 2026). It warns if an uploaded file is identical (same hash) to one already in the system.
 
 **Accountant: review**
@@ -1568,6 +1570,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Clear statuses: routings, BOMs and shift reports (owner, 16 Nov 2026) | Each says whose draft it is, who it waits for and who returned or approved it; job orders and production orders keep their stage (Draft, Released, Completed, Closed), as they have no approval of their own | 7 |
 | Template designer: saved layouts, delivery note first (owner, 13 Nov 2026) | Printed documents can be laid out by the Admin and the Director: blocks placed and sized on the page, hidden or added as own text; each save is a version kept for the history; reset and bring back; the items table runs onto more pages and what follows prints after it | 0.x, 5.3 |
 | Template designer: the designer page (owner, 13 Nov 2026) | Settings → Printed documents shows the page to scale; the Admin and the Director drag and resize its blocks (or type the sizes in millimetres), leave optional blocks off, add their own text, preview on the latest real document, and save with a note; the history brings back an old version; other users see the layout read-only | 0.x, 5.3 |
+| Old voucher invoice dates (owner, 20 Nov 2026) | More than 2 months old: "Is the date right?" and the Clerk ticks "Yes, the date is right" to save; the Accountant and the Director see a note. More than a year old: refused (catches typing mistakes such as 2006 for 2026; a real invoice that old cannot be paid through a voucher) | 4.4 |
 
 **Still needed for initial setup**
 

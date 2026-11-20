@@ -1105,7 +1105,13 @@
     "advanceException": "Exception: advance of LKR {{amount}} on purchase order {{po}} (LKR {{total}}) before the goods arrive. It is set off against the supplier's invoice once paid.",
     "whtKept": "Withholding tax kept",
     "payable": "Payable to the payee",
-    "waitingYou": "This voucher waits for your approval at level {{level}} ({{role}}). Open it to check the scan and the coding, then approve, return or reject it."
+    "waitingYou": "This voucher waits for your approval at level {{level}} ({{role}}). Open it to check the scan and the coding, then approve, return or reject it.",
+    "oldDateWarning": "This invoice is more than 2 months old. Is the date right?",
+    "oldDateConfirm": "Yes, the date is right",
+    "oldDateConfirmOf": "Yes, the date is right, line {{n}}",
+    "tooOldDate": "This invoice is more than a year old and cannot be entered. Check the date on the invoice.",
+    "oldDatesNote": "Old invoice dates",
+    "oldDateNoteLine": "Line {{n}}: the invoice is dated {{date}}, more than 2 months old when it was entered. The Clerk confirmed the date is right."
   },
   "voucherReview": {
     "title": "Waiting for my approval",

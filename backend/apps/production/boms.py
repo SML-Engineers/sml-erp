@@ -708,7 +708,7 @@ def _returned(bom: Bom) -> str | None:
     return log.reason if log is not None and log.action == ApprovalLog.Action.RETURN else None
 
 
-def payload(bom: Bom, user: User) -> dict:
+def payload(bom: Bom, user: User, people: dict | None = None) -> dict:
     lines = list(bom.lines.select_related("component", "supplier"))
     outputs = list(bom.outputs.select_related("item"))
     state = approvals.state_of(DOC, bom.pk) if bom.status == St.AWAITING else None
@@ -739,6 +739,9 @@ def payload(bom: Bom, user: User) -> dict:
         "status": bom.status,
         "status_label": bom.get_status_display(),
         "notes": bom.notes,
+        "people": (people if people is not None else approvals.people_for(DOC, [bom.pk])).get(
+            bom.pk
+        ),
         "created_by": bom.created_by.full_name,
         "outputs": [
             {

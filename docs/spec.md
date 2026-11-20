@@ -1565,6 +1565,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | "Use this price" on the quotation costing (owner, 19 Nov 2026) | Each quantity of the price build-up has a button that puts the suggested price on the line or the quantity break of a draft quotation, allowing for the quotation discount, and saves it | 5.1 |
 | Clear statuses: manual journals (owner, 16 Nov 2026) | Manual journals say whose draft it is, who it waits for and who returned, approved or rejected it; recurring journals keep their next date or "Stopped" | 6 |
 | Clear statuses: payroll runs (owner, 16 Nov 2026) | Payroll runs say whose draft it is, who it waits for and who returned, approved or rejected it | 6 |
+| Clear statuses: routings, BOMs and shift reports (owner, 16 Nov 2026) | Each says whose draft it is, who it waits for and who returned or approved it; job orders and production orders keep their stage (Draft, Released, Completed, Closed), as they have no approval of their own | 7 |
 
 **Still needed for initial setup**
 

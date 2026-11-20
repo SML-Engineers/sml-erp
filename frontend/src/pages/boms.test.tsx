@@ -157,3 +157,31 @@ test("where used lists the parts a material goes into", async () => {
   fireEvent.click(within(panel).getByRole("button", { name: "Find" }));
   expect(await within(panel).findByText("CAP-28 28 mm cap rev 1 (approved): 4.725 kg")).toBeInTheDocument();
 });
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the BOMs list says who a BOM waits for and who decided", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<Bom>) => ({ ...bom, id, item: `SH-10${id}`, created_by: "Kasun Bandara", ...extra });
+  mockApi({
+    "GET /api/v1/boms/?q=&status=": {
+      body: {
+        ...list,
+        results: [
+          row(1, { status: "draft", status_label: "Draft", people: null }),
+          row(2, {
+            status: "awaiting",
+            status_label: "Waiting for approval",
+            people: { waiting: { person: ruwan, role: "Production Manager" }, last: null },
+          }),
+          row(3, { status: "draft", status_label: "Draft", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+          row(4, { status: "approved", status_label: "Approved", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+          row(5, { status: "obsolete", status_label: "Obsolete", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        ],
+      },
+    },
+  });
+  renderAt("/boms", <BomsPage />);
+  const table = await screen.findByRole("table", { name: "Bills of materials" });
+  for (const text of ["Draft of Kasun", "Waiting for Ruwan (Production Manager)", "Returned by Ruwan", "Approved by Ruwan", "Obsolete"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
+});

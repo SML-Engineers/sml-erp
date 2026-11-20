@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { apiGet, apiSend } from "./client";
 
 /** Shift reports entered by supervisors: moulding runs (P3-08) or job card operations in a
@@ -28,6 +31,8 @@ export interface ReportRow {
   status_label: string;
   created_by: string;
   submitted_at: string | null;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
 }
 
 export interface RunValues {
@@ -239,3 +244,12 @@ export const decideReport = (id: number, action: "approve" | "send_back", reason
 export const askCorrection = (id: number, reason: string) => apiSend<ShiftReport>("POST", `/shift-reports/${id}/corrections/`, { reason });
 export const decideCorrection = (id: number, action: "approve" | "reject", reason = "") =>
   apiSend<ShiftReport>("POST", `/shift-reports/corrections/${id}/decide/`, { action, reason });
+
+/** "Draft of Sunil", "Waiting for Ruwan (Production manager)", "Returned by Ruwan", "Approved by
+ * Ruwan"; otherwise the plain label, e.g. "Obsolete" (clear statuses, owner 16 Nov 2026). */
+export function shiftReportStatus(
+  t: TFunction,
+  d: { status: string; status_label: string; created_by: string; people?: StatusPeople | null },
+): string {
+  return approvalStatus(t, d, "approved") ?? d.status_label;
+}

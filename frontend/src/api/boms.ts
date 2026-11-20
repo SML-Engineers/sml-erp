@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 /** Bills of materials (P3-04). */
@@ -53,6 +56,8 @@ export interface Bom {
   status_label: string;
   notes: string;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
   outputs: BomOutput[];
   resin: { shot_g: string; per_piece_g: string; pieces_per_shot: number; family: boolean } | null;
   lines: BomLine[];
@@ -111,4 +116,13 @@ export function importBoms(file: File, dryRun: boolean) {
   form.append("file", file);
   form.append("dry_run", dryRun ? "true" : "false");
   return apiUpload<{ drafts: number; saved: boolean }>("/boms/import/", form, "POST");
+}
+
+/** "Draft of Kasun", "Waiting for Ruwan (Production manager)", "Returned by Ruwan", "Approved by
+ * Ruwan"; otherwise the plain label, e.g. "Obsolete" (clear statuses, owner 16 Nov 2026). */
+export function bomStatus(
+  t: TFunction,
+  d: { status: string; status_label: string; created_by: string; people?: StatusPeople | null },
+): string {
+  return approvalStatus(t, d, "approved") ?? d.status_label;
 }

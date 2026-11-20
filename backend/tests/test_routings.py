@@ -187,3 +187,24 @@ def test_drafts_from_excel(planner, manager, shaft):
     routings.import_workbook(planner, buffer.getvalue(), dry_run=False)
     new = Routing.objects.get(status="draft")
     assert new.revision == 2 and new.operations.get(seq=20).name == "Rough and finish turn"
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_routing_waits_for_and_who_approved_it(planner, manager, shaft):
+    made = as_user(planner).post(
+        URL, {"item": "SH-100", "drawing_revision": "B", "operations": OPERATIONS}, format="json"
+    ).json()
+    pk = made["id"]
+    assert made["people"] is None
+
+    def people():
+        listed = next(r for r in as_user(planner).get(URL).json()["results"] if r["id"] == pk)
+        assert as_user(planner).get(f"{URL}{pk}/").json()["people"] == listed["people"]
+        return listed["people"]
+
+    as_user(planner).post(f"{URL}{pk}/submit/")
+    assert people()["waiting"]["person"] == manager.full_name
+    as_user(manager).post(f"{URL}{pk}/approve/")
+    assert people() == {"waiting": None, "last": {"action": "approve", "by": manager.full_name}}

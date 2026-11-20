@@ -332,3 +332,21 @@ def test_copy_compare_where_used_and_excel(planner, manager, stock):
     assert refused.value.errors == ["SH-100: There is no item NOPE."]
     draft = Bom.objects.get(item__code="SH-100", status="draft")
     assert draft.revision == 2 and draft.lines.get(seq=20).quantity == D("4")
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_bom_waits_for_and_who_approved_it(planner, manager, stock):
+    body = {"item": "SH-100", "kind": "machining", "drawing_revision": "B", "lines": shaft_lines()}
+    pk = as_user(planner).post(URL, body, format="json").json()["id"]
+
+    def people():
+        listed = next(r for r in as_user(planner).get(URL).json()["results"] if r["id"] == pk)
+        assert as_user(planner).get(f"{URL}{pk}/").json()["people"] == listed["people"]
+        return listed["people"]
+
+    as_user(planner).post(f"{URL}{pk}/submit/")
+    assert people()["waiting"]["person"] == manager.full_name
+    as_user(manager).post(f"{URL}{pk}/approve/")
+    assert people()["last"] == {"action": "approve", "by": manager.full_name}

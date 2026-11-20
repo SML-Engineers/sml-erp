@@ -314,7 +314,7 @@ def _number(value: Decimal) -> str:
     return f"{value.normalize():f}"
 
 
-def payload(routing: Routing, user: User) -> dict:
+def payload(routing: Routing, user: User, people: dict | None = None) -> dict:
     ops = list(routing.operations.select_related("section", "machine", "supplier"))
     state = approvals.state_of(DOC, routing.pk) if routing.status == St.AWAITING else None
     returned = None
@@ -336,6 +336,9 @@ def payload(routing: Routing, user: User) -> dict:
         "status_label": routing.get_status_display(),
         "notes": routing.notes,
         "created_by": routing.created_by.full_name,
+        "people": (people if people is not None else approvals.people_for(DOC, [routing.pk])).get(
+            routing.pk
+        ),
         "approved_at": routing.approved_at,
         "setup_min": _number(sum((o.setup_min for o in ops), Decimal(0))),
         "run_min": _number(sum((o.run_min for o in ops if not o.subcontract), Decimal(0))),

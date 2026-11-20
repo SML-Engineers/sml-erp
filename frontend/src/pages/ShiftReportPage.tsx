@@ -14,6 +14,7 @@ import {
   reportsKey,
   saveReport,
   submitReport,
+  shiftReportStatus,
   type DowntimeValues,
   type JobWorkValues,
   type MachineTimeLine,
@@ -104,7 +105,7 @@ function Start({ onOpen }: { onOpen: (id: number) => void }) {
                         {r.section} {r.day} {r.shift_name}
                       </button>
                     </td>
-                    <td>{r.status_label}</td>
+                    <td>{shiftReportStatus(t, r)}</td>
                     <td>{r.created_by}</td>
                   </tr>
                 ))}
@@ -267,7 +268,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
         <strong>
           {r.section} {r.section_name} · {r.shift_name} · {r.day}
         </strong>{" "}
-        — {r.status_label}
+        — {shiftReportStatus(t, r)}
       </p>
       {edit && <p className="muted small">{t("shiftReport.closes", { at: formatDateTime(r.closes_at) })}</p>}
       {r.return_reason && r.status === "returned" && <p className="notice">{t("shiftReport.returned", { reason: r.return_reason })}</p>}

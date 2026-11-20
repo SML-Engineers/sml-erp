@@ -11,6 +11,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core import approvals
 from apps.core.access import division_scope
 from apps.core.models import Division
 from apps.core.permissions import AreaAccess
@@ -257,10 +258,11 @@ class RoutingListView(_Planning):
 
     def get(self, request):
         query = request.query_params
-        found = routings.search(query.get("q", "").strip(), query.get("status", ""))
+        found = list(routings.search(query.get("q", "").strip(), query.get("status", "")))
+        people = approvals.people_for(routings.DOC, [r.pk for r in found])
         return Response(
             {
-                "results": [routings.payload(r, request.user) for r in found],
+                "results": [routings.payload(r, request.user, people) for r in found],
                 "can_prepare": routings.can_prepare(request.user),
                 "statuses": [{"value": v, "label": label} for v, label in Routing.Status.choices],
             }
@@ -350,10 +352,11 @@ class BomListView(_Planning):
 
     def get(self, request):
         query = request.query_params
-        found = boms.search(query.get("q", "").strip(), query.get("status", ""))
+        found = list(boms.search(query.get("q", "").strip(), query.get("status", "")))
+        people = approvals.people_for(boms.DOC, [b.pk for b in found])
         return Response(
             {
-                "results": [boms.payload(b, request.user) for b in found],
+                "results": [boms.payload(b, request.user, people) for b in found],
                 "can_prepare": boms.can_prepare(request.user),
                 "statuses": [{"value": v, "label": label} for v, label in Bom.Status.choices],
                 "line_types": [{"value": v, "label": label} for v, label in BomLine.Type.choices],
@@ -884,11 +887,12 @@ def _report_body(report, user) -> dict:
 class ShiftReportListView(_Reports):
     def get(self, request):
         user = request.user
-        recent = shift_reports.visible(user)[:60]
+        recent = list(shift_reports.visible(user)[:60])
+        people = approvals.people_for(shift_approval.DOC, [r.pk for r in recent])
         return Response(
             {
                 "open": shift_reports.open_shifts(user),
-                "recent": [shift_reports.row(r) for r in recent],
+                "recent": [shift_reports.row(r, people) for r in recent],
                 "can_enter": shift_reports.can_enter(user),
             }
         )

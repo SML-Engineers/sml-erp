@@ -103,6 +103,8 @@ Status: `[ ]` to do · `[x]` done
   routings and their operations never change and are never deleted (database). Totals per
   routing (setup, run, subcontract cost). Excel export (one row per operation) and import
   (each part a draft, all or nothing).
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kasun", "Waiting for Ruwan (Production
+    Manager)", "Returned by Ruwan", "Approved by Ruwan"; "Obsolete" as before.
 
 - [x] **P3-04 Bills of materials**
   Spec 7.1B in full: BOM per manufactured item (finished part, sub-assembly, mould, tool)
@@ -133,6 +135,8 @@ Status: `[ ]` to do · `[x]` done
   customer-supplied at 0, plus machine time from the routing at the machine-hour rates;
   anything without a cost is listed rather than guessed. Overhead and labour rates come
   with P3-05.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kasun", "Waiting for Ruwan (Production
+    Manager)", "Returned by Ruwan", "Approved by Ruwan"; "Obsolete" as before.
 
 - [x] **P3-05 Production cost rates**
   Dated rates (rule 11), maintained by the Accountant: labour rate per section (by default
@@ -327,6 +331,8 @@ Status: `[ ]` to do · `[x]` done
   if the parts have been used or delivered) and the shot counts, marks the receipts
   undone, and returns the report to the supervisor to correct and submit again. Requests
   never change once decided (database). Approval engine: new `reopen` for this.
+  - Owner, 16 Nov 2026: **clear statuses.** Shift reports say "Draft of Sunil", "Waiting for
+    Ruwan (Production Manager)", "Returned by Ruwan", "Approved by Ruwan".
 
 - [x] **P3-10 Mould maintenance**
   Preventive maintenance due when the shot count reaches the interval: alerts to the

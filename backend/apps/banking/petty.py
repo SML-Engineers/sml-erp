@@ -239,6 +239,7 @@ def replenish(
                         invoice_no=e.number,
                         invoice_date=e.expense_date,
                         description=f"{e.paid_to}: {e.description}"[:500],
+                        dated_elsewhere=True,  # checked in the petty cash book
                     )
                     for e in chosen
                 ],

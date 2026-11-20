@@ -31,10 +31,12 @@ import {
   voucherStatus,
 } from "../api/vouchers";
 import MatchedInvoice from "../components/MatchedInvoice";
+import OldInvoiceDates from "../components/OldInvoiceDates";
 import { SentBackNotice } from "../components/SentBackNotice";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
-import { formatDateTime } from "../lib/time";
+import { invoiceDateAge } from "../lib/invoiceDates";
+import { factoryToday, formatDateTime } from "../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -181,6 +183,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
     voucher?.lines.map((l) => ({
       invoice_no: l.invoice_no,
       invoice_date: l.invoice_date,
+      date_confirmed: l.old_date_confirmed ?? false,
       description: l.description,
       amount: l.amount,
       tax_code: l.tax_code,
@@ -412,8 +415,9 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
                         type="date"
                         aria-label={t("vouchers.invoiceDateOf", { n: String(index + 1) })}
                         value={line.invoice_date ?? ""}
-                        onChange={(e) => setLine(index, { invoice_date: e.target.value || null })}
+                        onChange={(e) => setLine(index, { invoice_date: e.target.value || null, date_confirmed: false })}
                       />
+                      <DateAgeCheck index={index} line={line} onConfirm={(yes) => setLine(index, { date_confirmed: yes })} />
                     </td>
                     <td>
                       <input
@@ -546,6 +550,35 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
   );
 }
 
+/** Owner, 20 Nov 2026: an invoice more than 2 months old needs "Yes, the date is right";
+ * one more than a year old cannot be entered (the server refuses it too). */
+function DateAgeCheck({ index, line, onConfirm }: { index: number; line: VoucherLineInput; onConfirm: (yes: boolean) => void }) {
+  const { t } = useTranslation();
+  const age = invoiceDateAge(line.invoice_date, factoryToday());
+  if (age === "too_old") {
+    return (
+      <div className="warning-text" role="alert">
+        {t("vouchers.tooOldDate")}
+      </div>
+    );
+  }
+  if (age !== "old") return null;
+  return (
+    <div className="warning-text" role="status">
+      {t("vouchers.oldDateWarning")}
+      <label className="date-confirm">
+        <input
+          type="checkbox"
+          aria-label={t("vouchers.oldDateConfirmOf", { n: String(index + 1) })}
+          checked={Boolean(line.date_confirmed)}
+          onChange={(e) => onConfirm(e.target.checked)}
+        />{" "}
+        {t("vouchers.oldDateConfirm")}
+      </label>
+    </div>
+  );
+}
+
 function ReadOnly({ voucher }: { voucher: VoucherDetail }) {
   const { t } = useTranslation();
   return (
@@ -556,6 +589,7 @@ function ReadOnly({ voucher }: { voucher: VoucherDetail }) {
         {voucher.transfer_to && ` · ${t("vouchers.transferTo")}: ${voucher.transfer_to.code}`}
       </p>
       {voucher.description && <p>{voucher.description}</p>}
+      <OldInvoiceDates lines={voucher.lines} />
       <div className="table-wrap">
         <table aria-label={t("vouchers.lines")}>
           <thead>

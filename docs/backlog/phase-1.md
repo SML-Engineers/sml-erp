@@ -383,6 +383,11 @@ Status: `[ ]` to do · `[x]` done
     (P1-07) will reduce it.
   - Who sees which vouchers: Clerk their own; Accountant, Director, Auditor and Admin all of
     their divisions; Cashier approved ones.
+  - Owner, 20 Nov 2026 (Q7, after an invoice dated 13/11/2006 was accepted): an invoice date
+    more than 2 months old asks "This invoice is more than 2 months old. Is the date right?"
+    and saves only with "Yes, the date is right" ticked; the Accountant and the Director see
+    a note on the voucher. A date more than a year old cannot be entered. Lines paying a
+    matched supplier invoice and petty cash top-ups keep the date of their own record.
 
 - [x] **P1-03 Accountant review** (spec 4.4)
   Queue of submitted vouchers; invoice preview beside details; set GL account, division,

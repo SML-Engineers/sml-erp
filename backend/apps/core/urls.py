@@ -9,6 +9,7 @@ from . import (
     notification_views,
     numbering_views,
     organisation_views,
+    print_template_views,
     views,
 )
 
@@ -199,4 +200,19 @@ urlpatterns = [
     path("access-review/", access_views.AccessReviewView.as_view(), name="access-review"),
     path("audit/", audit_views.AuditLogView.as_view(), name="audit-log"),
     path("activity-log/", audit_views.ActivityLogView.as_view(), name="activity-log"),
+    path(
+        "print-templates/",
+        print_template_views.PrintTemplateListView.as_view(),
+        name="print-templates",
+    ),
+    path(
+        "print-templates/<str:document>/",
+        print_template_views.PrintTemplateView.as_view(),
+        name="print-template",
+    ),
+    path(
+        "print-templates/<str:document>/preview/",
+        print_template_views.PrintTemplatePreviewView.as_view(),
+        name="print-template-preview",
+    ),
 ]

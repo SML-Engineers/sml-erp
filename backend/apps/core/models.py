@@ -985,3 +985,31 @@ class RoleRequest(models.Model):
 
     def __str__(self):
         return f"{self.role} for {self.user} ({self.status})"
+
+
+class PrintTemplate(models.Model):
+    """One saved layout of a printed document (owner, 13 Nov 2026: the template designer).
+    Every save is a new version and old versions are kept for the history (a database guard
+    refuses changes and deletions); the newest version is the one printed. With no version,
+    the standard layout is printed."""
+
+    class Document(models.TextChoices):
+        DELIVERY_NOTE = "delivery_note", "Delivery note"
+
+    document = models.CharField(max_length=30, choices=Document.choices)
+    version = models.PositiveIntegerField()
+    layout = models.JSONField()
+    note = models.CharField(max_length=200, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["document", "version"], name="print_template_version")
+        ]
+        ordering = ["document", "-version"]
+
+    def __str__(self) -> str:
+        return f"{self.get_document_display()} v{self.version}"

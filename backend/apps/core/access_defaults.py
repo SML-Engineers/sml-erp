@@ -62,6 +62,7 @@ ACTIONS = {
     "approve_customer_receipts": "Approve customer receipts and advances",
     "set_credit_terms": "Change customers' credit limits and payment terms",
     "approve_production_corrections": "Approve corrections to shift reports",
+    "edit_print_templates": "Change the layout of printed documents",
 }
 
 # Access that counts as sensitive (spec 1.3): an override granting it needs the Director.
@@ -418,3 +419,7 @@ MACHINE_TIME_GRANTS_V1 = {
     "production_supervisor": ("enter", "own sections"),
     "production_manager": ("approve", ""),
 }
+
+# Template designer (core migration 0031): the Admin and the Director change the layout of
+# printed documents (owner, 13 Nov 2026).
+ROLE_ACTIONS_V10 = {"system_admin": ["edit_print_templates"], "director": ["edit_print_templates"]}

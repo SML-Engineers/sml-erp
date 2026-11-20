@@ -23,6 +23,35 @@ MARKS = {
 
 
 def render(note: DeliveryNote, *, compress: bool = True) -> bytes:
+    """The printed note: in the layout saved in the template designer, if there is one."""
+    from apps.core import print_templates
+
+    layout = print_templates.layout_for("delivery_note")
+    if layout is not None:
+        return render_with_layout(note, layout, compress=compress)
+    return _standard(note, compress=compress)
+
+
+def render_with_layout(note: DeliveryNote, layout: dict, *, compress: bool = True) -> bytes:
+    """The note printed from a layout of the template designer (owner, 13 Nov 2026)."""
+    from apps.core import print_layout
+
+    from . import delivery_layout
+
+    widths = {b["key"]: b["w"] for b in layout["blocks"]}
+    company = Company.objects.filter(pk=1).first()
+    return print_layout.render(
+        layout,
+        delivery_layout.contents(note, widths),
+        table="lines",
+        mark=MARKS.get(note.status, ""),
+        title=f"Delivery note {note.number}",
+        author=company.name if company else "",
+        compress=compress,
+    )
+
+
+def _standard(note: DeliveryNote, *, compress: bool = True) -> bytes:
     s = Styles()
     p = s.p
     order = note.order

@@ -45,6 +45,9 @@ Status: `[ ]` to do · `[x]` done
     offered (customer balances change only through sales documents). The payment lock is
     also a database rule on every journal entry that is not a supplier payment. Once sent,
     a journal, its lines and files never change (database guard); only drafts are deleted.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Nimal", "Waiting for Ruwan
+    (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan". Recurring
+    journals already show their next date or "Stopped", so they stay as they are.
 
 - [x] **P2-02 Recurring journals**
   A template (lines, amounts, every month or quarter, start and end) makes a draft journal on

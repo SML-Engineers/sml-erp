@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { MJDetail } from "../api/manualJournals";
-import { mockApi, renderAt } from "../test-utils";
+import { mockApi, renderAt, sampleUser } from "../test-utils";
 import ManualJournalPage from "./ManualJournalPage";
+import ManualJournalsPage from "./ManualJournalsPage";
 
 const account = (id: number, number: string, full_name: string, account_type: string) => ({
   id,
@@ -158,4 +159,25 @@ test("the Director approves and the journal is posted", async () => {
     ),
   );
   expect(await screen.findByRole("link", { name: "JV26110012" })).toBeInTheDocument();
+});
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says whose draft a journal is, who it waits for and who decided", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<MJDetail>) => ({ ...draft, id, number: `MJ2611000${id}`, created_by: "Nimal Perera", ...extra });
+  mockApi({
+    "GET /api/v1/manual-journals/": {
+      body: [
+        row(1, { status: "draft", people: null }),
+        row(2, { status: "awaiting_approval", people: { waiting: { person: ruwan, role: "Director" }, last: null } }),
+        row(3, { status: "draft", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+        row(4, { status: "posted", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        row(5, { status: "rejected", people: { waiting: null, last: { action: "reject", by: ruwan } } }),
+      ],
+    },
+  });
+  renderAt("/manual-journals", <ManualJournalsPage me={sampleUser} />);
+  const table = await screen.findByRole("table", { name: "Manual journals" });
+  for (const text of ["Draft of Nimal", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

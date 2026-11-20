@@ -38,12 +38,12 @@ def _get(user, pk) -> ManualJournal:
     return get_object_or_404(manual.visible(user), pk=pk)
 
 
-def _summary(mj: ManualJournal) -> dict:
+def _summary(mj: ManualJournal, people=None) -> dict:
     if hasattr(mj, "sum_debit"):
         debits, credits = mj.sum_debit or 0, mj.sum_credit or 0
     else:
         debits, credits = manual.totals(mj)
-    return {
+    row = {
         "id": mj.pk,
         "number": mj.number,
         "entry_date": mj.entry_date,
@@ -61,11 +61,15 @@ def _summary(mj: ManualJournal) -> dict:
         if mj.recurring_id is None
         else {"id": mj.recurring_id, "name": mj.recurring.name},
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Approved by Ruwan"…
+    if people is not None:
+        row["people"] = people.get(mj.pk)
+    return row
 
 
 def _detail(mj: ManualJournal, user) -> dict:
     state = approvals.state_of(manual.DOC, mj.pk)
-    return _summary(mj) | {
+    return _summary(mj, approvals.people_for(manual.DOC, [mj.pk])) | {
         "lines": [
             {
                 "line_no": x.line_no,
@@ -198,7 +202,9 @@ class JournalListView(_Journals):
         if params.get("waiting") == "me":
             waiting = approvals.waiting_for(request.user, manual.DOC)
             rows = rows.filter(pk__in=[s.document_id for s in waiting])
-        found = [_summary(mj) for mj in rows[:2000]]
+        rows = list(rows[:2000])
+        people = approvals.people_for(manual.DOC, [mj.pk for mj in rows])
+        found = [_summary(mj, people) for mj in rows]
         fmt = (params.get("export") or "").lower()
         if fmt in exports.FORMATS:
             for row in found:

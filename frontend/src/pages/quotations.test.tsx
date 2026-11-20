@@ -427,6 +427,26 @@ test("those who only look see the costing without changing it", async () => {
   expect(within(section).getByText(/EN8 EN8 steel bar: 1.6184 kg per piece/)).toBeInTheDocument();
   expect(within(section).getByText(/C-LAT-01/)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Save costing" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Use the suggested price/ })).not.toBeInTheDocument();
+});
+
+// Owner, 19 Nov 2026: "Use this price" puts the suggested price on the line or the break.
+test("the creator puts the suggested price on the quotation with Use this price", async () => {
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/costing/": { body: { ...costingPage, lines: [costedLine] } },
+    "POST /api/v1/quotations/12/costing/1/use-price/": { body: { ...costingPage, lines: [costedLine] } },
+  });
+  renderAt("/quotations/12/costing", <QuotationCostingPage />, "/quotations/:id/costing");
+  const table = await screen.findByRole("table", { name: "Price build-up, line 1" });
+  const buttons = within(table).getAllByRole("button", { name: /Use the suggested price for/ });
+  expect(buttons).toHaveLength(costedLine.results!.length);
+  fireEvent.click(buttons[buttons.length - 1]);
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/quotations/12/costing/1/use-price/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ quantity: costedLine.results!.at(-1)!.quantity }) }),
+    ),
+  );
 });
 
 const mouldingPage: CostingPage = {

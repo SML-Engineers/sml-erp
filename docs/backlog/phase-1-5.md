@@ -83,6 +83,11 @@ Status: `[ ]` to do · `[x]` done
     the quotation's creator; not other Sales Executives, and not the Auditor (tested on the
     server).
   - Margin % is on the cost (owner, 31 Oct 2026): cost 1,000 + 20% = price 1,200.
+  - Owner, 19 Nov 2026: **"Use this price".** Under each quantity of the price build-up, the
+    quotation's creator (while it is a draft) has a button that puts the suggested price on
+    the line, or on that quantity break, and saves the quotation again (taxes and totals
+    worked out as usual; the costing stays). With a quotation discount, the price before the
+    discount is set so the net price is the suggested one.
 
 - [x] **P15-05 Moulding costing and tooling** (spec 5.1)
   Per line, internal only: material ((part weight + runner weight ÷ cavities) × resin rate +

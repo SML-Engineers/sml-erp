@@ -1780,7 +1780,9 @@
     "hoursPer1000": "Machine time: {{hours}} hours per 1,000 pieces.",
     "mouldingSummary": "Part {{part}} g, runner {{runner}} g, {{cavities}} cavities on {{machine}}, cycle {{cycle}} s, rejects {{rejects}}%.",
     "masterbatchSummary": "Masterbatch {{code}} {{pct}}%.",
-    "resinUsed": "{{material}} at LKR {{rate}} per kg."
+    "resinUsed": "{{material}} at LKR {{rate}} per kg.",
+    "usePrice": "Use this price",
+    "usePriceFor": "Use the suggested price for {{quantity}} {{unit}}"
   },
   "advances": {
     "title": "Customer advances",

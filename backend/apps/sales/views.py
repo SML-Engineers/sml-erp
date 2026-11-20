@@ -577,6 +577,20 @@ class QuotationLineCostingView(_Sales):
         return Response(costing.page(request.user, Quotation.objects.get(pk=quotation.pk)))
 
 
+class QuotationLineUsePriceView(_Sales):
+    """Owner, 19 Nov 2026: "Use this price" puts the costing's suggested price on the line."""
+
+    access_write_level = "enter"
+
+    def post(self, request, pk, line_no):
+        quotation = _costing_quotation(request, pk)
+        try:
+            costing.use_price(request.user, quotation, line_no, request.data.get("quantity"))
+        except SalesError as error:
+            return _error(error)
+        return Response(costing.page(request.user, Quotation.objects.get(pk=quotation.pk)))
+
+
 # --- Approval, sending, outcome and revisions (P15-06) -----------------------------------
 
 

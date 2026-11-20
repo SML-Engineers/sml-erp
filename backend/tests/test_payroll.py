@@ -300,3 +300,27 @@ def test_the_accountant_keeps_the_apit_tables(hr):
     assert listed["statutory"][0]["epf_employee"] == "8.00"
     with pytest.raises(DatabaseError), transaction.atomic():
         TaxTable.objects.filter(kind="primary").update(reason="changed")
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_payroll_waits_for_and_who_decided(hr, director, kamal):
+    upload(hr, present("E001", working_days()))
+    close_month(hr, director, kamal)
+    client = as_user(hr)
+
+    def people(run):
+        rows = client.get("/api/v1/payroll/").json()["results"]
+        listed = next(r for r in rows if r["id"] == run.pk)
+        assert client.get(f"/api/v1/payroll/{run.pk}/").json()["people"] == listed["people"]
+        return listed["people"]
+
+    run = payroll.prepare(hr, "WS", "2026-10")
+    payroll.submit(hr, run)
+    assert people(run)["waiting"]["person"] == director.full_name
+    payroll.send_back(director, run, "Add the incentive")
+    assert people(run)["last"] == {"action": "return", "by": director.full_name}
+    payroll.submit(hr, run)
+    payroll.reject(director, run, "Wrong month")
+    assert people(run)["last"] == {"action": "reject", "by": director.full_name}

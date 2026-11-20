@@ -262,6 +262,8 @@ P2B-06**, in this order.
   attendance cannot be reopened; a pay change cannot start in a pay month with an approved
   payroll. The Accountant sees the totals only. Advances and loans themselves (P2B-10),
   posting and the bank file (P2B-07) and payslips (P2B-08) follow.
+  - Owner, 16 Nov 2026: **clear statuses.** "Draft of Chamari", "Waiting for Ruwan
+    (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan".
 
 - [x] **P2B-07 Posting and paying**
   Approval posts: Dr salaries and wages per division and section, Dr employer EPF and ETF;

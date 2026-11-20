@@ -81,7 +81,7 @@ def _labour(run: PayrollRun, sees_people: bool) -> dict:
     }
 
 
-def _run(run: PayrollRun, user, detail=False) -> dict:
+def _run(run: PayrollRun, user, detail=False, people=None) -> dict:
     out = {
         "id": run.pk,
         "division": run.division.code,
@@ -96,6 +96,10 @@ def _run(run: PayrollRun, user, detail=False) -> dict:
         "journal": run.journal_entry.number if run.journal_entry_id else "",
         "totals": _t(payroll.totals(run)),
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Approved by Ruwan"…
+    if people is None:
+        people = approvals.people_for(payroll.DOC, [run.pk])
+    out["people"] = people.get(run.pk)
     if not detail:
         return out
     state = approvals.state_of(payroll.DOC, run.pk)
@@ -187,9 +191,11 @@ def _run(run: PayrollRun, user, detail=False) -> dict:
 
 class PayrollListView(_Payroll):
     def get(self, request):
+        runs = list(_runs(request.user))
+        people = approvals.people_for(payroll.DOC, [r.pk for r in runs])
         return Response(
             {
-                "results": [_run(r, request.user) for r in _runs(request.user)],
+                "results": [_run(r, request.user, people=people) for r in runs],
                 "divisions": [d.code for d in division_scope(request.user)],
                 "last_month": periods.last_pay_month().isoformat()[:7],
                 "can_prepare": payroll.can_prepare(request.user),

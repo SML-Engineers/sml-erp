@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend } from "./client";
 import type { PayPeriod } from "./periods";
 
@@ -30,6 +33,15 @@ export interface PayrollRunSummary {
   number: string;
   journal: string;
   totals: PayrollTotals;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
+}
+
+/** "Draft of Chamari", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan",
+ * "Rejected by Ruwan" (owner, 16 Nov 2026). */
+export function payrollStatus(t: TFunction, r: Pick<PayrollRunSummary, "status" | "status_label" | "created_by" | "people">): string {
+  if (!r.created_by) return r.status_label;
+  return approvalStatus(t, { status: r.status, created_by: r.created_by, people: r.people }, "approved") ?? r.status_label;
 }
 
 export interface PayrollItem {

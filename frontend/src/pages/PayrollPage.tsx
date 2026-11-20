@@ -12,6 +12,7 @@ import {
   payrollKey,
   payrollRunKey,
   payslipsUrl,
+  payrollStatus,
   preparePayroll,
   setPayrollEntry,
   type PayrollAction,
@@ -116,7 +117,7 @@ function ListPage() {
                     <Link to={`/payroll/${r.id}`}>{r.month}</Link>
                   </td>
                   <td>{r.division}</td>
-                  <td>{r.status_label}</td>
+                  <td>{payrollStatus(t, r)}</td>
                   <td className="num">{r.totals.employees}</td>
                   <td className="num">{formatDecimal(r.totals.net)}</td>
                 </tr>
@@ -158,7 +159,7 @@ function RunPage({ id }: { id: number }) {
         <>
           <h1>
             {t("payroll.runTitle", { division: r.division, month: r.month })}{" "}
-            <span className="tag">{r.returned && r.status === "draft" ? t("payroll.returned") : r.status_label}</span>
+            <span className="tag">{payrollStatus(t, r)}</span>
           </h1>
           <PayPeriodLine period={r.period} />
           {r.status === "approved" && (

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { PayrollList, PayrollRun, TaxTables } from "../api/payroll";
 import { mockApi, renderAt } from "../test-utils";
@@ -319,4 +319,32 @@ test("the payroll shows what an hour of work cost", async () => {
   expect(await screen.findByText("Labour cost: LKR 401.20 an hour (208.00 hours worked)")).toBeInTheDocument();
   expect(screen.getByRole("cell", { name: "Manual Milling" })).toBeInTheDocument();
   expect(screen.getByText(/Gratuity provided this month: LKR 198,000.00/)).toBeInTheDocument();
+});
+
+// Owner, 16 Nov 2026: clear statuses in the list.
+test("the list says whose draft a payroll is, who it waits for and who decided", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<PayrollRun>) => ({ ...run, id, month: `2026-0${id}`, created_by: "Chamari Silva", ...extra });
+  mockApi({
+    "GET /api/v1/payroll/": {
+      body: {
+        ...list,
+        results: [
+          row(1, { status: "draft", status_label: "Draft", people: null }),
+          row(2, {
+            status: "awaiting",
+            status_label: "Waiting for the Director",
+            people: { waiting: { person: ruwan, role: "Director" }, last: null },
+          }),
+          row(3, { status: "draft", status_label: "Draft", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+          row(4, { status: "approved", status_label: "Approved", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+          row(5, { status: "rejected", status_label: "Rejected", people: { waiting: null, last: { action: "reject", by: ruwan } } }),
+        ],
+      },
+    },
+  });
+  renderAt("/payroll", <PayrollPage />, "/payroll");
+  const table = (await screen.findByRole("link", { name: "2026-01" })).closest("table") as HTMLElement;
+  for (const text of ["Draft of Chamari", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

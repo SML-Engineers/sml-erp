@@ -856,8 +856,11 @@ boxes; preview, reset and history; the Admin and the Director edit. About 15 PRs
     hidden; nothing past the page edge; text size 6–24; at most 10 text blocks.
   - Done: API `/api/v1/print-templates/`, `apps/core/print_layout.py`,
     `apps/core/print_templates.py`, `apps/sales/delivery_layout.py`.
-- [ ] **TD-02 The designer page for the delivery note**: drag, resize, hide, add text,
+- [x] **TD-02 The designer page for the delivery note**: drag, resize, hide, add text,
   preview, save, reset, history (Settings → Printed documents).
+  - Done: `frontend/src/pages/settings/PrintTemplatesPage.tsx`, `api/printTemplates.ts`. Blocks
+    move and resize with the mouse or a finger (pointer events, no library) and with the arrow
+    keys; sizes snap to whole millimetres; the page works on a phone.
 - [ ] **TD-03 onwards**: the other printed documents, one per PR (quotation, proforma,
   tax invoice with its required boxes, credit note, purchase order, supplier return, payment
   voucher, payslip, …).

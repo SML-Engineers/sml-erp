@@ -1567,6 +1567,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Clear statuses: payroll runs (owner, 16 Nov 2026) | Payroll runs say whose draft it is, who it waits for and who returned, approved or rejected it | 6 |
 | Clear statuses: routings, BOMs and shift reports (owner, 16 Nov 2026) | Each says whose draft it is, who it waits for and who returned or approved it; job orders and production orders keep their stage (Draft, Released, Completed, Closed), as they have no approval of their own | 7 |
 | Template designer: saved layouts, delivery note first (owner, 13 Nov 2026) | Printed documents can be laid out by the Admin and the Director: blocks placed and sized on the page, hidden or added as own text; each save is a version kept for the history; reset and bring back; the items table runs onto more pages and what follows prints after it | 0.x, 5.3 |
+| Template designer: the designer page (owner, 13 Nov 2026) | Settings → Printed documents shows the page to scale; the Admin and the Director drag and resize its blocks (or type the sizes in millimetres), leave optional blocks off, add their own text, preview on the latest real document, and save with a note; the history brings back an old version; other users see the layout read-only | 0.x, 5.3 |
 
 **Still needed for initial setup**
 

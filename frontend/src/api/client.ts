@@ -84,3 +84,20 @@ export async function apiUpload<T>(path: string, form: FormData, method: "POST" 
   });
   return parse<T>(response);
 }
+
+/** A POST whose answer is a file (a PDF preview, say): the file, or the server's explanation. */
+export async function apiPostFile(path: string, data?: unknown): Promise<Blob> {
+  await ensureCsrf();
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/pdf, application/json",
+      "Content-Type": "application/json",
+      "X-CSRFToken": readCookie("csrftoken") ?? "",
+    },
+    body: data === undefined ? undefined : JSON.stringify(data),
+  });
+  if (!response.ok) throw new ApiError(response.status, await response.json().catch(() => null));
+  return response.blob();
+}

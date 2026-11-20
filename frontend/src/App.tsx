@@ -139,6 +139,7 @@ import QuotationLimitsPage from "./pages/settings/QuotationLimitsPage";
 import TaxRatesPage from "./pages/settings/TaxRatesPage";
 import ApprovalMatrixPage from "./pages/settings/ApprovalMatrixPage";
 import DocumentEmailPage from "./pages/settings/DocumentEmailPage";
+import PrintTemplatesPage from "./pages/settings/PrintTemplatesPage";
 import VoucherTypesPage from "./pages/settings/VoucherTypesPage";
 import SentEmailsPage from "./pages/admin/SentEmailsPage";
 import SignInSecurityPage from "./pages/admin/SignInSecurityPage";
@@ -304,6 +305,7 @@ export default function App() {
         <Route path="settings/number-series" element={<WithMe page={(me) => <NumberSeriesPage me={me} />} />} />
         <Route path="settings/approval-matrix" element={<WithMe page={(me) => <ApprovalMatrixPage me={me} />} />} />
         <Route path="settings/document-email" element={<WithMe page={(me) => <DocumentEmailPage me={me} />} />} />
+        <Route path="settings/printed-documents" element={<PrintTemplatesPage />} />
         <Route path="admin/sent-emails" element={<SentEmailsPage />} />
         <Route path="admin/activity" element={<ActivityLogPage />} />
         <Route

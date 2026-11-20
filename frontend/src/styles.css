@@ -1616,3 +1616,72 @@ ul.plain-list li {
 .radio-row input {
   margin-top: 4px;
 }
+
+/* Settings → Printed documents: the template designer. The page is drawn to scale; blocks are
+   placed in % of it, so it works at any width, phones included. */
+.designer {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.designer-page {
+  position: relative;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(29, 36, 51, 0.12);
+  touch-action: none;
+}
+
+.designer-block {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed var(--color-muted);
+  background: rgba(46, 42, 107, 0.06);
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 2px 4px;
+  overflow: hidden;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+.designer-block.is-table {
+  background: rgba(46, 42, 107, 0.12);
+}
+
+.designer-block.is-hidden {
+  opacity: 0.35;
+  border-style: dotted;
+}
+
+.designer-block.is-selected,
+.designer-block:focus-visible {
+  border: 2px solid var(--color-primary);
+  outline: none;
+  z-index: 1;
+}
+
+.designer-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  background: var(--color-primary);
+  cursor: nwse-resize;
+}
+
+.designer-side {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .designer {
+    grid-template-columns: 1fr;
+  }
+}

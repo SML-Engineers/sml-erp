@@ -546,6 +546,8 @@ def approval_fields(report: ShiftReport, user: User) -> dict:
     fixes = list(report.corrections.select_related("requested_by"))
     receipts = report.receipts.select_related("item", "order")
     return {
+        # Clear statuses (owner, 16 Nov 2026).
+        "people": approvals.people_for(DOC, [report.pk]).get(report.pk),
         "return_reason": report.return_reason,
         "approved_by": report.approved_by.full_name if report.approved_by_id else "",
         "approved_at": report.approved_at,

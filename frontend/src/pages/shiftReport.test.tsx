@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
-import type { ShiftReport } from "../api/shiftReports";
+import type { ReportRow, ShiftReport } from "../api/shiftReports";
 import ScanButton from "../components/ScanButton";
 import { mockApi, renderAt } from "../test-utils";
 import ShiftReportPage from "./ShiftReportPage";
@@ -499,4 +499,44 @@ describe("without a connection (P3-21)", () => {
     await waitFor(() => expect(screen.queryByRole("alert", { name: "This report was changed elsewhere" })).not.toBeInTheDocument());
     expect(window.localStorage.getItem("sml-offline-report-9")).toBeNull();
   });
+});
+
+// Owner, 16 Nov 2026: clear statuses in the list of recent reports.
+test("the recent reports say who each waits for and who decided", async () => {
+  const ruwan = "Ruwan Jayasinghe";
+  const row = (id: number, extra: Partial<ReportRow>): ReportRow => ({
+    id,
+    section: "IM-MLD",
+    section_type: "moulding",
+    day: `2026-11-0${id}`,
+    shift: "G",
+    shift_name: "General",
+    status: "draft",
+    status_label: "Draft",
+    created_by: "Sunil Perera",
+    submitted_at: null,
+    ...extra,
+  });
+  mockApi({
+    "GET /api/v1/shift-reports/": {
+      body: {
+        open: [],
+        recent: [
+          row(1, { people: null }),
+          row(2, {
+            status: "submitted",
+            status_label: "Submitted",
+            people: { waiting: { person: ruwan, role: "Production Manager" }, last: null },
+          }),
+          row(3, { status: "returned", status_label: "Returned", people: { waiting: null, last: { action: "return", by: ruwan } } }),
+          row(4, { status: "approved", status_label: "Approved", people: { waiting: null, last: { action: "approve", by: ruwan } } }),
+        ],
+        can_enter: true,
+      },
+    },
+  });
+  renderAt("/shift-report", <ShiftReportPage />);
+  const table = await screen.findByRole("table", { name: "Recent reports" });
+  for (const text of ["Draft of Sunil", "Waiting for Ruwan (Production Manager)", "Returned by Ruwan", "Approved by Ruwan"])
+    expect(within(table).getByText(text)).toBeInTheDocument();
 });

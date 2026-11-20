@@ -12,6 +12,7 @@ import {
   routingAction,
   routingExportUrl,
   routingsKey,
+  routingStatus,
   type Operation,
   type Routing,
   type RoutingValues,
@@ -106,7 +107,7 @@ export default function RoutingsPage() {
                     {r.item_name}
                   </td>
                   <td className="num">{r.revision}</td>
-                  <td>{r.status_label}</td>
+                  <td>{routingStatus(t, r)}</td>
                   <td className="num">{r.operations.length}</td>
                   <td className="num">{r.setup_min}</td>
                   <td className="num">{r.run_min}</td>
@@ -149,7 +150,7 @@ function Detail({ routing: r, onOpen }: { routing: Routing; onOpen: (id: number 
     <section className="panel" aria-label={t("routing.of", { item: r.item, revision: r.revision })}>
       <h2>{t("routing.of", { item: r.item, revision: r.revision })}</h2>
       <p>
-        {r.item_name} · {r.status_label}
+        {r.item_name} · {routingStatus(t, r)}
         {r.drawing_revision && ` · ${t("routing.drawing", { revision: r.drawing_revision })}`} · {t("routing.by", { name: r.created_by })}
       </p>
       {r.returned_reason && (

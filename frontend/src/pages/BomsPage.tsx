@@ -13,6 +13,7 @@ import {
   getBoms,
   importBoms,
   whereUsed,
+  bomStatus,
   type Bom,
   type BomLine,
   type BomList,
@@ -122,7 +123,7 @@ export default function BomsPage() {
                   </td>
                   <td className="num">{b.revision}</td>
                   <td>{b.kind_label}</td>
-                  <td>{b.status_label}</td>
+                  <td>{bomStatus(t, b)}</td>
                   <td className="num">{b.lines.length}</td>
                   <td className="num">{formatDecimal(b.cost.per_unit)}</td>
                 </tr>
@@ -169,7 +170,7 @@ function Detail({ bom: b, list, onOpen }: { bom: Bom; list: BomList; onOpen: (id
     <section className="panel" aria-label={title}>
       <h2>{title}</h2>
       <p>
-        {b.item_name} · {b.kind_label} · {b.division} · {b.status_label}
+        {b.item_name} · {b.kind_label} · {b.division} · {bomStatus(t, b)}
         {b.drawing_revision && ` · ${t("bom.drawing", { revision: b.drawing_revision })}`} ·{" "}
         {t("bom.base", { quantity: b.base_quantity, unit: b.resin?.family ? t("bom.shots") : b.item_unit })}
       </p>

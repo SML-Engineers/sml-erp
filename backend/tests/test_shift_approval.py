@@ -274,3 +274,20 @@ def test_who_may_ask_and_reject(ready, manager, supervisor, clock):  # noqa: F81
     report.refresh_from_db()
     assert fix.status == "rejected" and report.status == "approved"
     assert Mould.objects.get(code="MD-001").shot_count == 500
+
+
+# --- Clear statuses (owner, 16 Nov 2026) -------------------------------------------------------
+
+
+def test_the_list_says_who_a_report_waits_for_and_who_returned_it(ready, manager, supervisor):  # noqa: F811
+    report = ready["report"]
+
+    def people():
+        rows = as_user(supervisor).get(URL).json()["recent"]
+        listed = next(r for r in rows if r["id"] == report.pk)["people"]
+        assert as_user(supervisor).get(f"{URL}{report.pk}/").json()["people"] == listed
+        return listed
+
+    assert people()["waiting"]["person"] == manager.full_name
+    shift_approval.decide(manager, report, "send_back", "Rejects look low")
+    assert people()["last"] == {"action": "return", "by": manager.full_name}

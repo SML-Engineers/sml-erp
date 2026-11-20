@@ -655,8 +655,8 @@ def summary(report: ShiftReport) -> dict:
     }
 
 
-def row(report: ShiftReport) -> dict:
-    return {
+def row(report: ShiftReport, people: dict | None = None) -> dict:
+    out = {
         "id": report.pk,
         "section": report.section.code,
         "section_type": report.section.section_type,
@@ -668,6 +668,10 @@ def row(report: ShiftReport) -> dict:
         "created_by": report.created_by.full_name,
         "submitted_at": report.submitted_at,
     }
+    # Clear statuses (owner, 16 Nov 2026): "Waiting for Ruwan (Director)", "Approved by Ruwan"…
+    if people is not None:
+        out["people"] = people.get(report.pk)
+    return out
 
 
 def payload(report: ShiftReport, user: User) -> dict:

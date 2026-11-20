@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next";
+
+import { approvalStatus, type StatusPeople } from "../lib/docStatus";
 import { API_BASE, apiGet, apiSend, apiUpload } from "./client";
 
 /** Routings for machined parts (P3-03). */
@@ -27,6 +30,8 @@ export interface Routing {
   status_label: string;
   notes: string;
   created_by: string;
+  /** Who it waits for and who last acted (clear statuses, owner 16 Nov 2026). */
+  people?: StatusPeople | null;
   approved_at: string | null;
   setup_min: string;
   run_min: string;
@@ -65,4 +70,13 @@ export function importRoutings(file: File, dryRun: boolean) {
   form.append("file", file);
   form.append("dry_run", dryRun ? "true" : "false");
   return apiUpload<{ drafts: number; saved: boolean }>("/routings/import/", form, "POST");
+}
+
+/** "Draft of Kasun", "Waiting for Ruwan (Production manager)", "Returned by Ruwan", "Approved by
+ * Ruwan"; otherwise the plain label, e.g. "Obsolete" (clear statuses, owner 16 Nov 2026). */
+export function routingStatus(
+  t: TFunction,
+  d: { status: string; status_label: string; created_by: string; people?: StatusPeople | null },
+): string {
+  return approvalStatus(t, d, "approved") ?? d.status_label;
 }

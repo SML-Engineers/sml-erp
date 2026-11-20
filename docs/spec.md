@@ -1574,6 +1574,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Old voucher invoice dates (owner, 20 Nov 2026) | More than 2 months old: "Is the date right?" and the Clerk ticks "Yes, the date is right" to save; the Accountant and the Director see a note. More than a year old: refused (catches typing mistakes such as 2006 for 2026; a real invoice that old cannot be paid through a voucher) | 4.4 |
 | Department mailboxes (owner, 20 Nov 2026) | Accounts, Sales and Purchasing each have their own sending mailbox; each kind of document is sent from the one chosen on its default message; one not set up yet sends from Accounts | 3B |
 | Duplicate a quotation (owner, 20 Nov 2026) | Any quotation the user can see can be duplicated into a new draft with the next number of the day, dated today, with the same customer, terms, lines, costing, drawings and pictures; prices, taxes and the exchange rate are worked out again; the original is unchanged | 5.1 |
+| Sales reports: salesperson filter (owner, 20 Nov 2026) | The quotation register always offers the Salesperson filter; the downloads name the chosen salesperson; the division is picked from a list | 5 |
 
 **Still needed for initial setup**
 

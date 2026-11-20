@@ -51,6 +51,12 @@ def _and_division(division: str) -> str:
     return f", division {division.upper()}" if division else ""
 
 
+def _and_salesperson(user, salesperson: str) -> str:
+    """ ", salesperson Dilini Wijesekara" on the download when one person is chosen."""
+    names = {str(p["id"]): p["name"] for p in reports.salespeople(user)}
+    return f", salesperson {names[salesperson]}" if salesperson in names else ""
+
+
 class RegisterView(_Reports):
     """The quotation register: ?from, ?to, ?status, ?customer, ?division, ?salesperson."""
 
@@ -71,7 +77,8 @@ class RegisterView(_Reports):
             rows,
             title="Quotation register",
             subtitle=f"Quotations dated {_period(start, end)}"
-            + _and_division(p.get("division", "")),
+            + _and_division(p.get("division", ""))
+            + _and_salesperson(request.user, p.get("salesperson", "")),
             columns=reports.REGISTER_COLUMNS,
             filename="quotation-register",
         )

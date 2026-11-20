@@ -2187,7 +2187,8 @@
     "received": "Received",
     "setOff": "Set off (LKR)",
     "balance": "Balance (LKR)",
-    "noneAdvances": "No advances waiting to be set off."
+    "noneAdvances": "No advances waiting to be set off.",
+    "allDivisions": "All divisions"
   },
   "resets": {
     "title": "Password reset",

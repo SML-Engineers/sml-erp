@@ -262,6 +262,31 @@ def test_the_api_gives_rows_and_downloads(executive, director, unilever):
     assert client.get("/api/v1/sales/dashboard/").json()["live"]["count"] == 1
 
 
+def test_the_register_downloads_one_salespersons_quotations(
+    executive, colleague, manager, unilever
+):
+    # Owner, 20 Nov 2026 (test script 6.3): filter by salesperson and status, then download.
+    import io
+
+    import openpyxl
+
+    quote(executive, unilever)
+    quote(colleague, unilever, price="1.00")
+    client = as_user(manager)
+    url = f"/api/v1/sales/reports/register/?salesperson={colleague.pk}&status=draft"
+    body = client.get(url).json()
+    assert [r["salesperson"] for r in body["rows"]] == [colleague.full_name]
+    assert [(s["count"], s["total_lkr"]) for s in body["summary"]] == [
+        (1, body["rows"][0]["total_lkr"])
+    ]
+    xlsx = client.get(f"{url}&export=xlsx")
+    sheet = openpyxl.load_workbook(io.BytesIO(xlsx.content)).active
+    cells = [str(c) for row in sheet.iter_rows(values_only=True) for c in row if c]
+    assert any(f"salesperson {colleague.full_name}" in c for c in cells)
+    assert sum(executive.full_name == c for c in cells) == 0
+    assert client.get(f"{url}&export=pdf")["Content-Type"] == "application/pdf"
+
+
 def test_no_sales_access_no_reports():
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     client = as_user(clerk)

@@ -34,8 +34,19 @@ const register: RegisterReport = {
   ],
 };
 
+const divisions = {
+  "GET /api/v1/divisions/": {
+    body: [
+      { id: 1, code: "WS", name: "Workshop", division_type: "production" },
+      { id: 2, code: "IM", name: "Moulding", division_type: "production" },
+      { id: 3, code: "HO", name: "Head Office", division_type: "shared" },
+    ],
+  },
+};
+
 test("the quotation register lists, filters and exports", async () => {
   const calls = mockApi({
+    ...divisions,
     "GET /api/v1/sales/reports/register/": { body: register },
     "GET /api/v1/sales/reports/register/?salesperson=5": { body: { ...register, rows: [], summary: [] } },
   });
@@ -52,6 +63,32 @@ test("the quotation register lists, filters and exports", async () => {
   expect(await screen.findByText("No quotations match.")).toBeInTheDocument();
 });
 
+// Owner, 20 Nov 2026 (test script 6.3): the salesperson filter is always there, and the
+// division is chosen from a list.
+test("the register filters by salesperson and division, even with one salesperson", async () => {
+  const one = { ...register, salespeople: [{ id: 3, name: "Nimal" }] };
+  const calls = mockApi({
+    ...divisions,
+    "GET /api/v1/sales/reports/register/": { body: one },
+    "GET /api/v1/sales/reports/register/?salesperson=3": { body: one },
+    "GET /api/v1/sales/reports/register/?salesperson=3&division=WS": { body: { ...one, rows: [], summary: [] } },
+  });
+  renderAt("/sales/reports", <SalesReportsPage />);
+  await screen.findByRole("table", { name: "Quotation register" });
+  fireEvent.change(screen.getByLabelText("Salesperson"), { target: { value: "3" } });
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/sales/reports/register/?salesperson=3", expect.anything()));
+  const division = screen.getByLabelText("Division");
+  await within(division).findByRole("option", { name: "WS Workshop" });
+  expect(within(division).queryByRole("option", { name: "HO Head Office" })).not.toBeInTheDocument();
+  fireEvent.change(division, { target: { value: "WS" } });
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/sales/reports/register/?salesperson=3&division=WS", expect.anything()));
+  const exports = screen.getByRole("group", { name: "Download Quotation register" });
+  expect(within(exports).getByRole("link", { name: "Excel" })).toHaveAttribute(
+    "href",
+    "/api/v1/sales/reports/register/?salesperson=3&division=WS&export=xlsx",
+  );
+});
+
 test("won and lost shows the win rate and the reasons", async () => {
   const report: WinLossReport = {
     rows: [],
@@ -61,7 +98,7 @@ test("won and lost shows the win rate and the reasons", async () => {
       by_salesperson: [],
     },
   };
-  mockApi({ "GET /api/v1/sales/reports/win-loss/?from=2026-10-01": { body: report } });
+  mockApi({ ...divisions, "GET /api/v1/sales/reports/win-loss/?from=2026-10-01": { body: report } });
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-31T10:00:00"));
   renderAt("/sales/reports?tab=winLoss", <SalesReportsPage />, "/sales/reports");

@@ -211,6 +211,10 @@ Status: `[ ]` to do · `[x]` done
     ones in red. A Sales Executive sees advances against their own documents; the Sales
     Manager and the payments roles see all of their divisions. Sales tiles on the home page
     for anyone with Sales: View.
+  - Owner, 20 Nov 2026 (test script 6.3): the register's Salesperson filter is always shown
+    (it was hidden when one person had made every quotation), the chosen salesperson is named
+    on the Excel and PDF, and the division is chosen from a list of the user's production
+    divisions instead of typed.
 
 - [ ] **P15-12 User acceptance testing and go-live**
   Sales staff and the Director run test scripts for each role on the test server; the owner

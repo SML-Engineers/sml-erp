@@ -14,8 +14,10 @@ import {
   sendTestEmail,
   templatesKey,
   updateMailAccount,
+  MAILBOXES,
   type EmailTemplate,
   type MailAccount,
+  type Mailbox,
   type Security,
 } from "../../api/documentEmail";
 
@@ -29,10 +31,12 @@ function ErrorLine({ error }: { error: unknown }) {
   );
 }
 
-/** Settings → Document email (spec 3B): the sending mailbox and the default messages. */
+/** Settings → Document email (spec 3B): the department mailboxes (owner, 20 Nov 2026) and
+ * the default messages, each sent from one of the mailboxes. */
 export default function DocumentEmailPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
-  const account = useQuery({ queryKey: mailAccountKey, queryFn: getMailAccount });
+  const [mailbox, setMailbox] = useState<Mailbox>("accounts");
+  const account = useQuery({ queryKey: [...mailAccountKey, mailbox], queryFn: () => getMailAccount(mailbox) });
   const templates = useQuery({ queryKey: templatesKey, queryFn: listTemplates });
   const canManage = can(me.access, "settings", "manage");
 
@@ -40,7 +44,14 @@ export default function DocumentEmailPage({ me }: { me: CurrentUser }) {
     <main className="page">
       <h1>{t("documentEmail.title")}</h1>
       <p className="muted">{t("documentEmail.help")}</p>
-      {account.data && <AccountPanel key={account.data.from_address} account={account.data} canManage={canManage} />}
+      {account.data && (
+        <AccountPanel
+          key={`${account.data.mailbox} ${account.data.from_address}`}
+          account={account.data}
+          canManage={canManage}
+          onMailbox={setMailbox}
+        />
+      )}
       {templates.data && <TemplatesPanel templates={templates.data} canManage={canManage} />}
       <ErrorLine error={account.error ?? templates.error} />
     </main>
@@ -49,9 +60,18 @@ export default function DocumentEmailPage({ me }: { me: CurrentUser }) {
 
 const SECURITY: Security[] = ["starttls", "ssl", "none"];
 
-function AccountPanel({ account, canManage }: { account: MailAccount; canManage: boolean }) {
+function AccountPanel({
+  account,
+  canManage,
+  onMailbox,
+}: {
+  account: MailAccount;
+  canManage: boolean;
+  onMailbox: (mailbox: Mailbox) => void;
+}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const mailbox = account.mailbox;
   const [values, setValues] = useState({
     from_name: account.from_name,
     from_address: account.from_address,
@@ -67,20 +87,20 @@ function AccountPanel({ account, canManage }: { account: MailAccount; canManage:
   const set = (key: keyof typeof values) => (value: string) => setValues((now) => ({ ...now, [key]: value }));
   const save = useMutation({
     mutationFn: () =>
-      updateMailAccount({
+      updateMailAccount(mailbox, {
         ...values,
         port: Number(values.port),
         security: values.security as Security,
         password: values.password || undefined,
       }),
     onSuccess: (data) => {
-      queryClient.setQueryData(mailAccountKey, data);
+      queryClient.setQueryData([...mailAccountKey, mailbox], data);
       setValues((now) => ({ ...now, password: "" }));
     },
   });
   const test = useMutation({
-    mutationFn: () => sendTestEmail(testTo),
-    onSuccess: (data) => queryClient.setQueryData(mailAccountKey, data),
+    mutationFn: () => sendTestEmail(testTo, mailbox),
+    onSuccess: (data) => queryClient.setQueryData([...mailAccountKey, mailbox], data),
   });
 
   function submit(event: FormEvent) {
@@ -105,6 +125,27 @@ function AccountPanel({ account, canManage }: { account: MailAccount; canManage:
     <section className="panel" aria-label={t("documentEmail.account")}>
       <h2>{t("documentEmail.account")}</h2>
       <p className="muted">{t("documentEmail.accountHelp")}</p>
+      <label>
+        {t("documentEmail.mailbox")}
+        <select value={mailbox} onChange={(e) => onMailbox(e.target.value as Mailbox)}>
+          {MAILBOXES.map((m) => (
+            <option key={m} value={m}>
+              {t(`documentEmail.mailboxes.${m}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <ul className="changes" aria-label={t("documentEmail.mailboxList")}>
+        {account.mailboxes.map((m) => (
+          <li key={m.mailbox}>
+            {m.is_ready
+              ? t("documentEmail.mailboxReady", { name: t(`documentEmail.mailboxes.${m.mailbox}`), address: m.from_address })
+              : t(m.mailbox === "accounts" ? "documentEmail.accountsNotReady" : "documentEmail.mailboxNotReady", {
+                  name: t(`documentEmail.mailboxes.${m.mailbox}`),
+                })}
+          </li>
+        ))}
+      </ul>
       <form className="form-grid" onSubmit={submit} aria-label={t("documentEmail.account")}>
         {text("from_name", t("documentEmail.fromName"))}
         {text("from_address", t("documentEmail.fromAddress"), "email")}
@@ -137,7 +178,7 @@ function AccountPanel({ account, canManage }: { account: MailAccount; canManage:
         {account.last_test_ok === true && t("documentEmail.testOk")}
         {account.last_test_ok === false && t("documentEmail.testFailed", { error: account.last_test_error })}
         {account.last_test_ok === null && account.is_ready && t("documentEmail.notTested")}
-        {!account.is_ready && t("documentEmail.notReady")}
+        {!account.is_ready && t(mailbox === "accounts" ? "documentEmail.notReady" : "documentEmail.notReadyDepartment")}
       </p>
       {canManage && account.is_ready && (
         <form
@@ -191,8 +232,9 @@ function TemplateForm({ template, canManage }: { template: EmailTemplate; canMan
   const queryClient = useQueryClient();
   const [subject, setSubject] = useState(template.subject);
   const [body, setBody] = useState(template.body);
+  const [mailbox, setMailbox] = useState<Mailbox>(template.mailbox);
   const save = useMutation({
-    mutationFn: () => saveTemplate(template.kind, subject, body),
+    mutationFn: () => saveTemplate(template.kind, subject, body, mailbox),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: templatesKey }),
   });
   const preview = useMutation({ mutationFn: () => previewTemplate(template.kind, subject, body) });
@@ -206,6 +248,16 @@ function TemplateForm({ template, canManage }: { template: EmailTemplate; canMan
         save.mutate();
       }}
     >
+      <label className="wide">
+        {t("documentEmail.sentFrom")}
+        <select value={mailbox} disabled={!canManage} onChange={(e) => setMailbox(e.target.value as Mailbox)}>
+          {MAILBOXES.map((m) => (
+            <option key={m} value={m}>
+              {t(`documentEmail.mailboxes.${m}`)}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="wide">
         {t("email.subject")}
         <input value={subject} disabled={!canManage} maxLength={200} onChange={(e) => setSubject(e.target.value)} />

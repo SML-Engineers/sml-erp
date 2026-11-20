@@ -285,3 +285,114 @@ def test_the_sent_emails_are_visible_to_the_admin_and_auditor_only(accountant, f
     assert rows[0]["to"] == "owner@sml.lk" and rows[0]["status"] == "sent"
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     assert as_user(clerk).get("/api/v1/sent-emails/").status_code == 403
+
+
+# --- Department mailboxes (owner, 20 Nov 2026) ------------------------------------------
+
+
+def mailbox(admin, which, address):
+    document_email.update_account(
+        admin,
+        {
+            "from_name": f"SML Engineers {which.title()}",
+            "from_address": address,
+            "host": "smtp.hostinger.com",
+            "port": 465,
+            "security": "ssl",
+            "username": address,
+            "password": f"{which}-Secret-1",
+        },
+        mailbox=which,
+    )
+
+
+def send(user, kind):
+    return document_email.send(
+        user, kind=kind, label=kind, to="buyer@customer.lk", subject="Hello", body="Attached."
+    )
+
+
+def test_each_department_has_its_own_mailbox(admin, finance):
+    mailbox(admin, "sales", "sales@smlengineers.lk")
+    sales = MailAccount.get("sales")
+    assert (sales.pk, sales.from_address) == (2, "sales@smlengineers.lk")
+    assert crypto.decrypt(sales.password_encrypted) == "sales-Secret-1"
+    assert MailAccount.get().from_address == "finance@smlengineers.lk"  # Accounts unchanged
+
+    client = as_user(admin)
+    body = client.get(f"{URL}?mailbox=sales").json()
+    assert (body["mailbox"], body["from_address"], body["is_ready"]) == (
+        "sales",
+        "sales@smlengineers.lk",
+        True,
+    )
+    assert "sales-Secret-1" not in str(body)
+    assert [(m["mailbox"], m["is_ready"]) for m in body["mailboxes"]] == [
+        ("accounts", True),
+        ("sales", True),
+        ("purchasing", False),
+    ]
+    changed = client.put(
+        f"{URL}?mailbox=purchasing", {"from_address": "buying@smlengineers.lk"}, format="json"
+    )
+    assert changed.status_code == 200 and changed.json()["mailbox"] == "purchasing"
+    assert MailAccount.get("purchasing").from_address == "buying@smlengineers.lk"
+    assert client.get(f"{URL}?mailbox=hr").status_code == 400
+
+    result = client.post(f"{URL}test/", {"to": "o@sml.lk", "mailbox": "sales"}, format="json")
+    assert result.json()["test_ok"] is True
+    assert mail.outbox[-1].from_email == '"SML Engineers Sales" <sales@smlengineers.lk>'
+    assert MailAccount.get("sales").last_test_ok is True
+    assert MailAccount.get().last_test_ok is None
+
+
+def test_each_kind_goes_from_its_departments_mailbox(admin, accountant, finance):
+    # Sales not set up yet: a quotation still goes, from Accounts.
+    assert send(accountant, "quotation").from_address.endswith("<finance@smlengineers.lk>")
+    mailbox(admin, "sales", "sales@smlengineers.lk")
+    mailbox(admin, "purchasing", "purchasing@smlengineers.lk")
+    assert send(accountant, "quotation").from_address.endswith("<sales@smlengineers.lk>")
+    assert send(accountant, "proforma").from_address.endswith("<sales@smlengineers.lk>")
+    assert send(accountant, "purchase_order").from_address.endswith("<purchasing@smlengineers.lk>")
+    assert send(accountant, "tax_invoice").from_address.endswith("<finance@smlengineers.lk>")
+    assert mail.outbox[-2].from_email == '"SML Engineers Purchasing" <purchasing@smlengineers.lk>'
+    draft = document_email.draft(accountant, "quotation", {})
+    assert draft["from"] == '"SML Engineers Sales" <sales@smlengineers.lk>'
+
+
+def test_the_admin_chooses_the_mailbox_of_each_kind(admin, accountant, finance):
+    mailbox(admin, "sales", "sales@smlengineers.lk")
+    rows = {t["kind"]: t["mailbox"] for t in document_email.templates()}
+    assert (rows["quotation"], rows["purchase_order"], rows["payslip"]) == (
+        "sales",
+        "purchasing",
+        "accounts",
+    )
+    template = next(t for t in document_email.templates() if t["kind"] == "customer_statement")
+    response = as_user(admin).put(
+        f"{URL}templates/customer_statement/",
+        {"subject": template["subject"], "body": template["body"], "mailbox": "sales"},
+        format="json",
+    )
+    assert response.status_code == 200 and response.json()["mailbox"] == "sales"
+    assert send(accountant, "customer_statement").from_address.endswith("<sales@smlengineers.lk>")
+    # Saving the message without naming a mailbox keeps the one chosen.
+    document_email.update_template(
+        admin, "customer_statement", subject=template["subject"], body=template["body"]
+    )
+    assert document_email.account_for("customer_statement").mailbox == "sales"
+    with pytest.raises(EmailError, match="Choose the mailbox"):
+        document_email.update_template(
+            admin, "quotation", subject="x", body="y", mailbox="marketing"
+        )
+
+
+def test_the_database_keeps_three_known_mailboxes(finance):
+    from apps.core.models import EmailTemplate
+
+    with pytest.raises(DatabaseError), transaction.atomic():
+        MailAccount.objects.create(pk=4, mailbox="accounts")
+    with pytest.raises(DatabaseError), transaction.atomic():
+        MailAccount.objects.filter(pk=2).update(mailbox="accounts")
+    with pytest.raises(DatabaseError), transaction.atomic():
+        EmailTemplate.objects.filter(document_type="quotation").update(mailbox="marketing")

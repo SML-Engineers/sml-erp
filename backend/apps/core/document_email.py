@@ -60,9 +60,42 @@ def _address(value: str, what: str) -> str:
 # --- The sending account ----------------------------------------------------------------
 
 
-def account_view() -> dict:
-    account = MailAccount.get()
+def _mailbox(mailbox: str | None) -> str:
+    mailbox = mailbox or MailAccount.Mailbox.ACCOUNTS
+    if mailbox not in MailAccount.Mailbox.values:
+        raise EmailError("Choose the mailbox: Accounts, Sales or Purchasing.")
+    return mailbox
+
+
+def account_for(kind: str) -> MailAccount:
+    """The mailbox a kind of document is sent from: its department's, or Accounts while
+    that one is not set up (owner, 20 Nov 2026)."""
+    template = EmailTemplate.objects.filter(document_type=kind).first()
+    mailbox = template.mailbox if template else MailAccount.Mailbox.ACCOUNTS
+    account = MailAccount.get(mailbox)
+    if account.is_ready or mailbox == MailAccount.Mailbox.ACCOUNTS:
+        return account
+    return MailAccount.get()
+
+
+def mailboxes() -> list[dict]:
+    """Each department mailbox, its address and whether it is set up."""
+    return [
+        {
+            "mailbox": code,
+            "label": label,
+            "from_address": (account := MailAccount.get(code)).from_address,
+            "is_ready": account.is_ready,
+        }
+        for code, label in MailAccount.Mailbox.choices
+    ]
+
+
+def account_view(mailbox: str = "accounts") -> dict:
+    account = MailAccount.get(_mailbox(mailbox))
     return {
+        "mailbox": account.mailbox,
+        "mailboxes": mailboxes(),
         "from_name": account.from_name,
         "from_address": account.from_address,
         "reply_to": account.reply_to,
@@ -79,12 +112,14 @@ def account_view() -> dict:
     }
 
 
-def update_account(user: User, values: dict, reason: str = "") -> dict:
-    """Change the sending mailbox. `password` replaces the stored one when given; it is
-    never returned. `clear_password` removes it."""
+def update_account(user: User, values: dict, reason: str = "", mailbox: str = "accounts") -> dict:
+    """Change a department's sending mailbox. `password` replaces the stored one when given;
+    it is never returned. `clear_password` removes it."""
     _admin(user)
+    mailbox = _mailbox(mailbox)
     with audit_context("mail_account_changed", reason), transaction.atomic():
-        account = MailAccount.objects.select_for_update().get_or_create(pk=1)[0]
+        MailAccount.get(mailbox)
+        account = MailAccount.objects.select_for_update().get(pk=MailAccount.IDS[mailbox])
         for field in ("from_address", "reply_to", "copy_to"):
             if field in values:
                 setattr(account, field, _address(values[field], field.replace("_", " ")))
@@ -117,7 +152,7 @@ def update_account(user: User, values: dict, reason: str = "") -> dict:
             raise EmailError("Enter the address documents are sent from.")
         account.last_test_ok = None  # the settings changed: test again
         account.save()
-    return account_view()
+    return account_view(mailbox)
 
 
 def _connection(account: MailAccount):
@@ -148,13 +183,14 @@ def _safe_error(error: Exception) -> str:
     return text.replace("\n", " ")[:500]
 
 
-def send_test(user: User, to: str) -> dict:
-    """Send a short test email and remember whether it worked."""
+def send_test(user: User, to: str, mailbox: str = "accounts") -> dict:
+    """Send a short test email from one mailbox and remember whether it worked."""
     _admin(user)
+    mailbox = _mailbox(mailbox)
     to = _address(to, "test address")
     if not to:
         raise EmailError("Enter the address to send the test email to.")
-    account = MailAccount.get()
+    account = MailAccount.get(mailbox)
     if not account.is_ready:
         raise EmailError("Enter the sending address and the mail server first.")
     message = EmailMessage(
@@ -172,10 +208,10 @@ def send_test(user: User, to: str) -> dict:
         ok, error = True, ""
     except Exception as exc:  # noqa: BLE001 - any failure is reported to the Admin
         ok, error = False, _safe_error(exc)
-    MailAccount.objects.filter(pk=1).update(
+    MailAccount.objects.filter(pk=account.pk).update(
         last_test_at=timezone.now(), last_test_ok=ok, last_test_error=error
     )
-    return {**account_view(), "test_ok": ok, "test_error": error}
+    return {**account_view(mailbox), "test_ok": ok, "test_error": error}
 
 
 # --- Default messages -------------------------------------------------------------------
@@ -208,6 +244,7 @@ def templates() -> list[dict]:
             {
                 "kind": kind,
                 "label": label,
+                "mailbox": template.mailbox if template else MailAccount.Mailbox.ACCOUNTS,
                 "subject": template.subject if template else "",
                 "body": template.body if template else "",
                 "placeholders": [
@@ -219,9 +256,13 @@ def templates() -> list[dict]:
     return rows
 
 
-def update_template(user: User, kind: str, *, subject: str, body: str, reason: str = ""):
+def update_template(
+    user: User, kind: str, *, subject: str, body: str, reason: str = "", mailbox: str = ""
+):
     _admin(user)
     _kind(kind)
+    current = EmailTemplate.objects.filter(document_type=kind).first()
+    mailbox = _mailbox(mailbox or (current.mailbox if current else ""))
     subject = (subject or "").strip()
     body = (body or "").strip()
     if not subject or "\n" in subject or "\r" in subject:
@@ -237,7 +278,7 @@ def update_template(user: User, kind: str, *, subject: str, body: str, reason: s
     with audit_context("email_template_changed", reason):
         template, _ = EmailTemplate.objects.update_or_create(
             document_type=kind,
-            defaults={"subject": subject, "body": body, "updated_by": user},
+            defaults={"subject": subject, "body": body, "mailbox": mailbox, "updated_by": user},
         )
     return template
 
@@ -268,7 +309,7 @@ def draft(user: User, kind: str, values: dict, *, to=(), cc=()) -> dict:
     if template is None:
         raise EmailError("There is no default message for this kind of document yet.")
     context = {**_common(user), **values}
-    account = MailAccount.get()
+    account = account_for(kind)
     return {
         "from": _sender(account) if account.is_ready else "",
         "ready": account.is_ready,
@@ -320,7 +361,7 @@ def send(
     record returned has status "failed" with the server's answer. The caller checks that
     the user may send this document."""
     _kind(kind)
-    account = MailAccount.get()
+    account = account_for(kind)
     if not account.is_ready:
         raise EmailError(
             "Document email is not set up yet. Ask the Admin to enter the sending mailbox "

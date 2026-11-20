@@ -853,9 +853,9 @@
   },
   "documentEmail": {
     "title": "Document email",
-    "help": "The mailbox that quotations, invoices, statements, outstanding reports and other documents are emailed from, and the default message for each kind. The person sending can edit the message before it goes.",
+    "help": "The department mailboxes that quotations, invoices, statements, outstanding reports and other documents are emailed from, and the default message for each kind. The person sending can edit the message before it goes.",
     "account": "Sending mailbox",
-    "accountHelp": "Use the finance mailbox's own mail server (for example smtp.hostinger.com, port 465 with SSL) so the company domain's SPF and DKIM records cover the emails. The password is stored encrypted and is never shown again.",
+    "accountHelp": "Each department (Accounts, Sales, Purchasing) can have its own mailbox. Use the mailbox's own mail server (for example smtp.hostinger.com, port 465 with SSL) so the company domain's SPF and DKIM records cover the emails. The password is stored encrypted and is never shown again.",
     "fromName": "Sender name",
     "fromAddress": "Send from (e.g. finance@domain.com)",
     "replyTo": "Replies go to (optional)",
@@ -885,7 +885,19 @@
     "placeholders": "Placeholders you can use:",
     "preview": "Preview",
     "saveMessage": "Save message",
-    "messageSaved": "Saved."
+    "messageSaved": "Saved.",
+    "mailbox": "Department mailbox",
+    "mailboxes": {
+      "accounts": "Accounts",
+      "sales": "Sales",
+      "purchasing": "Purchasing"
+    },
+    "mailboxList": "Department mailboxes",
+    "mailboxReady": "{{name}}: {{address}}",
+    "mailboxNotReady": "{{name}}: not set up yet; its documents are sent from the Accounts mailbox",
+    "accountsNotReady": "{{name}}: not set up yet; documents cannot be emailed",
+    "notReadyDepartment": "Not set up yet: this department's documents are sent from the Accounts mailbox.",
+    "sentFrom": "Sent from (department mailbox)"
   },
   "sentEmails": {
     "title": "Sent emails",

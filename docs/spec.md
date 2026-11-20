@@ -468,6 +468,7 @@ Every document and report the company sends out (quotations, proforma invoices, 
 
 **Sending account (Admin, Settings → Document email)**
 
+- **Department mailboxes** (owner, 20 Nov 2026): Accounts, Sales and Purchasing each have their own mailbox, set up as below. Each kind of document names the mailbox it is sent from, next to its default message (to start: quotations and proformas from Sales, purchase orders from Purchasing, invoices, statements, payment advices, payslips and reports from Accounts). A department mailbox not set up yet sends from Accounts.
 - The Admin sets the mailbox documents are sent from: sender name and address, reply-to address, the mail server (host, port, security: STARTTLS, SSL or none) and its user name and password, and an optional address that receives a copy of every email (so the finance mailbox keeps everything that was sent).
 - The password is stored encrypted and is never shown again or sent to the browser; the Admin can only replace it.
 - A **Send test email** button checks the settings before they are used.
@@ -1571,6 +1572,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Template designer: saved layouts, delivery note first (owner, 13 Nov 2026) | Printed documents can be laid out by the Admin and the Director: blocks placed and sized on the page, hidden or added as own text; each save is a version kept for the history; reset and bring back; the items table runs onto more pages and what follows prints after it | 0.x, 5.3 |
 | Template designer: the designer page (owner, 13 Nov 2026) | Settings → Printed documents shows the page to scale; the Admin and the Director drag and resize its blocks (or type the sizes in millimetres), leave optional blocks off, add their own text, preview on the latest real document, and save with a note; the history brings back an old version; other users see the layout read-only | 0.x, 5.3 |
 | Old voucher invoice dates (owner, 20 Nov 2026) | More than 2 months old: "Is the date right?" and the Clerk ticks "Yes, the date is right" to save; the Accountant and the Director see a note. More than a year old: refused (catches typing mistakes such as 2006 for 2026; a real invoice that old cannot be paid through a voucher) | 4.4 |
+| Department mailboxes (owner, 20 Nov 2026) | Accounts, Sales and Purchasing each have their own sending mailbox; each kind of document is sent from the one chosen on its default message; one not set up yet sends from Accounts | 3B |
 
 **Still needed for initial setup**
 

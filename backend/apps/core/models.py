@@ -793,8 +793,17 @@ class NotificationPreference(models.Model):
 
 
 class MailAccount(models.Model):
-    """The mailbox documents and reports are sent from (e.g. finance@domain.com). One row,
-    id 1. The password is stored encrypted and never leaves the server."""
+    """A mailbox documents and reports are sent from, one per department (owner, 20 Nov
+    2026): Accounts (id 1, e.g. finance@domain.com), Sales (2) and Purchasing (3). Each kind
+    of document names its mailbox; one not set up yet sends from Accounts. The password is
+    stored encrypted and never leaves the server."""
+
+    class Mailbox(models.TextChoices):
+        ACCOUNTS = "accounts", "Accounts"
+        SALES = "sales", "Sales"
+        PURCHASING = "purchasing", "Purchasing"
+
+    IDS = {"accounts": 1, "sales": 2, "purchasing": 3}
 
     class Security(models.TextChoices):
         STARTTLS = "starttls", "STARTTLS (usually port 587)"
@@ -802,6 +811,9 @@ class MailAccount(models.Model):
         NONE = "none", "None (only for a mail server on the same machine)"
 
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    mailbox = models.CharField(
+        max_length=20, unique=True, choices=Mailbox.choices, default=Mailbox.ACCOUNTS
+    )
     from_name = models.CharField(max_length=100, blank=True)
     from_address = models.EmailField(blank=True)
     reply_to = models.EmailField(blank=True)
@@ -818,15 +830,20 @@ class MailAccount(models.Model):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(condition=models.Q(id=1), name="core_mailaccount_single_row"),
+            models.CheckConstraint(
+                condition=models.Q(id=1, mailbox="accounts")
+                | models.Q(id=2, mailbox="sales")
+                | models.Q(id=3, mailbox="purchasing"),
+                name="core_mailaccount_three_mailboxes",
+            ),
         ]
 
     def __str__(self):
         return self.from_address or "(not set up)"
 
     @classmethod
-    def get(cls) -> "MailAccount":
-        account, _ = cls.objects.get_or_create(pk=1)
+    def get(cls, mailbox: str = "accounts") -> "MailAccount":
+        account, _ = cls.objects.get_or_create(pk=cls.IDS[mailbox], defaults={"mailbox": mailbox})
         return account
 
     @property
@@ -841,6 +858,10 @@ class EmailTemplate(models.Model):
     document_type = models.SlugField(max_length=30, unique=True)
     subject = models.CharField(max_length=200)
     body = models.TextField()
+    # The department mailbox this kind is sent from (owner, 20 Nov 2026).
+    mailbox = models.CharField(
+        max_length=20, choices=MailAccount.Mailbox.choices, default=MailAccount.Mailbox.ACCOUNTS
+    )
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
@@ -848,6 +869,12 @@ class EmailTemplate(models.Model):
 
     class Meta:
         ordering = ["document_type"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(mailbox__in=["accounts", "sales", "purchasing"]),
+                name="core_emailtemplate_mailbox_known",
+            ),
+        ]
 
     def __str__(self):
         return self.document_type

@@ -42,6 +42,11 @@ class Quotation(models.Model):
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.PROTECT, related_name="revisions"
     )
+    # A new quotation made with "Duplicate" from another one (owner, 20 Nov 2026): it has
+    # its own number; this only says where it was copied from.
+    copied_from = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="copies"
+    )
     division = models.ForeignKey("core.Division", on_delete=models.PROTECT, related_name="+")
     customer = models.ForeignKey(
         "masters.Customer", on_delete=models.PROTECT, related_name="quotations"

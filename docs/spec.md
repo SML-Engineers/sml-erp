@@ -755,7 +755,7 @@ Minimum order quantity is stated on each line.
 
 **Controls and tracking**
 
-- Number QL{YY}{MM}{DD}{XX}, e.g. QL26102105 (section 3, Number series). Revisions keep the number and add Rev 0, Rev 1, … with full history of what was offered.
+- Number QL{YY}{MM}{DD}{XX}, e.g. QL26102105 (section 3, Number series). Revisions keep the number and add Rev 0, Rev 1, … with full history of what was offered. **Duplicate** (owner, 20 Nov 2026) instead makes a new quotation with the next number of the day, dated today, copying the customer, terms, lines, costing, drawings and pictures; the original is unchanged and the copy shows which quotation it came from.
 - Approval through the shared approval engine: **every quotation needs the Director's approval before it is printed or sent**, by email or otherwise (owner's decision, 31 Oct 2026). Quotations below the division's minimum margin, or above its set value, are flagged to the Director as warnings.
 - Costing is seen by the Sales Manager, the Accountant, the Director and the quotation's creator; not by other Sales Executives, and not by the Auditor (owner's decisions, 31 Oct 2026).
 - Status: Draft, Awaiting Approval, Sent, Accepted, Lost (reason required), Expired.
@@ -1573,6 +1573,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Template designer: the designer page (owner, 13 Nov 2026) | Settings → Printed documents shows the page to scale; the Admin and the Director drag and resize its blocks (or type the sizes in millimetres), leave optional blocks off, add their own text, preview on the latest real document, and save with a note; the history brings back an old version; other users see the layout read-only | 0.x, 5.3 |
 | Old voucher invoice dates (owner, 20 Nov 2026) | More than 2 months old: "Is the date right?" and the Clerk ticks "Yes, the date is right" to save; the Accountant and the Director see a note. More than a year old: refused (catches typing mistakes such as 2006 for 2026; a real invoice that old cannot be paid through a voucher) | 4.4 |
 | Department mailboxes (owner, 20 Nov 2026) | Accounts, Sales and Purchasing each have their own sending mailbox; each kind of document is sent from the one chosen on its default message; one not set up yet sends from Accounts | 3B |
+| Duplicate a quotation (owner, 20 Nov 2026) | Any quotation the user can see can be duplicated into a new draft with the next number of the day, dated today, with the same customer, terms, lines, costing, drawings and pictures; prices, taxes and the exchange rate are worked out again; the original is unchanged | 5.1 |
 
 **Still needed for initial setup**
 

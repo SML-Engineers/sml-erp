@@ -91,6 +91,11 @@ urlpatterns = [
         views.QuotationReviseView.as_view(),
         name="quotation-revise",
     ),
+    path(
+        "quotations/<int:pk>/duplicate/",
+        views.QuotationDuplicateView.as_view(),
+        name="quotation-duplicate",
+    ),
     path("receivables/aging/", receivable_views.AgingView.as_view(), name="receivables-aging"),
     path(
         "receivables/statements/<int:pk>/",

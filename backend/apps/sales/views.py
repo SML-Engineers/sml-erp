@@ -142,6 +142,12 @@ def _detail(q: Quotation, user) -> dict:
         "can_mark_sent": workflow.can_mark_sent(user, q),
         "can_record_outcome": workflow.can_record_outcome(user, q),
         "can_revise": workflow.can_revise(user, q),
+        # Owner, 20 Nov 2026: "Duplicate" makes a new quotation with the next number.
+        "can_duplicate": workflow.can_duplicate(user, q),
+        "copied_from": None
+        if q.copied_from_id is None
+        or not services.visible(user).filter(pk=q.copied_from_id).exists()
+        else {"id": q.copied_from_id, "label": q.copied_from.label},
         "can_email": quotation_email.can_email(user, q),
         "can_make_proforma": q.status == Quotation.Status.ACCEPTED
         and q.created_by_id == user.pk
@@ -663,6 +669,18 @@ class QuotationReviseView(_Action):
         quotation = _get(request.user, pk)
         try:
             new = workflow.revise(request.user, quotation)
+        except SalesError as error:
+            return _error(error)
+        return Response(_detail(new, request.user), status=status.HTTP_201_CREATED)
+
+
+class QuotationDuplicateView(_Action):
+    access_write_level = "enter"
+
+    def post(self, request, pk):
+        quotation = _get(request.user, pk)
+        try:
+            new = workflow.duplicate(request.user, quotation)
         except SalesError as error:
             return _error(error)
         return Response(_detail(new, request.user), status=status.HTTP_201_CREATED)

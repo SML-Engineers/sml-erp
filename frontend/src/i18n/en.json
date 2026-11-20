@@ -1679,7 +1679,10 @@
     "pictureTooBig": "{{name}} is larger than 1 MB. Make it smaller and try again.",
     "attachPictures": "Also attach the pictures ({{count}}): {{names}}",
     "validDays": "Valid for (days)",
-    "defaultDays": "14 days if left empty"
+    "defaultDays": "14 days if left empty",
+    "duplicate": "Duplicate",
+    "duplicateHelp": "Makes a new draft quotation with the next number, dated today, with the same customer, lines, costing, drawings and pictures. This quotation stays as it is.",
+    "copiedFrom": "Duplicated from"
   },
   "quoteCosting": {
     "open": "Costing",

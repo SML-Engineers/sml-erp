@@ -23,7 +23,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from apps.core import approvals
-from apps.core.access import effective_access
+from apps.core.access import division_scope, effective_access
 from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
 from apps.core.models import ApprovalState, User
@@ -292,57 +292,106 @@ def revise(user: User, quotation: Quotation) -> Quotation:
             discount_pct=old.discount_pct,
             created_by=user,
         )
-        old_lines = list(old.lines.prefetch_related("breaks").select_related("tax_code"))
         try:
-            new = services.save(
+            new = _copy_into(user, old, new)
+        except MastersError as error:
+            raise SalesError(str(error)) from None
+        old.status = S.REVISED
+        old.save(update_fields=["status"])
+        return new
+
+
+def _line_inputs(old_lines) -> list[LineInput]:
+    return [
+        LineInput(
+            description=line.description,
+            quantity=line.quantity,
+            unit_price=line.unit_price,
+            drawing_no=line.drawing_no,
+            drawing_rev=line.drawing_rev,
+            unit=line.unit,
+            min_order_qty=line.min_order_qty,
+            tax_code=line.tax_code,
+            breaks=[BreakInput(b.quantity, b.unit_price) for b in line.breaks.all()],
+            is_tooling=line.is_tooling,
+        )
+        for line in old_lines
+    ]
+
+
+def _copy_into(user: User, old: Quotation, new: Quotation | None, **header) -> Quotation:
+    """The lines (prices and taxes worked out again for today), costing, drawings and
+    pictures of `old` on `new`; with `new` None, a new quotation with its own number made
+    from `header`."""
+    old_lines = list(old.lines.prefetch_related("breaks").select_related("tax_code"))
+    new = services.save(user, new, lines=_line_inputs(old_lines), **header)
+    new_lines = {line.line_no: line for line in new.lines.all()}
+    for line in old_lines:
+        _copy_costing(line, new_lines[line.line_no])
+    for record in old.files.all():
+        QuotationFile.objects.create(
+            quotation=new,
+            line_no=record.line_no,
+            file=record.file.name,
+            file_name=record.file_name,
+            content_type=record.content_type,
+            size=record.size,
+            sha256=record.sha256,
+            uploaded_by=record.uploaded_by,
+            uploaded_at=record.uploaded_at,
+        )
+    for picture in old.images.all():
+        QuotationImage.objects.create(
+            quotation=new,
+            file=picture.file.name,
+            file_name=picture.file_name,
+            content_type=picture.content_type,
+            size=picture.size,
+            sha256=picture.sha256,
+            uploaded_by=picture.uploaded_by,
+            uploaded_at=picture.uploaded_at,
+        )
+    return new
+
+
+def can_duplicate(user: User, quotation: Quotation) -> bool:
+    """Anyone who makes quotations may copy one they can see, whatever its state, if they
+    work in its division (owner, 20 Nov 2026)."""
+    return can_enter(user) and division_scope(user).filter(pk=quotation.division_id).exists()
+
+
+def duplicate(user: User, quotation: Quotation) -> Quotation:
+    """A new draft quotation with the next number, dated today, for the same customer, with
+    the same terms, lines, drawings, pictures and costing (owner, 20 Nov 2026). Prices,
+    taxes and the exchange rate are worked out again for today. The original is unchanged."""
+    if not can_enter(user):
+        raise SalesError("You cannot make quotations.")
+    if not can_duplicate(user, quotation):
+        raise SalesError(f"You cannot make quotations in division {quotation.division.code}.")
+    with audit_context("quotation_copied"), transaction.atomic():
+        old = Quotation.objects.get(pk=quotation.pk)
+        contact = old.contact if old.contact and old.contact.is_active else None
+        try:
+            new = _copy_into(
                 user,
-                new,
-                lines=[
-                    LineInput(
-                        description=line.description,
-                        quantity=line.quantity,
-                        unit_price=line.unit_price,
-                        drawing_no=line.drawing_no,
-                        drawing_rev=line.drawing_rev,
-                        unit=line.unit,
-                        min_order_qty=line.min_order_qty,
-                        tax_code=line.tax_code,
-                        breaks=[BreakInput(b.quantity, b.unit_price) for b in line.breaks.all()],
-                        is_tooling=line.is_tooling,
-                    )
-                    for line in old_lines
-                ],
+                old,
+                None,
+                customer=old.customer,
+                contact=contact,
+                division=old.division,
+                currency=old.currency,
+                valid_until=timezone.localdate() + (old.valid_until - old.quote_date),
+                enquiry_ref=old.enquiry_ref,
+                payment_terms=old.payment_terms,
+                delivery_lead_time=old.delivery_lead_time,
+                incoterm=old.incoterm,
+                notes=old.notes,
+                discount_pct=old.discount_pct,
             )
         except MastersError as error:
             raise SalesError(str(error)) from None
-        new_lines = {line.line_no: line for line in new.lines.all()}
-        for line in old_lines:
-            _copy_costing(line, new_lines[line.line_no])
-        for record in old.files.all():
-            QuotationFile.objects.create(
-                quotation=new,
-                line_no=record.line_no,
-                file=record.file.name,
-                file_name=record.file_name,
-                content_type=record.content_type,
-                size=record.size,
-                sha256=record.sha256,
-                uploaded_by=record.uploaded_by,
-                uploaded_at=record.uploaded_at,
-            )
-        for picture in old.images.all():
-            QuotationImage.objects.create(
-                quotation=new,
-                file=picture.file.name,
-                file_name=picture.file_name,
-                content_type=picture.content_type,
-                size=picture.size,
-                sha256=picture.sha256,
-                uploaded_by=picture.uploaded_by,
-                uploaded_at=picture.uploaded_at,
-            )
-        old.status = S.REVISED
-        old.save(update_fields=["status"])
+        new.copied_from = old
+        new.save(update_fields=["copied_from"])
         return new
 
 

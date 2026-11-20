@@ -13,7 +13,7 @@ from apps.core import approvals
 from apps.core.models import AuditEvent, Division, Notification
 from apps.masters import costing_rates, customers, limits
 from apps.masters import services as masters
-from apps.masters.models import Section
+from apps.masters.models import Customer, Section
 from apps.sales import costing, services, tasks, workflow
 from apps.sales.costing import CostingInput, OperationInput
 from apps.sales.models import Quotation, QuotationCosting, QuotationLine
@@ -375,3 +375,78 @@ def test_the_warnings_are_only_for_those_who_see_costing(executive, unilever, la
     q = draft(executive, unilever)
     auditor = person("auditor@sml.lk", "auditor", all_divisions=True)
     assert "review" not in as_user(auditor).get(f"/api/v1/quotations/{q.pk}/").json()
+
+
+# --- Duplicate (owner, 20 Nov 2026) -----------------------------------------------------
+
+
+JPG = b"\xff\xd8\xff\xe0" + b"\x00JFIF" + b"j" * 200
+
+
+def test_a_duplicate_is_a_new_quotation_with_the_next_number(approved, executive):
+    new = workflow.duplicate(executive, approved)
+    approved.refresh_from_db()
+    assert approved.number == f"QL{TODAY:%y%m%d}01"
+    assert new.number == f"QL{TODAY:%y%m%d}02"  # the next number of the day
+    assert (new.revision, new.parent_id, new.copied_from_id) == (0, None, approved.pk)
+    assert (new.status, approved.status) == (S.DRAFT, S.APPROVED)  # the original unchanged
+    assert (new.created_by, new.quote_date, new.customer) == (executive, TODAY, approved.customer)
+    assert new.valid_until - new.quote_date == approved.valid_until - approved.quote_date
+    assert (new.payment_terms, new.incoterm) == (approved.payment_terms, approved.incoterm)
+    line = new.lines.get()
+    assert (line.description, line.unit_price, line.total) == (
+        "Shaft",
+        Decimal("1500.00"),
+        approved.lines.get().total,
+    )
+    assert [b.quantity for b in line.breaks.all()] == [Decimal("50.000")]
+    assert line.costing.operations.get().rate == Decimal("3000.00")
+    assert approved.lines.get().costing.pk != line.costing.pk
+    assert new.total_amount == approved.total_amount
+    assert AuditEvent.objects.filter(event="quotation_copied").exists()
+    # The copy is a normal draft: changed, submitted and approved on its own.
+    assert services.can_edit(executive, new)
+    assert workflow.revisions(new) == [new]  # not a revision of the original
+
+
+def test_a_draft_is_duplicated_too_with_its_drawings_and_pictures(executive, unilever, lathe):
+    q = draft(executive, unilever)
+    services.add_image(executive, q, SimpleUploadedFile("front.jpg", JPG))
+    services.add_file(executive, q, SimpleUploadedFile("shaft.pdf", b"%PDF-1 shaft"), 1)
+    copy = workflow.duplicate(executive, q)  # a draft too
+    assert [i.file_name for i in copy.images.all()] == ["front.jpg"]
+    assert [(f.file_name, f.line_no) for f in copy.files.all()] == [("shaft.pdf", 1)]
+    assert copy.number != q.number and q.status == S.DRAFT
+
+
+def test_who_cannot_duplicate(executive, accountant, manager, unilever, lathe):
+    q = draft(executive, unilever)
+    with pytest.raises(SalesError, match="cannot make quotations"):
+        workflow.duplicate(accountant, q)  # sees quotations but does not make them
+    with pytest.raises(SalesError, match="cannot make quotations"):
+        workflow.duplicate(manager, q)  # approves them, does not make them
+    moulding = person("im-sales@sml.lk", "sales_executive", divisions=["IM"])
+    with pytest.raises(SalesError, match="cannot make quotations in division WS"):
+        workflow.duplicate(moulding, q)
+    Customer.objects.filter(pk=unilever.pk).update(is_active=False)
+    with pytest.raises(SalesError, match="inactive"):
+        workflow.duplicate(executive, q)
+    assert Quotation.objects.count() == 1
+
+
+def test_the_api_duplicates_and_opens_the_new_quotation(executive, accountant, unilever, lathe):
+    q = draft(executive, unilever)
+    sales = as_user(executive)
+    base = f"/api/v1/quotations/{q.pk}/"
+    assert sales.get(base).json()["can_duplicate"] is True
+    assert as_user(accountant).get(base).json()["can_duplicate"] is False
+    assert as_user(accountant).post(f"{base}duplicate/", {}, format="json").status_code == 403
+    # Another Sales Executive does not see this quotation, so cannot copy it.
+    other = as_user(person("sales2@sml.lk", "sales_executive", all_divisions=True))
+    assert other.post(f"{base}duplicate/", {}, format="json").status_code == 404
+    made = sales.post(f"{base}duplicate/", {}, format="json")
+    assert made.status_code == 201
+    body = made.json()
+    assert body["number"] == f"QL{TODAY:%y%m%d}02" and body["status"] == "draft"
+    assert body["copied_from"] == {"id": q.pk, "label": f"{q.number} Rev 0"}
+    assert body["can_edit"] is True

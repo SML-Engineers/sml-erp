@@ -102,6 +102,10 @@ export interface QuotationDetail extends QuotationSummary {
   can_mark_sent: boolean;
   can_record_outcome: boolean;
   can_revise: boolean;
+  /** "Duplicate": a new quotation with the next number (owner, 20 Nov 2026). */
+  can_duplicate: boolean;
+  /** The quotation this one was duplicated from, when the user may see it. */
+  copied_from: { id: number; label: string } | null;
   /** Approved and the user is its creator or the Sales Manager (P15-07). */
   can_email: boolean;
   can_make_proforma: boolean;
@@ -359,6 +363,7 @@ export const markQuotationSent = (id: number) => apiSend<QuotationDetail>("POST"
 export const recordOutcome = (id: number, outcome: "accepted" | "lost", reason: string, note: string) =>
   apiSend<QuotationDetail>("POST", `/quotations/${id}/outcome/`, { outcome, reason, note });
 export const reviseQuotation = (id: number) => apiSend<QuotationDetail>("POST", `/quotations/${id}/revise/`, {});
+export const duplicateQuotation = (id: number) => apiSend<QuotationDetail>("POST", `/quotations/${id}/duplicate/`, {});
 
 // --- Printed quotation and email (P15-07) ------------------------------------------------
 

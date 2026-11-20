@@ -100,6 +100,8 @@ const saved: QuotationDetail = {
   can_mark_sent: false,
   can_record_outcome: false,
   can_revise: false,
+  can_duplicate: false,
+  copied_from: null,
   can_email: false,
   can_make_proforma: false,
   can_make_sales_order: false,
@@ -708,6 +710,31 @@ test("a revision opens as a new draft with the same number", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Make a revision" }));
   expect(await screen.findByRole("heading", { name: "Quotation QL26103101 Rev 1" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Rev 0" })).toHaveAttribute("href", "/quotations/12");
+});
+
+// Owner, 20 Nov 2026: any quotation can be duplicated into a new one with the next number.
+test("Duplicate opens a new draft quotation with the next number", async () => {
+  const sentOne: QuotationDetail = { ...saved, status: "sent", can_edit: false, can_submit: false, is_final: true, can_duplicate: true };
+  const copy: QuotationDetail = {
+    ...saved,
+    id: 14,
+    number: "QL26103102",
+    copied_from: { id: 12, label: "QL26103101 Rev 0" },
+    revisions: [{ id: 14, revision: 0, status: "draft", quote_date: "2026-10-31" }],
+  };
+  const calls = mockApi(
+    formApi({
+      "GET /api/v1/quotations/12/": { body: sentOne },
+      "POST /api/v1/quotations/12/duplicate/": { status: 201, body: copy },
+      "GET /api/v1/quotations/14/": { body: copy },
+    }),
+  );
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Duplicate" }));
+  expect(await screen.findByRole("heading", { name: "Quotation QL26103102" })).toBeInTheDocument();
+  expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/duplicate/", expect.objectContaining({ method: "POST" }));
+  expect(screen.getByRole("link", { name: "QL26103101 Rev 0" })).toHaveAttribute("href", "/quotations/12");
+  expect(screen.queryByRole("button", { name: "Duplicate" })).not.toBeInTheDocument();
 });
 
 test("approvers can list the quotations waiting for them", async () => {

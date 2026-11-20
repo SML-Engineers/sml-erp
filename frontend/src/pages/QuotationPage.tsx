@@ -18,6 +18,7 @@ import {
   recordOutcome,
   returnQuotation,
   reviseQuotation,
+  duplicateQuotation,
   submitQuotation,
   quotationFileUrl,
   quotationsKey,
@@ -833,6 +834,19 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
             {t("quotations.revise")}
           </button>{" "}
           <span className="muted">{t("quotations.reviseHelp")}</span>
+        </p>
+      )}
+      {quotation.can_duplicate && (
+        <p>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => duplicateQuotation(id))}>
+            {t("quotations.duplicate")}
+          </button>{" "}
+          <span className="muted">{t("quotations.duplicateHelp")}</span>
+        </p>
+      )}
+      {quotation.copied_from && (
+        <p className="muted">
+          {t("quotations.copiedFrom")} <Link to={`/quotations/${quotation.copied_from.id}`}>{quotation.copied_from.label}</Link>
         </p>
       )}
       <ErrorLine error={act.error} />

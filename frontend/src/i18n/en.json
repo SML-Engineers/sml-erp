@@ -5709,5 +5709,61 @@
     "because": "Cancelled: {{reason}}",
     "byOn": "Cancelled by {{person}} on {{at}}: {{reason}}",
     "by": "Cancelled by {{person}}"
+  },
+  "printTemplates": {
+    "title": "Printed documents",
+    "help": "Choose where each part of a printed document goes. Saving makes a new version; documents printed after that use it.",
+    "document": "Document",
+    "layout": "Layout",
+    "version": "Version {{version}}",
+    "standard": "Standard layout",
+    "howTo": "Drag a block to move it and its bottom-right corner to resize it. On a computer you can also pick a block and use the arrow keys (with Shift to resize). Check with Preview before saving.",
+    "viewOnly": "Only the Admin and the Director change the layout. You can see it and its history.",
+    "pick": "Pick a block on the page to change its position, size, text size or alignment.",
+    "ownText": "Your text",
+    "newText": "Your text here",
+    "addText": "Add a text block",
+    "tableNote": "The items table grows with the items: if they do not fit, it carries on to the next page, and the blocks below it move down with it.",
+    "note": "What changed (optional)",
+    "preview": "Preview",
+    "save": "Save as new version",
+    "undo": "Undo my changes",
+    "reset": "Back to standard",
+    "resetConfirm": "Go back to the standard layout? This is saved as a new version; older versions stay in the history.",
+    "hide": "Leave this off the document",
+    "removeText": "Remove this text",
+    "history": "History",
+    "noHistory": "No changes yet: documents print with the standard layout.",
+    "restore": "Bring back",
+    "field": {
+      "x": "Left (mm)",
+      "y": "Top (mm)",
+      "w": "Width (mm)",
+      "h": "Height (mm)",
+      "size": "Text size",
+      "align": "Alignment",
+      "text": "Text"
+    },
+    "align": {
+      "left": "Left",
+      "center": "Centre",
+      "right": "Right"
+    },
+    "col": {
+      "version": "Version",
+      "note": "What changed",
+      "by": "By",
+      "at": "When"
+    },
+    "blocks": {
+      "letterhead": "Letterhead",
+      "customer": "Customer and delivery address",
+      "title": "Title",
+      "refs": "References and dates",
+      "lines": "Items table",
+      "transport": "Vehicle, driver and notes",
+      "signatures": "Signatures",
+      "slogan": "Slogan"
+    }
   }
 }

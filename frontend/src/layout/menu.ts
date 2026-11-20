@@ -187,6 +187,7 @@ export const MENU: MenuSection[] = [
       { label: "voucherTypes.title", path: "/settings/voucher-types", area: "settings" },
       { label: "matrix.title", path: "/settings/approval-matrix", area: "settings" },
       { label: "documentEmail.title", path: "/settings/document-email", area: "settings" },
+      { label: "printTemplates.title", path: "/settings/printed-documents", area: "settings" },
     ],
   },
 ];

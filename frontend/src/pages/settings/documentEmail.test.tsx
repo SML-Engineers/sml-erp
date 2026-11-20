@@ -12,7 +12,15 @@ const admin: CurrentUser = {
   access: { areas: { settings: ["enter", "manage", "view"] }, actions: [], divisions: "all" },
 };
 
+const mailboxes: MailAccount["mailboxes"] = [
+  { mailbox: "accounts", label: "Accounts", from_address: "finance@smlengineers.lk", is_ready: true },
+  { mailbox: "sales", label: "Sales", from_address: "", is_ready: false },
+  { mailbox: "purchasing", label: "Purchasing", from_address: "", is_ready: false },
+];
+
 const account: MailAccount = {
+  mailbox: "accounts",
+  mailboxes,
   from_name: "SML Engineers Finance",
   from_address: "finance@smlengineers.lk",
   reply_to: "",
@@ -31,6 +39,7 @@ const account: MailAccount = {
 const template: EmailTemplate = {
   kind: "tax_invoice",
   label: "Tax invoice",
+  mailbox: "accounts",
   subject: "Tax invoice {document_number} from {company_name}",
   body: "Dear {recipient_name},\n\nPlease find attached tax invoice {document_number}.",
   placeholders: [
@@ -41,13 +50,13 @@ const template: EmailTemplate = {
 };
 
 const api = (extra: Parameters<typeof mockApi>[0] = {}) => ({
-  "GET /api/v1/settings/document-email/": { body: account },
+  "GET /api/v1/settings/document-email/?mailbox=accounts": { body: account },
   "GET /api/v1/settings/document-email/templates/": { body: [template] },
   ...extra,
 });
 
 test("the Admin changes the mailbox; an empty password keeps the saved one", async () => {
-  const calls = mockApi(api({ "PUT /api/v1/settings/document-email/": { body: account } }));
+  const calls = mockApi(api({ "PUT /api/v1/settings/document-email/?mailbox=accounts": { body: account } }));
   renderAt("/settings/document-email", <DocumentEmailPage me={admin} />);
 
   const form = await screen.findByRole("form", { name: "Sending mailbox" });
@@ -57,7 +66,7 @@ test("the Admin changes the mailbox; an empty password keeps the saved one", asy
   });
   fireEvent.click(within(form).getByRole("button", { name: "Save mailbox" }));
   await waitFor(() =>
-    expect(calls).toHaveBeenCalledWith("/api/v1/settings/document-email/", expect.objectContaining({ method: "PUT" })),
+    expect(calls).toHaveBeenCalledWith("/api/v1/settings/document-email/?mailbox=accounts", expect.objectContaining({ method: "PUT" })),
   );
   const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PUT")!;
   const sent = JSON.parse(String(init!.body));
@@ -81,10 +90,60 @@ test("the Admin edits the default message, with its placeholders listed", async 
       "/api/v1/settings/document-email/templates/tax_invoice/",
       expect.objectContaining({
         method: "PUT",
-        body: JSON.stringify({ subject: "Invoice {document_number}", body: template.body, reason: "" }),
+        body: JSON.stringify({ subject: "Invoice {document_number}", body: template.body, mailbox: "accounts", reason: "" }),
       }),
     ),
   );
+});
+
+// Owner, 20 Nov 2026: separate mailboxes for Sales, Accounts and Purchasing.
+test("each department mailbox is set up on its own", async () => {
+  const sales: MailAccount = {
+    ...account,
+    mailbox: "sales",
+    from_name: "",
+    from_address: "",
+    host: "",
+    username: "",
+    has_password: false,
+    is_ready: false,
+  };
+  const calls = mockApi(
+    api({
+      "GET /api/v1/settings/document-email/?mailbox=sales": { body: sales },
+      "PUT /api/v1/settings/document-email/?mailbox=sales": { body: sales },
+    }),
+  );
+  renderAt("/settings/document-email", <DocumentEmailPage me={admin} />);
+
+  const list = await screen.findByRole("list", { name: "Department mailboxes" });
+  expect(list).toHaveTextContent("Accounts: finance@smlengineers.lk");
+  expect(list).toHaveTextContent("Sales: not set up yet; its documents are sent from the Accounts mailbox");
+  const panel = screen.getByRole("region", { name: "Sending mailbox" });
+  fireEvent.change(within(panel).getByLabelText("Department mailbox"), { target: { value: "sales" } });
+  const form = await screen.findByRole("form", { name: "Sending mailbox" });
+  await waitFor(() => expect(within(form).getByLabelText("Send from (e.g. finance@domain.com)")).toHaveValue(""));
+  expect(screen.getByText("Not set up yet: this department's documents are sent from the Accounts mailbox.")).toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Send from (e.g. finance@domain.com)"), { target: { value: "sales@smlengineers.lk" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save mailbox" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/settings/document-email/?mailbox=sales", expect.objectContaining({ method: "PUT" })),
+  );
+  const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PUT")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({ from_address: "sales@smlengineers.lk" });
+});
+
+test("the Admin chooses which mailbox a kind of document is sent from", async () => {
+  const calls = mockApi(api({ "PUT /api/v1/settings/document-email/templates/tax_invoice/": { body: template } }));
+  renderAt("/settings/document-email", <DocumentEmailPage me={admin} />);
+
+  const form = await screen.findByRole("form", { name: "Default message: Tax invoice" });
+  expect(within(form).getByLabelText("Sent from (department mailbox)")).toHaveValue("accounts");
+  fireEvent.change(within(form).getByLabelText("Sent from (department mailbox)"), { target: { value: "sales" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save message" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/settings/document-email/templates/tax_invoice/", expect.anything()));
+  const [, init] = calls.mock.calls.find(([, i]) => i?.method === "PUT")!;
+  expect(JSON.parse(String(init!.body))).toMatchObject({ mailbox: "sales" });
 });
 
 test("the person sending edits the message before it goes", async () => {

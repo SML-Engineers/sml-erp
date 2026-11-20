@@ -337,6 +337,11 @@ Status: `[ ]` to do · `[x]` done
   - Sending without a configured account, to an invalid address, or to more than 20
     recipients is refused; a failed send is recorded with the error.
   - The sent-email record cannot be changed or deleted (database).
+  - Owner, 20 Nov 2026: separate mailboxes per department: **Accounts** (the one set up so
+    far), **Sales** and **Purchasing**, each with its own address, server, password and test.
+    Each kind of document is sent from one of them, chosen on its default message
+    (quotations and proformas from Sales, purchase orders from Purchasing, the rest from
+    Accounts); a mailbox not set up yet sends from Accounts.
 
 - [x] **P0-20 Taxes, QuickBooks style** (owner, 29 Oct 2026: kept by the Accountant)
   Tax components (VAT, SSCL, WHT…) with dated rates and their ledger accounts; tax codes made

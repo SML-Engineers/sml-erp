@@ -39,7 +39,7 @@ from apps.core import document_email
 from apps.core.access import division_scope, effective_access
 from apps.core.audit import audit_context
 from apps.core.document_email import EmailError
-from apps.core.models import MailAccount, SentEmail, User
+from apps.core.models import SentEmail, User
 from apps.core.notifications import notify
 from apps.masters.models import Customer
 
@@ -566,7 +566,7 @@ def send_reminders(today: date | None = None) -> int:
     """Daily: email the statement to each customer with reminders on and overdue invoices,
     unless one went within its interval. Returns how many were sent."""
     today = today or timezone.localdate()
-    if not MailAccount.get().is_ready:
+    if not document_email.account_for(EMAIL_KIND).is_ready:
         log.warning("Payment reminders not sent: document email is not set up.")
         return 0
     sent = 0

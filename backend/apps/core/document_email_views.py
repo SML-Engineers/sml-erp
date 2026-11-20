@@ -37,9 +37,17 @@ class AccountInput(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+def _which(request) -> str:
+    """The department mailbox: ?mailbox=sales (Accounts when not given)."""
+    return str(request.query_params.get("mailbox") or request.data.get("mailbox") or "accounts")
+
+
 class AccountView(_Settings):
     def get(self, request):
-        return Response(document_email.account_view())
+        try:
+            return Response(document_email.account_view(_which(request)))
+        except EmailError as error:
+            return _error(error)
 
     def put(self, request):
         data = AccountInput(data=request.data)
@@ -47,7 +55,9 @@ class AccountView(_Settings):
         values = dict(data.validated_data)
         reason = values.pop("reason")
         try:
-            return Response(document_email.update_account(request.user, values, reason))
+            return Response(
+                document_email.update_account(request.user, values, reason, _which(request))
+            )
         except EmailError as error:
             return _error(error)
 
@@ -55,7 +65,9 @@ class AccountView(_Settings):
 class TestView(_Settings):
     def post(self, request):
         try:
-            result = document_email.send_test(request.user, str(request.data.get("to", "")))
+            result = document_email.send_test(
+                request.user, str(request.data.get("to", "")), _which(request)
+            )
         except EmailError as error:
             return _error(error)
         return Response(result)
@@ -70,6 +82,7 @@ class TemplateInput(serializers.Serializer):
     subject = serializers.CharField(max_length=500, allow_blank=True)
     body = serializers.CharField(allow_blank=True, trim_whitespace=False)
     reason = serializers.CharField(required=False, allow_blank=True, default="")
+    mailbox = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
 
 
 class TemplateView(_Settings):
@@ -79,7 +92,12 @@ class TemplateView(_Settings):
         v = data.validated_data
         try:
             document_email.update_template(
-                request.user, kind, subject=v["subject"], body=v["body"], reason=v["reason"]
+                request.user,
+                kind,
+                subject=v["subject"],
+                body=v["body"],
+                reason=v["reason"],
+                mailbox=v["mailbox"],
             )
         except EmailError as error:
             return _error(error)

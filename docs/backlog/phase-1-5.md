@@ -114,6 +114,9 @@ Status: `[ ]` to do · `[x]` done
     exchange rate worked out again for today). The original is unchanged; the copy says
     which quotation it was duplicated from. Only those who make quotations (Sales: Enter)
     in its division can duplicate.
+  - Testing T12 (21 Nov 2026): the Director cannot approve a quotation past its validity
+    date (he sends it back so the date is changed). An expired quotation's page says it
+    expired, not "Not yet approved", and says its PDF is marked EXPIRED.
 
 - [x] **P15-07 Printed quotation and email** (spec 5.1, 3B)
   PDF in the layout of the owner's current quotation, improved: letterhead, QUOTATION, Our

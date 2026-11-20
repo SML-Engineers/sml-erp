@@ -188,6 +188,13 @@ def approve(user: User, quotation: Quotation, comment: str = "") -> Quotation:
         quotation = _locked(quotation)
         if quotation.status != S.AWAITING_APPROVAL:
             raise SalesError("The quotation is not waiting for approval.")
+        # T12 (testing, 21 Nov 2026): an offer past its validity is not approved; it goes back
+        # so the salesperson changes the date first.
+        if quotation.valid_until < timezone.localdate():
+            raise SalesError(
+                f"The validity date ({quotation.valid_until:%d/%m/%Y}) has passed. Send it back "
+                "so the salesperson changes the date before you approve it."
+            )
         state = _engine(approvals.approve, user, DOC, quotation.pk, comment)
         if state.status == ApprovalState.Status.APPROVED:
             with audit_context("quotation_approved", comment):

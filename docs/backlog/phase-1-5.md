@@ -89,6 +89,8 @@ Status: `[ ]` to do · `[x]` done
   masterbatch %), machine (cycle time ÷ cavities → hours per 1,000 pieces × machine rate),
   reject % on material and machine, packing per piece or carton, overhead and margin. Tooling
   as a separate line: charged once, amortised over a quantity, or customer-owned.
+  - Owner, 19 Nov 2026: the "Costing for" choices read **Machining** and **Production**
+    (was Moulding); the costing itself is unchanged.
 
 - [x] **P15-06 Approval, revisions and status** (spec 5.1, 3)
   **Every quotation needs the Director's approval before it can be printed or sent**, by

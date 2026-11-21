@@ -190,6 +190,7 @@ def test_every_endpoint_declares_its_access():
         "SectionPickerView",  # filtered to the user's own sections
         "MachinePickerView",  # filtered to the user's own sections
         "CurrencyPickerView",  # currency codes and names, no business data
+        "CurrentNoticeView",  # the top-bar notice every signed-in person sees
         "RateLookupView",  # published exchange rates, no business data
         "NotificationListView",  # own notifications only
         "NotificationReadView",  # own notifications only

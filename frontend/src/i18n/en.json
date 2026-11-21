@@ -300,7 +300,11 @@
       "password_reset_approved": "Password reset approved by the Director",
       "password_reset_refused": "Password reset refused by the Director",
       "password_reset_done": "Temporary password made",
-      "activity_log_level_changed": "Activity log level changed"
+      "activity_log_level_changed": "Activity log level changed",
+      "notice_change_requested": "Top-bar notice change asked for",
+      "notice_change_approved": "Top-bar notice change approved",
+      "notice_change_refused": "Top-bar notice change refused",
+      "notice_change_withdrawn": "Top-bar notice change withdrawn"
     }
   },
   "menu": {
@@ -5800,5 +5804,27 @@
       "signatures": "Signatures",
       "slogan": "Slogan"
     }
+  },
+  "notice": {
+    "label": "Notice",
+    "title": "Top-bar notice",
+    "help": "A notice shown at the top of every page, in English with Sinhala below it, whatever language the person uses. The Admin asks for a change with a reason; it takes effect only when a Director approves it.",
+    "isOn": "The notice is shown.",
+    "isOff": "The notice is not shown.",
+    "english": "English line",
+    "sinhala": "Sinhala line",
+    "askOn": "Ask to show the notice",
+    "askChange": "Ask to change the words",
+    "askOff": "Ask to stop showing it",
+    "waiting": "Waiting for the Director",
+    "switchOnAsked": "Show the notice",
+    "switchOffAsked": "Stop showing the notice",
+    "withdraw": "Withdraw the request",
+    "asked": "Asked. The Director has been told.",
+    "withdrawn": "The request was withdrawn.",
+    "history": "Earlier changes",
+    "approve": "Approve",
+    "approved": "Approved. Everyone sees the change on their next page.",
+    "refused": "Refused. The Admin has been told."
   }
 }

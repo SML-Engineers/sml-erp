@@ -609,5 +609,96 @@ class AccessToConfirmView(APIView):
                     for r in resets
                     if r.status == "waiting"
                 ],
+                "notice": _waiting_notice(me),
             }
         )
+
+
+class CurrentNoticeView(APIView):
+    """The top-bar notice every signed-in person sees (owner, 21 Nov 2026)."""
+
+    def get(self, request):
+        from .notice import current
+
+        return Response(current())
+
+
+class NoticeView(_UsersArea):
+    """The Admin asks to change the top-bar notice; a Director approves (owner, 21 Nov 2026)."""
+
+    access_write_level = "manage"
+
+    def get(self, request):
+        from . import notice
+
+        found = notice.waiting()
+        return Response(
+            {
+                "current": notice.current(),
+                "defaults": {"text_en": notice.DEFAULT_EN, "text_si": notice.DEFAULT_SI},
+                "in_force": _in_force_words(notice.in_force()),
+                "waiting": notice.row(found, request.user) if found else None,
+                "history": [
+                    notice.row(c, request.user)
+                    for c in notice.NoticeChange.objects.select_related(
+                        "requested_by", "decided_by"
+                    )[:10]
+                ],
+            }
+        )
+
+    def post(self, request):
+        from . import notice
+
+        show = request.data.get("show")
+        if not isinstance(show, bool):
+            return _notice_error("Say whether the notice is to be shown or not.")
+        try:
+            change = notice.request_change(
+                request.user,
+                show,
+                str(request.data.get("text_en") or ""),
+                str(request.data.get("text_si") or ""),
+                str(request.data.get("reason") or ""),
+            )
+        except notice.NoticeError as error:
+            return _notice_error(error)
+        return Response(notice.row(change, request.user), status=status.HTTP_201_CREATED)
+
+
+def _waiting_notice(me):
+    from . import notice
+
+    found = notice.waiting()
+    return notice.row(found, me) | {"mine": found.requested_by_id == me.pk} if found else None
+
+
+def _in_force_words(change) -> dict | None:
+    if change is None:
+        return None
+    return {"text_en": change.text_en, "text_si": change.text_si}
+
+
+class NoticeDecisionView(_UsersArea):
+    # Viewing users is enough to reach this; the service requires the Director (or, to
+    # withdraw, the Admin).
+    access_write_level = "view"
+
+    def post(self, request, pk, decision):
+        from . import notice
+
+        found = get_object_or_404(notice.NoticeChange, pk=pk)
+        try:
+            if decision == "approve":
+                found = notice.approve(request.user, found)
+            elif decision == "refuse":
+                found = notice.refuse(request.user, found, request.data.get("reason", ""))
+            else:
+                found = notice.withdraw(request.user, found)
+        except notice.NoticeError as error:
+            return _notice_error(error)
+        return Response(notice.row(found, request.user))
+
+
+def _notice_error(error):
+    return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)

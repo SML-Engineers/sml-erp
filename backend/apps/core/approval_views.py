@@ -207,4 +207,8 @@ def access_waiting(user) -> int:
         for r in PasswordReset.objects.filter(approved__isnull=True)
         if password_resets.can_decide(user, r)
     )
-    return roles + grants + resets
+    from . import notice
+
+    waiting_notice = notice.waiting()
+    notices = 1 if waiting_notice and notice.can_decide(user, waiting_notice) else 0
+    return roles + grants + resets + notices

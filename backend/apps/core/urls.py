@@ -127,6 +127,17 @@ urlpatterns = [
         access_views.SignInSecurityView.as_view(),
         name="sign-in-security",
     ),
+    path("notice/", access_views.CurrentNoticeView.as_view(), name="notice"),
+    path("access/notice/", access_views.NoticeView.as_view(), name="notice-changes"),
+    *[
+        path(
+            f"access/notice/<int:pk>/{decision}/",
+            access_views.NoticeDecisionView.as_view(),
+            {"decision": decision},
+            name=f"notice-{decision}",
+        )
+        for decision in ("approve", "refuse", "withdraw")
+    ],
     path("roles/", access_views.RoleListView.as_view(), name="role-list"),
     path("roles/<slug:code>/", access_views.RoleDetailView.as_view(), name="role-detail"),
     path("users/", access_views.UserListView.as_view(), name="user-list"),

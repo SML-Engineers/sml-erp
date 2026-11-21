@@ -36,6 +36,13 @@ class EmailError(Exception):
     pass
 
 
+# The "print to the log" email set-up of a test PC (.env.example): nothing leaves the PC.
+NO_MAIL_SERVER = "django.core.mail.backends.console.EmailBackend"
+NOT_SENT_HERE = (
+    "Not sent: this computer has no mail server (test set-up), so the email was only written "
+    "to its log."
+)
+
 def _admin(user: User) -> None:
     if not has_access(user, "settings", "manage"):
         raise EmailError("Only the Admin can change the document email settings.")
@@ -421,6 +428,14 @@ def send(
             message.attach(name, content, mimetype)
             listed.append(f"{name[:200]} {hashlib.sha256(content).hexdigest()}")
         record.other_attachments = "\n".join(listed)
+    if settings.EMAIL_BACKEND == NO_MAIL_SERVER:
+        # Testing T27 (21 Nov 2026): a PC set up for testing prints emails to its log instead
+        # of sending them. Saying "Sent" there would make people think it went out.
+        record.status = SentEmail.Status.FAILED
+        record.error = NOT_SENT_HERE
+        message.send()  # still written to the log, for checking the wording
+        record.save()
+        return record
     try:
         message.send()
         record.status = SentEmail.Status.SENT

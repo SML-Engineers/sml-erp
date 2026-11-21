@@ -98,12 +98,19 @@ def review(quotation: Quotation) -> dict:
     in LKR before tax, and the warnings shown to the Director."""
     warnings = []
     cost_total = tooling_total = revenue = Decimal("0")
+    uncosted = False
     lines = quotation.lines.prefetch_related("breaks").select_related("costing")
     for line in lines:
         line_costing = getattr(line, "costing", None)
+        # An empty costing (saved before T5, 21 Nov 2026) counts as no costing.
+        if line_costing is not None and costing.is_empty(
+            line_costing, line, quotation.exchange_rate
+        ):
+            line_costing = None
         if line_costing is None:
             if not line.is_tooling:
                 warnings.append(f"Line {line.line_no} has no costing.")
+                uncosted = True
             continue
         rows = costing.results(line_costing, line, quotation.exchange_rate)
         first = rows[0]
@@ -137,6 +144,8 @@ def review(quotation: Quotation) -> dict:
         warnings.append("The validity date has passed.")
     return {
         "margin_pct": margin,
+        # The margin leaves out lines with no costing: say so beside it (T5).
+        "margin_costed_lines_only": uncosted and margin is not None,
         "value_lkr": value_lkr,
         "min_margin_pct": minimum,
         "limit_lkr": maximum,

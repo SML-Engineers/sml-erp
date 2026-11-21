@@ -761,7 +761,7 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
       {review && (
         <div aria-label={t("quotations.reviewLabel")} role="group">
           <p>
-            {t("quotations.overallMargin")}: <strong>{review.margin_pct === null ? "—" : `${review.margin_pct}%`}</strong>
+            {t(review.margin_costed_lines_only ? "quotations.overallMarginCostedOnly" : "quotations.overallMargin")}: <strong>{review.margin_pct === null ? "—" : `${review.margin_pct}%`}</strong>
             {review.min_margin_pct && <span className="muted"> ({t("quotations.minimum", { pct: review.min_margin_pct })})</span>} ·{" "}
             {t("quotations.valueLkr")}: <strong>{formatDecimal(review.value_lkr)}</strong>
           </p>

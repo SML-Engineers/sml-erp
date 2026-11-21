@@ -124,6 +124,8 @@ export interface QuotationDetail extends QuotationSummary {
   /** For those who see costing: overall margin, value and the Director's warnings. */
   review?: {
     margin_pct: string | null;
+    /** Some lines have no costing: the margin counts the costed lines only (T5). */
+    margin_costed_lines_only?: boolean;
     value_lkr: string;
     min_margin_pct: string | null;
     limit_lkr: string | null;

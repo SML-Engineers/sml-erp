@@ -1,6 +1,8 @@
 """Quotations API (P15-03). Rules live in services.py; every endpoint checks Sales access and
 returns only quotations the user may see."""
 
+from decimal import Decimal
+
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
@@ -178,7 +180,7 @@ def _detail(q: Quotation, user) -> dict:
         # The Director's warnings come from the costing: shown only to those who see it.
         found = workflow.review(q)
         body["review"] = {
-            key: (str(value) if value is not None and key != "warnings" else value)
+            key: (str(value) if isinstance(value, Decimal) else value)
             for key, value in found.items()
         }
     return body

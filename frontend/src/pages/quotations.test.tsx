@@ -648,6 +648,30 @@ test("the Director sees the warnings and approves or returns", async () => {
   await waitFor(() => expect(screen.queryByText(/cannot be printed as final/)).not.toBeInTheDocument());
 });
 
+// T5 (testing, 21 Nov 2026): a margin that leaves out lines with no costing says so.
+test("the margin says when it counts the costed lines only", async () => {
+  const partial: QuotationDetail = {
+    ...saved,
+    status: "awaiting_approval",
+    can_edit: false,
+    can_submit: false,
+    can_see_costing: true,
+    review: {
+      margin_pct: "14.00",
+      margin_costed_lines_only: true,
+      value_lkr: "392504.85",
+      min_margin_pct: "1.00",
+      limit_lkr: null,
+      warnings: ["Line 2 has no costing."],
+    },
+  };
+  mockApi({ "GET /api/v1/quotations/12/": { body: partial } });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  const panel = await screen.findByRole("region", { name: "Approval and status" });
+  expect(within(panel).getByText(/Margin of the prices quoted \(costed lines only\)/)).toBeInTheDocument();
+  expect(within(panel).getByRole("list", { name: "Warnings for the Director" })).toHaveTextContent("Line 2 has no costing.");
+});
+
 test("an approved quotation is marked sent, then won or lost with the reason", async () => {
   const sent: QuotationDetail = {
     ...saved,

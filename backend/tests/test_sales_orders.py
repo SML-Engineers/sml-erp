@@ -474,3 +474,49 @@ def test_the_list_and_page_say_who_a_repeat_order_waits_for(executive, director,
         "waiting": None,
         "last": {"action": "return", "by": director.full_name},
     }
+
+
+# --- A second order or proforma is asked for (testing T17, 21 Nov 2026) -------------------
+
+
+def test_a_second_order_or_proforma_from_the_same_quotation_is_asked_for(executive, won):
+    first = orders.from_quotation(executive, won)
+    with pytest.raises(SalesError, match=rf"{first.number} already exists for this quotation"):
+        orders.from_quotation(executive, won)
+    assert orders.from_quotation(executive, won, again=True).quotation == won
+    # A cancelled order doesn't count.
+    other = SalesOrder.objects.filter(quotation=won).exclude(pk=first.pk).get()
+    orders.cancel(executive, first, "Made twice by mistake")
+    orders.cancel(executive, other, "Made twice by mistake")
+    assert orders.from_quotation(executive, won).status == S.DRAFT
+
+    proforma = proformas.create(executive, won)
+    with pytest.raises(SalesError, match=rf"{proforma.number} already exists.*another proforma"):
+        proformas.create(executive, won)
+    assert proformas.create(executive, won, again=True).quotation == won
+
+
+def test_a_second_order_from_the_same_proforma_is_asked_for(executive, won):
+    proforma = proformas.create(executive, won)
+    proformas.save(executive, proforma, lines=[proformas.LineInput(won.lines.get(), "100")])
+    proforma = proformas.issue(executive, proforma)
+    first = orders.from_proforma(executive, proforma)
+    with pytest.raises(SalesError, match=rf"{first.number} already exists for this proforma"):
+        orders.from_proforma(executive, proforma)
+    assert orders.from_proforma(executive, proforma, again=True).proforma == proforma
+
+
+def test_the_api_asks_before_a_second_order(executive, won):
+    client = as_user(executive)
+    assert (
+        client.post("/api/v1/sales-orders/", {"quotation": won.pk}, format="json").status_code
+        == 201
+    )
+    asked = client.post("/api/v1/sales-orders/", {"quotation": won.pk}, format="json")
+    assert asked.status_code == 400 and "Make another sales order?" in asked.json()["detail"]
+    again = {"quotation": won.pk, "again": True}
+    assert client.post("/api/v1/sales-orders/", again, format="json").status_code == 201
+    made = client.post("/api/v1/proformas/", {"quotation": won.pk}, format="json")
+    assert made.status_code == 201
+    asked = client.post("/api/v1/proformas/", {"quotation": won.pk}, format="json")
+    assert asked.status_code == 400 and "Make another proforma?" in asked.json()["detail"]

@@ -89,6 +89,11 @@ Status: `[ ]` to do · `[x]` done
     Purchasing Officer to the supplier's email, only when approved or partly received, with
     the "purchase_order" message the Admin edits (Settings → Document email). Item codes may
     now contain slashes and dots, like 48/BL/08.
+  - Testing T27 (21 Nov 2026): the PO email form says which mailbox it goes from, or
+    that document email is not set up (Send greyed out), as the quotation's does. On a PC
+    set up for testing (emails printed to the log), an email is recorded "Not sent: this
+    computer has no mail server", never "Sent". The demo suppliers have made-up
+    example.com addresses, so "To" is filled in.
 
 ## D. Receiving and inspection
 

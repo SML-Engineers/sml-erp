@@ -255,7 +255,12 @@ class Command(BaseCommand):
         ]
         self.payees = {}
         for key, name, category, bank, number in rows:
-            payee = suppliers.create_supplier(clerk, {"name": name, "category": category})
+            values = {"name": name, "category": category}
+            if category == "supplier":
+                # Made-up addresses (example.com never receives mail), so the PO email form
+                # fills in "To" as it will for real suppliers (testing T27, 21 Nov 2026).
+                values["email"] = f"orders@{key}.example.com"
+            payee = suppliers.create_supplier(clerk, values)
             if bank:
                 suppliers.add_bank_account(
                     accountant,
@@ -589,6 +594,7 @@ class Command(BaseCommand):
                 "name": "Precision Tools Lanka (Pvt) Ltd",
                 "category": "supplier",
                 "payment_terms_days": 30,
+                "email": "orders@tools.example.com",
             },
         )
         suppliers.add_bank_account(

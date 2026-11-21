@@ -425,10 +425,11 @@ function Actions({ order }: { order: PODetail }) {
 function EmailPanel({ order }: { order: PODetail }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [message, setMessage] = useState<{ to: string; subject: string; body: string } | null>(null);
+  const [message, setMessage] = useState<{ to: string; subject: string; body: string; from: string } | null>(null);
   const load = useMutation({
     mutationFn: () => getPurchaseOrderEmail(order.id),
-    onSuccess: (draft) => setMessage({ to: draft.to.join(", "), subject: draft.subject, body: draft.body }),
+    onSuccess: (draft) =>
+      setMessage({ to: draft.to.join(", "), subject: draft.subject, body: draft.body, from: draft.ready ? draft.from : "" }),
   });
   const send = useMutation({
     mutationFn: () =>
@@ -463,6 +464,12 @@ function EmailPanel({ order }: { order: PODetail }) {
             send.mutate();
           }}
         >
+          {/* Testing T27 (21 Nov 2026): as on the quotation, say where it goes from, or that it can't go. */}
+          {message.from ? (
+            <p className="muted wide">{t("po.emailFrom", { from: message.from })}</p>
+          ) : (
+            <p className="form-error wide">{t("quotations.emailNotReady")}</p>
+          )}
           <label className="wide">
             {t("quotations.emailTo")}
             <input value={message.to} required onChange={(e) => setMessage({ ...message, to: e.target.value })} />
@@ -476,7 +483,7 @@ function EmailPanel({ order }: { order: PODetail }) {
             <textarea rows={6} value={message.body} required onChange={(e) => setMessage({ ...message, body: e.target.value })} />
           </label>
           <div className="wide">
-            <button type="submit" disabled={send.isPending}>
+            <button type="submit" disabled={send.isPending || !message.from}>
               {t("quotations.sendEmail")}
             </button>{" "}
             <button type="button" className="secondary" onClick={() => setMessage(null)}>

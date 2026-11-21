@@ -108,6 +108,12 @@ Status: `[ ]` to do · `[x]` done
   - Until approved, the PDF is only a draft marked NOT APPROVED and cannot be emailed.
   - A sent quotation is never edited; a change is a new revision.
   - Win / loss reasons are kept for the sales reports.
+  - Owner, 20 Nov 2026: **Duplicate** on any quotation the user can see makes a new draft
+    quotation with the next number of the day, dated today, for the same customer, with the
+    same terms, lines, quantity breaks, costing, drawings and pictures (prices, taxes and the
+    exchange rate worked out again for today). The original is unchanged; the copy says
+    which quotation it was duplicated from. Only those who make quotations (Sales: Enter)
+    in its division can duplicate.
 
 - [x] **P15-07 Printed quotation and email** (spec 5.1, 3B)
   PDF in the layout of the owner's current quotation, improved: letterhead, QUOTATION, Our

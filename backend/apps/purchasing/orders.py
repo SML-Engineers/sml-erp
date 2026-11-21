@@ -232,7 +232,12 @@ def create(
             else "",
             created_by=user,
         )
+        defaults = (order.deliver_to, order.payment_terms)
         _header(values, order)
+        # Testing T24 (21 Nov 2026): a new PO form sends these blank; keep the company's
+        # address and the supplier's terms then, instead of saving them empty.
+        order.deliver_to = order.deliver_to or defaults[0]
+        order.payment_terms = order.payment_terms or defaults[1]
         order.save()
         _fill(order, lines)
         currencies.mark_rate_used(lookup)
@@ -259,6 +264,11 @@ def submit(user: User, order: PurchaseOrder, comment: str = "") -> PurchaseOrder
             raise PurchasingError("A purchase order needs at least one line.")
         if order.delivery_date is None:
             raise PurchasingError("Give the delivery date.")
+        if not order.deliver_to.strip():
+            raise PurchasingError(
+                "Give the delivery address (Deliver to): the supplier needs to know where to "
+                "deliver."
+            )
         try:
             approvals.submit(
                 user,

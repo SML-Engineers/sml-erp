@@ -208,3 +208,21 @@ def test_who_keeps_the_pay_period(hr):
     assert response.status_code == 201, response.json()
     accountant = person("acc@sml.lk", "accountant", all_divisions=True)
     assert as_user(accountant).get("/api/v1/pay-periods/").status_code == 403
+
+
+def test_payroll_guards_use_the_sri_lanka_date():
+    # Fix, 21 Nov 2026: CURRENT_DATE is the UTC date of the session, a day behind Sri Lanka
+    # between midnight and 05:30; every payroll guard now uses the Sri Lanka date.
+    from django.db import connection
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT proname FROM pg_proc WHERE proname LIKE 'payroll%%' AND prosrc ILIKE %s",
+            ["%current_date%"],
+        )
+        assert cursor.fetchall() == []
+        cursor.execute(
+            "SELECT count(*) FROM pg_proc WHERE proname LIKE 'payroll%%_guard' AND prosrc LIKE %s",
+            ["%Asia/Colombo%"],
+        )
+        assert cursor.fetchone()[0] >= 6

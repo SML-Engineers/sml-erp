@@ -110,6 +110,9 @@ Status: `[ ]` to do · `[x]` done
   - Win / loss reasons are kept for the sales reports.
   - Testing T8 (21 Nov 2026): the outcome (won or lost) is recorded only after the
     quotation is marked sent to the customer, or emailed; also once a sent one has expired.
+  - Testing T17 (21 Nov 2026): a second proforma or sales order from the same quotation,
+    or a second order from the same proforma, is asked for first ("SO26112001 already
+    exists for this quotation. Make another sales order?"); cancelled ones don't count.
   - Owner, 20 Nov 2026: **Duplicate** on any quotation the user can see makes a new draft
     quotation with the next number of the day, dated today, for the same customer, with the
     same terms, lines, quantity breaks, costing, drawings and pictures (prices, taxes and the

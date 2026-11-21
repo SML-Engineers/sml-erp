@@ -127,7 +127,8 @@ export function listProformas(filters: { status?: string } = {}) {
   return apiGet<ProformaSummary[]>(`/proformas/${query ? `?${query}` : ""}`);
 }
 export const getProforma = (id: number) => apiGet<ProformaDetail>(`/proformas/${id}/`);
-export const createProforma = (quotation: QuotationDetail["id"]) => apiSend<ProformaDetail>("POST", "/proformas/", { quotation });
+export const createProforma = (quotation: QuotationDetail["id"], again = false) =>
+  apiSend<ProformaDetail>("POST", "/proformas/", { quotation, again });
 export const updateProforma = (id: number, input: ProformaInput) => apiSend<ProformaDetail>("PUT", `/proformas/${id}/`, input);
 export const issueProforma = (id: number) => apiSend<ProformaDetail>("POST", `/proformas/${id}/issue/`, {});
 export const cancelProforma = (id: number, reason: string) => apiSend<ProformaDetail>("POST", `/proformas/${id}/cancel/`, { reason });

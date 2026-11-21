@@ -67,7 +67,7 @@ export default function ProformaPage() {
           {data.can_edit ? <ProformaForm key={`${data.id}-${data.total_amount}`} proforma={data} /> : <ReadOnly proforma={data} />}
           <Actions proforma={data} />
           {(data.can_make_sales_order || data.sales_orders.length > 0) && (
-            <OrderLinks orders={data.sales_orders} canMake={data.can_make_sales_order} make={() => orderFromProforma(data.id)} />
+            <OrderLinks orders={data.sales_orders} canMake={data.can_make_sales_order} make={(again) => orderFromProforma(data.id, again)} source="proforma" />
           )}
         </>
       )}

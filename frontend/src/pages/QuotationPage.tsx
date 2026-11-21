@@ -38,6 +38,7 @@ import { createProforma } from "../api/proformas";
 import { orderFromQuotation } from "../api/salesOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
 import { offeredTaxCodes } from "../lib/taxCodes";
+import AskAgain from "../components/AskAgain";
 import OrderLinks from "../components/OrderLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
@@ -116,7 +117,7 @@ export default function QuotationPage() {
       {data && (data.can_email || data.emails.length > 0) && <EmailPanel key={`email-${data.id}`} quotation={data} />}
       {data && (data.can_make_proforma || data.proformas.length > 0) && <ProformaLinks quotation={data} />}
       {data && (data.can_make_sales_order || data.sales_orders.length > 0) && (
-        <OrderLinks orders={data.sales_orders} canMake={data.can_make_sales_order} make={() => orderFromQuotation(data.id)} />
+        <OrderLinks orders={data.sales_orders} canMake={data.can_make_sales_order} make={(again) => orderFromQuotation(data.id, again)} source="quotation" />
       )}
       {data?.can_see_costing && (
         <p>
@@ -1010,7 +1011,13 @@ function EmailPanel({ quotation }: { quotation: QuotationDetail }) {
 function ProformaLinks({ quotation }: { quotation: QuotationDetail }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const make = useMutation({ mutationFn: () => createProforma(quotation.id), onSuccess: (made) => navigate(`/proformas/${made.id}`) });
+  const make = useMutation({
+    mutationFn: (again: boolean) => createProforma(quotation.id, again),
+    onSuccess: (made) => navigate(`/proformas/${made.id}`),
+  });
+  // Testing T17 (21 Nov 2026): a second proforma from the same quotation is asked for first.
+  const existing = quotation.proformas.filter((p) => p.status !== "cancelled").map((p) => p.number);
+  const [asking, setAsking] = useState(false);
   return (
     <section className="panel" aria-label={t("proformas.title")}>
       <h2>{t("proformas.title")}</h2>
@@ -1023,10 +1030,19 @@ function ProformaLinks({ quotation }: { quotation: QuotationDetail }) {
           ))}
         </ul>
       )}
-      {quotation.can_make_proforma && (
-        <button type="button" disabled={make.isPending} onClick={() => make.mutate()}>
+      {quotation.can_make_proforma && !asking && (
+        <button type="button" disabled={make.isPending} onClick={() => (existing.length > 0 ? setAsking(true) : make.mutate(false))}>
           {t("proformas.make")}
         </button>
+      )}
+      {asking && (
+        <AskAgain
+          question={t("proformas.makeAgain", { numbers: existing.join(", "), count: existing.length })}
+          yes={t("proformas.makeAgainYes")}
+          busy={make.isPending}
+          onYes={() => make.mutate(true)}
+          onNo={() => setAsking(false)}
+        />
       )}
       <ErrorLine error={make.error} />
     </section>

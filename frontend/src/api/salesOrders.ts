@@ -131,8 +131,10 @@ export function listSalesOrders(filters: { status?: string; waiting?: string } =
   return apiGet<SalesOrderSummary[]>(`/sales-orders/${query ? `?${query}` : ""}`);
 }
 export const getSalesOrder = (id: number) => apiGet<SalesOrderDetail>(`/sales-orders/${id}/`);
-export const orderFromQuotation = (quotation: number) => apiSend<SalesOrderDetail>("POST", "/sales-orders/", { quotation });
-export const orderFromProforma = (proforma: number) => apiSend<SalesOrderDetail>("POST", "/sales-orders/", { proforma });
+export const orderFromQuotation = (quotation: number, again = false) =>
+  apiSend<SalesOrderDetail>("POST", "/sales-orders/", { quotation, again });
+export const orderFromProforma = (proforma: number, again = false) =>
+  apiSend<SalesOrderDetail>("POST", "/sales-orders/", { proforma, again });
 export const createDirectOrder = (input: DirectOrderInput) => apiSend<SalesOrderDetail>("POST", "/sales-orders/", input);
 export const updateSalesOrder = (id: number, input: SalesOrderInput) => apiSend<SalesOrderDetail>("PUT", `/sales-orders/${id}/`, input);
 export const confirmSalesOrder = (id: number, comment = "") => apiSend<SalesOrderDetail>("POST", `/sales-orders/${id}/confirm/`, { comment });

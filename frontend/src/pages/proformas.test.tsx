@@ -135,7 +135,7 @@ test("an issued proforma makes a sales order in one click", async () => {
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
       "/api/v1/sales-orders/",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ proforma: 40 }) }),
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ proforma: 40, again: false }) }),
     ),
   );
 });

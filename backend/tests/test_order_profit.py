@@ -67,6 +67,7 @@ def shaft_order(executive, director, unilever):  # noqa: F811
     )
     workflow.submit(executive, q)
     workflow.approve(director, q)
+    workflow.mark_sent(executive, q)
     q = workflow.record_outcome(executive, q, accepted=True, reason="price")
     order = sales_orders.from_quotation(executive, q)
     sales_orders.save(executive, order, lines=call_offs(order, (14, "20")), customer_po="P9")

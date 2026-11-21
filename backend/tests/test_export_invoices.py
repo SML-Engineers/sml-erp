@@ -147,6 +147,7 @@ def order_for(executive, director, buyer, **values):
     )
     workflow.submit(executive, q)
     workflow.approve(director, q)
+    workflow.mark_sent(executive, q)
     q = workflow.record_outcome(executive, q, accepted=True, reason="price")
     o = orders.from_quotation(executive, q)
     orders.save(
@@ -388,6 +389,7 @@ def test_a_local_customer_paying_in_dollars_pays_vat_and_sscl(
     )
     workflow.submit(executive, q)
     workflow.approve(director, q)
+    workflow.mark_sent(executive, q)
     q = workflow.record_outcome(executive, q, accepted=True, reason="price")
     o = orders.from_quotation(executive, q)
     orders.save(

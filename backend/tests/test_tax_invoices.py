@@ -94,6 +94,7 @@ def make_order(executive, director, *lines, discount=None):
     )
     workflow.submit(executive, q)
     workflow.approve(director, q)
+    workflow.mark_sent(executive, q)
     q = workflow.record_outcome(executive, q, accepted=True, reason="price")
     o = orders.from_quotation(executive, q)
     orders.save(

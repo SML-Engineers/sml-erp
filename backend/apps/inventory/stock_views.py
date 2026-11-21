@@ -121,6 +121,15 @@ class StockOnHandView(_Stock):
         )
 
 
+def _issue(m) -> dict | None:
+    """The stores issue or return a movement came from, and where it went (T33)."""
+    if m.issue_line_id is None:
+        return None
+    issue = m.issue_line.issue
+    to = issue.division.code + (f" · {issue.section.name}" if issue.section_id else "")
+    return {"number": issue.number, "to": to}
+
+
 class MovementListView(_Stock):
     def get(self, request):
         rows = (
@@ -130,6 +139,9 @@ class MovementListView(_Stock):
                 "store",
                 "receipt_line__receipt",
                 "opening_line__opening",
+                "issue_line__issue__division",
+                "issue_line__issue__section",
+                "adjustment_line__adjustment",
                 "journal_entry",
                 "created_by",
             )
@@ -142,6 +154,8 @@ class MovementListView(_Stock):
                     "id": m.id,
                     "date": m.movement_date,
                     "kind": m.kind,
+                    # Testing T33 (21 Nov 2026): the name, so a page never shows a raw key.
+                    "kind_label": m.get_kind_display(),
                     "item": {"id": m.item_id, "code": m.item.code, "unit": m.item.unit},
                     "store": m.store.code,
                     "lot_no": m.lot_no,
@@ -156,6 +170,10 @@ class MovementListView(_Stock):
                         "id": m.opening_line.opening_id,
                         "number": m.opening_line.opening.number,
                     },
+                    "issue": _issue(m),
+                    "adjustment": None
+                    if m.adjustment_line_id is None
+                    else m.adjustment_line.adjustment.number,
                     "journal": None if m.journal_entry_id is None else m.journal_entry.number,
                     "by": m.created_by.full_name,
                 }

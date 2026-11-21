@@ -14,7 +14,9 @@ export interface StockRow {
 export interface Movement {
   id: number;
   date: string;
-  kind: "received" | "damaged" | "accepted" | "rejected" | "reversed";
+  kind: string;
+  /** The movement's name from the server, used when the page has no wording for it (T33). */
+  kind_label?: string;
   item: { id: number; code: string; unit: string };
   store: string;
   lot_no: string;
@@ -22,6 +24,9 @@ export interface Movement {
   value: string | null;
   grn: { id: number; number: string } | null;
   opening?: { id: number; number: string } | null;
+  /** The stores issue or return, and where it went. */
+  issue?: { number: string; to: string } | null;
+  adjustment?: string | null;
   journal: string | null;
   by: string;
 }

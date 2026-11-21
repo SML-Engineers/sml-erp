@@ -83,6 +83,10 @@ Status: `[ ]` to do · `[x]` done
     cancelled by Priyanka: reason". A cancelled or closed-short PO says who did it and
     when (fixed once set), and its print note says "Prints marked CANCELLED" or "REPLACED
     BY A REVISION" instead of DRAFT.
+  - Testing T24/T26/T28 (21 Nov 2026): a new PO keeps the company's address as Deliver to
+    and the supplier's payment terms when the form sends them blank; a PO without a
+    delivery address is not sent. Send to the Director waits until typed changes are saved
+    ("Save your changes first"), and the buyer's comment is kept in the history.
 
 - [x] **P16-05 Printing and emailing the PO**
   PDF in the layout of the owner's sample PO26061701, the company letterhead, emailed to the

@@ -2334,7 +2334,7 @@
     "received": "Received",
     "actions": "What to do with the purchase order",
     "send": "Send to the Director",
-    "sendHelp": "Needs the delivery date. After this the PO cannot be changed.",
+    "sendHelp": "Needs the delivery date and the delivery address. After this the PO cannot be changed.",
     "approve": "Approve the PO",
     "revise": "Revise (needs a reason)",
     "close": "Close short (needs a reason)",
@@ -2358,7 +2358,9 @@
     "cancelledBy": "Cancelled by {{name}} on {{at}}: {{reason}}",
     "closedBy": "Closed short by {{name}} on {{at}}: {{reason}}",
     "printsCancelled": "Prints marked CANCELLED.",
-    "printsReplaced": "Prints marked REPLACED BY A REVISION."
+    "printsReplaced": "Prints marked REPLACED BY A REVISION.",
+    "saveFirst": "Save your changes first (Save draft), then send.",
+    "deliverToBlank": "Blank: the company's address"
   },
   "grn": {
     "title": "Goods receipts",

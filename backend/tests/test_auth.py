@@ -172,7 +172,11 @@ def test_password_alone_is_not_enough_once_two_factor_is_on(client, user):
 
     response = login(client)
     assert response.json() == {"status": "two_factor_required"}
-    assert client.get(ME).json() == {"authenticated": False, "two_factor_pending": True}
+    assert client.get(ME).json() == {
+        "authenticated": False,
+        "two_factor_pending": True,
+        "signed_out_reason": None,
+    }
     assert client.get(PROTECTED).status_code == 403
 
     next_code = totp.at(time.time() + 30)

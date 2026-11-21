@@ -29,7 +29,10 @@
     "codeHelp": "Enter the 6-digit code from your authenticator app, or one of your recovery codes.",
     "code": "Code",
     "verify": "Verify",
-    "failed": "Sign-in failed. Please try again."
+    "failed": "Sign-in failed. Please try again.",
+    "replacedLabel": "Why you were signed out",
+    "replacedComputer": "You were signed out because you signed in on another computer. You can be signed in on one computer and one phone at a time.",
+    "replacedPhone": "You were signed out because you signed in on another phone. You can be signed in on one computer and one phone at a time."
   },
   "twoFactor": {
     "title": "Set up two-factor sign-in",

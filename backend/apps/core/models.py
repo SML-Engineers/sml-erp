@@ -95,6 +95,9 @@ class LoginEvent(models.Model):
         PASSWORD_CHANGED = "password_changed", "Password changed"
         TWO_FACTOR_ENABLED = "two_factor_enabled", "Two-factor sign-in turned on"
         RECOVERY_CODE_USED = "recovery_code_used", "Signed in with a recovery code"
+        # One computer and one phone at a time (owner, 21 Nov 2026).
+        REPLACED_COMPUTER = "replaced_computer", "Signed out: signed in on another computer"
+        REPLACED_PHONE = "replaced_phone", "Signed out: signed in on another phone"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

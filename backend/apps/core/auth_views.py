@@ -113,6 +113,8 @@ class MeView(APIView):
             {
                 "authenticated": False,
                 "two_factor_pending": auth.pending_two_factor_user(request) is not None,
+                # "computer" or "phone" when a newer sign-in on another one ended this one.
+                "signed_out_reason": request.session.get(auth.SESSION_SIGNED_OUT_REASON),
             }
         )
 

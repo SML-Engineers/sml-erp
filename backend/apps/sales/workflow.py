@@ -46,7 +46,7 @@ DOC = "quotation"
 CENT = Decimal("0.01")
 S = Quotation.Status
 FINAL = (S.APPROVED, S.SENT, S.ACCEPTED)  # may be printed as final or emailed (P15-07)
-OPEN_FOR_OUTCOME = (S.APPROVED, S.SENT, S.EXPIRED)
+OPEN_FOR_OUTCOME = (S.SENT, S.EXPIRED)
 REVISABLE = (S.APPROVED, S.SENT, S.EXPIRED, S.LOST)
 
 
@@ -82,8 +82,14 @@ def can_mark_sent(user: User, quotation: Quotation) -> bool:
     return quotation.status == S.APPROVED and _owner_or_manager(user, quotation)
 
 
+def open_for_outcome(quotation: Quotation) -> bool:
+    """Testing T8 (21 Nov 2026): the customer can only accept or refuse an offer they were
+    sent, so won or lost comes after "Sent to customer" (also once it has expired)."""
+    return quotation.status in OPEN_FOR_OUTCOME and quotation.sent_at is not None
+
+
 def can_record_outcome(user: User, quotation: Quotation) -> bool:
-    return quotation.status in OPEN_FOR_OUTCOME and _owner_or_manager(user, quotation)
+    return open_for_outcome(quotation) and _owner_or_manager(user, quotation)
 
 
 def can_revise(user: User, quotation: Quotation) -> bool:
@@ -257,9 +263,10 @@ def record_outcome(
     event = "quotation_accepted" if accepted else "quotation_lost"
     with audit_context(event, note or reason), transaction.atomic():
         quotation = _locked(quotation)
-        if quotation.status not in OPEN_FOR_OUTCOME:
+        if not open_for_outcome(quotation):
             raise SalesError(
-                "Only an approved, sent or expired quotation can be marked won or lost."
+                "Mark the quotation as sent to the customer first; the customer's answer "
+                "comes after that."
             )
         if not _owner_or_manager(user, quotation):
             raise SalesError("The quotation's creator or the Sales Manager records the outcome.")

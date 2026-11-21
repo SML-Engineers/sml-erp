@@ -264,6 +264,12 @@ def test_only_an_approved_quotation_is_sent(executive, director, manager, unilev
 
 
 def test_won_or_lost_with_the_reason(approved, executive):
+    # Testing T8 (21 Nov 2026): the outcome comes after "Sent to customer".
+    assert not workflow.can_record_outcome(executive, approved)
+    with pytest.raises(SalesError, match="Mark the quotation as sent to the customer first"):
+        workflow.record_outcome(executive, approved, accepted=True, reason="price")
+    approved = workflow.mark_sent(executive, approved)
+    assert workflow.can_record_outcome(executive, approved)
     with pytest.raises(SalesError, match="reason the quotation was lost"):
         workflow.record_outcome(executive, approved, accepted=False)
     with pytest.raises(SalesError, match="other reason"):
@@ -273,11 +279,12 @@ def test_won_or_lost_with_the_reason(approved, executive):
     )
     assert (lost.status, lost.outcome_reason, lost.outcome_by) == (S.LOST, "price", executive)
     assert AuditEvent.objects.filter(event="quotation_lost").exists()
-    with pytest.raises(SalesError, match="approved, sent or expired"):
+    with pytest.raises(SalesError, match="Mark the quotation as sent"):
         workflow.record_outcome(executive, lost, accepted=True)
 
 
 def test_a_won_quotation_is_accepted(approved, manager):
+    approved = workflow.mark_sent(manager, approved)
     won = workflow.record_outcome(manager, approved, accepted=True, reason="lead_time")
     assert won.status == S.ACCEPTED and workflow.is_final(won)
 

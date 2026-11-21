@@ -96,10 +96,13 @@ def test_the_register_shows_each_person_their_own_and_the_manager_all(
 
 def test_won_and_lost_with_reasons_and_the_win_rate(executive, director, unilever):
     won = approved(executive, director, unilever)
+    workflow.mark_sent(executive, won)
     won = workflow.record_outcome(executive, won, accepted=True, reason="price")
     lost = approved(executive, director, unilever, price="7.65")
+    workflow.mark_sent(executive, lost)
     lost = workflow.record_outcome(executive, lost, accepted=False, reason="price", note="Too high")
     other = approved(executive, director, unilever, price="1.00")
+    workflow.mark_sent(executive, other)
     other = workflow.record_outcome(executive, other, accepted=False, reason="lead_time")
 
     rows = reports.win_loss(executive, start=TODAY, end=TODAY)
@@ -145,6 +148,7 @@ def test_quotations_awaiting_approval_and_expiring_this_week(executive, director
 
 def test_open_orders_list_every_delivery_by_date(executive, director, unilever):
     won = approved(executive, director, unilever)
+    workflow.mark_sent(executive, won)
     won = workflow.record_outcome(executive, won, accepted=True, reason="price")
     order = orders.from_quotation(executive, won)
     line = order.lines.get()
@@ -181,6 +185,7 @@ def test_advances_not_set_off_are_seen_by_their_salesperson_and_the_manager(
     executive, colleague, manager, director, unilever
 ):
     won = approved(executive, director, unilever)
+    workflow.mark_sent(executive, won)
     won = workflow.record_outcome(executive, won, accepted=True, reason="price")
     accountant = person("accountant@sml.lk", "accountant", all_divisions=True)
     cashier = person("cashier@sml.lk", "cashier", all_divisions=True)
@@ -230,6 +235,7 @@ def test_the_dashboard_agrees_with_the_reports(executive, director, unilever):
     workflow.submit(executive, q)
     approved(executive, director, unilever, valid_until=TODAY + timedelta(2))
     won = approved(executive, director, unilever, price="1.00")
+    workflow.mark_sent(executive, won)
     won = workflow.record_outcome(executive, won, accepted=True, reason="relationship")
 
     board = reports.dashboard(director)

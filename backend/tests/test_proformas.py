@@ -105,6 +105,7 @@ def accepted(executive, director, customer, *lines, **values):
     )
     workflow.submit(executive, q)
     workflow.approve(director, q)
+    workflow.mark_sent(executive, q)
     return workflow.record_outcome(executive, q, accepted=True, reason="price")
 
 

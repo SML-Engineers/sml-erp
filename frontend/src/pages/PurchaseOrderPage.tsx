@@ -27,6 +27,7 @@ import {
   poStatus,
 } from "../api/purchaseOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
+import { offeredTaxCodes } from "../lib/taxCodes";
 import SearchSelect from "../components/SearchSelect";
 import Trail from "../components/Trail";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
@@ -114,7 +115,6 @@ function OrderForm({ order }: { order?: PODetail }) {
   const divisions = useQuery({ queryKey: ["divisions", "mine"], queryFn: listDivisions, enabled: !order });
   const items = useQuery({ queryKey: [...itemsKey, "list", "", "", false], queryFn: () => listItems("", "", false) });
   const taxes = useQuery({ queryKey: taxesKey, queryFn: getTaxes });
-  const purchaseCodes = (taxes.data?.codes ?? []).filter((c) => c.is_active && c.use !== "sales");
   const [supplier, setSupplier] = useState("");
   const [division, setDivision] = useState("");
   const [values, setValues] = useState({
@@ -135,6 +135,7 @@ function OrderForm({ order }: { order?: PODetail }) {
         }))
       : [{ ...blankLine }],
   );
+  const purchaseCodes = offeredTaxCodes(taxes.data?.codes, "purchases", lines.map((l) => l.tax_code));
   const set = (field: keyof typeof values) => (value: string) => setValues((now) => ({ ...now, [field]: value }));
   const setLine = (index: number, change: Partial<LineState>) => setLines((now) => now.map((l, i) => (i === index ? { ...l, ...change } : l)));
   const itemOptions = (items.data ?? []).map((i) => ({ value: String(i.id), label: `${i.code} ${i.name} (${i.unit})` }));

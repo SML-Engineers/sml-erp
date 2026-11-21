@@ -19,6 +19,7 @@ import {
   type SalesOrderDetail,
 } from "../api/salesOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
+import { offeredTaxCodes } from "../lib/taxCodes";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDate, formatDateTime } from "../lib/time";
 import { listQuotations } from "../api/quotations";
@@ -123,7 +124,6 @@ function OrderForm({ order }: { order: SalesOrderDetail }) {
   const queryClient = useQueryClient();
   const direct = order.source === "direct";
   const taxes = useQuery({ queryKey: taxesKey, queryFn: getTaxes, enabled: direct });
-  const salesCodes = (taxes.data?.codes ?? []).filter((c) => c.is_active && c.use !== "purchases");
   const [values, setValues] = useState({
     customer_po: order.customer_po,
     po_date: order.po_date ?? "",
@@ -150,6 +150,7 @@ function OrderForm({ order }: { order: SalesOrderDetail }) {
       schedule: l.schedule.map((d) => ({ ...d })),
     })),
   );
+  const salesCodes = offeredTaxCodes(taxes.data?.codes, "sales", lines.map((l) => l.tax_code));
   const set = (field: keyof typeof values) => (value: string) => setValues((now) => ({ ...now, [field]: value }));
   const setLine = (index: number, change: Partial<LineState>) => setLines((now) => now.map((l, i) => (i === index ? { ...l, ...change } : l)));
   const setDelivery = (index: number, at: number, change: Partial<Delivery>) =>

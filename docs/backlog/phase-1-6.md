@@ -353,6 +353,12 @@ The owner's answers to the open go-live questions (also in spec 8.4):
     email, as each person chose) to everyone who may confirm it, except the person who
     entered it: "Tax rate SSCL-M 2.125% from 19/11/2026 is waiting for you to confirm". The
     person who entered it hears when it is confirmed or rejected.
+  - Testing T1 (21 Nov 2026): quotation, sales order, purchase order, voucher and the
+    Accountant's coding offer only tax codes whose every tax has a confirmed rate in force
+    today (a code already on a line stays shown). The missing-rate message gives the date
+    as dd/mm/yyyy. The demo data loads VAT 18 %, SSCL 2.5 %, SSCL-M 2.125 % and
+    SSCL-R 1.25 %; a database loaded before that needs them entered under Settings → Tax
+    rates.
 
 - [x] **P16-18 Price differences into the cost of stock (IAS 2)**
   An invoice price different from the PO price adjusts the value of the goods still in

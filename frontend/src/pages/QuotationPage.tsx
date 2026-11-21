@@ -37,6 +37,7 @@ import {
 import { createProforma } from "../api/proformas";
 import { orderFromQuotation } from "../api/salesOrders";
 import { getTaxes, taxesKey } from "../api/taxes";
+import { offeredTaxCodes } from "../lib/taxCodes";
 import OrderLinks from "../components/OrderLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
@@ -187,7 +188,7 @@ function QuotationForm({ quotation }: { quotation?: QuotationDetail }) {
   const set = (field: keyof typeof values) => (value: string) => setValues((now) => ({ ...now, [field]: value }));
   const setLine = (index: number, change: Partial<LineInput>) =>
     setLines((now) => now.map((l, i) => (i === index ? { ...l, ...change } : l)));
-  const salesCodes = (taxes.data?.codes ?? []).filter((c) => c.is_active && c.use !== "purchases");
+  const salesCodes = offeredTaxCodes(taxes.data?.codes, "sales", lines.map((l) => l.tax_code));
   const production = (divisions.data ?? []).filter((d) => d.division_type !== "shared");
 
   function chooseCustomer(value: string) {

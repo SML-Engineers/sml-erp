@@ -52,7 +52,8 @@ def _component(c: TaxComponent, today: date) -> dict:
     }
 
 
-def _code(t: TaxCode) -> dict:
+def _code(t: TaxCode, with_rate: set[int]) -> dict:
+    lines = list(t.lines.all())
     return {
         "id": t.pk,
         "code": t.code,
@@ -61,6 +62,9 @@ def _code(t: TaxCode) -> dict:
         "use": t.use,
         "is_active": t.is_active,
         "in_use": t.first_used_at is not None,
+        # Testing T1 (21 Nov 2026): every tax of the code has a rate in force today. Forms
+        # offer only such codes, so a document can't be stopped by a missing rate.
+        "has_rate_today": all(line.component_id in with_rate for line in lines),
         "components": [
             {
                 "component": line.component_id,
@@ -68,7 +72,7 @@ def _code(t: TaxCode) -> dict:
                 "base": line.base,
                 "portion_pct": f"{line.portion_pct:.2f}",
             }
-            for line in t.lines.all()
+            for line in lines
         ],
     }
 
@@ -79,10 +83,9 @@ def overview() -> dict:
         "sales_account", "purchase_account"
     ).prefetch_related("rates")
     codes = TaxCode.objects.prefetch_related("lines__component")
-    return {
-        "components": [_component(c, today) for c in components],
-        "codes": [_code(t) for t in codes],
-    }
+    rows = [_component(c, today) for c in components]
+    with_rate = {row["id"] for row in rows if row["current_rate"] is not None}
+    return {"components": rows, "codes": [_code(t, with_rate) for t in codes]}
 
 
 class _Taxes(APIView):

@@ -198,3 +198,20 @@ test("the list says whose draft a PO is, who it waits for and who decided", asyn
   for (const text of ["Draft of Kasun", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Partly received"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+// Testing T29/T30 (21 Nov 2026): who cancelled a PO and when, and what its PDF is marked.
+test("a cancelled PO says who cancelled it, when and why, and prints marked CANCELLED", async () => {
+  const cancelled: PODetail = {
+    ...draft,
+    status: "cancelled",
+    can_edit: false,
+    end_reason: "No longer needed",
+    ended_by: "Priyanka Gunawardena",
+    ended_at: "2026-11-21T04:50:00+05:30",
+  };
+  mockApi({ "GET /api/v1/purchase-orders/9/": { body: cancelled } });
+  renderAt("/purchase-orders/9", <PurchaseOrderPage />, "/purchase-orders/:id");
+  expect(await screen.findByText(/Cancelled by Priyanka Gunawardena on 2026-11-21 04:50: No longer needed/)).toBeInTheDocument();
+  expect(screen.getByText("Prints marked CANCELLED.")).toBeInTheDocument();
+  expect(screen.queryByText(/until the Director approves it/)).not.toBeInTheDocument();
+});

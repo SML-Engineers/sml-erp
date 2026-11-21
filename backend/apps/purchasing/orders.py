@@ -23,11 +23,11 @@ from django.utils import timezone
 
 from apps.accounting import taxes
 from apps.accounting.models import TaxCode
-from apps.core import approvals
+from apps.core import approvals, notifications
 from apps.core.access import division_scope, effective_access
 from apps.core.approvals import ApprovalError
 from apps.core.audit import audit_context
-from apps.core.models import ApprovalState, Company, Division, User
+from apps.core.models import ApprovalLog, ApprovalState, Company, Division, User
 from apps.core.numbering import NumberSeriesError, allocate
 from apps.inventory import items as item_master
 from apps.inventory.models import Item
@@ -367,10 +367,33 @@ def cancel(user: User, order: PurchaseOrder, reason: str) -> PurchaseOrder:
                 "A draft, or an approved purchase order with nothing received, can be cancelled; "
                 "one partly received is closed short instead."
             )
+        approved = order.status != St.DRAFT
         order.status = St.CANCELLED
         order.end_reason = reason[:1000]
-        order.save(update_fields=["status", "end_reason"])
+        order.ended_by, order.ended_at = user, timezone.now().replace(microsecond=0)
+        order.save(update_fields=["status", "end_reason", "ended_by", "ended_at"])
+        if approved:
+            _tell_approvers(order, user, reason)
         return order
+
+
+def _tell_approvers(order: PurchaseOrder, user: User, reason: str) -> None:
+    """Owner, 21 Nov 2026 (testing T30): the Purchasing Officer may cancel an approved PO,
+    and the Director who approved it is told: "PO… cancelled by Priyanka: reason"."""
+    approvers = [
+        row.user
+        for row in approvals.history(DOC, order.pk)
+        if row.action == ApprovalLog.Action.APPROVE and row.user_id != user.pk
+    ]
+    notifications.notify(
+        approvers,
+        "document_cancelled",
+        title=f"{order.label} cancelled by {user.full_name}: {reason}"[:200],
+        body=f"{order.supplier.name}, {order.currency.code} {order.total_amount:,.2f}.",
+        link=f"/purchase-orders/{order.pk}",
+        document_type=DOC,
+        document_id=order.pk,
+    )
 
 
 def close(user: User, order: PurchaseOrder, reason: str) -> PurchaseOrder:
@@ -384,5 +407,6 @@ def close(user: User, order: PurchaseOrder, reason: str) -> PurchaseOrder:
             raise PurchasingError("Only a partly received purchase order is closed short.")
         order.status = St.CLOSED
         order.end_reason = reason[:1000]
-        order.save(update_fields=["status", "end_reason"])
+        order.ended_by, order.ended_at = user, timezone.now().replace(microsecond=0)
+        order.save(update_fields=["status", "end_reason", "ended_by", "ended_at"])
         return order

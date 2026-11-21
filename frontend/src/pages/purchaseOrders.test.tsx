@@ -165,10 +165,28 @@ test("the buyer emails an approved PO to the supplier and can print it", async (
   expect(screen.queryByText(/Prints marked DRAFT/)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Email the PO to the supplier" }));
   const form = await screen.findByRole("form", { name: "Email to the supplier" });
+  expect(within(form).getByText("From purchasing@sml.lk. The purchase order PDF is attached.")).toBeInTheDocument();
   expect(within(form).getByDisplayValue("sales@sddpolymer.lk")).toBeInTheDocument();
   fireEvent.submit(form);
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/purchase-orders/9/email/", expect.objectContaining({ method: "POST" })));
   expect(await screen.findByText(/sales@sddpolymer.lk · Buyer/)).toBeInTheDocument();
+});
+
+// Testing T27 (21 Nov 2026): with no mailbox the PO email says so and can't be sent.
+test("the PO email can't be sent when document email is not set up", async () => {
+  const approved: PODetail = { ...draft, status: "approved", can_edit: false, can_email: true };
+  mockApi({
+    "GET /api/v1/purchase-orders/9/": { body: approved },
+    "GET /api/v1/purchase-orders/9/email/": {
+      body: { from: "", ready: false, to: ["orders@steel.example.com"], cc: [], subject: "PO", body: "Dear" },
+    },
+  });
+  renderAt("/purchase-orders/9", <PurchaseOrderPage />, "/purchase-orders/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Email the PO to the supplier" }));
+  const form = await screen.findByRole("form", { name: "Email to the supplier" });
+  expect(within(form).getByText("Document email is not set up yet: ask the Admin (Settings → Document email).")).toBeInTheDocument();
+  expect(within(form).getByRole("button", { name: "Send" })).toBeDisabled();
+  expect(within(form).getByDisplayValue("orders@steel.example.com")).toBeInTheDocument();
 });
 
 // Owner, 16 Nov 2026: clear statuses in the list.

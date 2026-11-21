@@ -1,3 +1,4 @@
+import type { NoticeChange } from "./notice";
 import type { Level } from "./access";
 import { apiGet, apiPost, apiSend } from "./client";
 
@@ -190,6 +191,8 @@ export interface AccessToConfirm {
   roles: RoleRequestRow[];
   grants: (Override & { user_name: string; user_id: number; mine: boolean })[];
   resets: (PasswordResetRow & { user_name: string; user_id: number })[];
+  /** A change to the top-bar notice waiting for the Director (owner, 21 Nov 2026). */
+  notice?: NoticeChange | null;
 }
 
 export const accessToConfirmKey = ["access-to-confirm"];

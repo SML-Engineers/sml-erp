@@ -13,6 +13,7 @@ import {
   revokeOverride,
 } from "../../api/admin";
 import { ApiError } from "../../api/client";
+import { approveNotice, noticeKey, refuseNotice } from "../../api/notice";
 import { waitingKey } from "../../api/waiting";
 import { formatDateTime } from "../../lib/time";
 
@@ -37,7 +38,8 @@ export default function AccessToConfirmPage() {
     mutationFn: (run: () => Promise<unknown>) => run(),
   });
   const d = data.data;
-  const empty = d && d.roles.length + d.grants.length + d.resets.length === 0;
+  const empty = d && d.roles.length + d.grants.length + d.resets.length === 0 && !d.notice;
+  const notice = d?.notice;
 
   return (
     <main className="page">
@@ -54,6 +56,47 @@ export default function AccessToConfirmPage() {
         </p>
       )}
       {empty && <p className="muted">{t("atc.none")}</p>}
+
+      {notice && (
+        <section className="panel" aria-label={t("notice.title")}>
+          <h2>{t("notice.title")}</h2>
+          <p>
+            <strong>{notice.show ? t("notice.switchOnAsked") : t("notice.switchOffAsked")}</strong> · {notice.requested_by}{" "}
+            <span className="muted">{formatDateTime(notice.requested_at)}</span> · {notice.reason}
+          </p>
+          {notice.show && (
+            <div className="top-notice">
+              <p lang="en">{notice.text_en}</p>
+              <p lang="si">{notice.text_si}</p>
+            </div>
+          )}
+          {notice.can_decide ? (
+            <p className="row-actions">
+              <button
+                type="button"
+                disabled={act.isPending}
+                onClick={() =>
+                  act.mutate(() => approveNotice(notice.id), {
+                    onSuccess: () => {
+                      refresh(t("notice.approved"));
+                      void queryClient.invalidateQueries({ queryKey: noticeKey });
+                    },
+                  })
+                }
+              >
+                {t("notice.approve")}
+              </button>
+              <Refuse
+                label={t("atc.refuse")}
+                pending={act.isPending}
+                onRemove={(reason) => act.mutate(() => refuseNotice(notice.id, reason), { onSuccess: () => refresh(t("notice.refused")) })}
+              />
+            </p>
+          ) : (
+            notice.mine && <p className="muted">{t("atc.notYours")}</p>
+          )}
+        </section>
+      )}
 
       {d && d.roles.length > 0 && (
         <section className="panel" aria-label={t("atc.roles")}>

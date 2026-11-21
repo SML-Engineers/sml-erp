@@ -1043,3 +1043,57 @@ class PrintTemplate(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_document_display()} v{self.version}"
+
+
+class NoticeChange(models.Model):
+    """The notice in the top bar (owner, 21 Nov 2026), e.g. that entering false information
+    is a punishable offence, shown in English with Sinhala below it whatever language the
+    person uses. The Admin asks to switch it on or off or to change its words, with a reason;
+    it changes only when a Director other than the Admin approves. The notice in force is the
+    last approved change. A decided change is never altered or deleted (database guard)."""
+
+    class Status(models.TextChoices):
+        WAITING = "waiting", "Waiting for the Director"
+        APPROVED = "approved", "Approved"
+        REFUSED = "refused", "Refused"
+        WITHDRAWN = "withdrawn", "Withdrawn"
+
+    show = models.BooleanField()
+    text_en = models.CharField(max_length=200, blank=True, default="")
+    text_si = models.CharField(max_length=200, blank=True, default="")
+    reason = models.TextField()
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    requested_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.WAITING)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-requested_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["status"],
+                condition=models.Q(status="waiting"),
+                name="core_noticechange_one_waiting",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(status__in=["approved", "refused"])
+                | (
+                    models.Q(decided_by__isnull=False)
+                    & ~models.Q(decided_by=models.F("requested_by"))
+                ),
+                name="core_noticechange_decided_by_another",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(show=False) | (~models.Q(text_en="") & ~models.Q(text_si="")),
+                name="core_noticechange_shown_with_both_texts",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Notice {'on' if self.show else 'off'} ({self.status})"

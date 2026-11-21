@@ -95,7 +95,7 @@ export default function StockPage() {
                 {moves.data.map((m) => (
                   <tr key={m.id}>
                     <td>{m.date}</td>
-                    <td>{t(`stock.movementKinds.${m.kind}`)}</td>
+                    <td>{t(`stock.movementKinds.${m.kind}`, { defaultValue: m.kind_label })}</td>
                     <td>{m.store}</td>
                     <td className="mono">{m.lot_no}</td>
                     <td className="num">{formatQuantity(m.quantity)}</td>
@@ -103,6 +103,12 @@ export default function StockPage() {
                     <td>
                       {m.grn && <Link to={`/goods-receipts/${m.grn.id}`}>{m.grn.number}</Link>}
                       {m.opening && <Link to={`/opening-stock/${m.opening.id}`}>{m.opening.number}</Link>}
+                      {m.issue && (
+                        <Link to="/stores-work?tab=issues">
+                          {m.issue.number} → {m.issue.to}
+                        </Link>
+                      )}
+                      {m.adjustment && <Link to="/stores-work?tab=adjustments">{m.adjustment}</Link>}
                       {m.journal && ` · ${m.journal}`}
                     </td>
                   </tr>

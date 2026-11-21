@@ -36,6 +36,35 @@ test("stock on hand shows quantity and value per store, and an item's movements"
           journal: "JE26110001",
           by: "QC",
         },
+        {
+          id: 2,
+          date: "2026-11-10",
+          kind: "issued",
+          kind_label: "Issued from stores",
+          item: { id: 5, code: "PP-H-WHITE", unit: "kg" },
+          store: "IM-MAIN",
+          lot_no: "GRN26110101-1-001",
+          quantity: "-22.000",
+          value: "-9240.00",
+          grn: null,
+          issue: { number: "SI26110001", to: "IM · Moulding" },
+          journal: "JV26110008",
+          by: "Stores",
+        },
+        {
+          id: 3,
+          date: "2026-11-12",
+          kind: "some_new_kind",
+          kind_label: "A new kind of movement",
+          item: { id: 5, code: "PP-H-WHITE", unit: "kg" },
+          store: "IM-MAIN",
+          lot_no: "L1",
+          quantity: "1.000",
+          value: "0.00",
+          grn: null,
+          journal: null,
+          by: "Stores",
+        },
       ],
     },
   });
@@ -50,6 +79,11 @@ test("stock on hand shows quantity and value per store, and an item's movements"
   const moves = await screen.findByRole("table", { name: "Movements" });
   expect(within(moves).getByText("Accepted by QC")).toBeInTheDocument();
   expect(within(moves).getByRole("link", { name: "GRN26110101" })).toHaveAttribute("href", "/goods-receipts/4");
+  // Testing T33 (21 Nov 2026): every movement has a name, and an issue shows where it went.
+  expect(within(moves).getByText("Issued from stores")).toBeInTheDocument();
+  expect(within(moves).getByRole("link", { name: "SI26110001 → IM · Moulding" })).toHaveAttribute("href", "/stores-work?tab=issues");
+  expect(within(moves).getByText("A new kind of movement")).toBeInTheDocument();
+  expect(within(moves).queryByText(/stock\.movementKinds/)).not.toBeInTheDocument();
 });
 
 test("someone who may not see costs sees quantities but no values", async () => {

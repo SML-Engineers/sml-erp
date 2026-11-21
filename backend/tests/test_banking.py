@@ -251,3 +251,41 @@ def test_a_division_with_a_default_bank_account_cannot_be_deleted(accountant, cu
     banking.set_division_default(accountant, tool_shop, current)
     with pytest.raises(organisation.OrganisationError, match="linked to"):
         organisation.delete_division(tool_shop, reason="set up by mistake")
+
+
+# --- T15 (testing, 21 Nov 2026): the holder's name and SWIFT code printed for customers ---
+
+
+def test_the_account_holder_and_swift_code_for_customers(accountant, current):
+    from apps.core.models import Company
+
+    company = Company.objects.get(pk=1).name
+    assert current.holder == company  # blank: the company's registered name
+    changed = banking.update_account(
+        accountant,
+        current,
+        {
+            "holder_name": "  SML Engineers  and Manufacturers (Pvt) Ltd ",
+            "swift_code": "ccey lk lx",
+        },
+    )
+    assert changed.holder == "SML Engineers and Manufacturers (Pvt) Ltd"
+    assert changed.swift_code == "CCEYLKLX"
+    assert banking.update_account(accountant, current, {"swift_code": "CCEYLKLX123"}).swift_code
+    for wrong in ("CCEY", "12EYLKLX", "CCEYLKLX1"):
+        with pytest.raises(MastersError, match="SWIFT code is 8 or 11"):
+            banking.update_account(accountant, current, {"swift_code": wrong})
+    with pytest.raises(MastersError, match="at most 150"):
+        banking.update_account(accountant, current, {"holder_name": "x" * 151})
+    # A used account keeps its bank and number, but its holder's name can still be corrected.
+    body = as_user(accountant).get("/api/v1/company-accounts/").json()
+    row = next(a for a in body if a["code"] == "COM-CUR")
+    assert (row["holder"], row["swift_code"]) == (
+        "SML Engineers and Manufacturers (Pvt) Ltd",
+        "CCEYLKLX123",
+    )
+    # Cash has no bank details at all.
+    cash = banking.create_account(
+        accountant, code="cash-ho", kind="cash", name="Head office cash", holder_name="x"
+    )
+    assert (cash.holder_name, cash.swift_code) == ("", "")

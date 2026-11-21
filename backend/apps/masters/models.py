@@ -564,6 +564,11 @@ class CompanyAccount(models.Model):
     bank_name = models.CharField(max_length=100, blank=True)
     branch = models.CharField(max_length=100, blank=True)
     account_number = models.CharField(max_length=34, blank=True)
+    # Printed for customers paying in (testing T15, 21 Nov 2026): the account holder's name as
+    # the bank knows it (blank: the company's registered name), and the bank's SWIFT code for
+    # payments from abroad. `name` is only the ERP's own label, e.g. "Commercial Bank current".
+    holder_name = models.CharField(max_length=150, blank=True)
+    swift_code = models.CharField(max_length=11, blank=True)
     currency = models.ForeignKey(
         Currency, on_delete=models.PROTECT, related_name="company_accounts"
     )
@@ -602,6 +607,16 @@ class CompanyAccount(models.Model):
 
     def __str__(self):
         return f"{self.code} {self.name}"
+
+    @property
+    def holder(self) -> str:
+        """The account holder's name printed for customers: as entered, else the company's."""
+        if self.holder_name:
+            return self.holder_name
+        from apps.core.models import Company
+
+        company = Company.objects.filter(pk=1).first()
+        return company.name if company else self.name
 
     @property
     def is_bank(self) -> bool:

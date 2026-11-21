@@ -63,10 +63,7 @@ class PublicInvoiceView(View):
                 "",
                 "<dl><dt>Bank</dt><dd>{} {}</dd><dt>Account name</dt><dd>{}</dd>"
                 "<dt>Account number</dt><dd>{}</dd></dl><br>",
-                (
-                    (a.bank_name, a.branch, company.name if company else a.name, a.account_number)
-                    for a in banks
-                ),
+                ((a.bank_name, a.branch, a.holder, a.account_number) for a in banks),
             )
             if banks
             else format_html("<p>{}</p>", "Please ask us for our bank details.")

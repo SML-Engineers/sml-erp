@@ -76,6 +76,9 @@ class AccountSerializer(serializers.ModelSerializer):
             "bank_name",
             "branch",
             "account_number",
+            "holder_name",
+            "holder",
+            "swift_code",
             "currency",
             "division",
             "custodian",
@@ -119,6 +122,8 @@ class AccountInput(serializers.Serializer):
     bank_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
     branch = serializers.CharField(max_length=100, required=False, allow_blank=True)
     account_number = serializers.CharField(max_length=40, required=False, allow_blank=True)
+    holder_name = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    swift_code = serializers.CharField(max_length=20, required=False, allow_blank=True)
     currency = serializers.CharField(max_length=3, required=False)
     division = serializers.CharField(max_length=2, required=False, allow_blank=True)
     custodian = serializers.IntegerField(required=False, allow_null=True)

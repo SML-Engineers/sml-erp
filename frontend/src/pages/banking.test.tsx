@@ -23,6 +23,9 @@ const current: CompanyAccount = {
   bank_name: "Commercial Bank",
   branch: "Seeduwa",
   account_number: "1000234567",
+  holder_name: "",
+  holder: "SML Engineers and Manufacturers (Pvt) Ltd",
+  swift_code: "",
   currency: "LKR",
   division: null,
   custodian: null,
@@ -152,6 +155,35 @@ test("the accountant links an account to its Bank ledger in the chart of account
     expect(calls).toHaveBeenCalledWith(
       "/api/v1/company-accounts/1/",
       expect.objectContaining({ method: "PATCH", body: JSON.stringify({ ledger_account: 40 }) }),
+    ),
+  );
+});
+
+// T15 (testing, 21 Nov 2026): the account holder's name and SWIFT code printed for customers.
+test("the accountant sets the bank details customers see, even on a used account", async () => {
+  const calls = mockApi(
+    api({
+      "PATCH /api/v1/company-accounts/1/": {
+        body: { ...current, holder_name: "SML Engineers & Manufacturers", holder: "SML Engineers & Manufacturers", swift_code: "CCEYLKLX" },
+      },
+    }),
+  );
+  renderAt("/bank-accounts", <BankAccountsPage me={accountant} />);
+  fireEvent.click(await screen.findByRole("button", { name: "COM-CUR" }));
+  const form = await screen.findByRole("form", { name: "Bank details for customers" });
+  expect(within(form).getByText("Customers see the account name: SML Engineers and Manufacturers (Pvt) Ltd")).toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Account holder's name (blank: the company's name)"), {
+    target: { value: "SML Engineers & Manufacturers" },
+  });
+  fireEvent.change(within(form).getByLabelText("SWIFT code (for payments from abroad)"), { target: { value: "CCEYLKLX" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save bank details for customers" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/company-accounts/1/",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ holder_name: "SML Engineers & Manufacturers", swift_code: "CCEYLKLX" }),
+      }),
     ),
   );
 });

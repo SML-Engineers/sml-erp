@@ -701,7 +701,12 @@
     "ledger": "Ledger account",
     "noLedger": "Not linked yet",
     "ledgerHelp": "The Bank-type account in the chart of accounts that this account's money is recorded in. It is needed before the account is used on payments.",
-    "saveLedger": "Save ledger account"
+    "saveLedger": "Save ledger account",
+    "holderName": "Account holder's name (blank: the company's name)",
+    "swiftCode": "SWIFT code (for payments from abroad)",
+    "forCustomers": "Bank details for customers",
+    "saveForCustomers": "Save bank details for customers",
+    "printedAs": "Customers see the account name: {{name}}"
   },
   "chart": {
     "title": "Chart of accounts",

@@ -144,11 +144,14 @@ def document(proforma: ProformaInvoice) -> Document:
     boxes = []
     bank = proforma.bank_account
     if bank is not None:
-        rows = [f"Account name: {bank.name}"]
+        # T15: the holder's name as the bank knows it, not the ERP's label for the account.
+        rows = [f"Account name: {bank.holder}"]
         if bank.bank_name:
             rows.append(f"Bank: {bank.bank_name}" + (f", {bank.branch}" if bank.branch else ""))
         if bank.account_number:
             rows.append(f"Account no.: {bank.account_number} ({bank.currency.code})")
+        if bank.swift_code:
+            rows.append(f"SWIFT: {bank.swift_code}")
         boxes.append(("Bank details for payment", rows))
     refs = [f"Quotation: {proforma.quotation.label}"]
     if proforma.customer_po:

@@ -15,6 +15,7 @@ from apps.accounting.models import DetailType, JournalEntry, TaxCode, TaxCompone
 from apps.core import document_email
 from apps.core.models import Division
 from apps.masters import banking, customers
+from apps.masters.models import CompanyAccount
 from apps.sales import advances, proforma_email, proforma_printing, proformas, services, workflow
 from apps.sales.models import ProformaInvoice, ProformaLine, Quotation
 from apps.sales.proformas import LineInput
@@ -376,6 +377,24 @@ def test_the_printed_proforma_and_its_packing_list(draft, executive, bank):
     ):
         assert expected in pdf, expected
     assert b"NOT ISSUED" not in pdf and b"SVAT" not in pdf
+
+
+def test_the_proforma_prints_the_account_holder_not_the_erp_label(draft, executive, bank):
+    # T15 (testing, 21 Nov 2026): "Account name: Commercial Bank current" was printed.
+    from apps.core.models import Company
+
+    CompanyAccount.objects.filter(pk=bank.pk).update(name="Commercial Bank current")
+    proformas.save(executive, draft, lines=lines_of(draft, {}), bank_account=bank)
+    pdf = text(draft)
+    company = Company.objects.get(pk=1).name
+    assert f"Account name: {company}".encode() in pdf
+    assert b"Commercial Bank current" not in pdf and b"SWIFT" not in pdf
+    CompanyAccount.objects.filter(pk=bank.pk).update(
+        holder_name="SML Engineers and Manufacturers (Pvt) Ltd", swift_code="CCEYLKLX"
+    )
+    pdf = text(draft)
+    assert b"Account name: SML Engineers and Manufacturers (Pvt) Ltd" in pdf
+    assert b"SWIFT: CCEYLKLX" in pdf
 
 
 def test_an_issued_proforma_is_emailed_with_its_pdf(draft, executive):

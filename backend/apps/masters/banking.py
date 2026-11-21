@@ -18,6 +18,8 @@ from .models import ChequeBook, ChequeLeaf, CompanyAccount, Currency, DivisionBa
 from .services import MastersError, is_in_use, normalise_code
 
 ACCOUNT_NUMBER = re.compile(r"^[A-Z0-9][A-Z0-9 -]{3,33}$")
+# Bank (4 letters), country (2 letters), place (2) and, if given, branch (3).
+SWIFT_CODE = re.compile(r"^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$")
 MAX_BOOK_LEAVES = 1000
 
 
@@ -45,6 +47,18 @@ def _clean(values: dict, kind: str) -> dict:
             cleaned[field] = (values[field] or "").strip()
     if "name" in cleaned and not cleaned["name"]:
         raise MastersError("The account name is required.")
+    if "holder_name" in values:
+        holder = " ".join((values["holder_name"] or "").split())
+        if len(holder) > 150:
+            raise MastersError("The account holder's name is at most 150 characters.")
+        cleaned["holder_name"] = holder
+    if "swift_code" in values:
+        swift = (values["swift_code"] or "").replace(" ", "").upper()
+        if swift and not SWIFT_CODE.match(swift):
+            raise MastersError(
+                "The SWIFT code is 8 or 11 letters and digits, for example CCEYLKLX."
+            )
+        cleaned["swift_code"] = swift
     if "account_number" in values:
         number = (values["account_number"] or "").strip().upper()
         if number and not ACCOUNT_NUMBER.match(number):
@@ -99,6 +113,7 @@ def _check_kind(account: CompanyAccount) -> None:
             raise MastersError("Only petty cash has a custodian and a float.")
     else:
         account.bank_name = account.branch = account.account_number = ""
+        account.holder_name = account.swift_code = ""
         if account.kind == CompanyAccount.Kind.PETTY_CASH:
             if account.custodian_id is None or account.float_amount is None:
                 raise MastersError("Petty cash needs a custodian and its float amount.")

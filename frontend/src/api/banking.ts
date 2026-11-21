@@ -23,6 +23,11 @@ export interface CompanyAccount {
   bank_name: string;
   branch: string;
   account_number: string;
+  /** Printed for customers (T15): as entered, blank for the company's name. */
+  holder_name: string;
+  /** The name actually printed: holder_name, or the company's registered name. */
+  holder: string;
+  swift_code: string;
   currency: string;
   division: string | null;
   custodian: { id: number; name: string } | null;
@@ -42,6 +47,8 @@ export interface AccountChange {
   bank_name?: string;
   branch?: string;
   account_number?: string;
+  holder_name?: string;
+  swift_code?: string;
   currency?: string;
   division?: string;
   custodian?: number | null;

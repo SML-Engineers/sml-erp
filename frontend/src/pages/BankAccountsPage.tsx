@@ -118,6 +118,8 @@ function AddAccount() {
     bank_name: "",
     branch: "",
     account_number: "",
+    holder_name: "",
+    swift_code: "",
     currency: "LKR",
     custodian: "",
     float_amount: "",
@@ -136,7 +138,13 @@ function AddAccount() {
         division: values.division,
         ledger_account: values.ledger_account ? Number(values.ledger_account) : null,
         ...(isBank
-          ? { bank_name: values.bank_name, branch: values.branch, account_number: values.account_number }
+          ? {
+              bank_name: values.bank_name,
+              branch: values.branch,
+              account_number: values.account_number,
+              holder_name: values.holder_name,
+              swift_code: values.swift_code,
+            }
           : {}),
         ...(kind === "petty_cash"
           ? { custodian: values.custodian ? Number(values.custodian) : null, float_amount: values.float_amount }
@@ -180,6 +188,8 @@ function AddAccount() {
         {isBank && text("bank_name", t("payees.bankName"), true)}
         {isBank && text("branch", t("payees.branch"))}
         {isBank && text("account_number", t("payees.accountNumber"), true)}
+        {isBank && text("holder_name", t("banking.holderName"))}
+        {isBank && text("swift_code", t("banking.swiftCode"))}
         {kind === "petty_cash" && (
           <>
             <label>
@@ -241,6 +251,9 @@ function AccountPanel(props: { account: CompanyAccount; canManage: boolean; canS
           : t("banking.noLedger")}
       </p>
       {account.in_use && <p className="muted">{t("banking.inUse")}</p>}
+      {(account.kind === "current" || account.kind === "savings") && (
+        <ForCustomers key={`${account.holder_name}|${account.swift_code}`} account={account} canManage={props.canManage} />
+      )}
       {props.canManage && !(account.in_use && account.ledger_account) && <LedgerLink account={account} />}
       {props.canManage && (
         <div className="inline-form">
@@ -258,6 +271,50 @@ function AccountPanel(props: { account: CompanyAccount; canManage: boolean; canS
         <ChequeBooks account={account} canManage={props.canManage} canSpoil={props.canSpoil} />
       )}
     </section>
+  );
+}
+
+/** T15 (testing, 21 Nov 2026): what customers see on proformas and the invoice page. */
+function ForCustomers({ account, canManage }: { account: CompanyAccount; canManage: boolean }) {
+  const { t } = useTranslation();
+  const refresh = useRefresh();
+  const [holder, setHolder] = useState(account.holder_name);
+  const [swift, setSwift] = useState(account.swift_code);
+  const save = useMutation({
+    mutationFn: () => updateAccount(account.id, { holder_name: holder, swift_code: swift }),
+    onSuccess: refresh,
+  });
+  if (!canManage) {
+    return (
+      <p>
+        {t("banking.printedAs", { name: account.holder })}
+        {account.swift_code && ` · SWIFT ${account.swift_code}`}
+      </p>
+    );
+  }
+  return (
+    <form
+      className="inline-form"
+      aria-label={t("banking.forCustomers")}
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+    >
+      <label>
+        {t("banking.holderName")}
+        <input value={holder} placeholder={account.holder} onChange={(e) => setHolder(e.target.value)} />
+      </label>
+      <label>
+        {t("banking.swiftCode")}
+        <input value={swift} onChange={(e) => setSwift(e.target.value)} />
+      </label>
+      <button type="submit" className="secondary" disabled={save.isPending}>
+        {t("banking.saveForCustomers")}
+      </button>
+      <p className="muted">{t("banking.printedAs", { name: account.holder })}</p>
+      <ErrorLine error={save.error} />
+    </form>
   );
 }
 

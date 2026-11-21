@@ -225,6 +225,10 @@ Status: `[ ]` to do · `[x]` done
     Divisions page: the Admin has no banking access by default.
   - Each cheque number is used once, ever (issued or spoiled with a reason; database).
   - The link to ledger accounts is added with the chart of accounts (P0-15, done).
+  - Testing T15 (21 Nov 2026): a bank account also has the account holder's name (blank:
+    the company's registered name) and an optional SWIFT code. Proformas and the customer's
+    invoice page print these, never the ERP's own label such as "Commercial Bank current".
+    Both can be corrected after the account is used.
 
 ## C. Accounting core
 

@@ -78,6 +78,11 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kasun", "Waiting for Ruwan
     (Director)", "Returned by Ruwan", "Approved by Ruwan"; after approval "Partly received",
     "Received", "Closed short", "Cancelled" or "Replaced by a revision" as before.
+  - Owner, 21 Nov 2026 (testing T29/T30): the Purchasing Officer may still cancel an
+    approved PO with a reason, and the Director who approved it gets a bell notice "PO…
+    cancelled by Priyanka: reason". A cancelled or closed-short PO says who did it and
+    when (fixed once set), and its print note says "Prints marked CANCELLED" or "REPLACED
+    BY A REVISION" instead of DRAFT.
 
 - [x] **P16-05 Printing and emailing the PO**
   PDF in the layout of the owner's sample PO26061701, the company letterhead, emailed to the

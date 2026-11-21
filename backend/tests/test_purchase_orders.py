@@ -230,6 +230,7 @@ def test_cancel_before_receipt_close_short_after(approved, buyer):
         orders.revise(buyer, approved, "New price")
     closed = orders.close(buyer, approved, "Supplier out of stock")
     assert (closed.status, closed.end_reason) == (St.CLOSED, "Supplier out of stock")
+    assert (closed.ended_by, closed.ended_at is not None) == (buyer, True)
 
 
 def test_a_draft_or_approved_po_is_cancelled_with_a_reason(approved, buyer, sdd, masterbatch):
@@ -238,6 +239,26 @@ def test_a_draft_or_approved_po_is_cancelled_with_a_reason(approved, buyer, sdd,
     assert orders.cancel(buyer, approved, "Order placed elsewhere").status == St.CANCELLED
     draft = raise_po(buyer, sdd, masterbatch)
     assert orders.cancel(buyer, draft, "Duplicate").status == St.CANCELLED
+
+
+def test_cancelling_an_approved_po_tells_the_director(approved, buyer, director, sdd, masterbatch):
+    # Owner, 21 Nov 2026 (testing T30): the Purchasing Officer may cancel an approved PO, and
+    # the Director who approved it gets "PO… cancelled by Priyanka: reason".
+    Notification.objects.all().delete()
+    cancelled = orders.cancel(buyer, approved, "Order placed elsewhere")
+    assert (cancelled.ended_by, cancelled.ended_at.microsecond) == (buyer, 0)
+    told = Notification.objects.get(user=director, event="document_cancelled")
+    assert told.title == f"{approved.label} cancelled by {buyer.full_name}: Order placed elsewhere"
+    assert told.link == f"/purchase-orders/{approved.pk}"
+    # Who and when are fixed once set.
+    with pytest.raises(DatabaseError), transaction.atomic():
+        PurchaseOrder.objects.filter(pk=approved.pk).update(ended_by=director)
+    detail = as_user(buyer).get(f"/api/v1/purchase-orders/{approved.pk}/").json()
+    assert detail["ended_by"] == buyer.full_name and detail["ended_at"]
+    # A draft never approved tells no one.
+    draft = raise_po(buyer, sdd, masterbatch)
+    orders.cancel(buyer, draft, "Duplicate")
+    assert Notification.objects.filter(event="document_cancelled").count() == 1
 
 
 # --- Through the API -----------------------------------------------------------------------

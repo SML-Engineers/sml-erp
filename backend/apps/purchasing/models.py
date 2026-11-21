@@ -65,6 +65,11 @@ class PurchaseOrder(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     approved_at = models.DateTimeField(null=True, blank=True)
     end_reason = models.TextField(blank=True)  # why it was closed short or cancelled
+    # Who cancelled it or closed it short, and when (testing T30, 21 Nov 2026); fixed once set.
+    ended_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    ended_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-po_date", "-number", "-revision"]

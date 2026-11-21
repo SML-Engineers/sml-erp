@@ -2581,7 +2581,16 @@
       "reversed": "GRN reversed",
       "returned": "Returned to the supplier",
       "opening": "Opening stock",
-      "price_diff": "Invoice price difference"
+      "price_diff": "Invoice price difference",
+      "issued": "Issued from stores",
+      "back_in": "Returned to stores",
+      "adjusted": "Adjustment or write-off",
+      "produced": "Made in production",
+      "regrind": "Regrind from production",
+      "undone": "Production correction",
+      "costed": "Production cost added",
+      "delivered": "Delivered to the customer",
+      "undeliver": "Delivery cancelled"
     }
   },
   "si": {

@@ -187,6 +187,29 @@ def test_a_quotation_past_its_validity_is_not_sent_for_approval(executive, unile
         workflow.submit(executive, q)
 
 
+def test_the_director_does_not_approve_a_quotation_past_its_validity(
+    executive, director, unilever, lathe, monkeypatch
+):
+    # T12 (testing, 21 Nov 2026): it waited past its validity date; the Director sends it back.
+    q = draft(executive, unilever)
+    workflow.submit(executive, q)
+    later = q.valid_until + timedelta(days=1)
+    monkeypatch.setattr(workflow.timezone, "localdate", lambda: later)
+    with pytest.raises(SalesError, match=r"validity date \(.*\) has passed. Send it back"):
+        workflow.approve(director, q)
+    q.refresh_from_db()
+    assert (q.status, q.approved_at) == (S.AWAITING_APPROVAL, None)
+    response = as_user(director).post(f"/api/v1/quotations/{q.pk}/approve/", {}, format="json")
+    assert response.status_code == 400 and "has passed" in response.json()["detail"]
+    workflow.send_back(director, q, "Please extend the validity")
+    q.refresh_from_db()
+    assert q.status == S.DRAFT
+    # On its last valid day it is still approved.
+    monkeypatch.setattr(workflow.timezone, "localdate", lambda: q.valid_until)
+    workflow.submit(executive, q)
+    assert workflow.approve(director, q).status == S.APPROVED
+
+
 # --- Warnings for the Director ----------------------------------------------------------
 
 

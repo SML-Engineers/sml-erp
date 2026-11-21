@@ -69,6 +69,13 @@ const emptyLine = (): LineInput => ({
 /** A new quotation is valid for 14 days unless changed (owner, 19 Nov 2026; the server agrees). */
 const DEFAULT_VALID_DAYS = 14;
 
+/** The mark on the PDF of a quotation that is not (or no longer) final; see printing.MARKS. */
+const PRINT_MARKS: Record<string, string> = {
+  expired: "quotations.printsExpired",
+  lost: "quotations.printsNotValid",
+  revised: "quotations.printsReplaced",
+};
+
 export default function QuotationPage() {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -97,7 +104,12 @@ export default function QuotationPage() {
           <a className="button-link secondary" href={quotationPdfUrl(data.id)} target="_blank" rel="noreferrer">
             {t("quotations.printPdf")}
           </a>{" "}
-          {!data.is_final && <span className="muted">{t("quotations.printsAsDraft")}</span>}
+          {!data.is_final && (
+            <span className="muted">
+              {/* T12 (testing, 21 Nov 2026): say the mark the PDF really carries. */}
+              {t(PRINT_MARKS[data.status] ?? "quotations.printsAsDraft")}
+            </span>
+          )}
         </p>
       )}
       {data && (data.can_email || data.emails.length > 0) && <EmailPanel key={`email-${data.id}`} quotation={data} />}
@@ -732,7 +744,12 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
       {quotation.approval?.waiting_with && (
         <p className="notice">{t("quotations.waitingWith", { role: quotation.approval.waiting_with })}</p>
       )}
-      {!quotation.is_final && quotation.status !== "revised" && <p className="muted">{t("quotations.notApprovedYet")}</p>}
+      {(quotation.status === "draft" || quotation.status === "awaiting_approval") && (
+        <p className="muted">{t("quotations.notApprovedYet")}</p>
+      )}
+      {quotation.status === "expired" && (
+        <p className="notice notice-warn">{t("quotations.expiredNote", { date: quotation.valid_until })}</p>
+      )}
       {quotation.outcome && (
         <p>
           <strong>{t(`quotations.statuses.${quotation.status}`)}</strong>

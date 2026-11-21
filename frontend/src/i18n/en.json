@@ -1682,7 +1682,11 @@
     "defaultDays": "14 days if left empty",
     "duplicate": "Duplicate",
     "duplicateHelp": "Makes a new draft quotation with the next number, dated today, with the same customer, lines, costing, drawings and pictures. This quotation stays as it is.",
-    "copiedFrom": "Duplicated from"
+    "copiedFrom": "Duplicated from",
+    "printsExpired": "Prints marked EXPIRED: the validity date has passed.",
+    "printsNotValid": "Prints marked NOT VALID: the customer did not accept it.",
+    "printsReplaced": "Prints marked REPLACED BY A REVISION.",
+    "expiredNote": "Expired: it was valid until {{date}}. To offer it again, make a revision with a new validity date."
   },
   "quoteCosting": {
     "open": "Costing",

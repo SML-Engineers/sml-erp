@@ -737,6 +737,26 @@ test("Duplicate opens a new draft quotation with the next number", async () => {
   expect(screen.queryByRole("button", { name: "Duplicate" })).not.toBeInTheDocument();
 });
 
+// T12 (testing, 21 Nov 2026): an expired quotation says so, and what its PDF is marked.
+test("an expired quotation says it expired, not that it waits for approval", async () => {
+  const expired: QuotationDetail = {
+    ...saved,
+    status: "expired",
+    can_edit: false,
+    can_submit: false,
+    is_final: false,
+    valid_until: "2026-11-07",
+  };
+  mockApi(formApi({ "GET /api/v1/quotations/12/": { body: expired } }));
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  expect(
+    await screen.findByText("Expired: it was valid until 2026-11-07. To offer it again, make a revision with a new validity date."),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Not yet approved by the Director/)).not.toBeInTheDocument();
+  expect(screen.getByText("Prints marked EXPIRED: the validity date has passed.")).toBeInTheDocument();
+  expect(screen.queryByText(/Prints as NOT APPROVED/)).not.toBeInTheDocument();
+});
+
 test("approvers can list the quotations waiting for them", async () => {
   const director: CurrentUser = { ...sampleUser, access: { areas: { sales: ["approve", "view"] }, actions: [], divisions: "all" } };
   mockApi({

@@ -36,6 +36,8 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 21 Nov 2026: one computer and one phone (or tablet) signed in at a time; a newer
     sign-in on a second computer (or phone) ends the older one, which is told why; the sign-in
     history records it. Done: PR #268.
+  - Owner, 21 Nov 2026: a top-bar notice (English with Sinhala below), asked for by the Admin
+    with a reason and shown only once a Director approves it. Done: PR #269.
 
 - [x] **P0-04 Roles, permissions and data scope** (spec 1.1, 1.2)
   Permission model: areas × access levels (none, View, Enter, Approve, Manage) plus special

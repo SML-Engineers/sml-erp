@@ -6,6 +6,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } fro
 import { signOut, type CurrentUser } from "../api/auth";
 import LanguageSwitch from "../components/LanguageSwitch";
 import NotificationBell from "../components/NotificationBell";
+import TopBarNotice from "../components/TopBarNotice";
 import { forgetDevice } from "../lib/offline";
 import { pageAllowed, visibleMenu } from "./menu";
 
@@ -39,6 +40,7 @@ export default function AppLayout({ user }: { user: CurrentUser }) {
         <Link to="/" className="brand">
           {t("app.name")}
         </Link>
+        <TopBarNotice place="bar" />
         <div className="topbar-right">
           <NotificationBell />
           <UserMenu user={user} />
@@ -76,6 +78,7 @@ export default function AppLayout({ user }: { user: CurrentUser }) {
       )}
 
       <div className="content">
+        <TopBarNotice place="page" />
         {pageAllowed(location.pathname, user.access) ? (
           <Outlet context={user} />
         ) : (

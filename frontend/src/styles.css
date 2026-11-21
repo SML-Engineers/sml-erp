@@ -1693,3 +1693,39 @@ ul.plain-list li {
     grid-template-columns: 1fr;
   }
 }
+
+/* The top-bar notice (owner, 21 Nov 2026): English with Sinhala below, no border. In the bar on
+   a computer; just under the bar on a phone, where the bar has no room. */
+.top-notice {
+  text-align: center;
+  color: #b42318;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.top-notice p {
+  margin: 0;
+}
+
+.top-notice-bar {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.top-notice-page {
+  display: none;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  background: var(--color-surface);
+}
+
+@media (max-width: 900px) {
+  .top-notice-bar {
+    display: none;
+  }
+
+  .top-notice-page {
+    display: block;
+  }
+}

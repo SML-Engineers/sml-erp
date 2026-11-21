@@ -80,13 +80,27 @@ export default function PurchaseOrderPage() {
             </p>
           ))}
           {data.end_reason && ["closed", "cancelled", "revised"].includes(data.status) && (
-            <p className="notice">{t("po.because", { reason: data.end_reason })}</p>
+            <p className="notice">
+              {/* Testing T30 (21 Nov 2026): who cancelled it or closed it short, and when. */}
+              {data.ended_by && data.ended_at && (data.status === "cancelled" || data.status === "closed")
+                ? t(data.status === "cancelled" ? "po.cancelledBy" : "po.closedBy", {
+                    name: data.ended_by,
+                    at: formatDateTime(data.ended_at),
+                    reason: data.end_reason,
+                  })
+                : t("po.because", { reason: data.end_reason })}
+            </p>
           )}
           <p>
             <a className="button-link secondary" href={purchaseOrderPdfUrl(data.id)} target="_blank" rel="noreferrer">
               {t("po.print")}
             </a>{" "}
-            {!["approved", "partly_received", "received", "closed"].includes(data.status) && <span className="muted">{t("po.printsAsDraft")}</span>}
+            {!["approved", "partly_received", "received", "closed"].includes(data.status) && (
+              <span className="muted">
+                {/* Testing T29/T30: say the mark the PDF really carries. */}
+                {t(data.status === "cancelled" ? "po.printsCancelled" : data.status === "revised" ? "po.printsReplaced" : "po.printsAsDraft")}
+              </span>
+            )}
           </p>
           {["approved", "partly_received", "received", "closed"].includes(data.status) && (
             <p>

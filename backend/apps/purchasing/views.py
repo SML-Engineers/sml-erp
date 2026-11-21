@@ -67,6 +67,9 @@ def _detail(o: PurchaseOrder, user) -> dict:
         "tax_total": str(o.tax_total),
         "approved_at": o.approved_at,
         "end_reason": o.end_reason,
+        # Testing T30: who cancelled it or closed it short, and when.
+        "ended_by": o.ended_by.full_name if o.ended_by_id else None,
+        "ended_at": o.ended_at,
         "parent": None if o.parent_id is None else {"id": o.parent_id, "label": o.parent.label},
         "revisions": [
             {"id": r.id, "label": r.label, "status": r.status} for r in o.revisions.all()

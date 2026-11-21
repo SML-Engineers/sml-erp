@@ -2354,7 +2354,11 @@
     "emailTitle": "Email to the supplier",
     "emailToSupplier": "Email the PO to the supplier",
     "goodsReceipts": "Goods receipts (GRNs) for this PO",
-    "emailFrom": "From {{from}}. The purchase order PDF is attached."
+    "emailFrom": "From {{from}}. The purchase order PDF is attached.",
+    "cancelledBy": "Cancelled by {{name}} on {{at}}: {{reason}}",
+    "closedBy": "Closed short by {{name}} on {{at}}: {{reason}}",
+    "printsCancelled": "Prints marked CANCELLED.",
+    "printsReplaced": "Prints marked REPLACED BY A REVISION."
   },
   "grn": {
     "title": "Goods receipts",

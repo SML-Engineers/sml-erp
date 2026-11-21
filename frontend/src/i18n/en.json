@@ -8,7 +8,8 @@
     "typeToSearch": "Type to search",
     "noMatches": "Nothing matches",
     "moreMatches": "{{count}} more: type more to narrow the list",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "no": "No"
   },
   "home": {
     "checking": "Checking connection to the server…",
@@ -1913,7 +1914,10 @@
     "cancelReason": "Reason for cancelling",
     "cancel": "Cancel the proforma",
     "cancelledBecause": "Cancelled: {{reason}}",
-    "advancesReceived": "Advances received"
+    "advancesReceived": "Advances received",
+    "makeAgain_one": "{{numbers}} already exists for this quotation. Make another proforma?",
+    "makeAgain_other": "{{numbers}} already exist for this quotation. Make another proforma?",
+    "makeAgainYes": "Yes, make another proforma"
   },
   "salesOrders": {
     "title": "Sales orders",
@@ -1970,7 +1974,12 @@
       "delivered": "All delivered",
       "completed": "Completed and closed",
       "cancelled": "Cancelled"
-    }
+    },
+    "makeAgain_quotation_one": "{{numbers}} already exists for this quotation. Make another sales order?",
+    "makeAgain_quotation_other": "{{numbers}} already exist for this quotation. Make another sales order?",
+    "makeAgain_proforma_one": "{{numbers}} already exists for this proforma. Make another sales order?",
+    "makeAgain_proforma_other": "{{numbers}} already exist for this proforma. Make another sales order?",
+    "makeAgainYes": "Yes, make another sales order"
   },
   "dn": {
     "title": "Delivery notes",

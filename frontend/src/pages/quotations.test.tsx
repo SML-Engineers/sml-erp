@@ -902,7 +902,46 @@ test("an accepted quotation makes a proforma invoice", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Make a proforma invoice" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/proformas/", expect.objectContaining({ method: "POST" })));
   const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/proformas/")!;
-  expect(JSON.parse(String(init!.body))).toEqual({ quotation: 12 });
+  expect(JSON.parse(String(init!.body))).toEqual({ quotation: 12, again: false });
+});
+
+// Testing T17 (21 Nov 2026): a second proforma or sales order is asked for first.
+test("a second proforma or sales order from the same quotation is asked for", async () => {
+  const won: QuotationDetail = {
+    ...saved,
+    status: "accepted",
+    can_edit: false,
+    can_submit: false,
+    is_final: true,
+    can_make_proforma: true,
+    can_make_sales_order: true,
+    proformas: [{ id: 1, number: "PI261120-01", status: "issued" }],
+    sales_orders: [
+      { id: 5, number: "SO26112001", status: "open" },
+      { id: 6, number: "SO26112002", status: "cancelled" },
+    ],
+  };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/": { body: won },
+    "POST /api/v1/sales-orders/": { status: 201, body: { id: 7 } },
+  });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Make a sales order" }));
+  const ask = screen.getByRole("alertdialog");
+  expect(ask).toHaveTextContent("SO26112001 already exists for this quotation. Make another sales order?");
+  fireEvent.click(within(ask).getByRole("button", { name: "No" }));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/sales-orders/", expect.anything());
+
+  fireEvent.click(screen.getByRole("button", { name: "Make a proforma invoice" }));
+  expect(screen.getByRole("alertdialog")).toHaveTextContent("PI261120-01 already exists for this quotation. Make another proforma?");
+  fireEvent.click(screen.getByRole("button", { name: "No" }));
+
+  fireEvent.click(screen.getByRole("button", { name: "Make a sales order" }));
+  fireEvent.click(screen.getByRole("button", { name: "Yes, make another sales order" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/sales-orders/", expect.objectContaining({ method: "POST" })));
+  const [, init] = calls.mock.calls.find(([url]) => url === "/api/v1/sales-orders/")!;
+  expect(JSON.parse(String(init!.body))).toEqual({ quotation: 12, again: true });
 });
 
 test("the pictures are shown to the approver and can be left out of the email", async () => {

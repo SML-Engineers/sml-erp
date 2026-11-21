@@ -238,7 +238,9 @@ class ProformaListView(_Sales):
         if quotation is None:
             return _error("Choose one of your accepted quotations.")
         try:
-            made = proformas.create(request.user, quotation)
+            made = proformas.create(
+                request.user, quotation, again=request.data.get("again") is True
+            )
         except SalesError as error:
             return _error(error)
         return Response(_detail(made, request.user), status=status.HTTP_201_CREATED)

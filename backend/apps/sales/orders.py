@@ -148,13 +148,29 @@ def _default_schedule(quantity: Decimal) -> list[Delivery]:
     return [Delivery(timezone.localdate(), quantity)]
 
 
-def from_quotation(user: User, quotation: Quotation) -> SalesOrder:
+def _ask_again(existing, made_from: str, again: bool) -> None:
+    """Testing T17 (21 Nov 2026): a second order from the same quotation or proforma is
+    possible (a call-off, a split) but asked for, so a duplicate isn't made by mistake."""
+    numbers = [o.number for o in existing]
+    if numbers and not again:
+        raise SalesError(
+            f"{', '.join(numbers)} already {'exists' if len(numbers) == 1 else 'exist'} for "
+            f"this {made_from}. Make another sales order?"
+        )
+
+
+def _open_orders(**source):
+    return SalesOrder.objects.filter(**source).exclude(status=SalesOrder.Status.CANCELLED)
+
+
+def from_quotation(user: User, quotation: Quotation, *, again: bool = False) -> SalesOrder:
     if not can_enter(user):
         raise SalesError("You cannot make sales orders.")
     if not visible_quotations(user).filter(pk=quotation.pk).exists():
         raise SalesError("You cannot see this quotation.")
     if quotation.status != Quotation.Status.ACCEPTED:
         raise SalesError("A sales order is made from an accepted quotation: mark it won first.")
+    _ask_again(_open_orders(quotation=quotation), "quotation", again)
     with audit_context("sales_order_created"), transaction.atomic():
         contact = quotation.contact if quotation.contact and quotation.contact.is_active else None
         order = _new(
@@ -182,7 +198,7 @@ def from_quotation(user: User, quotation: Quotation) -> SalesOrder:
         return order
 
 
-def from_proforma(user: User, proforma: ProformaInvoice) -> SalesOrder:
+def from_proforma(user: User, proforma: ProformaInvoice, *, again: bool = False) -> SalesOrder:
     """One click from an issued proforma: its lines, quantities, prices and terms."""
     if not can_enter(user):
         raise SalesError("You cannot make sales orders.")
@@ -190,6 +206,7 @@ def from_proforma(user: User, proforma: ProformaInvoice) -> SalesOrder:
         raise SalesError("You cannot see this proforma.")
     if proforma.status != ProformaInvoice.Status.ISSUED:
         raise SalesError("A sales order is made from an issued proforma.")
+    _ask_again(_open_orders(proforma=proforma), "proforma", again)
     with audit_context("sales_order_created"), transaction.atomic():
         order = _new(
             user,

@@ -228,8 +228,9 @@ def _fill(proforma: ProformaInvoice, checked: list[dict]) -> None:
 # --- Making, changing, issuing, cancelling ----------------------------------------------
 
 
-def create(user: User, quotation: Quotation) -> ProformaInvoice:
-    """A draft proforma from an accepted quotation, with all its lines at their quantities."""
+def create(user: User, quotation: Quotation, *, again: bool = False) -> ProformaInvoice:
+    """A draft proforma from an accepted quotation, with all its lines at their quantities.
+    A second one from the same quotation is asked for first (testing T17, 21 Nov 2026)."""
     if not can_enter(user):
         raise SalesError("You cannot make proformas.")
     if not visible_quotations(user).filter(pk=quotation.pk).exists():
@@ -237,6 +238,17 @@ def create(user: User, quotation: Quotation) -> ProformaInvoice:
     if quotation.status != Quotation.Status.ACCEPTED:
         raise SalesError(
             "A proforma is made from an accepted quotation: mark the quotation won first."
+        )
+    existing = [
+        p.number
+        for p in ProformaInvoice.objects.filter(quotation=quotation).exclude(
+            status=ProformaInvoice.Status.CANCELLED
+        )
+    ]
+    if existing and not again:
+        raise SalesError(
+            f"{', '.join(existing)} already {'exists' if len(existing) == 1 else 'exist'} "
+            "for this quotation. Make another proforma?"
         )
     today = timezone.localdate()
     try:

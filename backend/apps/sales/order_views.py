@@ -280,12 +280,16 @@ class SalesOrderListView(_Sales):
                 quotation = visible_quotations(request.user).filter(pk=data["quotation"]).first()
                 if quotation is None:
                     return _error("Choose one of your accepted quotations.")
-                order = orders.from_quotation(request.user, quotation)
+                order = orders.from_quotation(
+                    request.user, quotation, again=data.get("again") is True
+                )
             elif data.get("proforma"):
                 proforma = proformas.visible(request.user).filter(pk=data["proforma"]).first()
                 if proforma is None:
                     return _error("Choose one of your issued proformas.")
-                order = orders.from_proforma(request.user, proforma)
+                order = orders.from_proforma(
+                    request.user, proforma, again=data.get("again") is True
+                )
             else:
                 body = OrderInput(data=data)
                 body.is_valid(raise_exception=True)

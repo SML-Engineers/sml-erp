@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 
+import { listDivisions } from "../api/admin";
+
 import {
   attentionReport,
   openAdvancesReport,
@@ -33,6 +35,9 @@ export default function SalesReportsPage() {
   const asked = search.get("tab") as Tab | null;
   const tab: Tab = asked && TABS.includes(asked) ? asked : "register";
   const [division, setDivision] = useState(search.get("division") ?? "");
+  // The production divisions the user works in (quotations and orders are never for Head Office).
+  const divisions = useQuery({ queryKey: ["divisions", "mine"], queryFn: listDivisions });
+  const choices = (divisions.data ?? []).filter((d) => d.division_type !== "shared");
   return (
     <main className="page">
       <h1>{t("salesReports.title")}</h1>
@@ -57,7 +62,15 @@ export default function SalesReportsPage() {
       <div className="toolbar">
         <label>
           {t("vouchers.division")}
-          <input value={division} maxLength={2} size={3} onChange={(e) => setDivision(e.target.value.toUpperCase())} />
+          <select value={division} onChange={(e) => setDivision(e.target.value)}>
+            <option value="">{t("salesReports.allDivisions")}</option>
+            {choices.map((d) => (
+              <option key={d.code} value={d.code}>
+                {d.code} {d.name}
+              </option>
+            ))}
+            {division && !choices.some((d) => d.code === division) && <option value={division}>{division}</option>}
+          </select>
         </label>
       </div>
       {tab === "register" && <Register division={division} status={search.get("status") ?? ""} />}
@@ -116,7 +129,8 @@ function Register(props: { division: string; status: string }) {
             ))}
           </select>
         </label>
-        {data && data.salespeople.length > 1 && (
+        {/* Owner, 20 Nov 2026: always offered, even when one person made every quotation. */}
+        {data && data.salespeople.length > 0 && (
           <label>
             {t("salesReports.salesperson")}
             <select value={salesperson} onChange={(e) => setSalesperson(e.target.value)}>

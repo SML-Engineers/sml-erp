@@ -327,8 +327,8 @@ def rate_on(component: TaxComponent, on_date: date) -> TaxRate:
     )
     if found is None:
         raise AccountingError(
-            f"{component.code} has no rate on {on_date}. The Admin or the Accountant enters it "
-            "under Settings → Tax rates."
+            f"{component.code} has no rate on {on_date:%d/%m/%Y}. The Admin or the Accountant "
+            "enters it under Settings → Tax rates."
         )
     return found
 

@@ -10,6 +10,7 @@ import { approvePaymentCancellation, cancelPayment, rejectPaymentCancellation, w
 import { listPayees } from "../api/payees";
 import { getAdvanceOrders, getPayableInvoices } from "../api/supplierInvoices";
 import { getTaxes, taxesKey } from "../api/taxes";
+import { offeredTaxCodes } from "../lib/taxCodes";
 import {
   createVoucher,
   decideCancellation,
@@ -203,7 +204,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
     queryFn: () => getPayeeBalance(payee!.id),
     enabled: payee !== null,
   });
-  const purchaseCodes = (taxes.data?.codes ?? []).filter((c) => c.is_active && c.use !== "sales");
+  const purchaseCodes = offeredTaxCodes(taxes.data?.codes, "purchases", lines.map((l) => l.tax_code));
   const voucherDivision = voucher?.division ?? division;
   const payable = useQuery({
     queryKey: ["supplier-invoices", "payable", payee?.id, voucherDivision],

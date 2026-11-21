@@ -7,6 +7,7 @@ import { chartKey, listLedgerAccounts } from "../api/accounts";
 import { listDivisions } from "../api/admin";
 import { ApiError, apiGet, apiSend } from "../api/client";
 import { getTaxes, taxesKey } from "../api/taxes";
+import { offeredTaxCodes } from "../lib/taxCodes";
 import MatchedInvoice from "../components/MatchedInvoice";
 import OldInvoiceDates from "../components/OldInvoiceDates";
 import SearchSelect from "../components/SearchSelect";
@@ -152,7 +153,7 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
   const unsaved = JSON.stringify(codings) !== saved;
   const [text, setText] = useState("");
   const [file, setFile] = useState(voucher.attachments[0]?.id ?? null);
-  const purchaseCodes = (taxes.data?.codes ?? []).filter((c) => c.is_active && c.use !== "sales");
+  const purchaseCodes = offeredTaxCodes(taxes.data?.codes, "purchases", codings.map((c) => c.tax_code));
   const usable = (accounts.data ?? []).filter(
     (a) => a.is_active && !a.merged_into && !["accounts_receivable", "accounts_payable"].includes(a.account_type),
   );

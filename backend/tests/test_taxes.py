@@ -181,6 +181,31 @@ def test_the_sales_account_of_a_tax_is_a_balance_sheet_account(accountant):
         taxes.save_component(accountant, component("SSCL"), {"sales_account": expense.pk})
 
 
+def test_forms_are_told_which_tax_codes_have_a_rate_today(accountant):
+    # Testing T1 (21 Nov 2026): a quotation on VAT-SSCL-M could not be saved because SSCL-M
+    # had no rate; forms now offer only codes whose every tax has a rate in force today.
+    clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
+
+    def ready() -> dict:
+        codes = as_user(clerk).get("/api/v1/taxes/").json()["codes"]
+        return {c["code"]: c["has_rate_today"] for c in codes}
+
+    before = ready()
+    assert before["VAT"] is False and before["VAT-SSCL-M"] is False
+    assert before["EXEMPT"] is True  # no tax at all needs no rate
+    taxes.add_rate(accountant, component("VAT"), effective_from=TODAY, rate="18")
+    assert ready()["VAT"] is True and ready()["VAT-SSCL-M"] is False
+    taxes.add_rate(accountant, component("SSCL-M"), effective_from=TODAY, rate="2.125")
+    assert ready()["VAT-SSCL-M"] is True
+    # A rate that starts tomorrow doesn't count yet.
+    taxes.add_rate(
+        accountant, component("SSCL-R"), effective_from=TODAY + timedelta(days=1), rate="1.25"
+    )
+    assert ready()["VAT-SSCL-R"] is False
+    with pytest.raises(AccountingError, match=rf"SSCL-R has no rate on {TODAY:%d/%m/%Y}\."):
+        taxes.calculate(code("VAT-SSCL-R"), "100.00", TODAY)
+
+
 def test_only_the_accountant_changes_taxes_but_everyone_can_read_them(accountant):
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     overview = as_user(clerk).get("/api/v1/taxes/").json()

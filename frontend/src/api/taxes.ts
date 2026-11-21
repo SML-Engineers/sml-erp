@@ -31,6 +31,8 @@ export interface TaxCode {
   use: TaxUse;
   is_active: boolean;
   in_use: boolean;
+  /** Every tax in the code has a rate in force today (testing T1). */
+  has_rate_today?: boolean;
   /** portion_pct: the share of the amount the tax is charged on, e.g. "85.00" for SSCL on
    * manufactured goods. */
   components: { component: number; code: string; base: TaxBase; portion_pct: string }[];

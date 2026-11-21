@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -46,6 +46,7 @@ function ErrorLine({ error }: { error: unknown }) {
 /** One purchase order (spec 5A.1): raising it, the Director's approval, revising, cancelling
  * or closing it short. */
 export default function PurchaseOrderPage() {
+  const [unsaved, setUnsaved] = useState(false);
   const { t } = useTranslation();
   const { id } = useParams();
   const isNew = id === "new";
@@ -93,8 +94,12 @@ export default function PurchaseOrderPage() {
               <Link to={`/goods-receipts?purchase_order=${data.id}`}>{t("po.goodsReceipts")}</Link>
             </p>
           )}
-          {data.can_edit ? <OrderForm key={`${data.id}-${data.total_amount}`} order={data} /> : <ReadOnly order={data} />}
-          <Actions order={data} />
+          {data.can_edit ? (
+            <OrderForm key={`${data.id}-${data.total_amount}-${data.payment_terms}-${data.deliver_to}`} order={data} onUnsaved={setUnsaved} />
+          ) : (
+            <ReadOnly order={data} />
+          )}
+          <Actions order={data} unsaved={data.can_edit && unsaved} />
           {(data.can_email || data.emails.length > 0) && <EmailPanel order={data} />}
           {data.status !== "draft" && data.status !== "awaiting_approval" && <Trail by="po" id={data.id} />}
         </>
@@ -107,7 +112,7 @@ export default function PurchaseOrderPage() {
 type LineState = { item: string; quantity: string; unit_price: string; tax_code: string; description: string };
 const blankLine: LineState = { item: "", quantity: "", unit_price: "", tax_code: "", description: "" };
 
-function OrderForm({ order }: { order?: PODetail }) {
+function OrderForm({ order, onUnsaved }: { order?: PODetail; onUnsaved?: (unsaved: boolean) => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -135,6 +140,10 @@ function OrderForm({ order }: { order?: PODetail }) {
         }))
       : [{ ...blankLine }],
   );
+  // Testing T26 (21 Nov 2026): Send uses the saved PO, so it waits until typed changes are saved.
+  const [saved] = useState(() => JSON.stringify({ values, lines }));
+  const unsaved = JSON.stringify({ values, lines }) !== saved;
+  useEffect(() => onUnsaved?.(unsaved), [unsaved, onUnsaved]);
   const purchaseCodes = offeredTaxCodes(taxes.data?.codes, "purchases", lines.map((l) => l.tax_code));
   const set = (field: keyof typeof values) => (value: string) => setValues((now) => ({ ...now, [field]: value }));
   const setLine = (index: number, change: Partial<LineState>) => setLines((now) => now.map((l, i) => (i === index ? { ...l, ...change } : l)));
@@ -217,7 +226,12 @@ function OrderForm({ order }: { order?: PODetail }) {
       {order && (
         <label className="wide">
           {t("po.deliverTo")}
-          <textarea rows={2} value={values.deliver_to} onChange={(e) => set("deliver_to")(e.target.value)} />
+          <textarea
+            rows={2}
+            value={values.deliver_to}
+            placeholder={t("po.deliverToBlank")}
+            onChange={(e) => set("deliver_to")(e.target.value)}
+          />
         </label>
       )}
       <label className="wide">
@@ -349,7 +363,7 @@ function ReadOnly({ order }: { order: PODetail }) {
   );
 }
 
-function Actions({ order }: { order: PODetail }) {
+function Actions({ order, unsaved = false }: { order: PODetail; unsaved?: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -367,12 +381,20 @@ function Actions({ order }: { order: PODetail }) {
   return (
     <section className="panel" aria-label={t("po.actions")}>
       {order.can_edit && (
-        <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => submitPurchaseOrder(order.id))}>
+        <div className="inline-form">
+          {/* Testing T28: the buyer's comment goes into the history with the sending (the box
+              below serves both when the draft can also be cancelled). */}
+          {!order.can_cancel && (
+            <label>
+              {t("salesOrders.comment")}
+              <input value={text} maxLength={500} onChange={(e) => setText(e.target.value)} />
+            </label>
+          )}
+          <button type="button" disabled={act.isPending || unsaved} onClick={() => act.mutate(() => submitPurchaseOrder(order.id, text))}>
             {t("po.send")}
           </button>{" "}
-          <span className="muted">{t("po.sendHelp")}</span>
-        </p>
+          <span className={unsaved ? "form-error" : "muted"}>{t(unsaved ? "po.saveFirst" : "po.sendHelp")}</span>
+        </div>
       )}
       {(order.can_approve || order.can_revise || order.can_cancel || order.can_close) && (
         <div className="inline-form">

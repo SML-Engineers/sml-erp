@@ -2321,7 +2321,7 @@
     "received": "Received",
     "actions": "What to do with the purchase order",
     "send": "Send to the Director",
-    "sendHelp": "Needs the delivery date. After this the PO cannot be changed.",
+    "sendHelp": "Needs the delivery date and the delivery address. After this the PO cannot be changed.",
     "approve": "Approve the PO",
     "revise": "Revise (needs a reason)",
     "close": "Close short (needs a reason)",
@@ -2340,7 +2340,9 @@
     "printsAsDraft": "Prints marked DRAFT until the Director approves it.",
     "emailTitle": "Email to the supplier",
     "emailToSupplier": "Email the PO to the supplier",
-    "goodsReceipts": "Goods receipts (GRNs) for this PO"
+    "goodsReceipts": "Goods receipts (GRNs) for this PO",
+    "saveFirst": "Save your changes first (Save draft), then send.",
+    "deliverToBlank": "Blank: the company's address"
   },
   "grn": {
     "title": "Goods receipts",

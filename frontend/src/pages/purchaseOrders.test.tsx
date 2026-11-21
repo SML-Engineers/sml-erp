@@ -198,3 +198,30 @@ test("the list says whose draft a PO is, who it waits for and who decided", asyn
   for (const text of ["Draft of Kasun", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Partly received"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+// Testing T26/T28 (21 Nov 2026): Send waits until typed changes are saved, and takes a comment.
+test("send waits for unsaved changes and records the buyer's comment", async () => {
+  const calls = mockApi({
+    ...formApi,
+    "GET /api/v1/purchase-orders/9/": { body: draft },
+    "POST /api/v1/purchase-orders/9/submit/": { body: { ...draft, status: "awaiting_approval", can_edit: false } },
+  });
+  renderAt("/purchase-orders/9", <PurchaseOrderPage />, "/purchase-orders/:id");
+  const form = await screen.findByRole("form", { name: "Purchase order details" });
+  const send = screen.getByRole("button", { name: "Send to the Director" });
+  expect(send).toBeEnabled();
+  fireEvent.change(within(form).getByLabelText("Payment terms"), { target: { value: "Net 45" } });
+  expect(send).toBeDisabled();
+  expect(screen.getByText("Save your changes first (Save draft), then send.")).toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Payment terms"), { target: { value: draft.payment_terms } });
+  expect(send).toBeEnabled();
+  const actions = screen.getByRole("region", { name: "What to do with the purchase order" });
+  fireEvent.change(within(actions).getByLabelText("Comment or reason"), { target: { value: "Test 6B.4" } });
+  fireEvent.click(send);
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/purchase-orders/9/submit/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ comment: "Test 6B.4" }) }),
+    ),
+  );
+});

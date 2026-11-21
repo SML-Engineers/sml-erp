@@ -78,6 +78,10 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kasun", "Waiting for Ruwan
     (Director)", "Returned by Ruwan", "Approved by Ruwan"; after approval "Partly received",
     "Received", "Closed short", "Cancelled" or "Replaced by a revision" as before.
+  - Testing T24/T26/T28 (21 Nov 2026): a new PO keeps the company's address as Deliver to
+    and the supplier's payment terms when the form sends them blank; a PO without a
+    delivery address is not sent. Send to the Director waits until typed changes are saved
+    ("Save your changes first"), and the buyer's comment is kept in the history.
 
 - [x] **P16-05 Printing and emailing the PO**
   PDF in the layout of the owner's sample PO26061701, the company letterhead, emailed to the

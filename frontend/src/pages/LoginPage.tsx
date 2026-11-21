@@ -1,9 +1,9 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
-import { meQueryKey, signIn, verifyCode, type SignInResponse } from "../api/auth";
+import { getMe, meQueryKey, signIn, verifyCode, type SignInResponse } from "../api/auth";
 import { ApiError } from "../api/client";
 import LanguageSwitch from "../components/LanguageSwitch";
 
@@ -17,6 +17,9 @@ export default function LoginPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Why this device was signed out, when a newer sign-in on another computer (or phone) ended it.
+  const me = useQuery({ queryKey: meQueryKey, queryFn: getMe, retry: false });
+  const replaced = me.data && !me.data.authenticated ? me.data.signed_out_reason : null;
 
   async function finish(response: SignInResponse) {
     if (response.status === "two_factor_required") {
@@ -46,6 +49,11 @@ export default function LoginPage() {
     <main className="auth-card">
       <h1>{t("app.name")}</h1>
       <LanguageSwitch />
+      {replaced && (
+        <p className="notice" role="status" aria-label={t("login.replacedLabel")}>
+          {t(replaced === "phone" ? "login.replacedPhone" : "login.replacedComputer")}
+        </p>
+      )}
       <form onSubmit={submit} noValidate>
         {step === "password" ? (
           <>

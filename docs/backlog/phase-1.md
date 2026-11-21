@@ -33,6 +33,9 @@ Status: `[ ]` to do · `[x]` done
   Cashier or Admin roles.
   - Users with those roles cannot reach any page until 2FA is set up.
   - Failed logins are recorded; 5 failures in 15 minutes locks the account for 15 minutes.
+  - Owner, 21 Nov 2026: one computer and one phone (or tablet) signed in at a time; a newer
+    sign-in on a second computer (or phone) ends the older one, which is told why; the sign-in
+    history records it. Done: PR #268.
 
 - [x] **P0-04 Roles, permissions and data scope** (spec 1.1, 1.2)
   Permission model: areas × access levels (none, View, Enter, Approve, Manage) plus special

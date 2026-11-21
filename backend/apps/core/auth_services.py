@@ -25,6 +25,16 @@ from .models import LoginEvent, LoginLock, RecoveryCode, User, normalize_email
 SESSION_AUTH_TIME = "auth_time"
 SESSION_PENDING_USER = "pending_2fa_user"
 SESSION_PENDING_AT = "pending_2fa_at"
+SESSION_SIGN_IN_EVENT = "sign_in_event"
+SESSION_DEVICE = "device_kind"
+SESSION_SIGNED_OUT_REASON = "signed_out_reason"
+
+# One computer and one phone at a time (owner, 21 Nov 2026). The browser says what it is;
+# tablets count as phones.
+COMPUTER = "computer"
+PHONE = "phone"
+SIGN_IN_OUTCOMES = ("success", "recovery_code_used")
+_PHONE_MARKS = ("mobi", "android", "iphone", "ipad", "ipod", "tablet", "silk", "kindle")
 
 RECOVERY_CODE_COUNT = 10
 RECOVERY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I confusion
@@ -151,13 +161,48 @@ def sign_in(request, email: str, password: str) -> SignInResult:
     return SignInResult("ok", user, setup_requirements(user))
 
 
+def device_kind(user_agent: str) -> str:
+    """COMPUTER or PHONE, from what the browser says it is (a tablet counts as a phone)."""
+    agent = (user_agent or "").lower()
+    return PHONE if any(mark in agent for mark in _PHONE_MARKS) else COMPUTER
+
+
 def _complete_sign_in(request, user: User, outcome: str = LoginEvent.Outcome.SUCCESS) -> None:
     request.session.pop(SESSION_PENDING_USER, None)
     request.session.pop(SESSION_PENDING_AT, None)
+    request.session.pop(SESSION_SIGNED_OUT_REASON, None)
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     request.session[SESSION_AUTH_TIME] = timezone.now().isoformat()
-    record_event(request, user.email, outcome, user)
+    event = record_event(request, user.email, outcome, user)
+    request.session[SESSION_SIGN_IN_EVENT] = event.pk
+    request.session[SESSION_DEVICE] = device_kind(event.user_agent)
     unlock(user.email)
+
+
+def replaced_by_newer_sign_in(request) -> bool:
+    """End this sign-in if the same user has since signed in on another device of its kind.
+
+    One computer and one phone can be signed in together; a second computer (or phone)
+    ends the older one. The ended device is told why on its sign-in page, and the sign-in
+    history records it. Sign-ins from before this rule carry no event and are left alone.
+    """
+    user = request.user
+    mine = request.session.get(SESSION_SIGN_IN_EVENT)
+    if not user.is_authenticated or mine is None:
+        return False
+    kind = request.session.get(SESSION_DEVICE, COMPUTER)
+    newer = LoginEvent.objects.filter(
+        user=user, pk__gt=mine, outcome__in=SIGN_IN_OUTCOMES
+    ).values_list("user_agent", flat=True)
+    if not any(device_kind(agent) == kind for agent in newer):
+        return False
+    outcome = (
+        LoginEvent.Outcome.REPLACED_PHONE if kind == PHONE else LoginEvent.Outcome.REPLACED_COMPUTER
+    )
+    record_event(request, user.email, outcome, user)
+    logout(request)
+    request.session[SESSION_SIGNED_OUT_REASON] = kind
+    return True
 
 
 def pending_two_factor_user(request) -> User | None:

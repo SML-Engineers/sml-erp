@@ -61,3 +61,35 @@ test("asks for the two-factor code after the password", async () => {
     }),
   );
 });
+
+test("says why when another computer's sign-in ended this one", async () => {
+  mockApi({
+    "GET /api/v1/auth/me/": { body: { authenticated: false, two_factor_pending: false, signed_out_reason: "computer" } },
+  });
+  renderAt("/login", <LoginPage />);
+
+  expect(await screen.findByRole("status", { name: "Why you were signed out" })).toHaveTextContent(
+    "You were signed out because you signed in on another computer.",
+  );
+});
+
+test("says why when another phone's sign-in ended this one", async () => {
+  mockApi({
+    "GET /api/v1/auth/me/": { body: { authenticated: false, two_factor_pending: false, signed_out_reason: "phone" } },
+  });
+  renderAt("/login", <LoginPage />);
+
+  expect(await screen.findByRole("status", { name: "Why you were signed out" })).toHaveTextContent(
+    "You were signed out because you signed in on another phone.",
+  );
+});
+
+test("shows no reason after an ordinary sign-out", async () => {
+  mockApi({
+    "GET /api/v1/auth/me/": { body: { authenticated: false, two_factor_pending: false, signed_out_reason: null } },
+  });
+  renderAt("/login", <LoginPage />);
+
+  expect(await screen.findByRole("button", { name: "Sign in" })).toBeInTheDocument();
+  expect(screen.queryByRole("status", { name: "Why you were signed out" })).not.toBeInTheDocument();
+});

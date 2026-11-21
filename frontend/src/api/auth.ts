@@ -16,7 +16,7 @@ export interface CurrentUser {
 
 export type Me =
   | { authenticated: true; user: CurrentUser }
-  | { authenticated: false; two_factor_pending: boolean };
+  | { authenticated: false; two_factor_pending: boolean; signed_out_reason?: "computer" | "phone" | null };
 
 export type SignInResponse =
   | { status: "ok"; user: CurrentUser }

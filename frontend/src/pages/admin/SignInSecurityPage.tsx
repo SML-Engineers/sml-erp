@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ApiError } from "../../api/client";
+import NoticeSettings from "../../components/NoticeSettings";
 import type { LogLevel } from "../../api/signInSecurity";
 import { getSignInSecurity, setLogLevel, setSignInSecurity, signInSecurityKey } from "../../api/signInSecurity";
 
@@ -96,6 +97,7 @@ export default function SignInSecurityPage({ canChange }: { canChange: boolean }
           {changeLevel.error instanceof ApiError && <p className="error">{changeLevel.error.detail}</p>}
         </section>
       )}
+      <NoticeSettings canChange={canChange} />
     </main>
   );
 }

@@ -227,5 +227,6 @@ def register_core_models():
         m.AccessReview,
         m.AccessOverride,
         m.PasswordReset,
+        m.NoticeChange,
     ):
         register(model)

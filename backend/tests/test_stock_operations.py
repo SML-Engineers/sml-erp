@@ -258,3 +258,21 @@ def test_issuing_through_the_api(stores, resin):
     )
     assert made.status_code == 201, made.content
     assert made.json()["lines"][0]["lot_no"] == "A"
+
+
+def test_every_movement_has_a_name_and_an_issue_shows_where_it_went(stores, resin):
+    # Testing T33 (21 Nov 2026): "stock.movementKinds.issued" was shown in the movements.
+    import json
+    from pathlib import Path
+
+    # The page's wording, when the frontend is beside the backend (not inside its container).
+    en = Path(__file__).resolve().parents[2] / "frontend/src/i18n/en.json"
+    if en.exists():
+        wording = json.loads(en.read_text())["stock"]["movementKinds"]
+        assert [kind for kind in StockMovement.Kind.values if kind not in wording] == []
+
+    made = take(stores, resin, "20")
+    rows = as_user(stores).get(f"/api/v1/stock/movements/?item={resin.pk}").json()
+    issued = next(r for r in rows if r["kind"] == "issued")
+    assert issued["kind_label"] == "Issued from stores"
+    assert issued["issue"] == {"number": made.number, "to": "IM"}

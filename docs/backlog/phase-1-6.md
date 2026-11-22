@@ -179,6 +179,10 @@ Status: `[ ]` to do · `[x]` done
     Movements are insert-only (database guard); balances and the weighted average cost
     (value ÷ quantity in the main stores) are worked out from them. Non-stock items have no
     movements. Purchasing and stores → Stock on hand, with lots and movements.
+  - Testing T33 (21 Nov 2026): every kind of movement has its name on the page (the
+    server sends it too, so a new kind never shows a raw key); an issue or return links to
+    the stores work page with its number and where it went ("MI2611… → IM · Moulding"),
+    and an adjustment shows its number.
 
 ## F. Supplier invoices and payment
   - Owner, 14 Nov 2026 (from his testing): the Production Planner saw average cost and total

@@ -239,3 +239,14 @@ test("on a phone each line becomes a card: every cell carries its column name (t
   ).toEqual(["Ordered", "Still expected", "Received", "Damaged", "Notes"]);
   expect(within(cells[3] as HTMLElement).getByLabelText("Received, 48-BL-08")).toBeInTheDocument();
 });
+
+test("asks before confirming a GRN (testing T49)", async () => {
+  const calls = mockApi({ "GET /api/v1/goods-receipts/4/": { body: draft } });
+  renderAt("/goods-receipts/4", <GoodsReceiptPage />, "/goods-receipts/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Confirm the GRN" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Confirm goods receipt GRN26110101 from SDD Polymer (Pvt) Ltd? The goods go into stock (or to QC).",
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/goods-receipts/4/confirm/", expect.anything());
+});

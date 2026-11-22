@@ -20,6 +20,7 @@ import {
 } from "../api/inspections";
 import { formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -87,6 +88,7 @@ function useDone() {
 
 function Form({ data }: { data: InspectionDetail }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const done = useDone();
   const [results, setResults] = useState(
     data.results.map((r) => ({ position: r.position, value: r.value ?? "", passed: r.passed, notes: r.notes })),
@@ -204,13 +206,13 @@ function Form({ data }: { data: InspectionDetail }) {
           {t("qc.reason")}
           <input value={reason} maxLength={1000} onChange={(e) => setReason(e.target.value)} />
         </label>
-        <button type="button" disabled={decide.isPending} onClick={() => decide.mutate("accepted")}>
+        <button type="button" disabled={decide.isPending} onClick={() => void sure(t("confirm.qcAccept", { grn: data.grn.number, item: data.item.code, supplier: data.supplier.name }), t("qc.accept"), () => decide.mutate("accepted"))}>
           {t("qc.accept")}
         </button>
-        <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("deviation")}>
+        <button type="button" className="secondary" disabled={decide.isPending} onClick={() => void sure(t("confirm.qcDeviation", { grn: data.grn.number, item: data.item.code, supplier: data.supplier.name }), t("qc.askDeviation"), () => decide.mutate("deviation"))}>
           {t("qc.askDeviation")}
         </button>
-        <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("rejected")}>
+        <button type="button" className="secondary" disabled={decide.isPending} onClick={() => void sure(t("confirm.qcReject", { grn: data.grn.number, item: data.item.code, supplier: data.supplier.name }), t("qc.reject"), () => decide.mutate("rejected"), true)}>
           {t("qc.reject")}
         </button>
       </div>
@@ -275,6 +277,7 @@ function ReadOnly({ data }: { data: InspectionDetail }) {
 
 function Approval({ data }: { data: InspectionDetail }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const done = useDone();
   const [text, setText] = useState("");
   const act = useMutation({ mutationFn: (call: () => Promise<InspectionDetail>) => call(), onSuccess: done });
@@ -288,10 +291,10 @@ function Approval({ data }: { data: InspectionDetail }) {
             {t("salesOrders.comment")}
             <input value={text} maxLength={500} onChange={(e) => setText(e.target.value)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveDeviation(data.id, text))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveDeviation", { grn: data.grn.number, item: data.item.code, supplier: data.supplier.name }), t("qc.approveDeviation"), () => act.mutate(() => approveDeviation(data.id, text)))}>
             {t("qc.approveDeviation")}
           </button>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnDeviation(data.id, text))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnDeviation", { grn: data.grn.number, item: data.item.code, supplier: data.supplier.name }), t("salesOrders.sendBack"), () => act.mutate(() => returnDeviation(data.id, text)))}>
             {t("salesOrders.sendBack")}
           </button>
         </div>

@@ -27,6 +27,14 @@ export function useConfirm(): Ask {
   return ask;
 }
 
+/** Ask first, then go: `sure(question, yes, go, danger)`. */
+export function useSure() {
+  const confirm = useConfirm();
+  return async (question: string, yes: string, go: () => void, danger = false) => {
+    if (await confirm({ question, yes, danger })) go();
+  };
+}
+
 /** Wraps the app once. `autoYes` is only for tests of other behaviour: it answers yes
  * without showing anything. The confirmation tests use the real dialog. */
 export function ConfirmProvider({ children, autoYes = false }: { children: ReactNode; autoYes?: boolean }) {

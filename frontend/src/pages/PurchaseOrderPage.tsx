@@ -32,6 +32,7 @@ import SearchSelect from "../components/SearchSelect";
 import Trail from "../components/Trail";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -379,6 +380,7 @@ function ReadOnly({ order }: { order: PODetail }) {
 
 function Actions({ order, unsaved = false }: { order: PODetail; unsaved?: boolean }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
@@ -404,7 +406,7 @@ function Actions({ order, unsaved = false }: { order: PODetail; unsaved?: boolea
               <input value={text} maxLength={500} onChange={(e) => setText(e.target.value)} />
             </label>
           )}
-          <button type="button" disabled={act.isPending || unsaved} onClick={() => act.mutate(() => submitPurchaseOrder(order.id, text))}>
+          <button type="button" disabled={act.isPending || unsaved} onClick={() => void sure(t("confirm.sendPo", { doc: order.label, supplier: order.supplier.name, currency: order.currency, amount: formatDecimal(order.total_amount) }), t("po.send"), () => act.mutate(() => submitPurchaseOrder(order.id, text)))}>
             {t("po.send")}
           </button>{" "}
           <span className={unsaved ? "form-error" : "muted"}>{t(unsaved ? "po.saveFirst" : "po.sendHelp")}</span>
@@ -418,26 +420,26 @@ function Actions({ order, unsaved = false }: { order: PODetail; unsaved?: boolea
           </label>
           {order.can_approve && (
             <>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approvePurchaseOrder(order.id, text))}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approvePo", { doc: order.label, supplier: order.supplier.name, currency: order.currency, amount: formatDecimal(order.total_amount) }), t("po.approve"), () => act.mutate(() => approvePurchaseOrder(order.id, text)))}>
                 {t("po.approve")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnPurchaseOrder(order.id, text))}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnPo", { doc: order.label, supplier: order.supplier.name, currency: order.currency, amount: formatDecimal(order.total_amount) }), t("salesOrders.sendBack"), () => act.mutate(() => returnPurchaseOrder(order.id, text)))}>
                 {t("salesOrders.sendBack")}
               </button>
             </>
           )}
           {order.can_revise && (
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => revisePurchaseOrder(order.id, text))}>
+            <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.revisePo", { doc: order.label, supplier: order.supplier.name, currency: order.currency, amount: formatDecimal(order.total_amount) }), t("po.revise"), () => act.mutate(() => revisePurchaseOrder(order.id, text)))}>
               {t("po.revise")}
             </button>
           )}
           {order.can_close && (
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => closePurchaseOrder(order.id, text))}>
+            <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.closePo", { doc: order.label, supplier: order.supplier.name, currency: order.currency, amount: formatDecimal(order.total_amount) }), t("po.close"), () => act.mutate(() => closePurchaseOrder(order.id, text)), true)}>
               {t("po.close")}
             </button>
           )}
           {order.can_cancel && (
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => cancelPurchaseOrder(order.id, text))}>
+            <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.cancelPo", { doc: order.label, supplier: order.supplier.name, currency: order.currency, amount: formatDecimal(order.total_amount) }), t("po.cancel"), () => act.mutate(() => cancelPurchaseOrder(order.id, text)), true)}>
               {t("po.cancel")}
             </button>
           )}

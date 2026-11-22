@@ -434,6 +434,8 @@ Status: `[ ]` to do · `[x]` done
     queue, payments, supplier invoices) in PR #272; purchasing, stores, QC and sales follow.
   - Testing T42/T41, owner 21 Nov 2026: advances ask for the proforma or advance request;
     matched-invoice vouchers point to the invoices' scans. Done: PR #279.
+    queue, payments, supplier invoices) in PR #272; part 2 (purchase requests and orders, goods
+    receipts, supplier returns, QC) in PR #280; sales follows.
 
 - [x] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk

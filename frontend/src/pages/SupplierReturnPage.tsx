@@ -16,11 +16,13 @@ import {
 } from "../api/supplierReturns";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 /** One supplier return (P16-12): its lots, the Director's approval for accepted goods, and
  * the debit notes. */
 export default function SupplierReturnPage() {
   const { t } = useTranslation();
+  const sure = useSure();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -116,10 +118,10 @@ export default function SupplierReturnPage() {
             <section className="panel" aria-label={t("rtn.actions")}>
               {data.can_edit && (
                 <p>
-                  <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => confirmReturn(data.id))}>
+                  <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.confirmReturn", { doc: data.number, supplier: data.supplier.name }), data.kind === "accepted" ? t("rtn.sendToDirector") : t("rtn.confirm"), () => act.mutate(() => confirmReturn(data.id)))}>
                     {data.kind === "accepted" ? t("rtn.sendToDirector") : t("rtn.confirm")}
                   </button>{" "}
-                  <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+                  <button type="button" className="secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteReturn", { doc: data.number, supplier: data.supplier.name }), t("rtn.delete"), () => remove.mutate(), true)}>
                     {t("rtn.delete")}
                   </button>
                 </p>
@@ -130,10 +132,10 @@ export default function SupplierReturnPage() {
                     {t("salesOrders.comment")}
                     <input value={text} maxLength={500} onChange={(e) => setText(e.target.value)} />
                   </label>
-                  <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveReturn(data.id, text))}>
+                  <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveReturn", { doc: data.number, supplier: data.supplier.name }), t("rtn.approve"), () => act.mutate(() => approveReturn(data.id, text)))}>
                     {t("rtn.approve")}
                   </button>
-                  <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => sendBackReturn(data.id, text))}>
+                  <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.sendBackReturn", { doc: data.number, supplier: data.supplier.name }), t("salesOrders.sendBack"), () => act.mutate(() => sendBackReturn(data.id, text)))}>
                     {t("salesOrders.sendBack")}
                   </button>
                 </div>

@@ -15,6 +15,7 @@ import {
 } from "../api/purchaseRequests";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -115,6 +116,7 @@ export default function PurchaseRequestPage() {
 
 function Actions({ request }: { request: RequestDetail }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const act = useMutation({
@@ -135,25 +137,25 @@ function Actions({ request }: { request: RequestDetail }) {
       </label>
       <div className="row-actions">
         {request.can_edit && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate("submit")}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitPr", { doc: request.number }), t("prq.submit"), () => act.mutate("submit"))}>
             {t("prq.submit")}
           </button>
         )}
         {request.can_approve && (
           <>
-            <button type="button" disabled={act.isPending} onClick={() => act.mutate("approve")}>
+            <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approvePr", { doc: request.number }), t("prq.approve"), () => act.mutate("approve"))}>
               {t("prq.approve")}
             </button>
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("return")}>
+            <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnPr", { doc: request.number }), t("prq.return"), () => act.mutate("return"))}>
               {t("prq.return")}
             </button>
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("reject")}>
+            <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectPr", { doc: request.number }), t("prq.reject"), () => act.mutate("reject"), true)}>
               {t("prq.reject")}
             </button>
           </>
         )}
         {request.can_cancel && (
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("cancel")}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.cancelPr", { doc: request.number }), t("prq.cancel"), () => act.mutate("cancel"), true)}>
             {t("prq.cancel")}
           </button>
         )}

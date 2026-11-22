@@ -2771,7 +2771,7 @@
     "heldTile": "Invoices held",
     "heldDetail": "three-way match differences",
     "stockTile": "Stock value",
-    "stockDetail": "main stores, at PO prices",
+    "stockDetail": "main stores, at cost",
     "trail": "Trail",
     "trailPo": "Purchase order:",
     "trailGrns": "Goods received:",

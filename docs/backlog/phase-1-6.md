@@ -289,6 +289,8 @@ Status: `[ ]` to do · `[x]` done
     value. The goods return note prints (PDF) for the supplier, with signatures.
   - Testing T43/T44, 22 Nov 2026: GRNI keeps goods until their invoice is posted (held
     invoices named); Invoices held tile only for people who see supplier invoices. Done: PR #274.
+  - Testing T48, owner 22 Nov 2026: works as designed (stock at actual cost); the Stock value
+    tile now says "at cost", not "at PO prices". Done: PR #275.
 
 - [ ] **P16-14 User acceptance testing and go-live**
   Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,

@@ -1583,6 +1583,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Accountant + Director on one person (owner, 22 Nov 2026) | Allowed with a reason (leave cover), but the Admin and the Director confirming it are warned that the person would approve vouchers at both levels; each voucher still needs two different people at L2 and L3 (testing T50) | 1 |
 | Only the maker could approve (owner, 22 Nov 2026) | A document that nobody but its maker could approve at some level is refused at submit with a plain message; a payment voucher is then entered by the Accounts Clerk (testing T51: the only Accountant's own voucher stuck since 14 Nov) | 1 |
 | "Are you sure?" before critical actions (owner, 22 Nov 2026) | Before delete, submit, approve, reject, send back, cancel, accept, match and post, issue, mark sent and pay, a question names the document and the amount ("Pay LKR 315,000.00 to Polymer Resins Lanka (Pvt) Ltd on voucher IM261121001?"); "No, go back" has the focus and Esc cancels. First: vouchers, the approval queue, payments and supplier invoices; purchasing, stores, QC and sales follow (testing T49) | 5 |
+| Search lists by keyboard (owner, 21 Nov 2026) | In every type-to-search box (payee, supplier, account, item…) the first match is ready for Enter, ↑ ↓ move, Enter chooses without saving the form, Esc closes without choosing (testing T40) | 5 |
 
 **Still needed for initial setup**
 

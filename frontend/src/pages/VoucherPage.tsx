@@ -178,6 +178,7 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
   const [division, setDivision] = useState(voucher?.division ?? "");
   const [typeCode, setTypeCode] = useState(voucher?.voucher_type.code ?? "");
   const [payeeSearch, setPayeeSearch] = useState("");
+  const [activePayee, setActivePayee] = useState(0);
   const [payee, setPayee] = useState<{ id: number; name: string } | null>(voucher?.payee ?? null);
   const [transferTo, setTransferTo] = useState(voucher?.transfer_to ? String(voucher.transfer_to.id) : "");
   const [description, setDescription] = useState(voucher?.description ?? "");
@@ -248,6 +249,12 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
     });
   }
   const candidates = (payees.data ?? []).filter((p) => !type?.payee_category || p.category === type.payee_category);
+  const shownPayees = candidates.slice(0, 10);
+  const choosePayee = (p: (typeof candidates)[number] | undefined) => {
+    if (!p) return;
+    setPayee({ id: p.id, name: p.name });
+    setPayeeSearch(""); // chosen: close the list
+  };
 
   const save = useMutation({
     mutationFn: () => {
@@ -311,24 +318,48 @@ function VoucherForm({ voucher, revise = false }: { me: CurrentUser; voucher?: V
           <label>
             {t("vouchers.findPayee")}
             <input
+              role="combobox"
+              aria-expanded={shownPayees.length > 0}
+              aria-controls="payee-results"
+              aria-autocomplete="list"
+              aria-activedescendant={shownPayees.length > 0 ? `payee-${shownPayees[activePayee]?.id}` : undefined}
+              autoComplete="off"
               value={payeeSearch}
               disabled={!type}
               placeholder={type ? t("vouchers.payeeHint") : t("vouchers.chooseTypeFirst")}
-              onChange={(e) => setPayeeSearch(e.target.value)}
+              onChange={(e) => {
+                setPayeeSearch(e.target.value);
+                setActivePayee(0); // the first match is the one Enter chooses
+              }}
+              onKeyDown={(e) => {
+                // Testing T40 (owner, 21 Nov 2026): ↑ ↓ move, Enter chooses, Esc closes.
+                if (shownPayees.length === 0) return;
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setActivePayee((i) => Math.min(i + 1, shownPayees.length - 1));
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setActivePayee((i) => Math.max(i - 1, 0));
+                } else if (e.key === "Enter") {
+                  e.preventDefault(); // choosing must not save the form
+                  choosePayee(shownPayees[activePayee]);
+                } else if (e.key === "Escape") {
+                  setPayeeSearch("");
+                }
+              }}
             />
           </label>
-          {candidates.length > 0 && (
-            <ul className="changes" aria-label={t("vouchers.payeeResults")}>
-              {candidates.slice(0, 10).map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => {
-                      setPayee({ id: p.id, name: p.name });
-                      setPayeeSearch(""); // chosen: close the list
-                    }}
-                  >
+          {shownPayees.length > 0 && (
+            <ul id="payee-results" role="listbox" className="changes" aria-label={t("vouchers.payeeResults")}>
+              {shownPayees.map((p, i) => (
+                <li
+                  key={p.id}
+                  id={`payee-${p.id}`}
+                  role="option"
+                  aria-selected={i === activePayee}
+                  className={i === activePayee ? "active" : undefined}
+                >
+                  <button type="button" className="link-button" tabIndex={-1} onClick={() => choosePayee(p)}>
                     {p.code} {p.name}
                   </button>
                 </li>

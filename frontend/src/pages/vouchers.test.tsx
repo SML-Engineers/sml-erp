@@ -324,3 +324,41 @@ test("asks before submitting, naming the voucher, the amount and the payee (test
   fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Submit for approval" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/submit/", expect.objectContaining({ method: "POST" })));
 });
+
+test("the payee is chosen with the arrow keys and Enter (testing T40)", async () => {
+  mockApi({
+    ...formApi,
+    "GET /api/v1/payees/?q=poly": {
+      body: [
+        { id: 3, code: "S0003", name: "Polymer Resins Lanka (Pvt) Ltd", category: "supplier" },
+        { id: 4, code: "S0004", name: "Polychem Traders", category: "supplier" },
+      ],
+    },
+    "GET /api/v1/vouchers/payee-balance/4/": { body: { waiting_approval: "0.00", approved_unpaid: "0.00", outstanding: "0.00" } },
+  });
+  renderAt("/vouchers/new", <VoucherPage me={clerk} />, "/vouchers/:id");
+  const form = await screen.findByRole("form", { name: "Voucher details" });
+  await within(form).findByRole("option", { name: "Cheque Payment" });
+  fireEvent.change(within(form).getByLabelText("Type"), { target: { value: "CHQ" } });
+  const box = within(form).getByRole("combobox", { name: "Find the payee (name or code)" });
+  fireEvent.change(box, { target: { value: "poly" } });
+  const list = await within(form).findByRole("listbox", { name: "Matching payees" });
+  // The first match is ready for Enter; ↓ moves to the next.
+  expect(within(list).getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
+  fireEvent.keyDown(box, { key: "ArrowDown" });
+  expect(within(list).getAllByRole("option")[1]).toHaveAttribute("aria-selected", "true");
+  fireEvent.keyDown(box, { key: "ArrowDown" }); // stays on the last
+  fireEvent.keyDown(box, { key: "ArrowUp" });
+  fireEvent.keyDown(box, { key: "ArrowDown" });
+  fireEvent.keyDown(box, { key: "Enter" });
+  expect(await within(form).findByText("Polychem Traders")).toBeInTheDocument();
+  expect(within(form).queryByRole("listbox")).not.toBeInTheDocument();
+  expect(box).toHaveValue("");
+
+  // Esc closes the list without choosing.
+  fireEvent.change(box, { target: { value: "poly" } });
+  await within(form).findByRole("listbox");
+  fireEvent.keyDown(box, { key: "Escape" });
+  expect(within(form).queryByRole("listbox")).not.toBeInTheDocument();
+  expect(within(form).getByText("Polychem Traders")).toBeInTheDocument();
+});

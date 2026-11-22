@@ -45,7 +45,12 @@ export default function SearchSelect(props: {
   function key(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      if (!open) setText("");
+      if (!open) {
+        // Opening the list: the first entry is the one Enter chooses (testing T40).
+        setText("");
+        setActive(0);
+        return;
+      }
       setActive((i) => Math.min(i + 1, Math.max(shown.length - 1, 0)));
     } else if (event.key === "ArrowUp") {
       event.preventDefault();

@@ -261,6 +261,31 @@ def test_cancelling_an_approved_po_tells_the_director(approved, buyer, director,
     assert Notification.objects.filter(event="document_cancelled").count() == 1
 
 
+def test_a_new_po_keeps_the_delivery_address_and_terms_when_sent_blank(buyer, sdd, masterbatch):
+    # Testing T24/T26 (21 Nov 2026): the new-PO form sent these blank, so PO26112101 printed
+    # "Deliver to:" empty and its supplier's terms were lost.
+    from apps.core.models import Company
+
+    Company.objects.filter(pk=1).update(address="Ja-Ela, Sri Lanka")
+    Supplier.objects.filter(pk=sdd.pk).update(payment_terms_days=30)
+    sdd.refresh_from_db()
+    po = raise_po(buyer, sdd, masterbatch, deliver_to="  ", payment_terms="")
+    assert po.deliver_to.endswith("Ja-Ela, Sri Lanka") and po.payment_terms == "Net 30"
+    typed = raise_po(buyer, sdd, masterbatch, deliver_to="Plant 2", payment_terms="Net 45")
+    assert (typed.deliver_to, typed.payment_terms) == ("Plant 2", "Net 45")
+
+
+def test_a_po_without_a_delivery_address_is_not_sent(draft, buyer):
+    PurchaseOrder.objects.filter(pk=draft.pk).update(deliver_to="")
+    draft.refresh_from_db()
+    with pytest.raises(PurchasingError, match=r"Give the delivery address \(Deliver to\)"):
+        orders.submit(buyer, draft)
+    PurchaseOrder.objects.filter(pk=draft.pk).update(deliver_to="SML Engineers, Ja-Ela")
+    assert orders.submit(buyer, draft, "Test 6B.4").status == St.AWAITING_APPROVAL
+    # Testing T28: the buyer's comment is kept with the sending.
+    assert [r.reason for r in approvals.history(orders.DOC, draft.pk)] == ["Test 6B.4"]
+
+
 # --- Through the API -----------------------------------------------------------------------
 
 

@@ -1760,4 +1760,62 @@ ul.plain-list li {
 .confirm-dialog .row-actions {
   justify-content: flex-end;
   margin-top: 16px;
+
+/* Tables that become one card per row on a phone (testing T37: receiving on a phone needed
+   sideways scrolling). Each cell shows its column name from data-label. */
+@media (max-width: 600px) {
+  table.stack-on-phone,
+  table.stack-on-phone tbody,
+  table.stack-on-phone tr,
+  table.stack-on-phone td {
+    display: block;
+    width: 100%;
+  }
+
+  table.stack-on-phone thead {
+    display: none;
+  }
+
+  table.stack-on-phone tr {
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+  }
+
+  table.stack-on-phone td {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    border: 0;
+    text-align: right;
+  }
+
+  table.stack-on-phone td::before {
+    content: attr(data-label);
+    flex: 0 0 40%;
+    color: var(--color-muted);
+    text-align: left;
+  }
+
+  table.stack-on-phone td.card-title {
+    font-weight: 600;
+    text-align: left;
+  }
+
+  table.stack-on-phone td.card-title::before,
+  table.stack-on-phone td:not([data-label]):not(.card-title)::before {
+    content: none;
+  }
+
+  table.stack-on-phone td input:not([type="checkbox"]) {
+    width: 55%;
+    min-width: 0;
+  }
+
+  .table-wrap:has(> table.stack-on-phone) {
+    overflow-x: visible;
+  }
 }

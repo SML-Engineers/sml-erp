@@ -138,7 +138,7 @@ function ReceiptForm({ grn }: { grn: GRNDetail }) {
         <input value={values.supplier_invoice_no} maxLength={50} onChange={(e) => set("supplier_invoice_no")(e.target.value)} />
       </label>
       <div className="wide table-wrap">
-        <table aria-label={t("grn.lines")}>
+        <table className="stack-on-phone" aria-label={t("grn.lines")}>
           <thead>
             <tr>
               <th>{t("po.item")}</th>
@@ -152,14 +152,16 @@ function ReceiptForm({ grn }: { grn: GRNDetail }) {
           <tbody>
             {grn.lines.map((l, i) => (
               <tr key={l.po_line}>
-                <td>
+                <td className="card-title">
                   <span className="mono">{l.item.code}</span> {l.description}
                 </td>
-                <td className="num">
+                <td className="num" data-label={t("grn.ordered")}>
                   {formatQuantity(l.ordered_quantity)} {l.unit}
                 </td>
-                <td className="num">{formatQuantity(l.outstanding_quantity)}</td>
-                <td className="num">
+                <td className="num" data-label={t("grn.stillExpected")}>
+                  {formatQuantity(l.outstanding_quantity)}
+                </td>
+                <td className="num" data-label={t("grn.received")}>
                   <input
                     aria-label={t("grn.receivedOf", { item: l.item.code })}
                     inputMode="decimal"
@@ -168,7 +170,7 @@ function ReceiptForm({ grn }: { grn: GRNDetail }) {
                     onChange={(e) => setLine(i, { received_quantity: e.target.value })}
                   />
                 </td>
-                <td className="num">
+                <td className="num" data-label={t("grn.damaged")}>
                   <input
                     aria-label={t("grn.damagedOf", { item: l.item.code })}
                     inputMode="decimal"
@@ -177,7 +179,7 @@ function ReceiptForm({ grn }: { grn: GRNDetail }) {
                     onChange={(e) => setLine(i, { damaged_quantity: e.target.value })}
                   />
                 </td>
-                <td>
+                <td data-label={t("grn.lineNotes")}>
                   <input
                     aria-label={t("grn.notesOf", { item: l.item.code })}
                     maxLength={300}

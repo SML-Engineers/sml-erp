@@ -57,11 +57,12 @@ def test_the_director_and_a_return_are_named(clerk, accountant, director):  # no
 def test_the_maker_is_never_the_one_named(clerk, accountant):  # noqa: F811
     # The only Accountant made the voucher: they cannot approve it, so the role is given.
     both = person("both@sml.lk", "clerk", "accountant", all_divisions=True)
-    accountant.is_active = False
-    accountant.save()
     voucher = draft(both, payee(code="S0010"), LineInput(amount="500.00", invoice_no="I-10"))
     attach(both, voucher, content=b"%PDF-1.7 S0010")
     services.submit(both, voucher)
+    # The other Accountant leaves afterwards (T51 refuses it at submit if none is left).
+    accountant.is_active = False
+    accountant.save()
     waiting = approvals.people_for(services.DOC, [voucher.pk])[voucher.pk]["waiting"]
     assert waiting == {"person": None, "role": "Accountant"}
 

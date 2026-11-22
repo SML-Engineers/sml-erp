@@ -244,7 +244,7 @@ def test_a_rejected_voucher_is_final(accountant, submitted):
         services.approve(accountant, Voucher.objects.get(pk=submitted.pk))
 
 
-def test_nobody_codes_or_approves_their_own_voucher(supplier):
+def test_nobody_codes_or_approves_their_own_voucher(accountant, supplier):
     maker = person("maker@sml.lk", "clerk", "accountant", all_divisions=True)
     voucher = draft(maker, supplier)
     attach(maker, voucher)
@@ -342,3 +342,15 @@ def test_sending_back_to_the_accountant_through_the_api(accountant, director, su
     assert last["action"] == "to_accountant" and last["reason"] == "Wrong division"
     seen = as_user(accountant).get(f"/api/v1/vouchers/{submitted.pk}/").json()
     assert seen["can_act"] is True and seen["can_send_to_accountant"] is False
+
+
+def test_the_only_accountant_cannot_submit_her_own_voucher(director, supplier):
+    """Testing T51 (owner, 22 Nov 2026): nobody else could approve it at L2; the Clerk enters
+    it instead. The voucher stays a draft."""
+    kumari = person("kumari@sml.lk", "clerk", "accountant", all_divisions=True)
+    voucher = draft(kumari, supplier)
+    attach(kumari, voucher)
+    with pytest.raises(VoucherError, match="the Accounts Clerk"):
+        services.submit(kumari, voucher)
+    voucher.refresh_from_db()
+    assert voucher.status == "draft" and voucher.submitted_at is None

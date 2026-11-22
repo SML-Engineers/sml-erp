@@ -752,7 +752,11 @@ def submit(user: User, voucher: Voucher, comment: str = "") -> Voucher:
                 link=f"/vouchers/{voucher.pk}",
             )
         except ApprovalError as error:
-            raise VoucherError(str(error)) from None
+            message = str(error)
+            if message.startswith("Nobody but you"):
+                # Testing T51 (owner, 22 Nov 2026): the Clerk enters it instead.
+                message = message.replace("Ask a colleague", "Ask the Accounts Clerk")
+            raise VoucherError(message) from None
         voucher.submitted_at = timezone.now()
         voucher.save(update_fields=["submitted_at", "updated_at"])
         mark_used(vt)

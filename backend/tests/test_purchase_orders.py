@@ -171,6 +171,7 @@ def test_every_po_goes_to_the_director(draft, buyer, director, sdd, masterbatch)
 
 def test_the_director_cannot_approve_a_po_they_raised(sdd, masterbatch):
     both = person("both@sml.lk", "purchasing_officer", "director", all_divisions=True)
+    person("director2@sml.lk", "director", all_divisions=True)  # T51: someone else can approve
     po = raise_po(both, sdd, masterbatch)
     orders.submit(both, po)
     with pytest.raises(PurchasingError):

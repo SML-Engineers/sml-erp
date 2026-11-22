@@ -95,7 +95,7 @@ def test_the_director_cannot_act_before_the_accountant(clerk, director):
 # --- Segregation of duties --------------------------------------------------------------
 
 
-def test_the_creator_cannot_approve_their_own_document(director):
+def test_the_creator_cannot_approve_their_own_document(accountant, director):
     maker = person("maker@sml.lk", "clerk", "accountant", all_divisions=True)
     submit(maker)
     with pytest.raises(ApprovalError, match="created or submitted"):
@@ -105,6 +105,31 @@ def test_the_creator_cannot_approve_their_own_document(director):
             document_type=V, document_id=1, round=1, level=2, action="approve", user=maker
         )
     assert approvals.waiting_for(maker) == []
+
+
+def test_a_document_only_its_maker_could_approve_is_refused_at_submit(director):
+    """Testing T51 (owner, 22 Nov 2026): SML has one Accountant. A voucher she makes herself
+    could never be approved, so it is refused at submit and the Clerk enters it instead."""
+    only = person("kumari@sml.lk", "clerk", "accountant", all_divisions=True)
+    with pytest.raises(ApprovalError, match="Nobody but you can approve this as the Accountant"):
+        submit(only)
+    assert not ApprovalState.objects.exists()
+    assert not ApprovalLog.objects.exists()
+
+
+def test_a_deactivated_accountant_does_not_count(director):
+    only = person("kumari@sml.lk", "clerk", "accountant", all_divisions=True)
+    gone = person("gone@sml.lk", "accountant", all_divisions=True)
+    gone.is_active = False
+    gone.save(update_fields=["is_active"])
+    with pytest.raises(ApprovalError, match="Nobody but you"):
+        submit(only)
+
+
+def test_with_a_second_accountant_the_maker_may_submit(accountant, director):
+    maker = person("kumari@sml.lk", "clerk", "accountant", all_divisions=True)
+    state = submit(maker)
+    assert approvals.approvers(state) == [accountant]
 
 
 def test_only_the_creator_submits(clerk, accountant):

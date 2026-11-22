@@ -5851,5 +5851,24 @@
     "approve": "Approve",
     "approved": "Approved. Everyone sees the change on their next page.",
     "refused": "Refused. The Admin has been told."
+  },
+  "confirm": {
+    "no": "No, go back",
+    "thePayee": "the payee",
+    "thisVoucher": "this voucher",
+    "pay": "Pay {{currency}} {{amount}} to {{payee}} on voucher {{number}}?",
+    "payYes": "Pay",
+    "submitVoucher": "Submit voucher {{number}} for {{amount}} to {{payee}} for approval?",
+    "approveVoucher": "Approve voucher {{number}}: {{amount}} to {{payee}}?",
+    "returnVoucher": "Return voucher {{number}} ({{amount}} to {{payee}}) to the Clerk?",
+    "backToAccountant": "Send voucher {{number}} ({{amount}} to {{payee}}) back to the Accountant?",
+    "rejectVoucher": "Reject voucher {{number}} ({{amount}} to {{payee}})?",
+    "rejectDetail": "Rejecting ends the voucher. Its invoices can then go on a new voucher.",
+    "approveCancellation": "Approve cancelling voucher {{number}}?",
+    "matchInvoice": "Match and post invoice {{invoice}} of {{supplier}} for {{currency}} {{amount}}?",
+    "deleteInvoice": "Delete the draft of invoice {{invoice}} of {{supplier}} ({{currency}} {{amount}})?",
+    "cancelInvoice": "Cancel invoice {{invoice}} of {{supplier}} ({{currency}} {{amount}})?",
+    "approveException": "Approve the exception and post invoice {{invoice}} of {{supplier}} for {{currency}} {{amount}}?",
+    "returnException": "Send invoice {{invoice}} of {{supplier}} back without approving the exception?"
   }
 }

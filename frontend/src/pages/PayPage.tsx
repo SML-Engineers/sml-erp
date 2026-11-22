@@ -19,6 +19,7 @@ import {
 import { voucherPrintUrl, vouchersKey } from "../api/vouchers";
 import { formatDecimal } from "../lib/decimal";
 import { factoryToday } from "../lib/time";
+import { useConfirm } from "../components/ConfirmDialog";
 
 const today = () => factoryToday(); // YYYY-MM-DD, local date
 
@@ -92,9 +93,20 @@ function PayForm(props: { voucher: ToPayRow; accounts: PayAccount[]; onDone: (p:
     },
   });
 
-  function submit(event: FormEvent) {
+  const confirm = useConfirm();
+  async function submit(event: FormEvent) {
     event.preventDefault();
-    save.mutate();
+    const currency = account && account.currency !== "LKR" ? account.currency : "LKR";
+    const yes = await confirm({
+      question: t("confirm.pay", {
+        currency,
+        amount: formatDecimal(amount),
+        payee: voucher.payee?.name ?? t("confirm.thePayee"),
+        number: voucher.number,
+      }),
+      yes: t("confirm.payYes"),
+    });
+    if (yes) save.mutate();
   }
 
   const changeMethod = (next: PaymentMethod) => {

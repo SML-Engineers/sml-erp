@@ -227,3 +227,32 @@ test("the payments made say paid, who a cancellation waits for and who decided",
   ])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before paying, naming the amount, the payee and the voucher (testing T49)", async () => {
+  const calls = mockApi({
+    "GET /api/v1/payments/to-pay/": { body: [row()] },
+    "GET /api/v1/payments/accounts/": { body: accounts },
+    "POST /api/v1/payments/": { status: 201, body: { ...payment, method: "qr", reference: "LQR-55" } },
+  });
+  renderAt("/payments/new?voucher=1", <PayPage />, "/payments/new", { ask: true });
+  const form = await screen.findByRole("form", { name: "Record a payment" });
+  fireEvent.change(within(form).getByLabelText("Method"), { target: { value: "qr" } });
+  fireEvent.change(within(form).getByLabelText("Reference"), { target: { value: "LQR-55" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Save payment" }));
+
+  const dialog = await screen.findByRole("alertdialog", { name: "Pay LKR 600.00 to Lanka Steel on voucher WS261029001?" });
+  // "No, go back" has the focus, so Enter by mistake pays nothing.
+  expect(within(dialog).getByRole("button", { name: "No, go back" })).toHaveFocus();
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(calls.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false);
+
+  fireEvent.click(within(form).getByRole("button", { name: "Save payment" }));
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(calls.mock.calls.some(([, i]) => i?.method === "POST")).toBe(false);
+
+  fireEvent.click(within(form).getByRole("button", { name: "Save payment" }));
+  fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Pay" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/payments/", expect.objectContaining({ method: "POST" })));
+});

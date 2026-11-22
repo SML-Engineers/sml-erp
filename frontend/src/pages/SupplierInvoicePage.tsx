@@ -32,6 +32,7 @@ import Trail from "../components/Trail";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 import { cancelledNote } from "../lib/cancelled";
+import { useConfirm } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -454,15 +455,35 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
     },
   });
   const needsText = invoice.can_request_exception || invoice.can_cancel || invoice.can_approve;
+  // "Are you sure?" (testing T49): names the invoice, the supplier and the amount.
+  const confirm = useConfirm();
+  const words = {
+    invoice: invoice.invoice_no,
+    supplier: invoice.supplier.name,
+    currency: invoice.currency,
+    amount: formatDecimal(invoice.total_amount),
+  };
+  const sure = async (key: string, yes: string, go: () => void, danger = false) => {
+    if (await confirm({ question: t(`confirm.${key}`, words), yes, danger })) go();
+  };
   if (!invoice.can_edit && !needsText && !invoice.can_reopen && invoice.history.length === 0) return null;
   return (
     <section className="panel" aria-label={t("si.actions")}>
       {invoice.can_edit && (
         <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => matchSupplierInvoice(invoice.id))}>
+          <button
+            type="button"
+            disabled={act.isPending}
+            onClick={() => void sure("matchInvoice", t("si.match"), () => act.mutate(() => matchSupplierInvoice(invoice.id)))}
+          >
             {t("si.match")}
           </button>{" "}
-          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+          <button
+            type="button"
+            className="secondary"
+            disabled={remove.isPending}
+            onClick={() => void sure("deleteInvoice", t("si.delete"), () => remove.mutate(), true)}
+          >
             {t("si.delete")}
           </button>{" "}
           <span className="muted">{t("si.matchHelp")}</span>
@@ -496,21 +517,31 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
               type="button"
               className="secondary"
               disabled={act.isPending}
-              onClick={() => act.mutate(() => cancelSupplierInvoice(invoice.id, text))}
+              onClick={() =>
+                void sure("cancelInvoice", t("si.cancel"), () => act.mutate(() => cancelSupplierInvoice(invoice.id, text)), true)
+              }
             >
               {t("si.cancel")}
             </button>
           )}
           {invoice.can_approve && (
             <>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveInvoiceException(invoice.id, text))}>
+              <button
+                type="button"
+                disabled={act.isPending}
+                onClick={() =>
+                  void sure("approveException", t("si.approve"), () => act.mutate(() => approveInvoiceException(invoice.id, text)))
+                }
+              >
                 {t("si.approve")}
               </button>
               <button
                 type="button"
                 className="secondary"
                 disabled={act.isPending}
-                onClick={() => act.mutate(() => returnInvoiceException(invoice.id, text))}
+                onClick={() =>
+                  void sure("returnException", t("salesOrders.sendBack"), () => act.mutate(() => returnInvoiceException(invoice.id, text)))
+                }
               >
                 {t("salesOrders.sendBack")}
               </button>

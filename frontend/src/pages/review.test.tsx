@@ -311,3 +311,27 @@ test("without a WHT rate there is nothing to choose (built switched off)", async
   const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
   expect(within(panel).queryByLabelText("Withholding tax, line 1")).not.toBeInTheDocument();
 });
+
+test("asks before rejecting, naming the voucher, the amount and the payee (testing T49)", async () => {
+  const calls = mockApi(api({ "POST /api/v1/vouchers/9/reject/": { body: { ...voucher, status: "rejected" } } }));
+  renderAt("/vouchers/review", <ReviewPage />, "/vouchers/review", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: /WS261029001/ }));
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (send back, reject)"), { target: { value: "Not ours" } });
+  fireEvent.click(within(panel).getByRole("button", { name: "Reject" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Reject voucher WS261029001 (25,000.00 to Ceylon Electricity Board)?",
+  });
+  expect(dialog).toHaveTextContent("Rejecting ends the voucher.");
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/vouchers/9/reject/", expect.anything());
+
+  fireEvent.click(within(panel).getByRole("button", { name: "Reject" }));
+  fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Reject" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/vouchers/9/reject/",
+      expect.objectContaining({ body: JSON.stringify({ reason: "Not ours" }) }),
+    ),
+  );
+});

@@ -2353,7 +2353,8 @@
     "printsAsDraft": "Prints marked DRAFT until the Director approves it.",
     "emailTitle": "Email to the supplier",
     "emailToSupplier": "Email the PO to the supplier",
-    "goodsReceipts": "Goods receipts (GRNs) for this PO"
+    "goodsReceipts": "Goods receipts (GRNs) for this PO",
+    "emailFrom": "From {{from}}. The purchase order PDF is attached."
   },
   "grn": {
     "title": "Goods receipts",

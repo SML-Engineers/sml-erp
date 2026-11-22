@@ -396,3 +396,19 @@ def test_the_database_keeps_three_known_mailboxes(finance):
         MailAccount.objects.filter(pk=2).update(mailbox="accounts")
     with pytest.raises(DatabaseError), transaction.atomic():
         EmailTemplate.objects.filter(document_type="quotation").update(mailbox="marketing")
+
+
+def test_a_pc_without_a_mail_server_records_the_email_as_not_sent(accountant, finance, settings):
+    # Testing T27 (21 Nov 2026): the test PC's "print to the log" set-up said "Sent".
+    settings.EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    record = document_email.send(
+        accountant,
+        kind="tax_invoice",
+        label="Tax invoice",
+        to="buyer@customer.lk",
+        subject="Invoice",
+        body="Attached.",
+    )
+    assert record.status == "failed"
+    assert record.error.startswith("Not sent: this computer has no mail server")
+    assert mail.outbox == []

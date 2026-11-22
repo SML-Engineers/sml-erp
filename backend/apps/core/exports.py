@@ -42,6 +42,13 @@ def _value(value, kind: str):
         return None
     if kind == "money":
         return Decimal(str(value))
+    if kind == "number":
+        # Testing T32: quantities came out of Excel as text ("300.000"), which cannot be added
+        # up. A figure becomes a number; anything else (e.g. "50 kg") stays as written.
+        try:
+            return Decimal(str(value).replace(",", ""))
+        except (ArithmeticError, ValueError):
+            return value
     if kind == "datetime" and isinstance(value, datetime):
         return timezone.localtime(value).replace(tzinfo=None)
     return value
@@ -53,6 +60,10 @@ def _text(value, kind: str) -> str:
         return ""
     if kind == "money":
         return f"{value:,.2f}"
+    if kind == "number" and isinstance(value, Decimal):
+        # As the screen shows it: thousands separated, no trailing zeros (300.000 -> 300).
+        text = f"{value:,f}"
+        return text.rstrip("0").rstrip(".") if "." in text else text
     if isinstance(value, datetime):
         return value.strftime("%d/%m/%Y %H:%M")
     if isinstance(value, date):
@@ -97,6 +108,7 @@ def xlsx(
         letter = get_column_letter(index)
         formats = {
             "money": "#,##0.00",
+            "number": "#,##0.###",
             "date": "dd/mm/yyyy",
             "datetime": "dd/mm/yyyy hh:mm",
         }

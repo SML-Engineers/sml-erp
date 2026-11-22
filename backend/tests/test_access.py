@@ -412,6 +412,28 @@ def test_ordering_receiving_invoicing_and_paying_need_different_people(admin):
     assert allowed.status_code == 200
 
 
+def test_accountant_and_director_on_one_person_warns_the_admin_and_the_director(admin):
+    """Testing T50 (owner, 22 Nov 2026): allowed with a reason, as leave cover, but the Admin
+    and the confirming Director are warned."""
+    director = person("director@sml.lk", "director", all_divisions=True)
+    kumari = person("kumari@sml.lk", "accountant")
+    url = f"/api/v1/users/{kumari.pk}/roles/"
+    refused = as_user(admin).put(url, {"roles": ["accountant", "director"]}, format="json")
+    assert refused.status_code == 400
+    assert refused.json()["warnings"] == [
+        "Accountant + Director: one person approves vouchers at both the Accountant and the"
+        " Director level (never the same voucher twice)."
+    ]
+    asked = as_user(admin).put(
+        url, {"roles": ["accountant", "director"], "reason": "Leave cover"}, format="json"
+    )
+    assert asked.status_code == 200, asked.json()
+    waiting = as_user(director).get("/api/v1/access-to-confirm/").json()["roles"]
+    row = next(r for r in waiting if r["code"] == "director")
+    assert "Accountant + Director" in row["conflict_warning"]
+    assert row["reason"] == "Leave cover"
+
+
 def test_the_stores_person_can_never_also_be_the_qc_inspector(admin):
     """QC acceptance is the check on SML's single stores person (owner, 31 Oct 2026)."""
     user = person("one@sml.lk")
@@ -421,7 +443,10 @@ def test_the_stores_person_can_never_also_be_the_qc_inspector(admin):
         format="json",
     )
     assert refused.status_code == 400
-    assert "cannot be held by one person" in refused.json()["detail"]
+    assert refused.json()["detail"] == (
+        "Stores Manager / Executive + QC Inspector cannot be held by one person: they would"
+        " receive goods and also accept them in QC."
+    )
     assert not user.role_assignments.exists()
 
 

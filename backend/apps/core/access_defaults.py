@@ -92,6 +92,14 @@ CONFLICTING_PAIRS = (
     [
         ("clerk", "cashier", "records and pays the same vouchers"),
         ("accountant", "cashier", "approves and pays the same vouchers"),
+        # Testing T50 (owner, 22 Nov 2026): allowed with a reason (leave cover), but the
+        # Admin and the Director are warned. Each voucher still needs two people at L2 and L3.
+        (
+            "accountant",
+            "director",
+            "approves vouchers at both the Accountant and the Director level"
+            " (never the same voucher twice)",
+        ),
     ]
     + [
         ("system_admin", role, "manages access and also handles money")
@@ -109,7 +117,7 @@ CONFLICTING_PAIRS = (
 # Pairs that are never allowed, even with a reason: QC acceptance is the check on the single
 # stores person (owner's decision, 31 Oct 2026; spec 5A decision 2).
 FORBIDDEN_PAIRS = [
-    ("store_supervisor", "qc_inspector", "receives goods and also accepts them in QC"),
+    ("store_supervisor", "qc_inspector", "receive goods and also accept them in QC"),
 ]
 
 

@@ -62,6 +62,8 @@ Status: `[ ]` to do · `[x]` done
     reports by default.
   - Assigning a conflicting combination (Clerk + Cashier, Accountant + Cashier, Admin + any
     finance role) shows a warning and records the reason in the audit log.
+  - Testing T50, owner 22 Nov 2026: Accountant + Director on one person warns the Admin and
+    the confirming Director (allowed with a reason). Done: PR #270.
 
 - [x] **P0-04b User access overrides and access administration** (spec 1.3)
   User access page: roles, data scope, and a grid of every area and action showing role

@@ -2782,7 +2782,8 @@
     "acceptedRejected": "{{accepted}} accepted, {{rejected}} rejected",
     "unpaid": "LKR {{amount}} unpaid",
     "advance": "advance",
-    "paidBy": "paid by {{payments}}"
+    "paidBy": "paid by {{payments}}",
+    "invoiceWaiting": "Invoice waiting"
   },
   "mj": {
     "title": "Manual journals",

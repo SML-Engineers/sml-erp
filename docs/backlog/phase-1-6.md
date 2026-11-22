@@ -287,6 +287,8 @@ Status: `[ ]` to do · `[x]` done
     GRNs, QC, invoices (unpaid), returns, vouchers (advances marked) and payments. Home page
     tiles: waiting for me, open and overdue POs, waiting for QC, GRNI, invoices held, stock
     value. The goods return note prints (PDF) for the supplier, with signatures.
+  - Testing T43/T44, 22 Nov 2026: GRNI keeps goods until their invoice is posted (held
+    invoices named); Invoices held tile only for people who see supplier invoices. Done: PR #274.
 
 - [ ] **P16-14 User acceptance testing and go-live**
   Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,

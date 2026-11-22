@@ -37,11 +37,13 @@ export default function PurchasingDashboard() {
           <strong className="tile-figure">LKR {formatDecimal(d.grni.total)}</strong>
           <span className="muted">{t("pr.grniDetail", { count: d.grni.count })}</span>
         </Link>
-        <Link className={`tile ${d.held_invoices > 0 ? "attention" : ""}`} to="/purchasing/reports?tab=held">
-          <span className="tile-label">{t("pr.heldTile")}</span>
-          <strong className="tile-figure">{d.held_invoices}</strong>
-          <span className="muted">{t("pr.heldDetail")}</span>
-        </Link>
+        {d.held_invoices !== null && (
+          <Link className={`tile ${d.held_invoices > 0 ? "attention" : ""}`} to="/purchasing/reports?tab=held">
+            <span className="tile-label">{t("pr.heldTile")}</span>
+            <strong className="tile-figure">{d.held_invoices}</strong>
+            <span className="muted">{t("pr.heldDetail")}</span>
+          </Link>
+        )}
         <Link className="tile" to="/stock">
           <span className="tile-label">{t("pr.stockTile")}</span>
           <strong className="tile-figure">LKR {formatDecimal(d.stock_value)}</strong>

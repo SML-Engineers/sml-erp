@@ -85,8 +85,12 @@ def can_request_exception(user: User) -> bool:
     return effective_access(user).has("accounting", "enter")
 
 
+def can_view(user: User) -> bool:
+    return effective_access(user).has("vouchers", "view")
+
+
 def visible(user: User) -> QuerySet[SupplierInvoice]:
-    if not effective_access(user).has("vouchers", "view"):
+    if not can_view(user):
         return SupplierInvoice.objects.none()
     return SupplierInvoice.objects.filter(division__in=division_scope(user)).select_related(
         "supplier", "division", "currency", "created_by"
@@ -120,6 +124,25 @@ def accepted(line: GoodsReceiptLine) -> Decimal:
     # is cleared by a debit note instead.
     returned, debited = returned_accepted(line)
     return inspection.accepted_quantity - returned + debited
+
+
+def posted_quantity(line: GoodsReceiptLine) -> Decimal:
+    """What posted invoices bill of this GRN line: only these have cleared the GRNI account
+    (testing T43). A held invoice, or one waiting for the Director's exception, still counts
+    against invoicing the goods twice (invoiced), but its goods stay received-not-invoiced."""
+    rows = SupplierInvoiceLine.objects.filter(grn_line=line, invoice__status=St.POSTED)
+    return rows.aggregate(total=Sum("quantity"))["total"] or Decimal("0")
+
+
+def waiting_invoices(line: GoodsReceiptLine) -> list[SupplierInvoice]:
+    """Held invoices, or ones waiting for the Director, that bill this GRN line."""
+    return list(
+        SupplierInvoice.objects.filter(
+            lines__grn_line=line, status__in=(St.HELD, St.EXCEPTION_REQUESTED)
+        )
+        .distinct()
+        .order_by("number")
+    )
 
 
 def invoiced(line: GoodsReceiptLine, *, excluding: SupplierInvoice | None = None) -> Decimal:

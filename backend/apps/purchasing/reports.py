@@ -132,7 +132,14 @@ GRNI_COLUMNS = [
     Column("unit", "Unit", width=0.5),
     Column("unit_cost", "PO price (LKR)", "money"),
     Column("value", "Value (LKR)", "money"),
+    Column("note", "Invoice", width=1.6),
 ]
+
+
+_WAITING_WORDS = {
+    SupplierInvoice.Status.HELD: "held",
+    SupplierInvoice.Status.EXCEPTION_REQUESTED: "waiting for the Director's exception",
+}
 
 
 def grni(user: User, *, division: str = "", supplier: str = "") -> list[dict]:
@@ -148,10 +155,13 @@ def grni(user: User, *, division: str = "", supplier: str = "") -> list[dict]:
         lines = lines.filter(receipt__supplier_id=supplier)
     rows = []
     for line in lines.order_by("receipt__receipt_date", "receipt__number", "line_no"):
-        left = invoices.accepted(line) - invoices.invoiced(line)
+        # Testing T43: goods stay here until their invoice is posted, as in the GRNI account;
+        # a held invoice, or one waiting for the Director, is named in the Invoice column.
+        left = invoices.accepted(line) - invoices.posted_quantity(line)
         if left <= 0:
             continue
         cost = unit_cost(line)
+        waiting = invoices.waiting_invoices(line)
         rows.append(
             {
                 "grn_id": line.receipt_id,
@@ -165,6 +175,7 @@ def grni(user: User, *, division: str = "", supplier: str = "") -> list[dict]:
                 "unit": line.item.unit,
                 "unit_cost": _money(cost.quantize(CENT, ROUND_HALF_UP)),
                 "value": _money((left * cost).quantize(CENT, ROUND_HALF_UP)),
+                "note": "; ".join(f"{i.invoice_no} {_WAITING_WORDS[i.status]}" for i in waiting),
             }
         )
     return rows
@@ -617,6 +628,7 @@ def dashboard(user: User, division: str = "") -> dict:
             "count": len(grni_rows),
             "total": _money(sum((Decimal(r["value"]) for r in grni_rows), ZERO)),
         },
-        "held_invoices": len(held),
+        # Testing T44: someone who cannot see supplier invoices gets no tile, not a 0.
+        "held_invoices": len(held) if invoices.can_view(user) else None,
         "stock_value": _money(stock_value),
     }

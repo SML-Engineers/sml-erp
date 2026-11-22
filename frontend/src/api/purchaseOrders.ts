@@ -57,6 +57,9 @@ export interface PODetail extends POSummary {
   tax_total: string;
   approved_at: string | null;
   end_reason: string;
+  /** Who cancelled it or closed it short, and when (testing T30). */
+  ended_by?: string | null;
+  ended_at?: string | null;
   parent: { id: number; label: string } | null;
   revisions: { id: number; label: string; status: POStatus }[];
   lines: POLine[];

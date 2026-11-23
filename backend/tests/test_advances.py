@@ -185,6 +185,23 @@ def test_an_advance_is_coded_to_advances_to_suppliers(clerk, supplier, order):
     assert line.description == f"Advance on PO {order.label}: Supplier asks 30% to start"
 
 
+def test_an_advance_asks_for_the_proforma_or_advance_request(clerk, supplier, order):
+    """Testing T42 (owner, 21 Nov 2026): there is no invoice for an advance yet."""
+    voucher = services.save(
+        clerk,
+        None,
+        voucher_type=VoucherType.objects.get(code="CHQ"),
+        division=im(),
+        payee=supplier,
+        description="Advance",
+        lines=[
+            services.LineInput(amount="3000.00", description="30% to start", advance_order=order)
+        ],
+    )
+    with pytest.raises(VoucherError, match="the supplier's proforma invoice or written advance"):
+        services.submit(clerk, voucher)
+
+
 def test_the_advances_on_a_po_never_exceed_it(clerk, supplier, order):
     advance(clerk, supplier, order, "6000.00")
     with pytest.raises(VoucherError, match="more than the 4,000.00 of purchase order"):

@@ -737,6 +737,13 @@ def submit(user: User, voucher: Voucher, comment: str = "") -> Voucher:
             raise VoucherError("Choose the company account the money goes to.")
         scanned_on_invoices = all(line.supplier_invoice_id for line in lines)
         if vt.needs_payee and not voucher.attachments.exists() and not scanned_on_invoices:
+            # Testing T42 (owner, 21 Nov 2026): an advance has no invoice yet; it is paid on
+            # the supplier's proforma invoice or written advance request.
+            if any(line.advance_order_id for line in lines):
+                raise VoucherError(
+                    "Attach the supplier's proforma invoice or written advance request before"
+                    " submitting."
+                )
             raise VoucherError("Attach the scanned invoice or receipt before submitting.")
         try:
             approvals.submit(

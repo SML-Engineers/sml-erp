@@ -24,6 +24,7 @@ import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDate, formatDateTime } from "../lib/time";
 import { listQuotations } from "../api/quotations";
 import { cancelledNote } from "../lib/cancelled";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -499,6 +500,13 @@ function Actions({ order }: { order: SalesOrderDetail }) {
     setReason("");
   };
   const act = useMutation({ mutationFn: (call: () => Promise<SalesOrderDetail>) => call(), onSuccess: done });
+  const sure = useSure();
+  const about = {
+    doc: order.number,
+    customer: order.customer.name,
+    currency: order.currency,
+    amount: formatDecimal(order.total_amount),
+  };
   const nothing = !order.can_edit && !order.can_approve && !order.can_complete && !order.can_cancel;
   if (nothing && !order.approval && order.advances.length === 0) return null;
 
@@ -506,7 +514,13 @@ function Actions({ order }: { order: SalesOrderDetail }) {
     <section className="panel" aria-label={t("salesOrders.actions")}>
       {order.can_edit && (
         <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => confirmSalesOrder(order.id))}>
+          <button type="button" disabled={act.isPending} onClick={() =>
+              void sure(
+                t(order.source === "direct" ? "confirm.sendSalesOrder" : "confirm.confirmSalesOrder", about),
+                t(order.source === "direct" ? "salesOrders.sendForApproval" : "salesOrders.confirm"),
+                () => act.mutate(() => confirmSalesOrder(order.id)),
+              )
+            }>
             {order.source === "direct" ? t("salesOrders.sendForApproval") : t("salesOrders.confirm")}
           </button>{" "}
           <span className="muted">{order.source === "direct" ? t("salesOrders.sendHelp") : t("salesOrders.confirmHelp")}</span>
@@ -518,17 +532,17 @@ function Actions({ order }: { order: SalesOrderDetail }) {
             {t("salesOrders.comment")}
             <input value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveSalesOrder(order.id, comment))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveSalesOrder", about), t("salesOrders.approve"), () => act.mutate(() => approveSalesOrder(order.id, comment)))}>
             {t("salesOrders.approve")}
           </button>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnSalesOrder(order.id, comment))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnSalesOrder", about), t("salesOrders.sendBack"), () => act.mutate(() => returnSalesOrder(order.id, comment)))}>
             {t("salesOrders.sendBack")}
           </button>
         </div>
       )}
       {order.can_complete && (
         <p>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => completeSalesOrder(order.id))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.completeSalesOrder", about), t("salesOrders.complete"), () => act.mutate(() => completeSalesOrder(order.id)))}>
             {t("salesOrders.complete")}
           </button>{" "}
           <span className="muted">{t("salesOrders.completeHelp")}</span>
@@ -540,7 +554,7 @@ function Actions({ order }: { order: SalesOrderDetail }) {
             {t("proformas.cancelReason")}
             <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
           </label>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => cancelSalesOrder(order.id, reason))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.cancelSalesOrder", about), t("salesOrders.cancel"), () => act.mutate(() => cancelSalesOrder(order.id, reason)), true)}>
             {t("salesOrders.cancel")}
           </button>
         </div>

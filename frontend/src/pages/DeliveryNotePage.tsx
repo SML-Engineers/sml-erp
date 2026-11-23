@@ -23,6 +23,7 @@ import {
 import { compareDecimal, formatDecimal, formatQuantity } from "../lib/decimal";
 import { factoryToday } from "../lib/time";
 import { cancelledNote } from "../lib/cancelled";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -293,6 +294,11 @@ function Actions({ note }: { note: DNDetail }) {
     void queryClient.invalidateQueries({ queryKey: dnKey });
   };
   const act = useMutation({ mutationFn: (call: () => Promise<DNDetail>) => call(), onSuccess: done });
+  const sure = useSure();
+  const about = {
+    doc: note.number,
+    customer: note.customer.name,
+  };
   const remove = useMutation({
     mutationFn: () => deleteDeliveryNote(note.id),
     onSuccess: () => {
@@ -310,10 +316,10 @@ function Actions({ note }: { note: DNDetail }) {
       </p>
       {note.can_edit && (
         <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => issueDeliveryNote(note.id))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.issueDeliveryNote", about), t("dn.issue"), () => act.mutate(() => issueDeliveryNote(note.id)))}>
             {t("dn.issue")}
           </button>{" "}
-          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteDeliveryNote", about), t("dn.delete"), () => remove.mutate(), true)}>
             {t("dn.delete")}
           </button>{" "}
           <span className="muted">{t("dn.issueHelp")}</span>
@@ -333,7 +339,7 @@ function Actions({ note }: { note: DNDetail }) {
             {t("dn.signedCopyFile")}
             <input type="file" accept="image/jpeg,image/png,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => recordReceipt(note.id, receivedBy, receivedOn, file))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.recordDeliveryReceipt", about), t("dn.recordReceipt"), () => act.mutate(() => recordReceipt(note.id, receivedBy, receivedOn, file)))}>
             {t("dn.recordReceipt")}
           </button>
         </div>
@@ -344,7 +350,7 @@ function Actions({ note }: { note: DNDetail }) {
             {t("dn.cancelReason")}
             <input value={reason} maxLength={1000} onChange={(e) => setReason(e.target.value)} />
           </label>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => cancelDeliveryNote(note.id, reason))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.cancelDeliveryNote", about), t("dn.cancel"), () => act.mutate(() => cancelDeliveryNote(note.id, reason)), true)}>
             {t("dn.cancel")}
           </button>
         </div>

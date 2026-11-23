@@ -301,3 +301,13 @@ test("the list says whose draft it is and who it waits for", async () => {
   for (const text of ["Draft of Dilini", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Open, to deliver", "All delivered"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before approving a sales order; No sends nothing (testing T49)", async () => {
+  const waiting: SalesOrderDetail = { ...draft, status: "awaiting_approval", can_edit: false, can_cancel: false, can_approve: true };
+  const calls = mockApi({ "GET /api/v1/sales-orders/50/": { body: waiting } });
+  renderAt("/sales-orders/50", <SalesOrderPage />, "/sales-orders/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Approve the order" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Approve sales order SO26103101: LKR 23,500.00 from Unilever Sri Lanka?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/sales-orders/50/approve/", expect.anything());
+});

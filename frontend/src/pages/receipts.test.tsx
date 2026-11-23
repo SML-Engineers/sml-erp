@@ -304,3 +304,13 @@ test("the list says who a receipt waits for and who decided", async () => {
   ])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before rejecting a receipt; No sends nothing (testing T49)", async () => {
+  const calls = mockApi({ "GET /api/v1/receipts/5/": { body: { ...made, can_approve: true } } });
+  renderAt("/receipts/5", <ReceiptPage />, "/receipts/:id", { ask: true });
+  const decision = await screen.findByRole("group", { name: "Accountant's decision" });
+  fireEvent.click(within(decision).getByRole("button", { name: "Reject" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Reject receipt RC26110002 (Lanka Tiles PLC, LKR 100,000.00)?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/receipts/5/reject/", expect.anything());
+});

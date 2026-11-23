@@ -169,3 +169,13 @@ test("the list says who made, issued, signed or cancelled each note and if it is
   ])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before cancelling an issued delivery note (testing T49)", async () => {
+  const issued: DNDetail = { ...draft, status: "issued", status_label: "Issued", can_edit: false, can_receive: false, can_cancel: true };
+  const calls = mockApi({ "GET /api/v1/delivery-notes/8/": { body: issued } });
+  renderAt("/delivery-notes/8", <DeliveryNotePage />, "/delivery-notes/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Cancel the delivery note" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Cancel delivery note DN26110301 (Unilever Sri Lanka)?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/delivery-notes/8/cancel/", expect.anything());
+});

@@ -213,3 +213,19 @@ test("the list says who an advance waits for, who decided and how much is set of
   for (const text of ["Waiting for Nimal (Accountant)", "Approved by Nimal", "Partly set off", "Set off in full", "Rejected by Nimal"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before approving an advance, naming the customer and the amount (testing T49)", async () => {
+  const waiting: AdvanceDetail = { ...made, can_approve: true };
+  const calls = mockApi({
+    "GET /api/v1/advances/7/": { body: waiting },
+    "POST /api/v1/advances/7/approve/": { body: { ...made, status: "approved", balance_lkr: "75000.00" } },
+  });
+  renderAt("/advances/7", <AdvancePage />, "/advances/:id", { ask: true });
+  const decision = await screen.findByRole("group", { name: "Accountant's decision" });
+  fireEvent.click(within(decision).getByRole("button", { name: "Approve and post" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Approve and post advance RC26100001: LKR 75,000.00 from Unilever Sri Lanka?",
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Approve and post" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/advances/7/approve/", expect.objectContaining({ method: "POST" })));
+});

@@ -15,6 +15,7 @@ import {
 } from "../api/receipts";
 import { formatDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 /** One customer receipt (P2-07): the invoices it pays, the Accountant's approval, the printed
  * receipt. */
@@ -30,6 +31,7 @@ export default function ReceiptPage() {
     void queryClient.invalidateQueries({ queryKey: [...receiptsKey, "list"] });
   };
   const act = useMutation({ mutationFn: (call: () => Promise<ReceiptDetail>) => call(), onSuccess: done });
+  const sure = useSure();
   const r = receipt.data;
   const error = receipt.error ?? act.error;
 
@@ -119,14 +121,14 @@ export default function ReceiptPage() {
                 {t("quotations.approverNote")}
                 <input value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} />
               </label>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveReceipt(r.id, comment))}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveReceipt", { doc: r.number, customer: r.customer.name, currency: r.currency ?? "LKR", amount: formatDecimal(r.amount) }), t("advances.approve"), () => act.mutate(() => approveReceipt(r.id, comment)))}>
                 {t("advances.approve")}
               </button>
               <label>
                 {t("advances.rejectReason")}
                 <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
               </label>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => rejectReceipt(r.id, reason))}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectReceipt", { doc: r.number, customer: r.customer.name, currency: r.currency ?? "LKR", amount: formatDecimal(r.amount) }), t("advances.reject"), () => act.mutate(() => rejectReceipt(r.id, reason)), true)}>
                 {t("advances.reject")}
               </button>
             </div>

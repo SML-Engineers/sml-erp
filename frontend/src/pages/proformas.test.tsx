@@ -164,3 +164,17 @@ test("the list says whose draft it is, whether an order was made and who cancell
   for (const text of ["Draft of Dilini", "Issued to the customer", "Issued, order made", "Cancelled by Dilini"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before cancelling a proforma; No leaves it as it is (testing T49)", async () => {
+  const issued: ProformaDetail = { ...draft, status: "issued", can_edit: false, can_cancel: true };
+  const calls = mockApi({ "GET /api/v1/proformas/40/": { body: issued } });
+  renderAt("/proformas/40", <ProformaPage />, "/proformas/:id", { ask: true });
+  fireEvent.change(await screen.findByLabelText("Reason for cancelling"), { target: { value: "Order changed" } });
+  fireEvent.click(screen.getByRole("button", { name: "Cancel the proforma" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Cancel proforma PI261031-01 (Rhino Roofing Products Ltd, LKR 645,268.25)?",
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/proformas/40/cancel/", expect.anything());
+});

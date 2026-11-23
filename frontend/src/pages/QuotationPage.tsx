@@ -43,6 +43,7 @@ import OrderLinks from "../components/OrderLinks";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { addDays, daysBetween, factoryToday, formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -738,6 +739,13 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
   const act = useMutation({ mutationFn: (call: () => Promise<QuotationDetail>) => call(), onSuccess: done });
   const id = quotation.id;
   const review = quotation.review;
+  const sure = useSure();
+  const about = {
+    doc: `${quotation.number}${quotation.revision ? ` Rev ${quotation.revision}` : ""}`,
+    customer: quotation.customer.name,
+    currency: quotation.currency,
+    amount: formatDecimal(quotation.total_amount),
+  };
   const history = quotation.approval?.history ?? [];
 
   return (
@@ -783,7 +791,7 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
             {t("quotations.commentForDirector")}
             <input value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => submitQuotation(id, comment))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitQuotation", about), t("quotations.sendForApproval"), () => act.mutate(() => submitQuotation(id, comment)))}>
             {t("quotations.sendForApproval")}
           </button>
           <span className="muted">{t("quotations.saveFirst")}</span>
@@ -796,14 +804,14 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
             {t("quotations.approverNote")}
             <input value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveQuotation(id, comment))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveQuotation", about), t("quotations.approve"), () => act.mutate(() => approveQuotation(id, comment)))}>
             {t("quotations.approve")}
           </button>
           <label>
             {t("quotations.returnReason")}
             <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
           </label>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnQuotation(id, reason))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnQuotation", about), t("quotations.returnToCreator"), () => act.mutate(() => returnQuotation(id, reason)))}>
             {t("quotations.returnToCreator")}
           </button>
         </div>
@@ -811,7 +819,7 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
 
       {quotation.can_mark_sent && (
         <p>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => markQuotationSent(id))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.markQuotationSent", about), t("quotations.markSent"), () => act.mutate(() => markQuotationSent(id)))}>
             {t("quotations.markSent")}
           </button>
         </p>
@@ -841,7 +849,7 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
             {t("quotations.note")}
             <input value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => recordOutcome(id, outcome, outcomeReason, note))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.recordOutcome", { ...about, outcome: t(outcome === "accepted" ? "quotations.won" : "quotations.lost") }), t("quotations.recordOutcome"), () => act.mutate(() => recordOutcome(id, outcome, outcomeReason, note)))}>
             {t("quotations.recordOutcome")}
           </button>
         </div>
@@ -849,7 +857,7 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
 
       {quotation.can_revise && (
         <p>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => reviseQuotation(id))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.reviseQuotation", about), t("quotations.revise"), () => act.mutate(() => reviseQuotation(id)))}>
             {t("quotations.revise")}
           </button>{" "}
           <span className="muted">{t("quotations.reviseHelp")}</span>
@@ -857,7 +865,7 @@ function Workflow({ quotation }: { quotation: QuotationDetail }) {
       )}
       {quotation.can_duplicate && (
         <p>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => duplicateQuotation(id))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.duplicateQuotation", about), t("quotations.duplicate"), () => act.mutate(() => duplicateQuotation(id)))}>
             {t("quotations.duplicate")}
           </button>{" "}
           <span className="muted">{t("quotations.duplicateHelp")}</span>

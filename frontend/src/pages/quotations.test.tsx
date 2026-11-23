@@ -982,3 +982,18 @@ test("the pictures are shown to the approver and can be left out of the email", 
   const [, init] = calls.mock.calls.find(([url, i]) => url === "/api/v1/quotations/12/email/" && i?.method === "POST")!;
   expect(JSON.parse(String(init!.body)).include_images).toBe(false);
 });
+
+test("asks before approving a quotation, naming the customer and the amount (testing T49)", async () => {
+  const waiting: QuotationDetail = { ...saved, status: "awaiting_approval", can_edit: false, can_submit: false, can_approve: true };
+  const calls = mockApi({
+    "GET /api/v1/quotations/12/": { body: waiting },
+    "POST /api/v1/quotations/12/approve/": { body: { ...waiting, status: "approved", can_approve: false } },
+  });
+  renderAt("/quotations/12", <QuotationPage />, "/quotations/:id", { ask: true });
+  const panel = await screen.findByRole("region", { name: "Approval and status" });
+  fireEvent.click(within(panel).getByRole("button", { name: "Approve" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Approve quotation QL26103101: EUR 235.00 to Nordic Plast AB?" });
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/quotations/12/approve/", expect.anything());
+  fireEvent.click(within(dialog).getByRole("button", { name: "Approve" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/quotations/12/approve/", expect.objectContaining({ method: "POST" })));
+});

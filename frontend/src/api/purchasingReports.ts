@@ -10,7 +10,8 @@ export interface PurchasingDashboard {
   waiting_for_me: number;
   qc_waiting: number;
   grni: { count: number; total: string };
-  held_invoices: number;
+  /** null when the person cannot see supplier invoices (testing T44): no tile. */
+  held_invoices: number | null;
   stock_value: string;
 }
 

@@ -123,6 +123,38 @@ def test_grni_lists_accepted_goods_not_invoiced_and_matches_the_ledger(people, s
     assert reports.grni_ledger_balance() == "3000.00"
 
 
+def test_goods_whose_invoice_is_held_stay_in_grni_until_it_is_posted(people, supplier):
+    """Testing T43: PTL-7702 was held while its 4,800 inserts (60,000.00) sat in the GRNI
+    account, but the report said "Nothing to show"."""
+    line = receive_and_accept(people, po(people, supplier), accepted="80")
+    held = invoice(people, line, qty="80", price="105")
+    assert held.status == "held"
+    rows = reports.grni(people["accountant"])
+    assert [(r["quantity"], r["value"], r["note"]) for r in rows] == [
+        ("80", "8000.00", "INV-1 held")
+    ]
+    assert reports.grni_ledger_balance() == "8000.00"
+    invoices.request_exception(people["accountant"], held, "Price list changed")
+    note = reports.grni(people["accountant"])[0]["note"]
+    assert note == "INV-1 waiting for the Director's exception"
+    invoices.approve_exception(people["director"], held, "OK")
+    assert reports.grni(people["accountant"]) == []
+    assert reports.grni_ledger_balance() == "0.00"
+    # The held invoice still stops the same goods being invoiced twice meanwhile.
+
+
+def test_the_dashboard_counts_held_invoices_and_their_goods(people, supplier):
+    """Testing T44: the tiles agree with the reports while an invoice is held."""
+    line = receive_and_accept(people, po(people, supplier), accepted="80")
+    invoice(people, line, qty="80", price="105")
+    board = reports.dashboard(people["accountant"])
+    assert board["held_invoices"] == 1
+    assert board["grni"] == {"count": 1, "total": "8000.00"}
+    # QC cannot see supplier invoices: no Invoices held tile rather than a wrong 0.
+    assert reports.dashboard(people["qc"])["held_invoices"] is None
+    assert reports.dashboard(people["qc"])["grni"]["total"] == "8000.00"
+
+
 # --- Held invoices and exceptions ----------------------------------------------------------------
 
 

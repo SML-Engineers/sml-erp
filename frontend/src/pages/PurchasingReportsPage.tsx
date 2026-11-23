@@ -53,6 +53,7 @@ export default function PurchasingReportsPage() {
       text("item", t("po.item")),
       text("quantity", t("pr.notInvoiced")),
       money("value", t("stock.value")),
+      text("note", t("pr.invoiceWaiting")),
     ],
     held: [
       { id: "no", header: t("si.invoiceNo"), value: (r) => String(r.invoice_no), cell: (r) => <Link to={`/supplier-invoices/${r.id}`}>{String(r.invoice_no)}</Link> },

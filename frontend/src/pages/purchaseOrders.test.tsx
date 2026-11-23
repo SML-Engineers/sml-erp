@@ -260,3 +260,14 @@ test("send waits for unsaved changes and records the buyer's comment", async () 
     ),
   );
 });
+
+test("asks before cancelling a PO, naming the supplier and the amount (testing T49)", async () => {
+  const calls = mockApi({ "GET /api/v1/purchase-orders/9/": { body: { ...draft, can_cancel: true } } });
+  renderAt("/purchase-orders/9", <PurchaseOrderPage />, "/purchase-orders/:id", { ask: true });
+  const actions = await screen.findByRole("region", { name: "What to do with the purchase order" });
+  fireEvent.change(within(actions).getByLabelText("Comment or reason"), { target: { value: "Duplicate" } });
+  fireEvent.click(within(actions).getByRole("button", { name: /Cancel/ }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Cancel PO26110101 (SDD Polymer (Pvt) Ltd, LKR 177,000.00)?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/purchase-orders/9/cancel/", expect.anything());
+});

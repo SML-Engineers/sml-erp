@@ -151,3 +151,17 @@ test("the Director approves a deviation", async () => {
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/inspections/7/approve/", expect.objectContaining({ method: "POST" })));
   expect(await screen.findByText(/^Accepted under deviation ·/)).toBeInTheDocument();
 });
+
+test("asks before rejecting goods in QC, naming the item, the GRN and the supplier (testing T49)", async () => {
+  const calls = mockApi({
+    "GET /api/v1/inspections/7/": { body: inspection },
+    "PUT /api/v1/inspections/7/": { body: inspection },
+  });
+  renderAt("/inspections/7", <InspectionPage />, "/inspections/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Reject all" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Reject PP-H-WHITE on GRN26110101 from SDD Polymer? The goods go to the rejected store.",
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/inspections/7/decide/", expect.anything());
+});

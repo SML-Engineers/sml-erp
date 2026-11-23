@@ -28,6 +28,7 @@ import PackagesPanel from "../components/PackagesPanel";
 import Trail from "../components/Trail";
 import { formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -289,6 +290,7 @@ function History({ label, rows }: { label: string; rows: ApprovalStep[] }) {
 
 function Actions({ grn }: { grn: GRNDetail }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const navigate = useNavigate();
   const done = useDone();
   const queryClient = useQueryClient();
@@ -315,10 +317,10 @@ function Actions({ grn }: { grn: GRNDetail }) {
     <section className="panel" aria-label={t("grn.actions")}>
       {grn.can_edit && (
         <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => confirmGoodsReceipt(grn.id))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.confirmGrn", { doc: grn.number, supplier: grn.supplier.name }), t("grn.confirm"), () => act.mutate(() => confirmGoodsReceipt(grn.id)))}>
             {t("grn.confirm")}
           </button>{" "}
-          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteGrn", { doc: grn.number, supplier: grn.supplier.name }), t("grn.delete"), () => remove.mutate(), true)}>
             {t("grn.delete")}
           </button>{" "}
           <span className="muted">{t("grn.confirmHelp")}</span>
@@ -332,25 +334,25 @@ function Actions({ grn }: { grn: GRNDetail }) {
           </label>
           {grn.can_approve_excess && (
             <>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveExcess(grn.id, text))}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveExcess", { doc: grn.number, supplier: grn.supplier.name }), t("grn.approveExcess"), () => act.mutate(() => approveExcess(grn.id, text)))}>
                 {t("grn.approveExcess")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnGoodsReceipt(grn.id, text))}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnGrn", { doc: grn.number, supplier: grn.supplier.name }), t("salesOrders.sendBack"), () => act.mutate(() => returnGoodsReceipt(grn.id, text)))}>
                 {t("salesOrders.sendBack")}
               </button>
             </>
           )}
           {grn.can_request_reversal && (
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => requestReversal(grn.id, text))}>
+            <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.requestReversal", { doc: grn.number, supplier: grn.supplier.name }), t("grn.requestReversal"), () => act.mutate(() => requestReversal(grn.id, text)), true)}>
               {t("grn.requestReversal")}
             </button>
           )}
           {grn.can_approve_reversal && (
             <>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveReversal(grn.id, text))}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveReversal", { doc: grn.number, supplier: grn.supplier.name }), t("grn.approveReversal"), () => act.mutate(() => approveReversal(grn.id, text)), true)}>
                 {t("grn.approveReversal")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => refuseReversal(grn.id, text))}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.refuseReversal", { doc: grn.number, supplier: grn.supplier.name }), t("grn.refuseReversal"), () => act.mutate(() => refuseReversal(grn.id, text)))}>
                 {t("grn.refuseReversal")}
               </button>
             </>

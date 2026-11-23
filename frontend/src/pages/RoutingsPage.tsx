@@ -17,6 +17,7 @@ import {
   type Routing,
   type RoutingValues,
 } from "../api/routings";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -125,6 +126,7 @@ export default function RoutingsPage() {
 
 function Detail({ routing: r, onOpen }: { routing: Routing; onOpen: (id: number | null) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [reason, setReason] = useState("");
@@ -167,10 +169,10 @@ function Detail({ routing: r, onOpen }: { routing: Routing; onOpen: (id: number 
             <button type="button" className="secondary" onClick={() => setEditing(true)}>
               {t("routing.edit")}
             </button>
-            <button type="button" onClick={() => act.mutate({ action: "submit" })}>
+            <button type="button" onClick={() => void sure(t("confirm.submitRouting", { item: r.item_name || r.item, revision: r.revision }), t("routing.submit"), () => act.mutate({ action: "submit" }))}>
               {t("routing.submit")}
             </button>
-            <button type="button" className="secondary" onClick={() => remove.mutate()}>
+            <button type="button" className="secondary" onClick={() => void sure(t("confirm.deleteRouting", { item: r.item_name || r.item, revision: r.revision }), t("routing.deleteDraft"), () => remove.mutate(), true)}>
               {t("routing.deleteDraft")}
             </button>
           </>
@@ -178,10 +180,10 @@ function Detail({ routing: r, onOpen }: { routing: Routing; onOpen: (id: number 
         {r.can_decide && (
           <>
             <input aria-label={t("routing.reason")} placeholder={t("routing.reason")} value={reason} onChange={(e) => setReason(e.target.value)} />
-            <button type="button" onClick={() => act.mutate({ action: "approve", body: { reason } })}>
+            <button type="button" onClick={() => void sure(t("confirm.approveRouting", { item: r.item_name || r.item, revision: r.revision }), t("routing.approve"), () => act.mutate({ action: "approve", body: { reason } }))}>
               {t("routing.approve")}
             </button>
-            <button type="button" className="secondary" onClick={() => act.mutate({ action: "send_back", body: { reason } })}>
+            <button type="button" className="secondary" onClick={() => void sure(t("confirm.returnRouting", { item: r.item_name || r.item, revision: r.revision }), t("routing.sendBack"), () => act.mutate({ action: "send_back", body: { reason } }))}>
               {t("routing.sendBack")}
             </button>
           </>

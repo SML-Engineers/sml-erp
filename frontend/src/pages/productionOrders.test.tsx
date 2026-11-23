@@ -191,3 +191,21 @@ test("where used lists the orders making and needing an item", async () => {
   expect(await within(panel).findByText("Released orders that need it: MO26110001 (47.25 kg)")).toBeInTheDocument();
   expect(within(panel).getByText("No open order makes it.")).toBeInTheDocument();
 });
+
+test("asks before releasing an order, naming the item and quantity (testing T49)", async () => {
+  const draft = { ...order, status: "draft" as const, status_label: "Draft", can_edit: true, can_release: true, can_complete: false };
+  const calls = mockApi({
+    "GET /api/v1/production-orders/?q=&status=open": { body: list },
+    "GET /api/v1/production-orders/7/": { body: draft },
+    "POST /api/v1/production-orders/7/release/": { body: order },
+  });
+  renderAt("/production-orders?order=7", <ProductionOrdersPage />, "/production-orders", { ask: true });
+  const panel = await screen.findByRole("region", { name: "Production order MO26110001" });
+  fireEvent.click(within(panel).getByRole("button", { name: "Release" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Release order MO26110001 (Cap 28 mm, 10,000 pcs) to the shop floor?" });
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/production-orders/7/release/", expect.anything());
+  fireEvent.click(within(dialog).getByRole("button", { name: "Release" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/production-orders/7/release/", expect.objectContaining({ method: "POST" })),
+  );
+});

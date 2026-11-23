@@ -39,6 +39,7 @@ import {
 } from "../lib/offline";
 import { formatDateTime } from "../lib/time";
 import TimeInput from "../components/TimeInput";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -168,6 +169,7 @@ const NEW_RUN: RunValues = {
 
 function Report({ id, onBack }: { id: number; onBack: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const key = ["shift-report", id];
   const online = useOnline();
@@ -482,7 +484,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
               <button
                 type="button"
                 disabled={save.isPending || submit.isPending || !online || pending !== null || copyAt !== null}
-                onClick={() => submit.mutate(v)}
+                onClick={() => void sure(t("confirm.submitShift", { section: r.section_name, shift: r.shift_name, day: r.day }), t("shiftReport.submit"), () => submit.mutate(v))}
               >
                 {t("shiftReport.submit")}
               </button>
@@ -502,6 +504,7 @@ function Report({ id, onBack }: { id: number; onBack: () => void }) {
 /** P3-09: the Production Manager's decision, what approval put into stock, and corrections. */
 function Approval({ report, onDone }: { report: ShiftReport; onDone: (r: ShiftReport) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [reason, setReason] = useState("");
   const [ask, setAsk] = useState("");
   const decide = useMutation({
@@ -537,10 +540,10 @@ function Approval({ report, onDone }: { report: ShiftReport; onDone: (r: ShiftRe
             <input value={reason} onChange={(e) => setReason(e.target.value)} />
           </label>
           <div className="row-actions">
-            <button type="button" disabled={decide.isPending} onClick={() => decide.mutate("approve")}>
+            <button type="button" disabled={decide.isPending} onClick={() => void sure(t("confirm.approveShift", { section: report.section_name, shift: report.shift_name, day: report.day }), t("shiftReport.approve"), () => decide.mutate("approve"))}>
               {t("shiftReport.approve")}
             </button>
-            <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("send_back")}>
+            <button type="button" className="secondary" disabled={decide.isPending} onClick={() => void sure(t("confirm.returnShift", { section: report.section_name, shift: report.shift_name, day: report.day }), t("shiftReport.sendBack"), () => decide.mutate("send_back"))}>
               {t("shiftReport.sendBack")}
             </button>
           </div>
@@ -593,14 +596,14 @@ function Approval({ report, onDone }: { report: ShiftReport; onDone: (r: ShiftRe
                 <input value={reason} onChange={(e) => setReason(e.target.value)} />
               </label>
               <div className="row-actions">
-                <button type="button" disabled={fix.isPending} onClick={() => fix.mutate({ id: pending.id, action: "approve" })}>
+                <button type="button" disabled={fix.isPending} onClick={() => void sure(t("confirm.approveCorrection", { section: report.section_name, shift: report.shift_name, day: report.day }), t("shiftReport.approveCorrection"), () => fix.mutate({ id: pending.id, action: "approve" }))}>
                   {t("shiftReport.approveCorrection")}
                 </button>
                 <button
                   type="button"
                   className="secondary"
                   disabled={fix.isPending}
-                  onClick={() => fix.mutate({ id: pending.id, action: "reject" })}
+                  onClick={() => void sure(t("confirm.rejectCorrection", { section: report.section_name, shift: report.shift_name, day: report.day }), t("shiftReport.rejectCorrection"), () => fix.mutate({ id: pending.id, action: "reject" }), true)}
                 >
                   {t("shiftReport.rejectCorrection")}
                 </button>

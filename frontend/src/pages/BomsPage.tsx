@@ -24,6 +24,7 @@ import {
 } from "../api/boms";
 import { ApiError } from "../api/client";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -141,6 +142,7 @@ export default function BomsPage() {
 
 function Detail({ bom: b, list, onOpen }: { bom: Bom; list: BomList; onOpen: (id: number | null) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [reason, setReason] = useState("");
@@ -256,10 +258,10 @@ function Detail({ bom: b, list, onOpen }: { bom: Bom; list: BomList; onOpen: (id
             <button type="button" className="secondary" onClick={() => setEditing(true)}>
               {t("bom.edit")}
             </button>
-            <button type="button" onClick={() => act.mutate({ action: "submit" })}>
+            <button type="button" onClick={() => void sure(t("confirm.submitBom", { item: b.item_name || b.item, revision: b.revision }), t("bom.submit"), () => act.mutate({ action: "submit" }))}>
               {t("bom.submit")}
             </button>
-            <button type="button" className="secondary" onClick={() => remove.mutate()}>
+            <button type="button" className="secondary" onClick={() => void sure(t("confirm.deleteBom", { item: b.item_name || b.item, revision: b.revision }), t("bom.deleteDraft"), () => remove.mutate(), true)}>
               {t("bom.deleteDraft")}
             </button>
           </>
@@ -267,10 +269,10 @@ function Detail({ bom: b, list, onOpen }: { bom: Bom; list: BomList; onOpen: (id
         {b.can_decide && (
           <>
             <input aria-label={t("bom.reason")} placeholder={t("bom.reason")} value={reason} onChange={(e) => setReason(e.target.value)} />
-            <button type="button" onClick={() => act.mutate({ action: "approve", body: { reason } })}>
+            <button type="button" onClick={() => void sure(t("confirm.approveBom", { item: b.item_name || b.item, revision: b.revision }), t("bom.approve"), () => act.mutate({ action: "approve", body: { reason } }))}>
               {t("bom.approve")}
             </button>
-            <button type="button" className="secondary" onClick={() => act.mutate({ action: "send_back", body: { reason } })}>
+            <button type="button" className="secondary" onClick={() => void sure(t("confirm.returnBom", { item: b.item_name || b.item, revision: b.revision }), t("bom.sendBack"), () => act.mutate({ action: "send_back", body: { reason } }))}>
               {t("bom.sendBack")}
             </button>
           </>

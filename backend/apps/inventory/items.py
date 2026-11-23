@@ -359,6 +359,15 @@ COLUMNS = [
     "Notes",
     "Active",
 ]
+# Testing T23 (21 Nov 2026): the weighing settings go out and come back too. They are
+# optional, so a workbook exported before they were added still imports; a blank cell leaves
+# the item's value as it is (to clear a tare or tolerance, write 0).
+WEIGHING = {
+    "Usual tare": "package_tare",
+    "Weight tolerance %": "weight_tolerance_pct",
+    "Standard kg per metre": "standard_kg_per_m",
+    "Density": "density",
+}
 
 
 def _label(choices, value) -> str:
@@ -384,13 +393,19 @@ def export_workbook(rows) -> bytes:
             i.division.code if i.division else "",
             i.notes,
             "Yes" if i.is_active else "No",
+            *(_figure(getattr(i, field)) for field in WEIGHING.values()),
         ]
         for i in rows
     ]
-    excel._sheet(workbook, SHEET, COLUMNS, lines)
+    excel._sheet(workbook, SHEET, [*COLUMNS, *WEIGHING], lines)
     out = io.BytesIO()
     workbook.save(out)
     return out.getvalue()
+
+
+def _figure(value) -> Decimal | None:
+    """A weighing setting as a number Excel can use; blank when unset."""
+    return value
 
 
 def _from_label(choices, text: str, what: str) -> str:
@@ -419,6 +434,9 @@ def _import_row(row: dict, *, user: User, reason: str) -> str:
         "division": text["Division"],
         "notes": text["Notes"],
     }
+    for column, field in WEIGHING.items():
+        if excel._text(row.get(column)):
+            values[field] = excel._text(row.get(column))
     # Accounts come in only when the importer may set them; otherwise defaults apply.
     if can_set_accounts(user):
         values["inventory_account"] = text["Inventory account"]
@@ -442,8 +460,10 @@ def import_workbook(content: bytes, *, user: User, reason: str, dry_run: bool) -
     refused row, in which case nothing is saved."""
     if not can_enter(user):
         raise excel.ImportRefused(["You cannot add or change items."])
-    if not (reason or "").strip():
+    # Testing T22: checking the file saves nothing, so it needs no reason; importing does.
+    if not dry_run and not (reason or "").strip():
         raise excel.ImportRefused(["Give a reason for the import."])
+    reason = (reason or "").strip() or "Checking the file only"
     if len(content) > excel.MAX_BYTES:
         raise excel.ImportRefused(["The file must be 5 MB or smaller."])
     try:

@@ -133,3 +133,24 @@ test("the Admin sees each division's stores and adds one", async () => {
     ),
   );
 });
+
+test("a file can be checked without a reason; importing needs one (testing T22)", async () => {
+  mockApi({
+    "GET /api/v1/items/options/": { body: options },
+    "GET /api/v1/items/": { body: [resin] },
+    "POST /api/v1/items/import/": { body: { dry_run: true, created: 0, updated: 1 } },
+    ...divisions,
+  });
+  renderAt("/items", <ItemsPage />);
+  fireEvent.click(await screen.findByRole("button", { name: "Import from Excel" }));
+  const panel = screen.getByRole("region", { name: "Import items from Excel" });
+  expect(panel).toHaveTextContent("a blank cell keeps the item's value");
+  const file = new File(["x"], "items.xlsx");
+  fireEvent.change(within(panel).getByLabelText("Excel file (.xlsx)"), { target: { files: [file] } });
+  expect(within(panel).getByRole("button", { name: "Check file" })).toBeEnabled();
+  expect(within(panel).getByRole("button", { name: "Import" })).toBeDisabled();
+  fireEvent.click(within(panel).getByRole("button", { name: "Check file" }));
+  expect(await within(panel).findByText(/Importing it would add 0 and update 1 items/)).toBeInTheDocument();
+  fireEvent.change(within(panel).getByLabelText("Reason"), { target: { value: "Stores register" } });
+  expect(within(panel).getByRole("button", { name: "Import" })).toBeEnabled();
+});

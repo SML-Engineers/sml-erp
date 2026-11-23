@@ -435,7 +435,7 @@ function ImportPanel({ onClose }: { onClose: () => void }) {
           <button type="button" className="secondary" disabled={!file || run.isPending} onClick={() => run.mutate(true)}>
             {t("factory.check")}
           </button>
-          <button type="button" disabled={!file || run.isPending} onClick={() => run.mutate(false)}>
+          <button type="button" disabled={!file || !reason.trim() || run.isPending} onClick={() => run.mutate(false)}>
             {t("factory.doImport")}
           </button>
           <button type="button" className="secondary" onClick={onClose}>

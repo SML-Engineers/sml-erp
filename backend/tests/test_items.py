@@ -193,14 +193,15 @@ def test_the_api_lists_searches_adds_and_changes_items(buyer, resin):
     assert client.delete(f"/api/v1/items/{made.json()['id']}/").status_code == 204
 
 
-def book(*rows):
+def book(*rows, columns=None):
+    columns = columns or items.COLUMNS
     workbook = Workbook()
     workbook.remove(workbook.active)
     sheet = workbook.create_sheet("Items")
-    sheet.append(items.COLUMNS)
+    sheet.append(columns)
     for row in rows:
-        values = dict.fromkeys(items.COLUMNS, None) | row
-        sheet.append([values[c] for c in items.COLUMNS])
+        values = dict.fromkeys(columns, None) | row
+        sheet.append([values[c] for c in columns])
     out = io.BytesIO()
     workbook.save(out)
     return out.getvalue()
@@ -254,3 +255,41 @@ def test_items_are_exported_and_imported_all_or_nothing(stores, resin):
     assert refused.status_code == 400
     assert [e.split(":")[0] for e in refused.json()["errors"]] == ["Row 3", "Row 4"]
     assert not Item.objects.filter(code="OK-1").exists()
+
+
+def test_the_weighing_settings_go_out_and_come_back_and_are_never_cleared_by_mistake(stores, resin):
+    """Testing T23: the export had no tare or tolerance, and a re-import must not lose them."""
+    Item.objects.filter(pk=resin.pk).update(package_tare="0.150", weight_tolerance_pct="1.50")
+    exported = as_user(stores).get("/api/v1/items/export/")
+    sheet = load_workbook(io.BytesIO(exported.content))["Items"]
+    header = [c.value for c in sheet[1]]
+    row = dict(zip(header, [c.value for c in sheet[2]], strict=True))
+    assert float(row["Usual tare"]) == 0.15 and float(row["Weight tolerance %"]) == 1.5
+    assert row["Standard kg per metre"] is None
+    # An old workbook without the columns, and a blank cell, both keep the values.
+    old = {"Code": "PP-H-WHITE", "Name": "PP white", "Category": "Raw material", "Unit": "kg"}
+    assert upload(stores, book(old)).status_code == 200
+    blank = book(old, columns=[*items.COLUMNS, *items.WEIGHING])
+    assert upload(stores, blank).status_code == 200
+    resin.refresh_from_db()
+    assert (str(resin.package_tare), str(resin.weight_tolerance_pct)) == ("0.150", "1.50")
+    # A figure changes it; 0 clears it; a wrong figure is refused with the row number.
+    changed = {**old, "Usual tare": 0.2, "Weight tolerance %": 0}
+    assert (
+        upload(stores, book(changed, columns=[*items.COLUMNS, *items.WEIGHING])).status_code == 200
+    )
+    resin.refresh_from_db()
+    assert (str(resin.package_tare), str(resin.weight_tolerance_pct)) == ("0.200", "0.00")
+    wrong = {**old, "Weight tolerance %": 150}
+    refused = upload(stores, book(wrong, columns=[*items.COLUMNS, *items.WEIGHING]))
+    assert refused.status_code == 400
+    assert refused.json()["errors"] == ["Row 2: The weight tolerance is a percentage up to 100."]
+
+
+def test_checking_a_file_needs_no_reason_but_importing_does(stores, resin):
+    """Testing T22."""
+    rows = book({"Code": "PP-H-WHITE", "Name": "PP white", "Category": "Raw material"})
+    assert upload(stores, rows, reason="", dry_run=True).json()["updated"] == 1
+    refused = upload(stores, rows, reason="")
+    assert refused.status_code == 400
+    assert refused.json()["errors"] == ["Give a reason for the import."]

@@ -2279,7 +2279,7 @@
     "reactivate": "Reactivate",
     "remove": "Remove (never used)",
     "import": "Import items from Excel",
-    "importHelp": "One sheet named Items, in the layout of the export. Put the item code in every row: an existing code updates that item, a new one adds it. Check the file first: nothing is saved until every row is accepted.",
+    "importHelp": "One sheet named Items, in the layout of the export. Put the item code in every row: an existing code updates that item, a new one adds it. Check the file first: nothing is saved until every row is accepted. The columns Usual tare, Weight tolerance %, Standard kg per metre and Density may be left out; a blank cell keeps the item's value (write 0 to clear it). Checking needs no reason; importing does.",
     "checked": "The file is fine. Importing it would add {{created}} and update {{updated}} items.",
     "imported": "Imported: {{created}} items added, {{updated}} updated.",
     "packageTare": "Usual tare per package (kg)",

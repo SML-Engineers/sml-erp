@@ -148,6 +148,7 @@ def test_the_sales_manager_does_not_approve_in_the_directors_place(
 
 def test_nobody_approves_a_quotation_they_made(unilever, lathe):
     both = person("both@sml.lk", "sales_executive", "director", all_divisions=True)
+    person("director2@sml.lk", "director", all_divisions=True)  # T51: someone else can approve
     q = workflow.submit(both, draft(both, unilever))
     assert not workflow.can_approve(both, q)
     with pytest.raises(SalesError, match="cannot approve a document you created"):

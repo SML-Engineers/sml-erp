@@ -425,6 +425,8 @@ Status: `[ ]` to do · `[x]` done
     tax of a line with a code is worked out from it. A voucher typed before then that holds
     tax without a code cannot be approved at L2 until its tax code is chosen. The Tax code
     and Tax columns of the coding table are wide enough for "VAT-SSCL-R" and "52,200.00".
+  - Testing T51, owner 22 Nov 2026: a voucher only its maker could approve (the only
+    Accountant's own) is refused at submit; the Clerk enters it. Done: PR #271.
 
 - [x] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk

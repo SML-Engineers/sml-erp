@@ -54,6 +54,7 @@ The roles follow the usual ERP practice of separating three duties: whoever *rec
 | Production Manager | 3 | Approve shift reports, corrections, deviations | Payments |
 
 **Conflicting combinations.** When the Admin gives one person two roles that should be separated (Clerk + Cashier, Accountant + Cashier, Accountant + Director (owner, 22 Nov 2026: allowed as leave cover, and the Director confirming it sees the warning too), Admin + any finance role), the system shows a warning and records the reason in the audit log. Whatever roles a person holds, they can never approve a document they created or approve one document at two levels.
+**Conflicting combinations.** When the Admin gives one person two roles that should be separated (Clerk + Cashier, Accountant + Cashier, Admin + any finance role), the system shows a warning and records the reason in the audit log. Whatever roles a person holds, they can never approve a document they created or approve one document at two levels. A document that only its maker could approve at some level (SML has one Accountant) is refused when submitted, and a colleague enters it instead; for a payment voucher, the Accounts Clerk (owner, 22 Nov 2026, testing T51).
 
 **Phase 1 permissions**
 
@@ -1580,6 +1581,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | One computer and one phone (owner, 21 Nov 2026) | A person can be signed in on one computer and one phone (or tablet) at a time; signing in on a second computer ends the older computer sign-in, and the same for phones; the ended device is told why on its sign-in page and the sign-in history records it; the browser says which kind it is | 3 |
 | Top-bar notice (owner, 21 Nov 2026) | A notice in the top bar of every page (e.g. that entering false information is a punishable offence), English with Sinhala below it whatever language the person uses; the Admin asks to show, change or stop it with a reason, and it changes only when a Director other than the Admin approves (Access to confirm); decided changes are kept unchanged; on a phone it sits just under the bar | 3 |
 | Accountant + Director on one person (owner, 22 Nov 2026) | Allowed with a reason (leave cover), but the Admin and the Director confirming it are warned that the person would approve vouchers at both levels; each voucher still needs two different people at L2 and L3 (testing T50) | 1 |
+| Only the maker could approve (owner, 22 Nov 2026) | A document that nobody but its maker could approve at some level is refused at submit with a plain message; a payment voucher is then entered by the Accounts Clerk (testing T51: the only Accountant's own voucher stuck since 14 Nov) | 1 |
 
 **Still needed for initial setup**
 

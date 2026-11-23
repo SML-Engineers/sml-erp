@@ -443,9 +443,44 @@ def submit(
         state.title = (title or "").strip()[:200]
         state.link = (link or "").strip()[:200]
         state.save()
+        stuck = _only_the_maker(state)
+        if stuck:
+            raise ApprovalError(
+                f"Nobody but you can approve this as the {stuck}, and you cannot approve a"
+                " document you created. Ask a colleague to enter it instead."
+            )
         _log(state, user, SUBMIT_LEVEL, ApprovalLog.Action.SUBMIT, (comment or "").strip())
         _tell_approvers(state)
         return state
+
+
+def _only_the_maker(state: ApprovalState) -> str | None:
+    """The role of a level only the document's maker holds, or None (testing T51, owner
+    22 Nov 2026). SML has one Accountant: a voucher she makes herself could never be approved,
+    so it is refused at submit and the Clerk enters it instead."""
+    maker = state.created_by
+    for step in state.route:
+        if not may_act_at(maker, state.document_type, step):
+            continue
+        others = (
+            User.objects.filter(is_active=True)
+            .exclude(pk=maker.pk)
+            .filter(
+                Q(role_assignments__role__code=step["role"], role_assignments__role__is_active=True)
+                | Q(pk__in=_action_holders(state.document_type))
+            )
+            .distinct()
+        )
+        if not any(
+            may_act_at(person, state.document_type, step)
+            and (
+                not state.division_id
+                or division_scope(person).filter(pk=state.division_id).exists()
+            )
+            for person in others
+        ):
+            return step["role_name"]
+    return None
 
 
 def state_of(document_type: str, document_id: int) -> ApprovalState | None:

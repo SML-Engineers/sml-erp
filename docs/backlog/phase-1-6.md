@@ -291,6 +291,8 @@ Status: `[ ]` to do · `[x]` done
     invoices named); Invoices held tile only for people who see supplier invoices. Done: PR #274.
   - Testing T48, owner 22 Nov 2026: works as designed (stock at actual cost); the Stock value
     tile now says "at cost", not "at PO prices". Done: PR #275.
+  - Testing T37, 22 Nov 2026: GRN lines and packages show as cards on a phone (no sideways
+    scrolling). Done: PR #276.
 
 - [ ] **P16-14 User acceptance testing and go-live**
   Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,

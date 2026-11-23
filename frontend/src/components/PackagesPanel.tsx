@@ -121,7 +121,7 @@ export default function PackagesPanel({ grn, line }: { grn: GRNDetail; line: GRN
       )}
       {rows.length > 0 && (
         <div className="table-wrap">
-          <table aria-label={t("grn.packageTable", { item: line.item.code })}>
+          <table className="stack-on-phone" aria-label={t("grn.packageTable", { item: line.item.code })}>
             <thead>
               <tr>
                 <th>#</th>
@@ -141,9 +141,9 @@ export default function PackagesPanel({ grn, line }: { grn: GRNDetail; line: GRN
                 const saved = line.packages[i];
                 return (
                   <tr key={i}>
-                    <td className="mono">{saved?.lot_no ?? i + 1}</td>
+                    <td className="mono card-title">{saved?.lot_no ?? i + 1}</td>
                     {columns.map((c) => (
-                      <td key={c} className={c === "supplier_lot" ? "" : "num"}>
+                      <td key={c} className={c === "supplier_lot" ? "" : "num"} data-label={t(`grn.field.${c}`, { tare: line.item.package_tare })}>
                         {editable ? (
                           <input
                             aria-label={t("grn.fieldOf", { field: t(`grn.field.${c}`, { tare: "" }), n: i + 1 })}
@@ -158,8 +158,10 @@ export default function PackagesPanel({ grn, line }: { grn: GRNDetail; line: GRN
                         )}
                       </td>
                     ))}
-                    <td className="num">{saved ? formatQuantity(saved.quantity) : ""}</td>
-                    <td className={saved?.check.outside ? "form-error" : ""}>
+                    <td className="num" data-label={t("grn.quantityIn", { unit: line.item.unit })}>
+                      {saved ? formatQuantity(saved.quantity) : ""}
+                    </td>
+                    <td className={saved?.check.outside ? "form-error" : ""} data-label={t("grn.check")}>
                       {saved?.check.variance_pct !== null && saved?.check.variance_pct !== undefined
                         ? t(`grn.checkBasis.${saved.check.basis}`, {
                             actual: formatQuantity(saved.check.actual),
@@ -168,7 +170,7 @@ export default function PackagesPanel({ grn, line }: { grn: GRNDetail; line: GRN
                           })
                         : ""}
                     </td>
-                    <td>
+                    <td data-label={t("grn.damaged")}>
                       <input
                         type="checkbox"
                         aria-label={t("grn.fieldOf", { field: t("grn.damaged"), n: i + 1 })}

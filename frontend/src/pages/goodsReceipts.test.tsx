@@ -222,3 +222,20 @@ test("the list says who confirmed a GRN and who an excess or reversal waits for"
   ])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("on a phone each line becomes a card: every cell carries its column name (testing T37)", async () => {
+  mockApi({ "GET /api/v1/goods-receipts/4/": { body: draft } });
+  renderAt("/goods-receipts/4", <GoodsReceiptPage />, "/goods-receipts/:id");
+  const form = await screen.findByRole("form", { name: "Goods receipt details" });
+  const table = within(form).getByRole("table", { name: "Goods received" });
+  expect(table).toHaveClass("stack-on-phone");
+  const cells = within(table).getAllByRole("row")[1].querySelectorAll("td");
+  // The item heads the card; every other cell is labelled for the phone layout.
+  expect(cells[0]).toHaveClass("card-title");
+  expect(
+    Array.from(cells)
+      .slice(1)
+      .map((c) => c.getAttribute("data-label")),
+  ).toEqual(["Ordered", "Still expected", "Received", "Damaged", "Notes"]);
+  expect(within(cells[3] as HTMLElement).getByLabelText("Received, 48-BL-08")).toBeInTheDocument();
+});

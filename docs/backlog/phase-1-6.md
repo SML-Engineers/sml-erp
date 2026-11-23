@@ -295,6 +295,8 @@ Status: `[ ]` to do · `[x]` done
     scrolling). Done: PR #276.
   - Testing T32, 22 Nov 2026: quantities in report downloads are numbers in Excel, not text.
     Done: PR #277.
+  - Testing T22/T23, 23 Nov 2026: items export/import carry tare, tolerance, kg per metre and
+    density (blank keeps the value); checking a file needs no reason. Done: PR #278.
 
 - [ ] **P16-14 User acceptance testing and go-live**
   Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,

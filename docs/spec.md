@@ -53,7 +53,7 @@ The roles follow the usual ERP practice of separating three duties: whoever *rec
 | Production Supervisor | 3 | Shift entries for assigned sections only | Other sections' data |
 | Production Manager | 3 | Approve shift reports, corrections, deviations | Payments |
 
-**Conflicting combinations.** When the Admin gives one person two roles that should be separated (Clerk + Cashier, Accountant + Cashier, Admin + any finance role), the system shows a warning and records the reason in the audit log. Whatever roles a person holds, they can never approve a document they created or approve one document at two levels.
+**Conflicting combinations.** When the Admin gives one person two roles that should be separated (Clerk + Cashier, Accountant + Cashier, Accountant + Director (owner, 22 Nov 2026: allowed as leave cover, and the Director confirming it sees the warning too), Admin + any finance role), the system shows a warning and records the reason in the audit log. Whatever roles a person holds, they can never approve a document they created or approve one document at two levels.
 
 **Phase 1 permissions**
 
@@ -1579,6 +1579,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Sales reports: salesperson filter (owner, 20 Nov 2026) | The quotation register always offers the Salesperson filter; the downloads name the chosen salesperson; the division is picked from a list | 5 |
 | One computer and one phone (owner, 21 Nov 2026) | A person can be signed in on one computer and one phone (or tablet) at a time; signing in on a second computer ends the older computer sign-in, and the same for phones; the ended device is told why on its sign-in page and the sign-in history records it; the browser says which kind it is | 3 |
 | Top-bar notice (owner, 21 Nov 2026) | A notice in the top bar of every page (e.g. that entering false information is a punishable offence), English with Sinhala below it whatever language the person uses; the Admin asks to show, change or stop it with a reason, and it changes only when a Director other than the Admin approves (Access to confirm); decided changes are kept unchanged; on a phone it sits just under the bar | 3 |
+| Accountant + Director on one person (owner, 22 Nov 2026) | Allowed with a reason (leave cover), but the Admin and the Director confirming it are warned that the person would approve vouchers at both levels; each voucher still needs two different people at L2 and L3 (testing T50) | 1 |
 
 **Still needed for initial setup**
 

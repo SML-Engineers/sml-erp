@@ -1585,6 +1585,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | "Are you sure?" before critical actions (owner, 22 Nov 2026) | Before delete, submit, approve, reject, send back, cancel, accept, match and post, issue, mark sent and pay, a question names the document and the amount ("Pay LKR 315,000.00 to Polymer Resins Lanka (Pvt) Ltd on voucher IM261121001?"); "No, go back" has the focus and Esc cancels. First: vouchers, the approval queue, payments and supplier invoices; purchasing, stores, QC and sales follow (testing T49) | 5 |
 | Search lists by keyboard (owner, 21 Nov 2026) | In every type-to-search box (payee, supplier, account, item…) the first match is ready for Enter, ↑ ↓ move, Enter chooses without saving the form, Esc closes without choosing (testing T40) | 5 |
 | GRNI report and Invoices-held tile (testing, 22 Nov 2026) | Goods stay on the Goods received not invoiced report until their invoice is posted, as in the GRNI account; a held invoice, or one waiting for the Director, is named in an Invoice column. The Invoices held tile is shown only to people who can see supplier invoices (testing T43, T44) | 5A |
+| Stock tile says "at cost" (owner, 22 Nov 2026) | The Stock value tile reads "main stores, at cost": stock is carried at actual cost, so an approved invoice price difference goes into the stock still on hand (2 Nov decision kept; testing T48 works as designed) | 5A |
 
 **Still needed for initial setup**
 

@@ -13,6 +13,7 @@ import {
   type GratuitySetting,
 } from "../api/gratuity";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -94,6 +95,7 @@ export default function GratuityPage() {
 
 function Waiting({ setting: s, onDone }: { setting: GratuitySetting; onDone: (d: GratuityList) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [reason, setReason] = useState("");
   const act = useMutation({
     mutationFn: (action: "approve" | "reject" | "withdraw") => decideGratuity(s.id, action, reason),
@@ -114,16 +116,16 @@ function Waiting({ setting: s, onDone }: { setting: GratuitySetting; onDone: (d:
           <input aria-label={t("gratuity.reason")} placeholder={t("gratuity.reason")} value={reason} onChange={(e) => setReason(e.target.value)} />
           {s.can_approve && (
             <>
-              <button type="button" className="small" onClick={() => act.mutate("approve")}>
+              <button type="button" className="small" onClick={() => void sure(t("confirm.approveGratuity", { from: s.effective_from }), t("gratuity.approve"), () => act.mutate("approve"))}>
                 {t("gratuity.approve")}
               </button>
-              <button type="button" className="small secondary" onClick={() => act.mutate("reject")}>
+              <button type="button" className="small secondary" onClick={() => void sure(t("confirm.rejectGratuity", { from: s.effective_from }), t("gratuity.reject"), () => act.mutate("reject"), true)}>
                 {t("gratuity.reject")}
               </button>
             </>
           )}
           {s.can_withdraw && (
-            <button type="button" className="small secondary" onClick={() => act.mutate("withdraw")}>
+            <button type="button" className="small secondary" onClick={() => void sure(t("confirm.withdrawGratuity", { from: s.effective_from }), t("gratuity.withdraw"), () => act.mutate("withdraw"), true)}>
               {t("gratuity.withdraw")}
             </button>
           )}

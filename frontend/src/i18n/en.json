@@ -5993,6 +5993,27 @@
     "approveShift": "Approve the {{section}} report for the {{shift}} shift on {{day}}?",
     "returnShift": "Return the {{section}} report for the {{shift}} shift on {{day}} to the supervisor?",
     "approveCorrection": "Approve the correction to the {{section}} report for the {{shift}} shift on {{day}}?",
-    "rejectCorrection": "Reject the correction to the {{section}} report for the {{shift}} shift on {{day}}?"
+    "rejectCorrection": "Reject the correction to the {{section}} report for the {{shift}} shift on {{day}}?",
+    "submitAdjustment": "Send stock adjustment {{doc}} ({{store}}) to the Director?",
+    "approveAdjustment": "Approve stock adjustment {{doc}} ({{store}})? The stock changes and it is posted.",
+    "returnAdjustment": "Return stock adjustment {{doc}} ({{store}})?",
+    "rejectAdjustment": "Reject stock adjustment {{doc}} ({{store}})?",
+    "submitCount": "Submit stock count {{doc}} ({{store}})? After this the counts cannot be changed.",
+    "cancelCount": "Cancel stock count {{doc}} ({{store}})?",
+    "submitBudget": "Send budget {{label}} (version {{version}}) to the Director?",
+    "discardBudget": "Discard the draft budget {{label}} (version {{version}})?",
+    "approveBudget": "Approve budget {{label}} (version {{version}})?",
+    "returnBudget": "Return budget {{label}} (version {{version}}) for changes?",
+    "rejectBudget": "Reject budget {{label}} (version {{version}})?",
+    "submitOpening": "Send the opening balances as at {{date}} (total {{amount}}) to the Director?",
+    "deleteOpening": "Delete the draft opening balances as at {{date}} (total {{amount}})?",
+    "approveOpening": "Approve and post the opening balances as at {{date}} (total {{amount}})?",
+    "returnOpening": "Return the opening balances as at {{date}} for changes?",
+    "rejectOpening": "Reject the opening balances as at {{date}} (total {{amount}})?",
+    "approveGratuity": "Approve the gratuity rule from {{from}}?",
+    "rejectGratuity": "Reject the gratuity rule from {{from}}?",
+    "withdrawGratuity": "Withdraw the gratuity rule from {{from}}?",
+    "postRevaluation": "Post the revaluation for {{month}}?",
+    "discardRevaluation": "Discard the revaluation for {{month}}?"
   }
 }

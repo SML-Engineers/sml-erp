@@ -311,7 +311,7 @@ def test_a_new_user_stays_inactive_until_given_roles_and_divisions(admin):
     assert refused.json()["detail"] == (
         "Give Ajith at least one role and the divisions they work in before activating the account."
     )
-    client.put(f"{url}roles/", {"roles": ["sales_executive"]}, format="json")
+    client.put(f"{url}roles/", {"roles": ["sales_executive"], "reason": "New job"}, format="json")
     refused = client.patch(url, {"is_active": True}, format="json")
     assert "the divisions they work in" in refused.json()["detail"]
     client.put(f"{url}scope/", {"all_divisions": False, "divisions": ["IM"]}, format="json")
@@ -324,7 +324,11 @@ def test_finance_roles_switch_two_factor_on(admin):
     user = person("d@sml.lk")
     user.totp_confirmed_at = None
     user.save()
-    as_user(admin).put(f"/api/v1/users/{user.pk}/roles/", {"roles": ["director"]}, format="json")
+    as_user(admin).put(
+        f"/api/v1/users/{user.pk}/roles/",
+        {"roles": ["director"], "reason": "New job"},
+        format="json",
+    )
     user.refresh_from_db()
     assert user.two_factor_required is True
 
@@ -383,7 +387,7 @@ def test_purchasing_stores_and_qc_roles_can_be_assigned(admin):
     for code in ("purchasing_officer", "store_supervisor", "qc_inspector"):
         user = person(f"{code}@sml.lk")
         response = as_user(admin).put(
-            f"/api/v1/users/{user.pk}/roles/", {"roles": [code]}, format="json"
+            f"/api/v1/users/{user.pk}/roles/", {"roles": [code], "reason": "New job"}, format="json"
         )
         assert response.status_code == 200, response.json()
     rights = access.effective_access(User.objects.get(email="store_supervisor@sml.lk"))
@@ -452,7 +456,11 @@ def test_the_stores_person_can_never_also_be_the_qc_inspector(admin):
 
 def test_removing_a_role_removes_its_access(admin):
     user = person("c@sml.lk", "clerk")
-    as_user(admin).put(f"/api/v1/users/{user.pk}/roles/", {"roles": ["auditor"]}, format="json")
+    as_user(admin).put(
+        f"/api/v1/users/{user.pk}/roles/",
+        {"roles": ["auditor"], "reason": "New job"},
+        format="json",
+    )
     rights = access.effective_access(User.objects.get(pk=user.pk))
     assert not rights.has("vouchers", "enter")
     assert rights.has("vouchers", "view")
@@ -502,3 +510,17 @@ def test_standard_roles_cannot_be_edited(admin):
     assert response.status_code == 403
     clerk = person("clerk@sml.lk", "clerk")
     assert not access.effective_access(clerk).has("payments", "enter")
+
+
+def test_a_new_role_needs_a_reason_but_removing_one_does_not(admin):
+    """Testing T38: a role change was saved with no reason, and the Director saw a blank one."""
+    person("director@sml.lk", "director", all_divisions=True)
+    user = person("nimal@sml.lk", "clerk")
+    url = f"/api/v1/users/{user.pk}/roles/"
+    refused = as_user(admin).put(url, {"roles": ["clerk", "accountant"]}, format="json")
+    assert refused.status_code == 400
+    assert refused.json()["detail"] == "Give the reason for the new role (the Director sees it)."
+    assert not user.role_requests.exists()
+    # Keeping the roles already held, or removing one, needs no reason.
+    assert as_user(admin).put(url, {"roles": ["clerk"]}, format="json").status_code == 200
+    assert as_user(admin).put(url, {"roles": []}, format="json").status_code == 200

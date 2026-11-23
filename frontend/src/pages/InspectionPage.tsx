@@ -103,7 +103,15 @@ function Form({ data }: { data: InspectionDetail }) {
     notes,
     ...(byPackage ? { rejected_packages: rejected } : { accepted_quantity: accepted }),
   });
-  const save = useMutation({ mutationFn: () => saveInspection(data.id, input()), onSuccess: done });
+  // Testing T38 (owner, 21 Nov 2026): "at least a 'Saved' message should be given".
+  const [saved, setSaved] = useState(false);
+  const save = useMutation({
+    mutationFn: () => saveInspection(data.id, input()),
+    onSuccess: (latest) => {
+      done(latest);
+      setSaved(true);
+    },
+  });
   const decide = useMutation({
     mutationFn: async (decision: Decision) => {
       await saveInspection(data.id, input());
@@ -199,7 +207,12 @@ function Form({ data }: { data: InspectionDetail }) {
       <p>
         <button type="button" className="secondary" disabled={save.isPending} onClick={() => save.mutate()}>
           {t("qc.save")}
-        </button>
+        </button>{" "}
+        {saved && (
+          <span className="muted" role="status">
+            {t("qc.saved")}
+          </span>
+        )}
       </p>
       <div className="inline-form">
         <label>

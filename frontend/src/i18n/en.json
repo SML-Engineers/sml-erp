@@ -127,7 +127,9 @@
       "copy": "Yes, copy the access",
       "reset": "Yes, reset",
       "deactivate": "Yes, deactivate"
-    }
+    },
+    "reasonForNewRole": "Reason for the new role (the Director sees it)",
+    "rolesSaved": "Saved."
   },
   "review": {
     "link": "Access review",
@@ -2534,7 +2536,8 @@
     "approveDeviation": "Approve the deviation",
     "files": "Certificates and photos",
     "addFile": "Add a certificate or photo (PDF, JPG or PNG)",
-    "rejectedQty": "{{qty}} rejected"
+    "rejectedQty": "{{qty}} rejected",
+    "saved": "Saved."
   },
   "plans": {
     "title": "Inspection plans",

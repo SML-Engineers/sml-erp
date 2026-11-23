@@ -61,6 +61,8 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
   const overrides = useQuery({ queryKey: ["overrides", id], queryFn: () => listOverrides(id) });
   const canManage = can(me.access, "users", "manage");
   const canConfirm = canDo(me.access, "confirm_sensitive_grants");
+  // Kept here: the roles panel starts again after saving, and the message must stay.
+  const [rolesSaved, setRolesSaved] = useState(false);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["user-access", id] });
@@ -97,6 +99,8 @@ export default function UserAccessPage({ me }: { me: CurrentUser }) {
         key={[...user.roles.map((r) => r.code), ...(user.pending_roles ?? []).map((r) => `${r.code}?`)].join()}
         user={user}
         editable={canManage && !own}
+        saved={rolesSaved}
+        onSaved={(yes) => setRolesSaved(yes)}
         onDone={refresh}
       />
       <ScopePanel
@@ -321,7 +325,13 @@ function Lifecycle({ user, onDone }: { user: UserRecord; onDone: () => void }) {
   );
 }
 
-function RolesPanel(props: { user: UserRecord; editable: boolean; onDone: () => void }) {
+function RolesPanel(props: {
+  user: UserRecord;
+  editable: boolean;
+  saved: boolean;
+  onSaved: (saved: boolean) => void;
+  onDone: () => void;
+}) {
   const { t } = useTranslation();
   const roles = useQuery({ queryKey: ["roles"], queryFn: listRoles });
   const waiting = props.user.pending_roles ?? [];
@@ -330,12 +340,19 @@ function RolesPanel(props: { user: UserRecord; editable: boolean; onDone: () => 
   const [reason, setReason] = useState("");
   const save = useMutation({
     mutationFn: () => setUserRoles(props.user.id, chosen, reason),
-    onSuccess: props.onDone,
+    onSuccess: () => {
+      props.onSaved(true); // testing T38: say it was saved
+      props.onDone();
+    },
   });
   const warnings = warningsOf(save.error);
+  // Testing T38: a new role needs a reason, which the Director sees when confirming it.
+  const had = [...props.user.roles.map((r) => r.code), ...waiting.map((r) => r.code)];
+  const adding = chosen.some((code) => !had.includes(code));
 
   function toggle(code: string) {
     setChosen((now) => (now.includes(code) ? now.filter((c) => c !== code) : [...now, code]));
+    props.onSaved(false);
   }
 
   function submit(event: FormEvent) {
@@ -370,13 +387,18 @@ function RolesPanel(props: { user: UserRecord; editable: boolean; onDone: () => 
         {props.editable && (
           <div className="inline-form">
             <label>
-              {t("access.reason")}
-              <input value={reason} onChange={(e) => setReason(e.target.value)} />
+              {adding ? t("access.reasonForNewRole") : t("access.reason")}
+              <input value={reason} required={adding} onChange={(e) => setReason(e.target.value)} />
             </label>
-            <button type="submit" disabled={save.isPending}>
+            <button type="submit" disabled={save.isPending || (adding && !reason.trim())}>
               {t("access.saveRoles")}
             </button>
           </div>
+        )}
+        {props.saved && !save.isError && (
+          <p className="notice" role="status" aria-label={t("access.rolesSaved")}>
+            {t("access.rolesSaved")}
+          </p>
         )}
         {save.isError && (
           <div className="form-error" role="alert">

@@ -21,6 +21,7 @@ import {
   type VoucherSummary,
 } from "../api/vouchers";
 import { formatDecimal } from "../lib/decimal";
+import { useConfirm } from "../components/ConfirmDialog";
 
 interface Waiting extends VoucherSummary {
   submitted_at: string | null;
@@ -187,8 +188,31 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
       props.onSaved(data);
     },
   });
+  const confirm = useConfirm();
+  type Decision = "approve" | "return" | "back-to-accountant" | "reject";
+  const ask = async (decision: Decision) => {
+    const words = {
+      number: voucher.number,
+      amount: formatDecimal(voucher.total_amount),
+      payee: voucher.payee?.name ?? t("confirm.thePayee"),
+    };
+    const question = {
+      approve: t("confirm.approveVoucher", words),
+      return: t("confirm.returnVoucher", words),
+      "back-to-accountant": t("confirm.backToAccountant", words),
+      reject: t("confirm.rejectVoucher", words),
+    }[decision];
+    const yes = {
+      approve: t("voucherReview.approve"),
+      return: t("voucherReview.return"),
+      "back-to-accountant": t("voucherReview.toAccountant"),
+      reject: t("voucherReview.reject"),
+    }[decision];
+    if (await confirm({ question, yes, danger: decision === "reject", detail: decision === "reject" ? t("confirm.rejectDetail") : undefined }))
+      decide.mutate(decision);
+  };
   const decide = useMutation({
-    mutationFn: async (decision: "approve" | "return" | "back-to-accountant" | "reject") => {
+    mutationFn: async (decision: Decision) => {
       // Approving uses the coding on the screen: save it first (it stops here if it is wrong).
       if (decision === "approve" && unsaved) {
         props.onSaved(await saveCoding());
@@ -447,18 +471,18 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         <input value={text} onChange={(e) => setText(e.target.value)} />
       </label>
       <div className="row-actions">
-        <button type="button" disabled={decide.isPending} onClick={() => decide.mutate("approve")}>
+        <button type="button" disabled={decide.isPending} onClick={() => void ask("approve")}>
           {t("voucherReview.approve")}
         </button>
         {voucher.can_send_to_accountant && (
-          <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("back-to-accountant")}>
+          <button type="button" className="secondary" disabled={decide.isPending} onClick={() => void ask("back-to-accountant")}>
             {t("voucherReview.toAccountant")}
           </button>
         )}
-        <button type="button" className="secondary" disabled={decide.isPending} onClick={() => decide.mutate("return")}>
+        <button type="button" className="secondary" disabled={decide.isPending} onClick={() => void ask("return")}>
           {t("voucherReview.return")}
         </button>
-        <button type="button" className="danger" disabled={decide.isPending} onClick={() => decide.mutate("reject")}>
+        <button type="button" className="danger" disabled={decide.isPending} onClick={() => void ask("reject")}>
           {t("voucherReview.reject")}
         </button>
       </div>

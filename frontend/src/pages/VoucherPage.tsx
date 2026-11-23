@@ -38,6 +38,7 @@ import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 import { invoiceDateAge } from "../lib/invoiceDates";
 import { factoryToday, formatDateTime } from "../lib/time";
+import { useConfirm } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -738,6 +739,7 @@ function Submit({ voucher }: { voucher: VoucherDetail }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
+  const confirm = useConfirm();
   const send = useMutation({
     mutationFn: () => submitVoucher(voucher.id, comment),
     onSuccess: (latest) => {
@@ -753,7 +755,18 @@ function Submit({ voucher }: { voucher: VoucherDetail }) {
         {t("vouchers.comment")}
         <input value={comment} onChange={(e) => setComment(e.target.value)} />
       </label>
-      <button type="button" disabled={send.isPending} onClick={() => send.mutate()}>
+      <button
+        type="button"
+        disabled={send.isPending}
+        onClick={async () => {
+          const question = t("confirm.submitVoucher", {
+            number: voucher.number || t("confirm.thisVoucher"),
+            amount: formatDecimal(voucher.total_amount),
+            payee: voucher.payee?.name ?? t("confirm.thePayee"),
+          });
+          if (await confirm({ question, yes: t("vouchers.submit") })) send.mutate();
+        }}
+      >
         {t("vouchers.submit")}
       </button>
       <ErrorLine error={send.error} />
@@ -785,6 +798,7 @@ function CancellationPanel({ voucher, request }: { voucher: VoucherDetail; reque
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
+  const confirm = useConfirm();
   const decide = useMutation({
     mutationFn: (decision: "approve" | "reject") => decideCancellation(request.id, decision, reason),
     onSuccess: (latest) => {
@@ -813,7 +827,12 @@ function CancellationPanel({ voucher, request }: { voucher: VoucherDetail; reque
             <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
           </label>
           <div className="row-actions">
-            <button type="button" className="danger" disabled={decide.isPending} onClick={() => decide.mutate("approve")}>
+            <button type="button" className="danger" disabled={decide.isPending}
+              onClick={async () => {
+                const question = t("confirm.approveCancellation", { number: voucher.number });
+                if (await confirm({ question, yes: t("cancellations.approve"), danger: true })) decide.mutate("approve");
+              }}
+            >
               {t("cancellations.approve")}
             </button>
             <button

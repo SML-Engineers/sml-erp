@@ -1,3 +1,4 @@
+import { ConfirmProvider } from "./components/ConfirmDialog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -28,19 +29,23 @@ export function mockApi(routes: ApiRoutes) {
 }
 
 /** Render `element` at `path`, with simple stand-ins for the other pages. */
-export function renderAt(path: string, element: ReactNode, routePath = path) {
+/** `ask: true` shows the real "Are you sure?" dialog (testing T49); otherwise it answers yes,
+ * so tests of other behaviour need not click through it. */
+export function renderAt(path: string, element: ReactNode, routePath = path, { ask = false }: { ask?: boolean } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path={routePath} element={element} />
-          <Route path="/" element={<p>Home page</p>} />
-          <Route path="/login" element={<p>Login page</p>} />
-          <Route path="/account/two-factor" element={<p>Two-factor page</p>} />
-          <Route path="/account/password" element={<p>Password page</p>} />
-        </Routes>
-      </MemoryRouter>
+      <ConfirmProvider autoYes={!ask}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path={routePath} element={element} />
+            <Route path="/" element={<p>Home page</p>} />
+            <Route path="/login" element={<p>Login page</p>} />
+            <Route path="/account/two-factor" element={<p>Two-factor page</p>} />
+            <Route path="/account/password" element={<p>Password page</p>} />
+          </Routes>
+        </MemoryRouter>
+      </ConfirmProvider>
     </QueryClientProvider>,
   );
 }

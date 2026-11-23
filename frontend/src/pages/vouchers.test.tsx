@@ -304,3 +304,23 @@ test("the approvers see a note on an old invoice date the clerk confirmed", asyn
   expect(note).toHaveTextContent("Line 1: the invoice is dated 13/08/2026, more than 2 months old when it was entered.");
   expect(note).toHaveTextContent("The Clerk confirmed the date is right.");
 });
+
+test("asks before submitting, naming the voucher, the amount and the payee (testing T49)", async () => {
+  const calls = mockApi({
+    ...formApi,
+    "GET /api/v1/vouchers/9/": { body: draft },
+    "POST /api/v1/vouchers/9/submit/": { body: { ...draft, status: "submitted", can_edit: false } },
+  });
+  renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id", { ask: true });
+  const panel = await screen.findByRole("region", { name: "Submit for approval" });
+  fireEvent.click(within(panel).getByRole("button", { name: "Submit for approval" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Submit voucher WS261029001 for 25,000.00 to Lanka Steel (Pvt) Ltd for approval?",
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/vouchers/9/submit/", expect.anything());
+
+  fireEvent.click(within(panel).getByRole("button", { name: "Submit for approval" }));
+  fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Submit for approval" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/vouchers/9/submit/", expect.objectContaining({ method: "POST" })));
+});

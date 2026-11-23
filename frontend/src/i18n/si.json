@@ -1002,5 +1002,24 @@
     "approve": "අනුමත කරන්න",
     "approved": "අනුමත කළා. සැමට ඊළඟ පිටුවේදී වෙනස පෙනේ.",
     "refused": "ප්‍රතික්ෂේප කළා. පරිපාලකට දන්වා ඇත."
+  },
+  "confirm": {
+    "no": "නැත, ආපසු යන්න",
+    "thePayee": "ගෙවීම ලබන්නා",
+    "thisVoucher": "මෙම වවුචරය",
+    "pay": "වවුචර {{number}} මත {{payee}} වෙත {{currency}} {{amount}} ගෙවන්නද?",
+    "payYes": "ගෙවන්න",
+    "submitVoucher": "{{payee}} වෙත {{amount}} සඳහා වූ වවුචර {{number}} අනුමැතිය සඳහා යොමු කරන්නද?",
+    "approveVoucher": "වවුචර {{number}} අනුමත කරන්නද: {{payee}} වෙත {{amount}}?",
+    "returnVoucher": "වවුචර {{number}} ({{payee}} වෙත {{amount}}) ලිපිකරු වෙත ආපසු යවන්නද?",
+    "backToAccountant": "වවුචර {{number}} ({{payee}} වෙත {{amount}}) ගණකාධිකාරී වෙත ආපසු යවන්නද?",
+    "rejectVoucher": "වවුචර {{number}} ({{payee}} වෙත {{amount}}) ප්‍රතික්ෂේප කරන්නද?",
+    "rejectDetail": "ප්‍රතික්ෂේප කිරීමෙන් වවුචරය අවසන් වේ. එහි ඉන්වොයිසි නව වවුචරයකට යෙදිය හැක.",
+    "approveCancellation": "වවුචර {{number}} අවලංගු කිරීම අනුමත කරන්නද?",
+    "matchInvoice": "{{supplier}} හි ඉන්වොයිස {{invoice}} ({{currency}} {{amount}}) ගළපා සටහන් කරන්නද?",
+    "deleteInvoice": "{{supplier}} හි ඉන්වොයිස {{invoice}} ({{currency}} {{amount}}) කෙටුම්පත මකන්නද?",
+    "cancelInvoice": "{{supplier}} හි ඉන්වොයිස {{invoice}} ({{currency}} {{amount}}) අවලංගු කරන්නද?",
+    "approveException": "ව්‍යතිරේකය අනුමත කර {{supplier}} හි ඉන්වොයිස {{invoice}} ({{currency}} {{amount}}) සටහන් කරන්නද?",
+    "returnException": "ව්‍යතිරේකය අනුමත නොකර {{supplier}} හි ඉන්වොයිස {{invoice}} ආපසු යවන්නද?"
   }
 }

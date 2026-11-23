@@ -153,3 +153,20 @@ test("the list says who an exception waits for, who decided and who cancelled", 
   ])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before deleting a draft invoice, and before matching and posting (testing T49)", async () => {
+  const calls = mockApi({
+    "GET /api/v1/supplier-invoices/3/": { body: draft },
+    "DELETE /api/v1/supplier-invoices/3/": { status: 204, body: null },
+  });
+  renderAt("/supplier-invoices/3", <SupplierInvoicePage />, "/supplier-invoices/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Delete the draft" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Delete the draft of invoice INV-77 of Fasteners Lanka (LKR 13,000.00)?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/supplier-invoices/3/", expect.objectContaining({ method: "DELETE" }));
+
+  fireEvent.click(screen.getByRole("button", { name: /Match and post/ }));
+  const match = await screen.findByRole("alertdialog", { name: "Match and post invoice INV-77 of Fasteners Lanka for LKR 13,000.00?" });
+  fireEvent.click(within(match).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/supplier-invoices/3/match/", expect.anything());
+});

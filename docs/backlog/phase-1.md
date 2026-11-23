@@ -438,6 +438,9 @@ Status: `[ ]` to do · `[x]` done
     matched-invoice vouchers point to the invoices' scans. Done: PR #279.
     queue, payments, supplier invoices) in PR #272; part 2 (purchase requests and orders, goods
     receipts, supplier returns, QC) in PR #280; sales follows.
+  - Testing T53, 23 Nov 2026: IM261122001 was in fact rejected by the Director at 05:14 with
+    the right reason; the approval page then showed stale and wrong vouchers. "Open to approve"
+    now opens the one asked for or says it is no longer waiting. Done: PR #282.
 
 - [x] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk

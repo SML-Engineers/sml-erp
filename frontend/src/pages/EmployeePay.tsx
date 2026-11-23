@@ -17,6 +17,7 @@ import {
   type PaySettings,
 } from "../api/pay";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 /** The attendance bonus a new employee starts with (owner, 5 Nov 2026). */
 const ATTENDANCE_BONUS = "1500";
@@ -203,6 +204,7 @@ function ChangeCard({
   onEdit: () => void;
 }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [reason, setReason] = useState("");
   const act = useMutation({
     mutationFn: (action: ChangeAction) => actOnPayChange(c.id, action, reason),
@@ -270,25 +272,25 @@ function ChangeCard({
           </button>
         )}
         {c.can_submit && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate("submit")}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitPayChange", { month: c.effective_from }), t("pay.submit"), () => act.mutate("submit"))}>
             {t("pay.submit")}
           </button>
         )}
         {c.can_approve && (
           <>
-            <button type="button" disabled={act.isPending} onClick={() => act.mutate("approve")}>
+            <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approvePayChange", { month: c.effective_from }), t("pay.approve"), () => act.mutate("approve"))}>
               {t("pay.approve")}
             </button>
-            <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("return")}>
+            <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnPayChange", { month: c.effective_from }), t("pay.return"), () => act.mutate("return"))}>
               {t("pay.return")}
             </button>
-            <button type="button" className="danger" disabled={act.isPending} onClick={() => act.mutate("reject")}>
+            <button type="button" className="danger" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectPayChange", { month: c.effective_from }), t("pay.reject"), () => act.mutate("reject"), true)}>
               {t("pay.reject")}
             </button>
           </>
         )}
         {c.can_withdraw && (
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("withdraw")}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.withdrawPayChange", { month: c.effective_from }), t("pay.withdraw"), () => act.mutate("withdraw"), true)}>
             {t("pay.withdraw")}
           </button>
         )}

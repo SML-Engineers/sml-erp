@@ -15,6 +15,7 @@ import {
   type LeaveList,
   type LeaveRecord,
 } from "../api/leave";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -80,6 +81,7 @@ export default function LeavePage() {
 
 function GrantYear({ year }: { year: number }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const grant = useMutation({
     mutationFn: () => grantLeaveYear(year),
@@ -89,7 +91,7 @@ function GrantYear({ year }: { year: number }) {
     <section className="panel" aria-label={t("leave.grant")}>
       <h2>{t("leave.grant")}</h2>
       <p className="muted">{t("leave.grantHelp")}</p>
-      <button type="button" disabled={grant.isPending} onClick={() => grant.mutate()}>
+      <button type="button" disabled={grant.isPending} onClick={() => void sure(t("confirm.grantLeave", { year }), t("leave.grantButton", { year }), () => grant.mutate())}>
         {t("leave.grantButton", { year })}
       </button>
       {grant.data && (

@@ -22,6 +22,7 @@ import {
 } from "../api/payroll";
 import PayPeriodLine from "../components/PayPeriodLine";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -132,6 +133,7 @@ function ListPage() {
 
 function RunPage({ id }: { id: number }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const key = payrollRunKey(id);
   const found = useQuery({ queryKey: key, queryFn: () => getPayroll(id) });
@@ -287,19 +289,19 @@ function RunPage({ id }: { id: number }) {
               </button>
             )}
             {r.can_submit && (
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate("submit")}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitPayroll", { division: r.division, month: r.month, count: r.totals.employees, amount: formatDecimal(r.totals.net) }), t("payroll.submit"), () => act.mutate("submit"))}>
                 {t("payroll.submit")}
               </button>
             )}
             {r.can_approve && (
               <>
-                <button type="button" disabled={act.isPending} onClick={() => act.mutate("approve")}>
+                <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approvePayroll", { division: r.division, month: r.month, count: r.totals.employees, amount: formatDecimal(r.totals.net) }), t("payroll.approve"), () => act.mutate("approve"))}>
                   {t("payroll.approve")}
                 </button>
-                <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("return")}>
+                <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnPayroll", { division: r.division, month: r.month, count: r.totals.employees, amount: formatDecimal(r.totals.net) }), t("payroll.return"), () => act.mutate("return"))}>
                   {t("payroll.return")}
                 </button>
-                <button type="button" className="danger" disabled={act.isPending} onClick={() => act.mutate("reject")}>
+                <button type="button" className="danger" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectPayroll", { division: r.division, month: r.month, count: r.totals.employees, amount: formatDecimal(r.totals.net) }), t("payroll.reject"), () => act.mutate("reject"), true)}>
                   {t("payroll.reject")}
                 </button>
               </>
@@ -403,6 +405,7 @@ function Details({ line, run, onDone }: { line: PayrollLine; run: PayrollRun; on
 /** Payslips (P2B-08): print them all, or email them to the employees with an email address. */
 function Payslips({ run }: { run: PayrollRun }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const send = useMutation({ mutationFn: () => emailPayslips(run.id) });
   const result = send.data;
   return (
@@ -414,7 +417,7 @@ function Payslips({ run }: { run: PayrollRun }) {
           {t("payroll.printAll")}
         </a>
         {run.can_email_payslips && (
-          <button type="button" disabled={send.isPending} onClick={() => send.mutate()}>
+          <button type="button" disabled={send.isPending} onClick={() => void sure(t("confirm.emailPayslips", { division: run.division, month: run.month, count: run.totals.employees }), t("payroll.emailAll"), () => send.mutate())}>
             {t("payroll.emailAll")}
           </button>
         )}

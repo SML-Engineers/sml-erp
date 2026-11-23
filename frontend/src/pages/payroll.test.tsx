@@ -348,3 +348,17 @@ test("the list says whose draft a payroll is, who it waits for and who decided",
   for (const text of ["Draft of Chamari", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before approving a payroll, naming the month, staff and net pay (testing T49)", async () => {
+  const waiting = { ...run, status: "awaiting" as const, can_work_out: false, can_submit: false, can_approve: true };
+  const calls = mockApi({
+    "GET /api/v1/payroll/4/": { body: waiting },
+    "POST /api/v1/payroll/4/approve/": { body: { ...waiting, status: "approved", can_approve: false } },
+  });
+  renderAt("/payroll/4", <PayrollPage />, "/payroll/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Approve" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Approve the WS payroll for 2026-10 (employees: 1, net pay 67,675.00)?" });
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/payroll/4/approve/", expect.anything());
+  fireEvent.click(within(dialog).getByRole("button", { name: "Approve" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/payroll/4/approve/", expect.objectContaining({ method: "POST" })));
+});

@@ -24,6 +24,7 @@ import {
 import JournalLines, { JournalTotals, linesFrom, toInputs, useJournalAccounts, type LineState } from "../components/JournalLines";
 import { formatDecimal } from "../lib/decimal";
 import { factoryToday, formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -260,16 +261,17 @@ function Actions({ journal }: { journal: MJDetail }) {
       navigate("/journals/manual");
     },
   });
+  const sure = useSure();
   if (!journal.can_edit && !journal.can_approve && !journal.approval) return null;
 
   return (
     <section className="panel" aria-label={t("mj.actions")}>
       {journal.can_edit && (
         <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => submitManualJournal(journal.id))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitJournal", { doc: journal.number, narration: journal.narration, amount: formatDecimal(journal.total_debit) }), t("mj.send"), () => act.mutate(() => submitManualJournal(journal.id)))}>
             {t("mj.send")}
           </button>{" "}
-          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteJournal", { doc: journal.number, narration: journal.narration, amount: formatDecimal(journal.total_debit) }), t("mj.delete"), () => remove.mutate(), true)}>
             {t("mj.delete")}
           </button>{" "}
           <span className="muted">{t("mj.sendHelp")}</span>
@@ -281,13 +283,13 @@ function Actions({ journal }: { journal: MJDetail }) {
             {t("salesOrders.comment")}
             <input value={text} maxLength={500} onChange={(e) => setText(e.target.value)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveManualJournal(journal.id, text))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveJournal", { doc: journal.number, narration: journal.narration, amount: formatDecimal(journal.total_debit) }), t("mj.approve"), () => act.mutate(() => approveManualJournal(journal.id, text)))}>
             {t("mj.approve")}
           </button>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnManualJournal(journal.id, text))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnJournal", { doc: journal.number, narration: journal.narration, amount: formatDecimal(journal.total_debit) }), t("salesOrders.sendBack"), () => act.mutate(() => returnManualJournal(journal.id, text)))}>
             {t("salesOrders.sendBack")}
           </button>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => rejectManualJournal(journal.id, text))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectJournal", { doc: journal.number, narration: journal.narration, amount: formatDecimal(journal.total_debit) }), t("mj.reject"), () => act.mutate(() => rejectManualJournal(journal.id, text)), true)}>
             {t("mj.reject")}
           </button>
         </div>

@@ -18,6 +18,7 @@ import {
 import { ApiError } from "../api/client";
 import { listPayAccounts } from "../api/payments";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -66,6 +67,7 @@ function Lines({ lines, label }: { lines: StatementLine[]; label: string }) {
 /** Bank statements (P2-15): import a bank's file with its template, check it, keep it. */
 export default function BankStatementsPage() {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const rows = useQuery({ queryKey: [...statementsKey, "list"], queryFn: listStatements });
   const [open, setOpen] = useState<number | null>(null);
@@ -112,7 +114,7 @@ export default function BankStatementsPage() {
                     <button type="button" className="small secondary" onClick={() => setOpen(open === s.id ? null : s.id)}>
                       {t("bs.show")}
                     </button>{" "}
-                    <button type="button" className="small secondary" disabled={remove.isPending} onClick={() => remove.mutate(s.id)}>
+                    <button type="button" className="small secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteStatement", { account: s.account.name, from: s.from_date, to: s.to_date }), t("bs.delete"), () => remove.mutate(s.id), true)}>
                       {t("bs.delete")}
                     </button>
                   </td>

@@ -16,6 +16,7 @@ import {
   type PettyFloat,
 } from "../api/pettyCash";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function today(): string {
   const now = new Date();
@@ -67,6 +68,7 @@ export default function PettyCashPage() {
 
 function Float({ box }: { box: PettyFloat }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const found = useQuery({ queryKey: [...pettyKey, "expenses", box.id], queryFn: () => listPettyExpenses(box.id) });
   const remove = useMutation({
@@ -135,7 +137,7 @@ function Float({ box }: { box: PettyFloat }) {
                     {e.status === "open" && !e.voucher && box.can_record && (
                       <>
                         {" "}
-                        <button type="button" className="small secondary" disabled={remove.isPending} onClick={() => remove.mutate(e.id)}>
+                        <button type="button" className="small secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.removePetty", { doc: e.number, paidTo: e.paid_to, amount: formatDecimal(e.amount) }), t("petty.remove"), () => remove.mutate(e.id), true)}>
                           {t("petty.remove")}
                         </button>
                       </>

@@ -404,6 +404,8 @@ Status: `[ ]` to do · `[x]` done
     and saves only with "Yes, the date is right" ticked; the Accountant and the Director see
     a note on the voucher. A date more than a year old cannot be entered. Lines paying a
     matched supplier invoice and petty cash top-ups keep the date of their own record.
+  - Testing T40, owner 21 Nov 2026: the payee finder and every search list work with ↑ ↓,
+    Enter and Esc; the first match is ready for Enter. Done: PR #273.
 
 - [x] **P1-03 Accountant review** (spec 4.4)
   Queue of submitted vouchers; invoice preview beside details; set GL account, division,

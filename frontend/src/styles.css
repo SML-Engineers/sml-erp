@@ -1396,7 +1396,8 @@ table.coding-table .check {
 }
 
 .search-select-list li.active,
-.search-select-list li[role="option"]:hover {
+.search-select-list li[role="option"]:hover,
+ul[role="listbox"].changes li.active {
   background: var(--color-bg);
 }
 

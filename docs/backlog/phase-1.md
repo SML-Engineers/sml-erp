@@ -440,9 +440,10 @@ Status: `[ ]` to do · `[x]` done
     bank statements) in PR #284; part 4b (payroll runs and payslips, staff advances and loans,
     pay changes, the year's leave, the payroll takeover) in PR #285; part 4c (production and job
     orders, BOMs, routings, work shift reports) in PR #286; part 4d (stock adjustments and counts,
-    budgets, opening balances, the gratuity rule, the month-end revaluation) in PR #287; the
-    remaining settings pages (bank accounts, assets, cheques, reconciliation, taxes, chart of
-    accounts) follow.
+    budgets, opening balances, the gratuity rule, the month-end revaluation) in PR #287; part 4e
+    (assets and depreciation, bank accounts and cheque books, cheques, bank reconciliation, taxes,
+    chart of accounts) in PR #288.
+    Every "Are you sure?" on the owner's list is then in place.
   - Testing T42/T41, owner 21 Nov 2026: advances ask for the proforma or advance request;
     matched-invoice vouchers point to the invoices' scans. Done: PR #279.
   - Testing T53, 23 Nov 2026: IM261122001 was in fact rejected by the Director at 05:14 with

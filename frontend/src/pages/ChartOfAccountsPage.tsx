@@ -26,6 +26,7 @@ import { getTaxes, taxesKey } from "../api/taxes";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import DataTable from "../components/DataTable";
+import { useSure } from "../components/ConfirmDialog";
 
 type Selection =
   | { kind: "account"; id: number }
@@ -353,6 +354,7 @@ function AccountPanel(props: {
   onGone: () => void;
 }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const refresh = useRefresh();
   const { account, accounts } = props;
   const [reason, setReason] = useState("");
@@ -413,13 +415,20 @@ function AccountPanel(props: {
               <button
                 type="button"
                 className={account.is_active ? "danger" : "secondary"}
-                onClick={() => toggle.mutate()}
+                onClick={() =>
+                  void sure(
+                    t(account.is_active ? "confirm.deactivateAccount" : "confirm.activateAccount", { name: title }),
+                    t(account.is_active ? "chart.makeInactive" : "chart.makeActive"),
+                    () => toggle.mutate(),
+                    account.is_active,
+                  )
+                }
               >
                 {account.is_active ? t("chart.makeInactive") : t("chart.makeActive")}
               </button>
             )}
             {!account.system_role && !account.in_use && !hasChildren && (
-              <button type="button" className="danger" onClick={() => remove.mutate()}>
+              <button type="button" className="danger" onClick={() => void sure(t("confirm.deleteAccount", { name: title }), t("chart.delete"), () => remove.mutate(), true)}>
                 {t("chart.delete")}
               </button>
             )}
@@ -430,7 +439,8 @@ function AccountPanel(props: {
               aria-label={t("chart.merge")}
               onSubmit={(e) => {
                 e.preventDefault();
-                merge.mutate();
+                const target = targets.find((a) => String(a.id) === into);
+                void sure(t("confirm.mergeAccount", { name: title, into: target ? label(target) : "" }), t("chart.merge"), () => merge.mutate(), true);
               }}
             >
               <label>
@@ -461,6 +471,7 @@ function AccountPanel(props: {
 
 function DetailTypesPanel({ types }: { types: AccountType[] }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [type, setType] = useState(types[0]?.code ?? "");
   const [name, setName] = useState("");
@@ -527,12 +538,19 @@ function DetailTypesPanel({ types }: { types: AccountType[] }) {
                   <button
                     type="button"
                     className="small secondary"
-                    onClick={() => change.mutate({ id: d.id, is_active: !d.is_active })}
+                    onClick={() =>
+                      void sure(
+                        t(d.is_active ? "confirm.deactivateAccount" : "confirm.activateAccount", { name: d.name }),
+                        t(d.is_active ? "chart.makeInactive" : "chart.makeActive"),
+                        () => change.mutate({ id: d.id, is_active: !d.is_active }),
+                        d.is_active,
+                      )
+                    }
                   >
                     {d.is_active ? t("chart.makeInactive") : t("chart.makeActive")}
                   </button>
                   {d.accounts === 0 && (
-                    <button type="button" className="small danger" onClick={() => remove.mutate(d.id)}>
+                    <button type="button" className="small danger" onClick={() => void sure(t("confirm.deleteAccount", { name: d.name }), t("chart.delete"), () => remove.mutate(d.id), true)}>
                       {t("chart.delete")}
                     </button>
                   )}
@@ -567,6 +585,7 @@ function DetailTypesPanel({ types }: { types: AccountType[] }) {
 
 function ImportPanel() {
   const { t } = useTranslation();
+  const sure = useSure();
   const refresh = useRefresh();
   const [file, setFile] = useState<File | null>(null);
   const [reason, setReason] = useState("");
@@ -604,7 +623,7 @@ function ImportPanel() {
           <button type="button" className="secondary" disabled={!file || run.isPending} onClick={() => run.mutate(true)}>
             {t("factory.check")}
           </button>
-          <button type="button" disabled={!file || run.isPending} onClick={() => run.mutate(false)}>
+          <button type="button" disabled={!file || run.isPending} onClick={() => void sure(t("confirm.importChart", { file: file?.name ?? "" }), t("chart.import"), () => run.mutate(false))}>
             {t("factory.doImport")}
           </button>
         </div>

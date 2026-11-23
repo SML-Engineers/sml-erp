@@ -25,6 +25,7 @@ import {
 import { ApiError } from "../api/client";
 import DataTable from "../components/DataTable";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -225,6 +226,7 @@ function AddAccount() {
 
 function AccountPanel(props: { account: CompanyAccount; canManage: boolean; canSpoil: boolean }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const refresh = useRefresh();
   const { account } = props;
   const [reason, setReason] = useState("");
@@ -261,7 +263,7 @@ function AccountPanel(props: { account: CompanyAccount; canManage: boolean; canS
             {t("access.reason")}
             <input value={reason} onChange={(e) => setReason(e.target.value)} />
           </label>
-          <button type="button" className={account.is_active ? "danger" : "secondary"} onClick={() => toggle.mutate()}>
+          <button type="button" className={account.is_active ? "danger" : "secondary"} onClick={() => void sure(t(account.is_active ? "confirm.closeBankAccount" : "confirm.reopenBankAccount", { name: account.name }), (account.is_active ? t("banking.close") : t("banking.reopen")), () => toggle.mutate(), account.is_active)}>
             {account.is_active ? t("banking.close") : t("banking.reopen")}
           </button>
         </div>
@@ -368,6 +370,7 @@ function LedgerLink({ account }: { account: CompanyAccount }) {
 
 function ChequeBooks(props: { account: CompanyAccount; canManage: boolean; canSpoil: boolean }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const { account } = props;
   const registerKey = [...accountsKey, account.id, "cheques"];
@@ -432,7 +435,7 @@ function ChequeBooks(props: { account: CompanyAccount; canManage: boolean; canSp
                   <td>{b.is_active ? t("banking.open") : t("banking.closed")}</td>
                   <td>
                     {props.canManage && b.is_active && (
-                      <button type="button" className="small secondary" onClick={() => close.mutate(b.id)}>
+                      <button type="button" className="small secondary" onClick={() => void sure(t("confirm.closeChequeBook", { first: b.first, last: b.last }), t("banking.closeBook"), () => close.mutate(b.id))}>
                         {t("banking.closeBook")}
                       </button>
                     )}

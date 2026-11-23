@@ -21,6 +21,7 @@ import {
 } from "../api/reconciliation";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -47,6 +48,7 @@ function money(value: string | null | undefined) {
  * interest, and lock the month once the difference is nil. */
 export default function ReconciliationPage() {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const accounts = useQuery({ queryKey: ["payments", "accounts"], queryFn: listPayAccounts });
   const banks = (accounts.data ?? []).filter((a) => a.kind === "current" || a.kind === "savings");
@@ -106,11 +108,11 @@ export default function ReconciliationPage() {
               )}
             </dl>
             <div className="row-actions">
-              <button type="button" className="secondary" disabled={accept.isPending} onClick={() => accept.mutate()}>
+              <button type="button" className="secondary" disabled={accept.isPending} onClick={() => void sure(t("confirm.acceptSuggestions", { date: periodEnd }), t("rec.acceptAll"), () => accept.mutate())}>
                 {t("rec.acceptAll")}
               </button>
               <input aria-label={t("rec.note")} placeholder={t("rec.note")} value={note} onChange={(e) => setNote(e.target.value)} />
-              <button type="button" disabled={finish.isPending} onClick={() => finish.mutate()}>
+              <button type="button" disabled={finish.isPending} onClick={() => void sure(t("confirm.finishReconciliation", { date: periodEnd }), t("rec.finish"), () => finish.mutate())}>
                 {t("rec.finish")}
               </button>
             </div>
@@ -224,6 +226,7 @@ function Candidates({ line, onPick }: { line: RecLine; onPick: (entry: number) =
 
 function PostForm({ line, onDone }: { line: RecLine; onDone: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const accounts = useQuery({ queryKey: [...chartKey, "accounts", false], queryFn: () => listLedgerAccounts(false) });
   const divisions = useQuery({ queryKey: ["divisions", "mine"], queryFn: listDivisions });
   const [account, setAccount] = useState(line.coding ? String(line.coding.ledger.id) : "");
@@ -254,7 +257,7 @@ function PostForm({ line, onDone }: { line: RecLine; onDone: () => void }) {
         ))}
       </select>
       <input aria-label={t("bs.description")} value={description} onChange={(e) => setDescription(e.target.value)} />
-      <button type="button" className="small" disabled={post.isPending || !account} onClick={() => post.mutate()}>
+      <button type="button" className="small" disabled={post.isPending || !account} onClick={() => void sure(t("confirm.postBankLine", { date: line.date, description: line.description }), t("rec.postButton"), () => post.mutate())}>
         {t("rec.postButton")}
       </button>
       <ErrorLine error={post.error} />

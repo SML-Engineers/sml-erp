@@ -69,3 +69,25 @@ test("the accountant accepts a suggested match", async () => {
     ),
   );
 });
+
+test("asks before finishing and locking the month; No sends nothing (testing T49)", async () => {
+  const calls = mockApi({
+    "GET /api/v1/payments/accounts/": {
+      body: [
+        { id: 2, code: "COM-CUR", name: "Commercial Bank current", kind: "current", currency: "LKR", has_ledger: true, next_cheque: null },
+      ],
+    },
+    [`GET /api/v1/reconciliation/?account=2&period_end=${lastMonthEnd()}`]: { body: rec },
+    "GET /api/v1/bank-rules/": { body: [] },
+    "GET /api/v1/chart-of-accounts/": { body: [] },
+  });
+  renderAt("/reconciliation", <ReconciliationPage />, "/reconciliation", { ask: true });
+  await screen.findByRole("option", { name: "COM-CUR Commercial Bank current" });
+  fireEvent.change(screen.getByLabelText("Bank account"), { target: { value: "2" } });
+  fireEvent.click(await screen.findByRole("button", { name: "Finish and lock the month" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: `Finish the reconciliation to ${lastMonthEnd()}? The month is then locked.`,
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/reconciliation/finish/", expect.anything());
+});

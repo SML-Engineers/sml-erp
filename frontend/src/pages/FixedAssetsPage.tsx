@@ -28,6 +28,7 @@ import {
 import { ApiError } from "../api/client";
 import { listPayAccounts } from "../api/payments";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function today(): string {
   const now = new Date();
@@ -289,6 +290,7 @@ function ChangeTerms({ asset }: { asset: FixedAssetRow }) {
 /** The Director approves each asset's terms and changes to class defaults (owner, 8 Nov 2026). */
 function Approvals() {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const waiting = useQuery({ queryKey: [...assetsKey, "waiting"], queryFn: getWaiting });
   const [reason, setReason] = useState("");
@@ -314,7 +316,7 @@ function Approvals() {
       {d.can_send_all && d.without_terms > 0 && (
         <section className="panel" aria-label={t("fa.withoutTerms")}>
           <p>{t("fa.withoutTermsCount", { count: d.without_terms })}</p>
-          <button type="button" disabled={sendAll.isPending} onClick={() => sendAll.mutate()}>
+          <button type="button" disabled={sendAll.isPending} onClick={() => void sure(t("confirm.sendAssetTerms", { count: d.without_terms }), t("fa.sendAll"), () => sendAll.mutate())}>
             {t("fa.sendAll")}
           </button>
           <ErrorLine error={sendAll.error} />
@@ -367,7 +369,7 @@ function Approvals() {
                             className="small"
                             aria-label={t("fa.approveOf", { code: x.asset })}
                             disabled={terms.isPending}
-                            onClick={() => terms.mutate({ id: x.id, action: "approve" })}
+                            onClick={() => void sure(t("confirm.approveAssetTerms", { code: x.asset }), t("fa.approve"), () => terms.mutate({ id: x.id, action: "approve" }))}
                           >
                             {t("fa.approve")}
                           </button>
@@ -376,7 +378,7 @@ function Approvals() {
                             className="secondary small"
                             aria-label={t("fa.rejectOf", { code: x.asset })}
                             disabled={terms.isPending}
-                            onClick={() => terms.mutate({ id: x.id, action: "reject" })}
+                            onClick={() => void sure(t("confirm.rejectAssetTerms", { code: x.asset }), t("fa.reject"), () => terms.mutate({ id: x.id, action: "reject" }), true)}
                           >
                             {t("fa.reject")}
                           </button>
@@ -410,7 +412,7 @@ function Approvals() {
                     className="small"
                     aria-label={t("fa.approveOf", { code: x.asset_class })}
                     disabled={rates.isPending}
-                    onClick={() => rates.mutate({ id: x.id, action: "approve" })}
+                    onClick={() => void sure(t("confirm.approveClassRates", { code: x.asset_class }), t("fa.approve"), () => rates.mutate({ id: x.id, action: "approve" }))}
                   >
                     {t("fa.approve")}
                   </button>{" "}
@@ -419,7 +421,7 @@ function Approvals() {
                     className="secondary small"
                     aria-label={t("fa.rejectOf", { code: x.asset_class })}
                     disabled={rates.isPending}
-                    onClick={() => rates.mutate({ id: x.id, action: "reject" })}
+                    onClick={() => void sure(t("confirm.rejectClassRates", { code: x.asset_class }), t("fa.reject"), () => rates.mutate({ id: x.id, action: "reject" }), true)}
                   >
                     {t("fa.reject")}
                   </button>
@@ -436,6 +438,7 @@ function Approvals() {
 
 function Dispose({ asset }: { asset: FixedAssetRow }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const accounts = useQuery({ queryKey: ["payments", "accounts"], queryFn: listPayAccounts });
   const [day, setDay] = useState(today());
@@ -475,7 +478,7 @@ function Dispose({ asset }: { asset: FixedAssetRow }) {
         <input value={reason} onChange={(e) => setReason(e.target.value)} />
       </label>
       <div className="wide row-actions">
-        <button type="button" disabled={save.isPending} onClick={() => save.mutate()}>
+        <button type="button" disabled={save.isPending} onClick={() => void sure(t("confirm.disposeAsset", { code: asset.code, name: asset.name }), t("fa.disposeButton"), () => save.mutate(), true)}>
           {t("fa.disposeButton")}
         </button>
       </div>
@@ -486,6 +489,7 @@ function Dispose({ asset }: { asset: FixedAssetRow }) {
 
 function Depreciation() {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const runs = useQuery({ queryKey: [...assetsKey, "runs"], queryFn: listRuns });
   const refresh = () => void queryClient.invalidateQueries({ queryKey: assetsKey });
@@ -542,13 +546,13 @@ function Depreciation() {
           </div>
           {r.status === "draft" && (
             <div className="row-actions">
-              <button type="button" disabled={post.isPending} onClick={() => post.mutate(r.id)}>
+              <button type="button" disabled={post.isPending} onClick={() => void sure(t("confirm.postDepreciation", { month: r.month_end }), t("fa.post"), () => post.mutate(r.id))}>
                 {t("fa.post")}
               </button>
               <button type="button" className="secondary" disabled={prepare.isPending} onClick={() => prepare.mutate(r.month_end)}>
                 {t("fa.again")}
               </button>
-              <button type="button" className="secondary" disabled={discard.isPending} onClick={() => discard.mutate(r.id)}>
+              <button type="button" className="secondary" disabled={discard.isPending} onClick={() => void sure(t("confirm.discardDepreciation", { month: r.month_end }), t("fa.discard"), () => discard.mutate(r.id), true)}>
                 {t("fa.discard")}
               </button>
             </div>

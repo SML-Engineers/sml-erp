@@ -432,6 +432,8 @@ Status: `[ ]` to do · `[x]` done
   - Testing T49, owner 22 Nov 2026: "Are you sure?" naming the document and amount before
     submit, approve, send back, reject, pay, match and post and delete. Part 1 (vouchers, approval
     queue, payments, supplier invoices) in PR #272; purchasing, stores, QC and sales follow.
+  - Testing T42/T41, owner 21 Nov 2026: advances ask for the proforma or advance request;
+    matched-invoice vouchers point to the invoices' scans. Done: PR #279.
 
 - [x] **P1-04 Director approval page** (spec 4.4; replaces the current page)
   Type tabs with pending counts; table with Approve and Reject columns, reason box, bulk

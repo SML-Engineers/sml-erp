@@ -335,3 +335,22 @@ test("asks before rejecting, naming the voucher, the amount and the payee (testi
     ),
   );
 });
+
+test("a voucher paying matched invoices points to their scans instead of 'No scan attached' (testing T41)", async () => {
+  const invoice = {
+    id: 5,
+    number: "SI26112101",
+    invoice_no: "PRL-2350",
+    invoice_date: "2026-11-21",
+    due_date: "2026-12-21",
+    total_lkr: "105000.00",
+    on_vouchers: "0.00",
+    lines: [],
+  };
+  const matched = { ...voucher, attachments: [], lines: voucher.lines.map((l) => ({ ...l, supplier_invoice: invoice })) };
+  mockApi(api({ "GET /api/v1/vouchers/9/": { body: matched } }));
+  renderAt("/vouchers/review?open=9", <ReviewPage />, "/vouchers/review");
+  const preview = await screen.findByRole("group", { name: "Scanned invoice" });
+  expect(preview).toHaveTextContent("The scans are on the matched supplier invoices");
+  expect(preview).not.toHaveTextContent("No scan attached.");
+});

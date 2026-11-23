@@ -285,7 +285,15 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
         {current && current.content_type !== "application/pdf" && (
           <img alt={current.file_name} src={voucherFileUrl(voucher.id, current.id)} />
         )}
-        {!current && <p className="muted">{t("voucherReview.noScan")}</p>}
+        {!current && (
+          <p className="muted">
+            {t(
+              voucher.lines.length > 0 && voucher.lines.every((l) => l.supplier_invoice)
+                ? "vouchers.scansOnInvoices"
+                : "voucherReview.noScan",
+            )}
+          </p>
+        )}
       </div>
 
       {voucher.lines

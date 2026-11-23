@@ -1136,7 +1136,10 @@
     "oldDateConfirmOf": "Yes, the date is right, line {{n}}",
     "tooOldDate": "This invoice is more than a year old and cannot be entered. Check the date on the invoice.",
     "oldDatesNote": "Old invoice dates",
-    "oldDateNoteLine": "Line {{n}}: the invoice is dated {{date}}, more than 2 months old when it was entered. The Clerk confirmed the date is right."
+    "oldDateNoteLine": "Line {{n}}: the invoice is dated {{date}}, more than 2 months old when it was entered. The Clerk confirmed the date is right.",
+    "scansOnInvoices": "The scans are on the matched supplier invoices (open each invoice below).",
+    "noFilesAttached": "No files attached.",
+    "noFilesAdvance": "No files yet. Attach the supplier's proforma invoice or written advance request before submitting."
   },
   "voucherReview": {
     "title": "Waiting for my approval",

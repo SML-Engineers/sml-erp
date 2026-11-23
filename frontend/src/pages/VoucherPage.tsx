@@ -718,7 +718,7 @@ function Attachments({ voucher }: { voucher: VoucherDetail }) {
   return (
     <section className="panel" aria-label={t("vouchers.files")}>
       <h2>{t("vouchers.files")}</h2>
-      {voucher.attachments.length === 0 && <p className="muted">{t("vouchers.noFiles")}</p>}
+      {voucher.attachments.length === 0 && <p className="muted">{t(scanHint(voucher))}</p>}
       <ul className="changes">
         {voucher.attachments.map((a) => (
           <li key={a.id}>
@@ -1047,4 +1047,15 @@ function PaymentCancel({
       ) : null}
     </div>
   );
+}
+
+/** What the empty Files box says (testing T41, T42): matched supplier invoices already carry
+ * their scans; an advance needs the supplier's proforma or advance request; and once the
+ * voucher is submitted there is nothing left to attach before submitting. */
+function scanHint(voucher: { status: string; lines: { supplier_invoice?: unknown; advance_order?: unknown }[] }): string {
+  const lines = voucher.lines;
+  if (lines.length > 0 && lines.every((l) => l.supplier_invoice)) return "vouchers.scansOnInvoices";
+  if (voucher.status !== "draft" && voucher.status !== "returned") return "vouchers.noFilesAttached";
+  if (lines.some((l) => l.advance_order)) return "vouchers.noFilesAdvance";
+  return "vouchers.noFiles";
 }

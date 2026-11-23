@@ -362,3 +362,29 @@ test("the payee is chosen with the arrow keys and Enter (testing T40)", async ()
   expect(within(form).queryByRole("listbox")).not.toBeInTheDocument();
   expect(within(form).getByText("Polychem Traders")).toBeInTheDocument();
 });
+
+test("the Files box says what to attach, or that nothing is missing (testing T41, T42)", async () => {
+  mockApi({ ...formApi, "GET /api/v1/vouchers/9/": { body: { ...draft, attachments: [] } } });
+  const { unmount } = renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+  const files = await screen.findByRole("region", { name: "Scanned invoices and receipts" });
+  expect(files).toHaveTextContent("Attach the scanned invoice before submitting.");
+  unmount();
+
+  const advance = {
+    ...draft,
+    attachments: [],
+    lines: draft.lines.map((l) => ({ ...l, advance_order: { id: 2, label: "PO26110802", total_lkr: "37000.00", status: "approved" } })),
+  };
+  mockApi({ ...formApi, "GET /api/v1/vouchers/9/": { body: advance } });
+  const second = renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+  expect(await screen.findByRole("region", { name: "Scanned invoices and receipts" })).toHaveTextContent(
+    "Attach the supplier's proforma invoice or written advance request before submitting.",
+  );
+  second.unmount();
+
+  mockApi({ ...formApi, "GET /api/v1/vouchers/9/": { body: { ...draft, status: "submitted", can_edit: false, attachments: [] } } });
+  renderAt("/vouchers/9", <VoucherPage me={clerk} />, "/vouchers/:id");
+  const after = await screen.findByRole("region", { name: "Scanned invoices and receipts" });
+  expect(after).toHaveTextContent("No files attached.");
+  expect(after).not.toHaveTextContent("before submitting");
+});

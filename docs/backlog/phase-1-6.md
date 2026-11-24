@@ -59,6 +59,11 @@ Status: `[ ]` to do · `[x]` done
     the Admin adds more main stores (Settings → Stores); one quarantine and one rejected store
     per division (database constraint). Used items and stores keep their codes (database
     guard). Menu: Purchasing and stores → Items.
+  - Owner, 22 Nov 2026 (from his testing): bought-out parts get their own account, **1215
+    Bought-out parts** under 1200 Inventory (migration accounting 0027), the default for new
+    bought-out items. Bought-out items still on 1210 with no stock movement move to 1215
+    (migration inventory 0015); one with stock keeps 1210 so that the value already posted
+    and the stock stay together. The starter chart itself is unchanged.
 
 ## C. Purchase orders
 

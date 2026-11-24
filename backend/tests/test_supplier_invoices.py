@@ -256,7 +256,7 @@ def test_a_price_difference_is_held_and_the_director_approves_it(
     # cost: the inventory account, not the variance.
     assert lines_of(invoice.journal_entry) == {
         ("grni", Decimal("12500.00"), Decimal("0")),
-        ("1210", Decimal("500.00"), Decimal("0")),
+        ("1215", Decimal("500.00"), Decimal("0")),
         ("accounts_payable", Decimal("0"), Decimal("13000.00")),
     }
     moves = StockMovement.objects.filter(kind="price_diff")
@@ -272,7 +272,7 @@ def test_a_lower_price_lowers_the_value_of_the_stock(
     invoice = invoices.match(clerk, enter(clerk, supplier, grn_line, price="12.00"))
     invoices.request_exception(accountant, invoice, "Discount given")
     invoice = invoices.approve_exception(director, invoice)
-    assert ("1210", Decimal("0"), Decimal("500.00")) in lines_of(invoice.journal_entry)
+    assert ("1215", Decimal("0"), Decimal("500.00")) in lines_of(invoice.journal_entry)
     assert stock.average_costs(StockMovement.objects.all())[grn_line.item_id] == Decimal("12.0000")
 
 
@@ -298,7 +298,7 @@ def test_the_difference_on_goods_no_longer_in_stock_goes_to_the_variance(
     invoice = invoices.approve_exception(director, invoice)
     assert lines_of(invoice.journal_entry) == {
         ("grni", Decimal("12500.00"), Decimal("0")),
-        ("1210", Decimal("300.00"), Decimal("0")),  # the 600 still in stock
+        ("1215", Decimal("300.00"), Decimal("0")),  # the 600 still in stock
         ("price_variance", Decimal("200.00"), Decimal("0")),  # the 400 gone
         ("accounts_payable", Decimal("0"), Decimal("13000.00")),
     }

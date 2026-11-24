@@ -177,7 +177,7 @@ def test_accepted_goods_not_yet_invoiced_go_back_against_grni(stores, qc, clerk,
     assert ret.status == St.CONFIRMED and on_hand(line, "MAIN") == 90
     assert entry_lines(ret.journal_entry) == {
         ("grni", Decimal("1000.00"), Decimal("0")),
-        ("1210", Decimal("0"), Decimal("1000.00")),
+        ("1215", Decimal("0"), Decimal("1000.00")),
     }
     assert ret.lines.get().uninvoiced_quantity == 10
     # Only the 90 kept can be invoiced now.
@@ -196,7 +196,7 @@ def test_invoiced_goods_go_back_with_a_debit_note(stores, qc, clerk, director, l
     assert note.number == f"DN{TODAY:%y%m%d}01"
     assert entry_lines(ret.journal_entry) == {
         ("accounts_payable", Decimal("1000.00"), Decimal("0")),
-        ("1210", Decimal("0"), Decimal("1000.00")),
+        ("1215", Decimal("0"), Decimal("1000.00")),
     }
     assert invoices.unpaid(posted) == Decimal("9000.00")
 
@@ -212,7 +212,7 @@ def test_a_return_split_between_invoiced_and_not(stores, qc, clerk, director, li
     assert entry_lines(ret.journal_entry) == {
         ("grni", Decimal("4000.00"), Decimal("0")),
         ("accounts_payable", Decimal("1000.00"), Decimal("0")),
-        ("1210", Decimal("0"), Decimal("5000.00")),
+        ("1215", Decimal("0"), Decimal("5000.00")),
     }
     assert invoices.unpaid(posted) == Decimal("5000.00")
     rows = invoices.open_lines(clerk, line.receipt.supplier, line.receipt.division)

@@ -24,6 +24,7 @@ import {
 } from "../api/creditNotes";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { factoryToday, formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -273,6 +274,12 @@ function Actions({ note }: { note: CNDetail }) {
     setText("");
   };
   const act = useMutation({ mutationFn: (call: () => Promise<CNDetail>) => call(), onSuccess: done });
+  const sure = useSure();
+  const about = {
+    invoice: note.invoice.number,
+    customer: note.customer.name,
+    amount: formatDecimal(note.total_amount),
+  };
   const remove = useMutation({
     mutationFn: () => deleteCreditNote(note.id),
     onSuccess: () => {
@@ -290,10 +297,10 @@ function Actions({ note }: { note: CNDetail }) {
       </p>
       {note.can_edit && (
         <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => submitCreditNote(note.id))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitCreditNote", about), t("mj.send"), () => act.mutate(() => submitCreditNote(note.id)))}>
             {t("mj.send")}
           </button>{" "}
-          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteCreditNote", about), t("cn.delete"), () => remove.mutate(), true)}>
             {t("cn.delete")}
           </button>{" "}
           <span className="muted">{t("cn.sendHelp")}</span>
@@ -305,13 +312,13 @@ function Actions({ note }: { note: CNDetail }) {
             {t("salesOrders.comment")}
             <input value={text} maxLength={500} onChange={(e) => setText(e.target.value)} />
           </label>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveCreditNote(note.id, text))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveCreditNote", about), t("cn.approve"), () => act.mutate(() => approveCreditNote(note.id, text)))}>
             {t("cn.approve")}
           </button>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => returnCreditNote(note.id, text))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnCreditNote", about), t("salesOrders.sendBack"), () => act.mutate(() => returnCreditNote(note.id, text)))}>
             {t("salesOrders.sendBack")}
           </button>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => rejectCreditNote(note.id, text))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectCreditNote", about), t("advances.reject"), () => act.mutate(() => rejectCreditNote(note.id, text)), true)}>
             {t("mj.reject")}
           </button>
         </div>

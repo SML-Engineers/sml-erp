@@ -21,6 +21,7 @@ import {
 import SendEmailForm from "../components/SendEmailForm";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { factoryToday, formatDate, formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -268,6 +269,12 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
     },
   });
   const load = useMutation({ mutationFn: () => getInvoiceEmail(invoice.id), onSuccess: setEmail });
+  const sure = useSure();
+  const about = {
+    customer: invoice.customer.name,
+    currency: invoice.currency ?? "LKR",
+    amount: formatDecimal(invoice.total_amount),
+  };
 
   return (
     <section className="panel" aria-label={t("ti.actions")}>
@@ -282,7 +289,7 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
       )}
       {invoice.can_issue && (
         <p>
-          <button type="button" disabled={issue.isPending} onClick={() => issue.mutate()}>
+          <button type="button" disabled={issue.isPending} onClick={() => void sure(t("confirm.issueTaxInvoice", about), t("ti.issue"), () => issue.mutate())}>
             {t("ti.issue")}
           </button>{" "}
           <span className="muted">{t("ti.issueHelp")}</span>
@@ -291,7 +298,7 @@ function Actions({ invoice }: { invoice: InvoiceDetail }) {
       {invoice.status === "draft" && !invoice.can_issue && <p className="muted">{t("ti.accountantIssues")}</p>}
       {invoice.can_edit && (
         <p>
-          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+          <button type="button" className="secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteTaxInvoice", about), t("ti.delete"), () => remove.mutate(), true)}>
             {t("ti.delete")}
           </button>
         </p>

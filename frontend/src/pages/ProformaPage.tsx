@@ -24,6 +24,7 @@ import OrderLinks from "../components/OrderLinks";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 import { cancelledNote } from "../lib/cancelled";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -338,6 +339,13 @@ function Actions({ proforma }: { proforma: ProformaDetail }) {
     setMessage(null);
   };
   const act = useMutation({ mutationFn: (call: () => Promise<ProformaDetail>) => call(), onSuccess: done });
+  const sure = useSure();
+  const about = {
+    doc: proforma.number,
+    customer: proforma.customer.name,
+    currency: proforma.currency,
+    amount: formatDecimal(proforma.total_amount),
+  };
   const load = useMutation({
     mutationFn: () => getProformaEmail(proforma.id),
     onSuccess: (draft) => setMessage({ to: draft.to.join(", "), subject: draft.subject, body: draft.body }),
@@ -352,7 +360,7 @@ function Actions({ proforma }: { proforma: ProformaDetail }) {
     <section className="panel" aria-label={t("proformas.actions")}>
       {proforma.can_edit && (
         <p>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => issueProforma(proforma.id))}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.issueProforma", about), t("proformas.issue"), () => act.mutate(() => issueProforma(proforma.id)))}>
             {t("proformas.issue")}
           </button>{" "}
           <span className="muted">{t("proformas.issueHelp")}</span>
@@ -398,7 +406,7 @@ function Actions({ proforma }: { proforma: ProformaDetail }) {
             {t("proformas.cancelReason")}
             <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
           </label>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => cancelProforma(proforma.id, reason))}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.cancelProforma", about), t("proformas.cancel"), () => act.mutate(() => cancelProforma(proforma.id, reason)), true)}>
             {t("proformas.cancel")}
           </button>
         </div>

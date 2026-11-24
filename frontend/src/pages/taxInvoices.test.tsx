@@ -190,3 +190,18 @@ test("the list says whose draft it is and how far each invoice is paid", async (
   ])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before issuing a tax invoice, naming the customer and the amount (testing T49)", async () => {
+  const calls = mockApi({
+    "GET /api/v1/tax-invoices/4/": { body: draft },
+    "POST /api/v1/tax-invoices/4/issue/": {
+      body: { ...draft, number: "26NOV_W1_01", status: "issued", can_edit: false, can_issue: false },
+    },
+  });
+  renderAt("/tax-invoices/4", <TaxInvoicePage />, "/tax-invoices/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Issue the tax invoice" }));
+  const dialog = await screen.findByRole("alertdialog", { name: /^Issue the tax invoice to Lanka Tiles PLC for LKR 139,487.43\?/ });
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/tax-invoices/4/issue/", expect.anything());
+  fireEvent.click(within(dialog).getByRole("button", { name: "Issue the tax invoice" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/tax-invoices/4/issue/", expect.objectContaining({ method: "POST" })));
+});

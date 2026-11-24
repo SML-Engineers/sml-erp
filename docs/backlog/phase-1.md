@@ -433,11 +433,12 @@ Status: `[ ]` to do · `[x]` done
     Accountant's own) is refused at submit; the Clerk enters it. Done: PR #271.
   - Testing T49, owner 22 Nov 2026: "Are you sure?" naming the document and amount before
     submit, approve, send back, reject, pay, match and post and delete. Part 1 (vouchers, approval
-    queue, payments, supplier invoices) in PR #272; purchasing, stores, QC and sales follow.
+    queue, payments, supplier invoices) in PR #272; part 2 (purchase requests and orders, goods
+    receipts, supplier returns, QC) in PR #280; part 3 (quotations, proformas, sales orders,
+    delivery notes, tax invoices, credit notes, receipts, customer advances) in PR #283;
+    journals, payroll, production, banking and settings follow.
   - Testing T42/T41, owner 21 Nov 2026: advances ask for the proforma or advance request;
     matched-invoice vouchers point to the invoices' scans. Done: PR #279.
-    queue, payments, supplier invoices) in PR #272; part 2 (purchase requests and orders, goods
-    receipts, supplier returns, QC) in PR #280; sales follows.
   - Testing T53, 23 Nov 2026: IM261122001 was in fact rejected by the Director at 05:14 with
     the right reason; the approval page then showed stale and wrong vouchers. "Open to approve"
     now opens the one asked for or says it is no longer waiting. Done: PR #282.

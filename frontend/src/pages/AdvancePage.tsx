@@ -16,6 +16,7 @@ import {
 import { ApiError } from "../api/client";
 import { compareDecimal, formatDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 /** One customer advance: its details, the Accountant's approval, and the receipt. */
 export default function AdvancePage() {
@@ -32,6 +33,7 @@ export default function AdvancePage() {
   };
   const act = useMutation({ mutationFn: (call: () => Promise<AdvanceDetail>) => call(), onSuccess: done });
   const a = advance.data;
+  const sure = useSure();
   const error = advance.error ?? act.error;
 
   return (
@@ -113,14 +115,14 @@ export default function AdvancePage() {
                 {t("quotations.approverNote")}
                 <input value={comment} maxLength={500} onChange={(e) => setComment(e.target.value)} />
               </label>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate(() => approveAdvance(a.id, comment))}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveAdvance", { doc: a.number, customer: a.customer.name, currency: a.currency, amount: formatDecimal(a.amount) }), t("advances.approve"), () => act.mutate(() => approveAdvance(a.id, comment)))}>
                 {t("advances.approve")}
               </button>
               <label>
                 {t("advances.rejectReason")}
                 <input value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
               </label>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate(() => rejectAdvance(a.id, reason))}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectAdvance", { doc: a.number, customer: a.customer.name, currency: a.currency, amount: formatDecimal(a.amount) }), t("advances.reject"), () => act.mutate(() => rejectAdvance(a.id, reason)), true)}>
                 {t("advances.reject")}
               </button>
             </div>
@@ -152,9 +154,13 @@ export default function AdvancePage() {
               aria-label={t("receipts.setOffNew")}
               onSubmit={(e) => {
                 e.preventDefault();
-                act.mutate(() => setOffAdvance(a.id, Number(setOff.invoice), setOff.amount.replace(/,/g, "")), {
-                  onSuccess: () => setSetOff({ invoice: "", amount: "" }),
-                });
+                const invoice = (a.open_invoices ?? []).find((i) => String(i.id) === setOff.invoice);
+                const question = t("confirm.setOffAdvance", { doc: a.number, invoice: invoice?.number ?? "", amount: formatDecimal(setOff.amount.replace(/,/g, "")) });
+                void sure(question, t("receipts.setOff"), () =>
+                  act.mutate(() => setOffAdvance(a.id, Number(setOff.invoice), setOff.amount.replace(/,/g, "")), {
+                    onSuccess: () => setSetOff({ invoice: "", amount: "" }),
+                  }),
+                );
               }}
             >
               <label>

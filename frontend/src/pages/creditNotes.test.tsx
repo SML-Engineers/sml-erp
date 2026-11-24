@@ -124,3 +124,18 @@ test("the list says who each credit note waits for and who decided", async () =>
   for (const text of ["Draft of Dilini", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before approving a credit note, naming its invoice and amount (testing T49)", async () => {
+  const waiting: CNDetail = { ...draft, status: "awaiting_approval", can_edit: false, can_approve: true };
+  const calls = mockApi({
+    "GET /api/v1/credit-notes/6/": { body: waiting },
+    "POST /api/v1/credit-notes/6/approve/": { body: { ...waiting, status: "approved", number: "CN26110301", can_approve: false } },
+  });
+  renderAt("/credit-notes/6", <CreditNotePage />, "/credit-notes/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Approve and post" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Approve and post the credit note against invoice 26NOV_W1_01: 13,987.69 to Lanka Tiles PLC?",
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Approve and post" }));
+  await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/credit-notes/6/approve/", expect.objectContaining({ method: "POST" })));
+});

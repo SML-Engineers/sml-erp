@@ -354,3 +354,27 @@ test("a voucher paying matched invoices points to their scans instead of 'No sca
   expect(preview).toHaveTextContent("The scans are on the matched supplier invoices");
   expect(preview).not.toHaveTextContent("No scan attached.");
 });
+
+test("'Open to approve' for a voucher no longer waiting says so instead of opening another (testing T53)", async () => {
+  mockApi(api({ "GET /api/v1/vouchers/16/": { body: { ...voucher, id: 16, number: "IM261122001", status: "rejected" } } }));
+  renderAt("/vouchers/review?open=16", <ReviewPage />, "/vouchers/review");
+  expect(await screen.findByText(/This voucher is not waiting for your approval any more/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open the voucher to see where it is." })).toHaveAttribute("href", "/vouchers/16");
+  // The first voucher in the queue is not opened in its place.
+  expect(screen.queryByRole("region", { name: "Voucher WS261029001" })).not.toBeInTheDocument();
+});
+
+test("a decision refused because the voucher was decided meanwhile fetches it again (testing T53)", async () => {
+  const calls = mockApi(
+    api({
+      "POST /api/v1/vouchers/9/reject/": { status: 400, body: { detail: "Voucher WS261029001 is not waiting for approval." } },
+    }),
+  );
+  renderAt("/vouchers/review?open=9", <ReviewPage />, "/vouchers/review");
+  const panel = await screen.findByRole("region", { name: "Voucher WS261029001" });
+  fireEvent.change(within(panel).getByLabelText("Comment (approve) or reason (send back, reject)"), { target: { value: "No" } });
+  const before = calls.mock.calls.filter(([url]) => url === "/api/v1/vouchers/9/").length;
+  fireEvent.click(within(panel).getByRole("button", { name: "Reject" }));
+  expect(await screen.findByText("Voucher WS261029001 is not waiting for approval.")).toBeInTheDocument();
+  await waitFor(() => expect(calls.mock.calls.filter(([url]) => url === "/api/v1/vouchers/9/").length).toBeGreaterThan(before));
+});

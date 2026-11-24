@@ -65,7 +65,13 @@ export default function ReviewPage() {
   const { t } = useTranslation();
   const queue = useQuery({ queryKey: waitingKey, queryFn: () => apiGet<Waiting[]>("/vouchers/waiting/") });
   const [search] = useSearchParams();
-  const [selected, setSelected] = useState<number | null>(Number(search.get("open")) || null);
+  const asked = Number(search.get("open")) || null;
+  const [selected, setSelected] = useState<number | null>(asked);
+  // "Open to approve" on a voucher page opens that voucher, even when this page is already
+  // showing another one (testing T53).
+  useEffect(() => {
+    if (asked !== null) setSelected(asked);
+  }, [asked]);
   // Open the first voucher in the queue, and the next one after a decision (skipping those
   // just decided, which stay in the list until it is fetched again).
   const [decided, setDecided] = useState<number[]>([]);
@@ -73,6 +79,10 @@ export default function ReviewPage() {
   useEffect(() => {
     if (selected === null && first !== null) setSelected(first);
   }, [selected, first]);
+  // Testing T53: a voucher asked for by "Open to approve" that is no longer waiting for me
+  // (decided meanwhile, perhaps in another tab) is said so, instead of opening another one.
+  const notWaiting =
+    queue.data !== undefined && selected !== null && selected === asked && !queue.data.some((v) => v.id === selected);
 
   return (
     <main className="page">
@@ -96,7 +106,12 @@ export default function ReviewPage() {
           </ul>
           <ErrorLine error={queue.error} />
         </section>
-        {selected !== null && (
+        {notWaiting && (
+          <p className="notice" role="status">
+            {t("voucherReview.notWaiting")} <Link to={`/vouchers/${selected}`}>{t("voucherReview.openVoucher")}</Link>
+          </p>
+        )}
+        {selected !== null && !notWaiting && (
           <ReviewPanel
             key={selected}
             id={selected}
@@ -144,6 +159,7 @@ function ReviewPanel({ id, onDone }: { id: number; onDone: () => void }) {
 }
 
 function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail) => void; onDone: () => void }) {
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { voucher } = props;
   const accounts = useQuery({ queryKey: [...chartKey, "accounts", false], queryFn: () => listLedgerAccounts(false) });
@@ -223,6 +239,12 @@ function ReviewForm(props: { voucher: VoucherDetail; onSaved: (v: VoucherDetail)
     onSuccess: (data) => {
       props.onSaved(data);
       props.onDone();
+    },
+    // Testing T53: if it was decided meanwhile (another tab, another person), show where it
+    // is now rather than a screen that still offers the buttons.
+    onError: () => {
+      void queryClient.invalidateQueries({ queryKey: [...vouchersKey, "one", voucher.id] });
+      void queryClient.invalidateQueries({ queryKey: waitingKey });
     },
   });
   const current = voucher.attachments.find((a) => a.id === file);

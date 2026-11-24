@@ -30,7 +30,8 @@ import {
 import OrderCostsPanel from "../components/OrderCostsPanel";
 import OrderClosePanel from "../components/OrderClosePanel";
 import OrderProfitPanel from "../components/OrderProfitPanel";
-import { formatDecimal } from "../lib/decimal";
+import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -288,6 +289,7 @@ function NewJob({
 
 function Detail({ id, onClose }: { id: number; onClose: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const key = ["job-order", id];
   const found = useQuery({ queryKey: key, queryFn: () => getJob(id) });
@@ -348,17 +350,17 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
       )}
       <div className="row-actions">
         {j.can_release && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "release" })}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.releaseOrder", { doc: j.number, item: j.description || j.item, quantity: formatQuantity(j.quantity), unit: j.unit }), t("job.release"), () => act.mutate({ action: "release" }))}>
             {t("job.release")}
           </button>
         )}
         {j.can_complete && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "complete" })}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.completeOrder", { doc: j.number, item: j.description || j.item, quantity: formatQuantity(j.quantity), unit: j.unit }), t("job.complete"), () => act.mutate({ action: "complete" }))}>
             {t("job.complete")}
           </button>
         )}
         {j.can_close && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "close" })}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.closeOrder", { doc: j.number, item: j.description || j.item, quantity: formatQuantity(j.quantity), unit: j.unit }), t("job.closeJob"), () => act.mutate({ action: "close" }))}>
             {t("job.closeJob")}
           </button>
         )}
@@ -376,7 +378,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
             type="button"
             className="secondary"
             disabled={act.isPending}
-            onClick={() => act.mutate({ action: "cancel", body: { reason } })}
+            onClick={() => void sure(t("confirm.cancelOrder", { doc: j.number, item: j.description || j.item, quantity: formatQuantity(j.quantity), unit: j.unit }), t("job.cancel"), () => act.mutate({ action: "cancel", body: { reason } }), true)}
           >
             {t("job.cancel")}
           </button>
@@ -774,6 +776,7 @@ function AskMore({ job, onSaved }: { job: JobOrder; onSaved: (j: JobOrder) => vo
 
 function Excess({ job, onDecided }: { job: JobOrder; onDecided: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
   const decide = useMutation({
@@ -806,7 +809,7 @@ function Excess({ job, onDecided }: { job: JobOrder; onDecided: () => void }) {
                 className="small"
                 aria-label={t("job.approveOf", { item: x.item })}
                 disabled={decide.isPending}
-                onClick={() => decide.mutate({ id: x.id, action: "approve" })}
+                onClick={() => void sure(t("confirm.approveExcessIssue", { doc: job.number, item: x.item, quantity: formatDecimal(x.quantity), unit: x.unit }), t("job.approve"), () => decide.mutate({ id: x.id, action: "approve" }))}
               >
                 {t("job.approve")}
               </button>{" "}
@@ -815,7 +818,7 @@ function Excess({ job, onDecided }: { job: JobOrder; onDecided: () => void }) {
                 className="secondary small"
                 aria-label={t("job.rejectOf", { item: x.item })}
                 disabled={decide.isPending}
-                onClick={() => decide.mutate({ id: x.id, action: "reject" })}
+                onClick={() => void sure(t("confirm.rejectExcessIssue", { doc: job.number, item: x.item, quantity: formatDecimal(x.quantity), unit: x.unit }), t("job.reject"), () => decide.mutate({ id: x.id, action: "reject" }), true)}
               >
                 {t("job.reject")}
               </button>
@@ -1118,6 +1121,7 @@ function Inspections({ job, onSaved }: { job: JobOrder; onSaved: (j: JobOrder) =
 
 function Inspection({ inspection: i, onSaved }: { inspection: JobInspectionRow; onSaved: (j: JobOrder) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const key = (position: number, piece: number) => `${position}-${piece}`;
   const [entered, setEntered] = useState<Record<string, string>>(() =>
     Object.fromEntries(
@@ -1289,7 +1293,7 @@ function Inspection({ inspection: i, onSaved }: { inspection: JobInspectionRow; 
           <button
             type="button"
             disabled={act.isPending}
-            onClick={() => act.mutate({ action: "director", payload: { action: "approve", reason: comment } })}
+            onClick={() => void sure(t("confirm.approveJobDeviation", { operation: i.operation_name, pieces: i.pieces }), t("job.directorApprove"), () => act.mutate({ action: "director", payload: { action: "approve", reason: comment } }))}
           >
             {t("job.directorApprove")}
           </button>
@@ -1297,7 +1301,7 @@ function Inspection({ inspection: i, onSaved }: { inspection: JobInspectionRow; 
             type="button"
             className="secondary"
             disabled={act.isPending}
-            onClick={() => act.mutate({ action: "director", payload: { action: "reject", reason: comment } })}
+            onClick={() => void sure(t("confirm.returnJobDeviation", { operation: i.operation_name, pieces: i.pieces }), t("job.directorReturn"), () => act.mutate({ action: "director", payload: { action: "reject", reason: comment } }))}
           >
             {t("job.directorReturn")}
           </button>
@@ -1311,6 +1315,7 @@ function Inspection({ inspection: i, onSaved }: { inspection: JobInspectionRow; 
 /** P3-15: a mould job transferred at cost: capitalised (new mould) or charged (repair). */
 function TransferPanel({ job, transfer: x, onSaved }: { job: JobOrder; transfer: Transfer; onSaved: (j: JobOrder) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [notes, setNotes] = useState("");
   const post = useMutation({ mutationFn: () => jobAction(job.id, "transfer", { notes }), onSuccess: onSaved });
   const rows: [string, string][] = [
@@ -1359,7 +1364,7 @@ function TransferPanel({ job, transfer: x, onSaved }: { job: JobOrder; transfer:
                 {t("job.transferNotes")}
                 <input value={notes} onChange={(e) => setNotes(e.target.value)} />
               </label>
-              <button type="button" disabled={post.isPending} onClick={() => post.mutate()}>
+              <button type="button" disabled={post.isPending} onClick={() => void sure(t("confirm.postTransfer", { doc: job.number }), t("job.transferIt"), () => post.mutate())}>
                 {t("job.transferIt")}
               </button>
             </div>

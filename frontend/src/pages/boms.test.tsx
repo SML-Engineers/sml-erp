@@ -185,3 +185,14 @@ test("the BOMs list says who a BOM waits for and who decided", async () => {
   for (const text of ["Draft of Kasun", "Waiting for Ruwan (Production Manager)", "Returned by Ruwan", "Approved by Ruwan", "Obsolete"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before approving a BOM; No sends nothing (testing T49)", async () => {
+  const calls = mockApi({ "GET /api/v1/boms/?q=&status=": { body: list } });
+  renderAt("/boms", <BomsPage />, "/boms", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "CAP-28" }));
+  const panel = screen.getByRole("region", { name: "BOM CAP-28 rev 1" });
+  fireEvent.click(within(panel).getByRole("button", { name: "Approve" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Approve the bill of materials for 28 mm cap (revision 1)?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/boms/7/approve/", expect.anything());
+});

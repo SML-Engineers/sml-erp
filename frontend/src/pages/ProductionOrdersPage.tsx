@@ -21,7 +21,8 @@ import {
 import OrderCostsPanel from "../components/OrderCostsPanel";
 import OrderClosePanel from "../components/OrderClosePanel";
 import OrderProfitPanel from "../components/OrderProfitPanel";
-import { formatDecimal } from "../lib/decimal";
+import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -233,6 +234,7 @@ function NewOrder({ onClose, onSaved }: { onClose: () => void; onSaved: (o: Prod
 
 function Detail({ id, onClose }: { id: number; onClose: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const key = ["production-order", id];
   const found = useQuery({ queryKey: key, queryFn: () => getOrder(id) });
@@ -318,17 +320,17 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
       {o.costs && <OrderCostsPanel costs={o.costs} busy={act.isPending} onRefresh={() => act.mutate({ action: "refresh-costs" })} />}
       <div className="row-actions">
         {o.can_release && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "release" })}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.releaseOrder", { doc: o.number, item: o.item_name || o.item, quantity: formatQuantity(o.quantity), unit: o.unit }), t("prodOrder.release"), () => act.mutate({ action: "release" }))}>
             {t("prodOrder.release")}
           </button>
         )}
         {o.can_complete && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "complete" })}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.completeOrder", { doc: o.number, item: o.item_name || o.item, quantity: formatQuantity(o.quantity), unit: o.unit }), t("prodOrder.complete"), () => act.mutate({ action: "complete" }))}>
             {t("prodOrder.complete")}
           </button>
         )}
         {o.can_close && (
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate({ action: "close" })}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.closeOrder", { doc: o.number, item: o.item_name || o.item, quantity: formatQuantity(o.quantity), unit: o.unit }), t("prodOrder.closeOrder"), () => act.mutate({ action: "close" }))}>
             {t("prodOrder.closeOrder")}
           </button>
         )}
@@ -351,7 +353,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
             type="button"
             className="secondary"
             disabled={act.isPending}
-            onClick={() => act.mutate({ action: "cancel", body: { reason } })}
+            onClick={() => void sure(t("confirm.cancelOrder", { doc: o.number, item: o.item_name || o.item, quantity: formatQuantity(o.quantity), unit: o.unit }), t("prodOrder.cancel"), () => act.mutate({ action: "cancel", body: { reason } }), true)}
           >
             {t("prodOrder.cancel")}
           </button>

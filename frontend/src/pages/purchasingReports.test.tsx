@@ -36,6 +36,32 @@ test("the GRNI report shows the ledger balance and exports", async () => {
   expect(screen.getByRole("link", { name: "Excel" })).toHaveAttribute("href", "/api/v1/purchasing-reports/grni/?export=xlsx");
 });
 
+// Testing T24 (21 Nov 2026): the Open POs page had no total row; the Excel and PDF files do.
+test("open POs are added up in a total row, like the Excel and PDF files", async () => {
+  const po = {
+    id: 1,
+    label: "PO26112101",
+    supplier: "Precision Tools",
+    delivery_date: "2026-11-28",
+    days_late: 0,
+    status: "Approved",
+    received_pct: "0",
+  };
+  mockApi({
+    "GET /api/v1/purchasing-reports/open-orders/": {
+      body: [
+        { ...po, outstanding_lkr: "12500.00" },
+        { ...po, id: 2, label: "PO26110801", supplier: "Lanka Steel", outstanding_lkr: "227500.00" },
+      ],
+    },
+  });
+  renderAt("/purchasing/reports", <PurchasingReportsPage />);
+  const table = await screen.findByRole("table", { name: "Open purchase orders" });
+  const total = table.querySelector("tfoot tr") as HTMLElement;
+  expect(within(total).getByText("Total")).toBeInTheDocument();
+  expect(within(total).getByText("240,000.00")).toBeInTheDocument();
+});
+
 test("the trail links every document of a PO", async () => {
   mockApi({
     "GET /api/v1/purchasing-reports/trail/?grn=4": {

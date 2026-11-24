@@ -103,6 +103,11 @@ Status: `[ ]` to do · `[x]` done
     set up for testing (emails printed to the log), an email is recorded "Not sent: this
     computer has no mail server", never "Sent". The demo suppliers have made-up
     example.com addresses, so "To" is filled in.
+  - Testing T24, the rest (21 Nov 2026): the totals are in one box in the usual order:
+    Subtotal, each tax (or "Tax 0.00" when the PO has none), then the Grand Total (it came
+    first, in the lines box, above a Subtotal of the same amount). Purchasing reports add up
+    their money columns in a total row on the page (Open POs "Still to come", GRNI value,
+    invoices held, receipts and rejections by supplier), as the Excel and PDF files do.
 
 ## D. Receiving and inspection
 

@@ -3,10 +3,11 @@
 
 letterhead with PURCHASE ORDER; "To:" the supplier's name and address; P.O. No., Date, Pay
 Mode and Pay Terms on the left, Delivery Date and Deliver to on the right; the boxed lines
-(Item, Description, UOM, Qty, Rate, Amount) with the Grand Total; the instructions to the
-supplier; Subtotal and the taxes in a box; "Yours Faithfully", the company, and the signature
-lines for the Managing Director and Checked By. A PO not approved is marked DRAFT – NOT
-APPROVED; a cancelled or revised one says so across every page.
+(Item, Description, UOM, Qty, Rate, Amount); the instructions to the supplier; Subtotal, the
+taxes and the Grand Total in a box, in that order (testing T24, 21 Nov 2026: the Grand Total
+came first, in the lines box, and a PO without tax had no tax line); "Yours Faithfully", the
+company, and the signature lines for the Managing Director and Checked By. A PO not
+approved is marked DRAFT – NOT APPROVED; a cancelled or revised one says so across every page.
 """
 
 from collections import OrderedDict
@@ -126,17 +127,6 @@ def render(order: PurchaseOrder, *, compress: bool = True) -> bytes:
                 p(money(line.amount), s.right),
             ]
         )
-    rows.append(
-        [
-            p("Grand Total", s.total),
-            "",
-            "",
-            "",
-            p(f"{currency} {money(order.total_amount)}", s.right_bold),
-            "",
-        ]
-    )
-    end = len(rows) - 1
     lines = Table(
         rows,
         colWidths=[
@@ -151,27 +141,34 @@ def render(order: PurchaseOrder, *, compress: bool = True) -> bytes:
         style=[
             ("BOX", (0, 0), (-1, -1), 0.8, GRID),
             ("LINEBELOW", (0, 0), (-1, 0), 0.8, GRID),
-            ("LINEBEFORE", (1, 0), (-1, end - 1), 0.4, GRID),
+            ("LINEBEFORE", (1, 0), (-1, -1), 0.4, GRID),
             ("BACKGROUND", (0, 0), (-1, 0), SHADE),
-            ("LINEABOVE", (0, end), (-1, end), 0.8, GRID),
-            ("SPAN", (0, end), (3, end)),
-            ("SPAN", (4, end), (5, end)),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ],
     )
 
     totals = [[p("Subtotal", s.bold), p(f"{currency} {money(order.subtotal)}", s.right)]]
-    for (code, tax_rate, _base), amount in _taxes(order).items():
+    found = _taxes(order)
+    for (code, tax_rate, _base), amount in found.items():
         totals.append(
             [
                 p(f"{code} Total ({rate(tax_rate)})", s.bold),
                 p(f"{currency} {money(amount)}", s.right),
             ]
         )
+    if not found:
+        totals.append([p("Tax", s.bold), p(f"{currency} {money(Decimal('0'))}", s.right)])
+    totals.append(
+        [p("Grand Total", s.total), p(f"{currency} {money(order.total_amount)}", s.right_bold)]
+    )
     totals_box = Table(
         totals,
         colWidths=[38 * mm, 40 * mm],
-        style=[("BOX", (0, 0), (-1, -1), 0.8, GRID), ("LINEBELOW", (0, 0), (-1, -2), 0.4, GRID)],
+        style=[
+            ("BOX", (0, 0), (-1, -1), 0.8, GRID),
+            ("LINEBELOW", (0, 0), (-1, -3), 0.4, GRID),
+            ("LINEABOVE", (0, -1), (-1, -1), 0.8, GRID),
+        ],
     )
     company = Company.objects.filter(pk=1).first()
     company_name = company.name if company else ""

@@ -9,6 +9,7 @@ import { ApiError } from "../api/client";
 import { getJournal, journalKey, listJournal, reverseJournal, type JournalFilter } from "../api/journal";
 import DataTable from "../components/DataTable";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -106,6 +107,7 @@ export default function JournalPage({ me }: { me: CurrentUser }) {
 
 function EntryPanel({ id, canReverse }: { id: number; canReverse: boolean }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const entry = useQuery({ queryKey: [...journalKey, "entry", id], queryFn: () => getJournal(id) });
   const [reason, setReason] = useState("");
@@ -172,7 +174,7 @@ function EntryPanel({ id, canReverse }: { id: number; canReverse: boolean }) {
           aria-label={t("journal.reverse")}
           onSubmit={(event) => {
             event.preventDefault();
-            reverse.mutate();
+            void sure(t("confirm.reverseEntry", { doc: e.number }), t("journal.reverse"), () => reverse.mutate(), true);
           }}
         >
           <label>

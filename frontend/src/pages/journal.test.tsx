@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { CurrentUser } from "../api/auth";
 import type { JournalDetail, JournalSummary } from "../api/journal";
@@ -131,4 +131,25 @@ test("the Accountant sees the periods but cannot close them", async () => {
   const table = await screen.findByRole("table", { name: "Accounting periods" });
   expect(within(table).getByText("Closed")).toBeInTheDocument();
   expect(within(table).queryByRole("button")).not.toBeInTheDocument();
+});
+
+test("asks before reversing an entry and before closing a month; No sends nothing (testing T49)", async () => {
+  const calls = mockApi({ ...journalApi(), [`GET /api/v1/accounting-periods/?year=${year}`]: { body: months } });
+  renderAt("/journal", <JournalPage me={accountant} />, "/journal", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "JV26100001" }));
+  const reverse = await screen.findByRole("form", { name: "Reverse entry" });
+  fireEvent.change(within(reverse).getByLabelText("Reason"), { target: { value: "entered twice" } });
+  fireEvent.click(within(reverse).getByRole("button", { name: "Reverse entry" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Reverse entry JV26100001? A new entry with the opposite amounts is posted.",
+  });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/journal/7/reverse/", expect.anything());
+  cleanup();
+
+  renderAt("/accounting-periods", <PeriodsPage me={director} />, "/accounting-periods", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Close 2001-01" }));
+  const closing = await screen.findByRole("alertdialog", { name: /^Close 2001-01\? Nothing more can be posted/ });
+  fireEvent.click(within(closing).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/accounting-periods/2001-01/close/", expect.anything());
 });

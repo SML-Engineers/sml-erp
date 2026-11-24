@@ -18,6 +18,7 @@ import {
 import JournalLines, { JournalTotals, linesFrom, toInputs, useJournalAccounts, type LineState } from "../components/JournalLines";
 import { scheduleText } from "./RecurringJournalsPage";
 import { factoryToday } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -157,6 +158,7 @@ function TemplateForm({ template }: { template?: RecurringJournal }) {
 
 function Switch({ template }: { template: RecurringJournal }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const change = useMutation({
     mutationFn: () => setRecurringActive(template.id, !template.is_active),
@@ -167,7 +169,15 @@ function Switch({ template }: { template: RecurringJournal }) {
   });
   return (
     <p>
-      <button type="button" className="secondary" disabled={change.isPending} onClick={() => change.mutate()}>
+      <button type="button" className="secondary" disabled={change.isPending} onClick={() =>
+          void sure(
+            t(template.is_active ? "confirm.stopRecurring" : "confirm.restartRecurring", { name: template.name }),
+            t(template.is_active ? "rj.stop" : "rj.restart"),
+            () => change.mutate(),
+            template.is_active,
+          )
+        }
+      >
         {template.is_active ? t("rj.stop") : t("rj.restart")}
       </button>
       <ErrorLine error={change.error} />

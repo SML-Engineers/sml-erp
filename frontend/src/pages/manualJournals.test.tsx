@@ -181,3 +181,27 @@ test("the list says whose draft a journal is, who it waits for and who decided",
   for (const text of ["Draft of Nimal", "Waiting for Ruwan (Director)", "Returned by Ruwan", "Approved by Ruwan", "Rejected by Ruwan"])
     expect(within(table).getByText(text)).toBeInTheDocument();
 });
+
+test("asks before approving a journal, naming its narration and amount (testing T49)", async () => {
+  const waiting: MJDetail = {
+    ...draft,
+    status: "awaiting_approval",
+    status_label: "Waiting for approval",
+    can_edit: false,
+    can_approve: true,
+  };
+  const calls = mockApi({
+    "GET /api/v1/manual-journals/5/": { body: waiting },
+    "POST /api/v1/manual-journals/5/approve/": { body: { ...waiting, status: "posted", can_approve: false } },
+  });
+  renderAt("/journals/manual/5", <ManualJournalPage />, "/journals/manual/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Approve and post" }));
+  const dialog = await screen.findByRole("alertdialog", {
+    name: "Approve and post journal MJ26110201 (Accrue October repairs, 25,000.00)?",
+  });
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/manual-journals/5/approve/", expect.anything());
+  fireEvent.click(within(dialog).getByRole("button", { name: "Approve and post" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith("/api/v1/manual-journals/5/approve/", expect.objectContaining({ method: "POST" })),
+  );
+});

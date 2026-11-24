@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client";
 import { closeKey, closeMonth, getChecklist, getYear, tickItem, yearAction, type ChecklistItem } from "../api/close";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function lastMonth(): string {
   const now = new Date();
@@ -37,6 +38,7 @@ export default function ClosePage() {
 
 function MonthEnd() {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [month, setMonth] = useState(lastMonth());
   const list = useQuery({ queryKey: [...closeKey, "month", month], queryFn: () => getChecklist(month) });
@@ -64,7 +66,7 @@ function MonthEnd() {
             ))}
           </ul>
           {data.can_close && !data.is_closed && (
-            <button type="button" disabled={!data.ready || close.isPending} onClick={() => close.mutate()}>
+            <button type="button" disabled={!data.ready || close.isPending} onClick={() => void sure(t("confirm.closeMonth", { month }), t("close.closeMonth", { month }), () => close.mutate())}>
               {t("close.closeMonth", { month })}
             </button>
           )}
@@ -113,6 +115,7 @@ function ItemRow({ month, item, canTick }: { month: string; item: ChecklistItem;
 
 function YearEnd() {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [year, setYear] = useState<number | undefined>(undefined);
   const [reason, setReason] = useState("");
@@ -159,11 +162,11 @@ function YearEnd() {
                 <input aria-label={t("close.reopenReason")} placeholder={t("close.reopenReason")} value={reason} onChange={(e) => setReason(e.target.value)} />
               )}
               {data.closed ? (
-                <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("reopen")}>
+                <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.reopenYear", { label: data.label }), t("close.reopenYear"), () => act.mutate("reopen"), true)}>
                   {t("close.reopenYear")}
                 </button>
               ) : (
-                <button type="button" disabled={act.isPending || data.open_months.length > 0} onClick={() => act.mutate("close")}>
+                <button type="button" disabled={act.isPending || data.open_months.length > 0} onClick={() => void sure(t("confirm.closeYear", { label: data.label }), t("close.closeYear", { label: data.label }), () => act.mutate("close"))}>
                   {t("close.closeYear", { label: data.label })}
                 </button>
               )}

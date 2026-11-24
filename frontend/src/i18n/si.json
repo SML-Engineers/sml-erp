@@ -1085,6 +1085,20 @@
     "rejectReceipt": "ලැබීම {{doc}} ({{customer}}, {{currency}} {{amount}}) ප්‍රතික්ෂේප කරන්නද?",
     "approveAdvance": "අත්තිකාරම {{doc}} අනුමත කර සටහන් කරන්නද: {{customer}} වෙතින් {{currency}} {{amount}}?",
     "rejectAdvance": "අත්තිකාරම {{doc}} ({{customer}}, {{currency}} {{amount}}) ප්‍රතික්ෂේප කරන්නද?",
-    "setOffAdvance": "අත්තිකාරම {{doc}} හි LKR {{amount}} ඉන්වොයිසිය {{invoice}} ට එරෙහිව හිලව් කරන්නද?"
+    "setOffAdvance": "අත්තිකාරම {{doc}} හි LKR {{amount}} ඉන්වොයිසිය {{invoice}} ට එරෙහිව හිලව් කරන්නද?",
+    "submitJournal": "ජර්නලය {{doc}} ({{narration}}, {{amount}}) අනුමැතිය සඳහා යවන්නද? මෙයින් පසු එය වෙනස් කළ නොහැක.",
+    "deleteJournal": "ජර්නල් කෙටුම්පත {{doc}} ({{narration}}, {{amount}}) මකන්නද?",
+    "approveJournal": "ජර්නලය {{doc}} ({{narration}}, {{amount}}) අනුමත කර සටහන් කරන්නද?",
+    "returnJournal": "ජර්නලය {{doc}} ({{narration}}) අනුමත නොකර ආපසු යවන්නද?",
+    "rejectJournal": "ජර්නලය {{doc}} ({{narration}}, {{amount}}) ප්‍රතික්ෂේප කරන්නද?",
+    "stopRecurring": "පුනරාවර්තන ජර්නලය \"{{name}}\" සෑම මසකම සෑදීම නවත්වන්නද?",
+    "restartRecurring": "පුනරාවර්තන ජර්නලය \"{{name}}\" සෑම මසකම නැවත සෑදීම අරඹන්නද?",
+    "closeMonth": "{{month}} වසන්නද? එය නැවත විවෘත කරන තුරු එම මාසයේ කිසිවක් සටහන් කළ නොහැක.",
+    "reopenMonth": "{{month}} නැවත විවෘත කරන්නද? එවිට එහි නැවත සටහන් කළ හැක.",
+    "closeYear": "{{label}} වර්ෂය වසන්නද? ලාභය හෝ අලාභය රඳවාගත් ඉපැයීම් වෙත යයි.",
+    "reopenYear": "{{label}} වර්ෂය නැවත විවෘත කරන්නද?",
+    "reverseEntry": "සටහන {{doc}} ආපසු හරවන්නද? ප්‍රතිවිරුද්ධ මුදල් සහිත නව සටහනක් සටහන් වේ.",
+    "removePetty": "සුළු මුදල් සටහන {{doc}} ({{paidTo}}, {{amount}}) ඉවත් කරන්නද?",
+    "deleteStatement": "{{from}} සිට {{to}} දක්වා {{account}} ප්‍රකාශය, එහි පේළි සමඟ මකන්නද?"
   }
 }

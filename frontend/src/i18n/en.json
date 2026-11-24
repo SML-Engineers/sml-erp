@@ -5936,6 +5936,20 @@
     "rejectReceipt": "Reject receipt {{doc}} ({{customer}}, {{currency}} {{amount}})?",
     "approveAdvance": "Approve and post advance {{doc}}: {{currency}} {{amount}} from {{customer}}?",
     "rejectAdvance": "Reject advance {{doc}} ({{customer}}, {{currency}} {{amount}})?",
-    "setOffAdvance": "Set off LKR {{amount}} of advance {{doc}} against invoice {{invoice}}?"
+    "setOffAdvance": "Set off LKR {{amount}} of advance {{doc}} against invoice {{invoice}}?",
+    "submitJournal": "Send journal {{doc}} ({{narration}}, {{amount}}) for approval? After this it cannot be changed.",
+    "deleteJournal": "Delete the draft journal {{doc}} ({{narration}}, {{amount}})?",
+    "approveJournal": "Approve and post journal {{doc}} ({{narration}}, {{amount}})?",
+    "returnJournal": "Send journal {{doc}} ({{narration}}) back without approving?",
+    "rejectJournal": "Reject journal {{doc}} ({{narration}}, {{amount}})?",
+    "stopRecurring": "Stop making the recurring journal \"{{name}}\" each month?",
+    "restartRecurring": "Start making the recurring journal \"{{name}}\" each month again?",
+    "closeMonth": "Close {{month}}? Nothing more can be posted in that month until it is reopened.",
+    "reopenMonth": "Reopen {{month}}? Entries can then be posted in it again.",
+    "closeYear": "Close the year {{label}}? The profit or loss moves to retained earnings.",
+    "reopenYear": "Reopen the year {{label}}?",
+    "reverseEntry": "Reverse entry {{doc}}? A new entry with the opposite amounts is posted.",
+    "removePetty": "Remove petty cash entry {{doc}} ({{paidTo}}, {{amount}})?",
+    "deleteStatement": "Delete the {{account}} statement for {{from}} to {{to}}, with its lines?"
   }
 }

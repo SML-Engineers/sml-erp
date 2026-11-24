@@ -6,10 +6,12 @@ import { canDo } from "../api/access";
 import type { CurrentUser } from "../api/auth";
 import { ApiError } from "../api/client";
 import { changePeriod, listPeriods, periodsKey, type PeriodMonth } from "../api/journal";
+import { useSure } from "../components/ConfirmDialog";
 
 /** Months of the year, open or closed. The Director closes a month once its books are done. */
 export default function PeriodsPage({ me }: { me: CurrentUser }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [year, setYear] = useState(new Date().getFullYear());
   const [reason, setReason] = useState("");
@@ -68,7 +70,13 @@ export default function PeriodsPage({ me }: { me: CurrentUser }) {
                         type="button"
                         className={row.is_closed ? "small secondary" : "small"}
                         disabled={change.isPending}
-                        onClick={() => change.mutate(row)}
+                        onClick={() =>
+                          void sure(
+                            t(row.is_closed ? "confirm.reopenMonth" : "confirm.closeMonth", { month: row.month }),
+                            t(row.is_closed ? "periods.reopen" : "periods.close", { month: row.month }),
+                            () => change.mutate(row),
+                          )
+                        }
                       >
                         {row.is_closed
                           ? t("periods.reopen", { month: row.month })

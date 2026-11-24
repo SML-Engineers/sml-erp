@@ -97,6 +97,28 @@ test("the Director views entries but cannot reverse them; a reversed entry says 
   expect(within(panel).queryByRole("form", { name: "Reverse entry" })).not.toBeInTheDocument();
 });
 
+// Testing T33 (21 Nov 2026): the Source column showed program words such as "goods_receipt".
+test("the source of each entry is in plain words, also for one with no wording of its own yet", async () => {
+  const grn = { ...entry, id: 9, number: "JV26100003", source_type: "goods_receipt", source_id: "GRN26112107" };
+  const other = { ...entry, id: 10, number: "JV26100004", source_type: "inter_division_tool_hire", source_id: "X1" };
+  mockApi(
+    journalApi({
+      "GET /api/v1/journal/": { body: [grn, other, entry] },
+      "GET /api/v1/journal/9/": { body: { ...detail, ...grn } },
+    }),
+  );
+  renderAt("/journal", <JournalPage me={accountant} />);
+
+  const table = await screen.findByRole("table", { name: "Journal" });
+  expect(within(table).getByText("Goods receipt (GRN)")).toBeInTheDocument();
+  expect(within(table).getByText("Inter division tool hire")).toBeInTheDocument();
+  expect(within(table).getByText("Entered by hand")).toBeInTheDocument();
+  expect(within(table).queryByText(/_/)).not.toBeInTheDocument();
+  fireEvent.click(within(table).getByRole("button", { name: "JV26100003" }));
+  const panel = await screen.findByRole("region", { name: "JV26100003 · 2026-10-21" });
+  expect(within(panel).getByText(/Goods receipt \(GRN\) GRN26112107/)).toBeInTheDocument();
+});
+
 const year = new Date().getFullYear();
 const months = {
   year,

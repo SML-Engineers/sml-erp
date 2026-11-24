@@ -10,6 +10,12 @@ import { getJournal, journalKey, listJournal, reverseJournal, type JournalFilter
 import DataTable from "../components/DataTable";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 import { useSure } from "../components/ConfirmDialog";
+import { plainWords } from "../lib/words";
+
+/** What posted an entry, in words ("goods_receipt" → "Goods receipt (GRN)"; testing T33). */
+function sourceWords(t: (key: string, fallback: string) => string, source: string): string {
+  return t(`journal.sources.${source}`, plainWords(source));
+}
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -79,7 +85,7 @@ export default function JournalPage({ me }: { me: CurrentUser }) {
             },
             { id: "date", header: t("journal.date"), value: (e) => e.entry_date },
             { id: "narration", header: t("journal.narration"), value: (e) => e.narration },
-            { id: "source", header: t("journal.source"), value: (e) => e.source_type },
+            { id: "source", header: t("journal.source"), value: (e) => sourceWords(t, e.source_type) },
             {
               id: "amount",
               header: t("journal.amount"),
@@ -125,7 +131,7 @@ function EntryPanel({ id, canReverse }: { id: number; canReverse: boolean }) {
       <p>{e.narration}</p>
       <p className="muted">
         {t("journal.postedBy", { name: e.posted_by })}
-        {e.source_id && ` · ${e.source_type} ${e.source_id}`}
+        {e.source_id && ` · ${sourceWords(t, e.source_type)} ${e.source_id}`}
         {e.source_page && (
           <>
             {" · "}

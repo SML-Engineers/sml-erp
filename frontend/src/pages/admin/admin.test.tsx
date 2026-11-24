@@ -29,9 +29,7 @@ const clerk: UserRecord = {
   must_change_password: false,
   all_divisions: false,
   divisions: ["IM"],
-  roles: [
-    { code: "clerk", name: "Accounts Clerk", assigned_at: "", reason: "", conflict_warning: "" },
-  ],
+  roles: [{ code: "clerk", name: "Accounts Clerk", assigned_at: "", reason: "", conflict_warning: "" }],
   last_login: null,
   date_joined: "2026-10-01T00:00:00Z",
 };
@@ -142,6 +140,7 @@ test("conflicting roles show the warnings and ask for a reason", async () => {
   renderAt("/admin/users/7", <UserAccessPage me={admin} />, "/admin/users/:id");
 
   fireEvent.click(await screen.findByRole("checkbox", { name: "Cashier / Payment Officer" }));
+  fireEvent.change(screen.getByLabelText("Reason for the new role (the Director sees it)"), { target: { value: "Cover" } });
   fireEvent.click(screen.getByRole("button", { name: "Save roles" }));
 
   const alert = await screen.findByRole("alert");
@@ -238,4 +237,19 @@ test("the grid of an active account has no switched-off note", async () => {
   renderAt("/admin/users/7", <UserAccessPage me={admin} />, "/admin/users/:id");
   await screen.findByText("Effective access");
   expect(screen.queryByText(/This account is switched off/)).not.toBeInTheDocument();
+});
+
+test("a new role needs a reason, and saving says so (testing T38)", async () => {
+  const calls = mockApi(accessPageApi({ "PUT /api/v1/users/7/roles/": { body: { roles: ["clerk", "cashier"], warnings: [] } } }));
+  renderAt("/admin/users/7", <UserAccessPage me={admin} />, "/admin/users/:id");
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Cashier / Payment Officer" }));
+  const save = screen.getByRole("button", { name: "Save roles" });
+  expect(save).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("Reason for the new role (the Director sees it)"), { target: { value: "Leave cover" } });
+  fireEvent.click(save);
+  expect(await screen.findByRole("status", { name: "Saved." })).toBeInTheDocument();
+  expect(calls).toHaveBeenCalledWith(
+    "/api/v1/users/7/roles/",
+    expect.objectContaining({ body: JSON.stringify({ roles: ["clerk", "cashier"], reason: "Leave cover" }) }),
+  );
 });

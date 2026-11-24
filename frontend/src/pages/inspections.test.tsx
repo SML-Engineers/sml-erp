@@ -165,3 +165,10 @@ test("asks before rejecting goods in QC, naming the item, the GRN and the suppli
   fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
   expect(calls).not.toHaveBeenCalledWith("/api/v1/inspections/7/decide/", expect.anything());
 });
+
+test("saving the results says Saved (testing T38)", async () => {
+  mockApi({ "GET /api/v1/inspections/7/": { body: inspection }, "PUT /api/v1/inspections/7/": { body: inspection } });
+  renderAt("/inspections/7", <InspectionPage />, "/inspections/:id");
+  fireEvent.click(await screen.findByRole("button", { name: "Save the results" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
+});

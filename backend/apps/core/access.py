@@ -210,6 +210,15 @@ def set_user_roles(actor: User, target: User, roles: list[Role], reason: str = "
             warnings,
         )
 
+    # Testing T38: a new role needs a reason, which the Director sees when confirming it.
+    already = set(target.role_assignments.values_list("role_id", flat=True)) | set(
+        target.role_requests.filter(status=RoleRequest.Status.WAITING).values_list(
+            "role_id", flat=True
+        )
+    )
+    if not reason and any(role.pk not in already for role in roles):
+        raise AccessError("Give the reason for the new role (the Director sees it).")
+
     # Removing a role works at once; a role asked for earlier and now unticked is withdrawn.
     target.role_assignments.exclude(role__in=roles).delete()
     target.role_requests.filter(status=RoleRequest.Status.WAITING).exclude(role__in=roles).update(

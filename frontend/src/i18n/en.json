@@ -5950,6 +5950,27 @@
     "reopenYear": "Reopen the year {{label}}?",
     "reverseEntry": "Reverse entry {{doc}}? A new entry with the opposite amounts is posted.",
     "removePetty": "Remove petty cash entry {{doc}} ({{paidTo}}, {{amount}})?",
-    "deleteStatement": "Delete the {{account}} statement for {{from}} to {{to}}, with its lines?"
+    "deleteStatement": "Delete the {{account}} statement for {{from}} to {{to}}, with its lines?",
+    "submitPayroll": "Send the {{division}} payroll for {{month}} (employees: {{count}}, net pay {{amount}}) to the Director?",
+    "approvePayroll": "Approve the {{division}} payroll for {{month}} (employees: {{count}}, net pay {{amount}})?",
+    "returnPayroll": "Return the {{division}} payroll for {{month}} for correction?",
+    "rejectPayroll": "Reject the {{division}} payroll for {{month}} (employees: {{count}}, net pay {{amount}})?",
+    "emailPayslips": "Email the {{division}} payslips for {{month}} to each employee (employees: {{count}})?",
+    "submitCredit": "Send {{employee}}'s {{kind}} of {{amount}} to the Director?",
+    "approveCredit": "Approve {{employee}}'s {{kind}} of {{amount}}?",
+    "returnCredit": "Return {{employee}}'s {{kind}} of {{amount}}?",
+    "rejectCredit": "Reject {{employee}}'s {{kind}} of {{amount}}?",
+    "withdrawCredit": "Withdraw {{employee}}'s {{kind}} of {{amount}}?",
+    "submitPayChange": "Send the pay change from {{month}} to the Director?",
+    "approvePayChange": "Approve the pay change from {{month}}?",
+    "returnPayChange": "Return the pay change from {{month}} for correction?",
+    "rejectPayChange": "Reject the pay change from {{month}}?",
+    "withdrawPayChange": "Withdraw the pay change from {{month}}?",
+    "grantLeave": "Grant every employee their leave for {{year}}?",
+    "approveTakeover": "Approve the opening payroll figures from {{file}} (tax year {{year}}, {{count}} employees)?",
+    "rejectTakeover": "Reject the opening payroll figures from {{file}} (tax year {{year}}, {{count}} employees)?",
+    "saveTakeover": "Save the opening payroll figures from {{file}}? They then wait for the Director's approval.",
+    "keepCompare": "Keep the comparison with {{file}} for sign-off?",
+    "signOffCheck": "Sign off \"{{title}}\"?"
   }
 }

@@ -13,6 +13,7 @@ import {
   type StaffCredit,
 } from "../api/payroll";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -74,6 +75,7 @@ export default function AdvancesLoansPage() {
 
 function Row({ credit: c, onDone }: { credit: StaffCredit; onDone: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [reason, setReason] = useState("");
   const act = useMutation({
     mutationFn: (action: CreditAction) => actOnStaffCredit(c.id, action, reason),
@@ -115,25 +117,25 @@ function Row({ credit: c, onDone }: { credit: StaffCredit; onDone: () => void })
               />
             )}
             {c.can_submit && (
-              <button type="button" className="small" onClick={() => act.mutate("submit")}>
+              <button type="button" className="small" onClick={() => void sure(t("confirm.submitCredit", { kind: c.kind_label.toLowerCase(), employee: c.employee.name, amount: formatDecimal(c.amount) }), t("credits.submit"), () => act.mutate("submit"))}>
                 {t("credits.submit")}
               </button>
             )}
             {c.can_approve && (
               <>
-                <button type="button" className="small" onClick={() => act.mutate("approve")}>
+                <button type="button" className="small" onClick={() => void sure(t("confirm.approveCredit", { kind: c.kind_label.toLowerCase(), employee: c.employee.name, amount: formatDecimal(c.amount) }), t("credits.approve"), () => act.mutate("approve"))}>
                   {t("credits.approve")}
                 </button>
-                <button type="button" className="small secondary" onClick={() => act.mutate("return")}>
+                <button type="button" className="small secondary" onClick={() => void sure(t("confirm.returnCredit", { kind: c.kind_label.toLowerCase(), employee: c.employee.name, amount: formatDecimal(c.amount) }), t("credits.return"), () => act.mutate("return"))}>
                   {t("credits.return")}
                 </button>
-                <button type="button" className="small danger" onClick={() => act.mutate("reject")}>
+                <button type="button" className="small danger" onClick={() => void sure(t("confirm.rejectCredit", { kind: c.kind_label.toLowerCase(), employee: c.employee.name, amount: formatDecimal(c.amount) }), t("credits.reject"), () => act.mutate("reject"), true)}>
                   {t("credits.reject")}
                 </button>
               </>
             )}
             {c.can_withdraw && (
-              <button type="button" className="small secondary" onClick={() => act.mutate("withdraw")}>
+              <button type="button" className="small secondary" onClick={() => void sure(t("confirm.withdrawCredit", { kind: c.kind_label.toLowerCase(), employee: c.employee.name, amount: formatDecimal(c.amount) }), t("credits.withdraw"), () => act.mutate("withdraw"), true)}>
                 {t("credits.withdraw")}
               </button>
             )}

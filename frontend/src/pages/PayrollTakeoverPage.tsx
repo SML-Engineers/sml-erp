@@ -23,6 +23,7 @@ import {
 } from "../api/takeover";
 import { formatDecimal } from "../lib/decimal";
 import { formatDate } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -128,6 +129,7 @@ function FileStep({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<UploadResult | null>(null);
   const go = useMutation({
@@ -161,7 +163,7 @@ function FileStep({
         <button
           type="button"
           disabled={!file || go.isPending || !result || result.errors.length > 0 || result.saved}
-          onClick={() => go.mutate(false)}
+          onClick={() => void sure(t("confirm.saveTakeover", { file: file?.name ?? "" }), t("takeover.save"), () => go.mutate(false))}
         >
           {t("takeover.save")}
         </button>
@@ -179,6 +181,7 @@ function FileStep({
 
 function Batch({ batch: b, onDone }: { batch: OpeningBatch; onDone: (d: Takeover) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [reason, setReason] = useState("");
   const act = useMutation({
     mutationFn: (action: "approve" | "reject") => decideOpening(b.id, action, reason),
@@ -199,10 +202,10 @@ function Batch({ batch: b, onDone }: { batch: OpeningBatch; onDone: (d: Takeover
       {b.can_decide && (
         <div className="row-actions">
           <input aria-label={t("takeover.reason")} placeholder={t("takeover.reason")} value={reason} onChange={(e) => setReason(e.target.value)} />
-          <button type="button" className="small" onClick={() => act.mutate("approve")}>
+          <button type="button" className="small" onClick={() => void sure(t("confirm.approveTakeover", { file: b.file_name, year: b.tax_year, count: b.employees }), t("takeover.approve"), () => act.mutate("approve"))}>
             {t("takeover.approve")}
           </button>
-          <button type="button" className="small secondary" onClick={() => act.mutate("reject")}>
+          <button type="button" className="small secondary" onClick={() => void sure(t("confirm.rejectTakeover", { file: b.file_name, year: b.tax_year, count: b.employees }), t("takeover.reject"), () => act.mutate("reject"), true)}>
             {t("takeover.reject")}
           </button>
         </div>
@@ -214,6 +217,7 @@ function Batch({ batch: b, onDone }: { batch: OpeningBatch; onDone: (d: Takeover
 
 function Compare({ runs, onSaved }: { runs: Takeover["runs"]; onSaved: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [run, setRun] = useState<number | null>(runs[0]?.id ?? null);
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<CompareResult | null>(null);
@@ -266,7 +270,7 @@ function Compare({ runs, onSaved }: { runs: Takeover["runs"]; onSaved: () => voi
           <button
             type="button"
             disabled={!file || !run || go.isPending || !result || result.errors.length > 0 || result.saved}
-            onClick={() => go.mutate(true)}
+            onClick={() => void sure(t("confirm.keepCompare", { file: file?.name ?? "" }), t("takeover.keep"), () => go.mutate(true))}
           >
             {t("takeover.keep")}
           </button>
@@ -336,6 +340,7 @@ function People({ people }: { people: ComparedPerson[] }) {
 
 function Check({ check: c, onDone }: { check: ParallelCheck; onDone: (d: Takeover) => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const [note, setNote] = useState("");
   const sign = useMutation({ mutationFn: () => signOff(c.id, note), onSuccess: onDone });
   return (
@@ -353,7 +358,7 @@ function Check({ check: c, onDone }: { check: ParallelCheck; onDone: (d: Takeove
       ) : c.can_sign_off ? (
         <div className="row-actions">
           <input aria-label={t("takeover.note")} placeholder={t("takeover.note")} value={note} onChange={(e) => setNote(e.target.value)} />
-          <button type="button" className="small" onClick={() => sign.mutate()}>
+          <button type="button" className="small" onClick={() => void sure(t("confirm.signOffCheck", { title: c.title }), t("takeover.signOff"), () => sign.mutate())}>
             {t("takeover.signOff")}
           </button>
         </div>

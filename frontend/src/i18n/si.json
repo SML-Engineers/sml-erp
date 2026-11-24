@@ -1099,6 +1099,27 @@
     "reopenYear": "{{label}} වර්ෂය නැවත විවෘත කරන්නද?",
     "reverseEntry": "සටහන {{doc}} ආපසු හරවන්නද? ප්‍රතිවිරුද්ධ මුදල් සහිත නව සටහනක් සටහන් වේ.",
     "removePetty": "සුළු මුදල් සටහන {{doc}} ({{paidTo}}, {{amount}}) ඉවත් කරන්නද?",
-    "deleteStatement": "{{from}} සිට {{to}} දක්වා {{account}} ප්‍රකාශය, එහි පේළි සමඟ මකන්නද?"
+    "deleteStatement": "{{from}} සිට {{to}} දක්වා {{account}} ප්‍රකාශය, එහි පේළි සමඟ මකන්නද?",
+    "submitPayroll": "{{month}} සඳහා {{division}} වැටුප් ලේඛනය (සේවකයින් {{count}}, ශුද්ධ වැටුප {{amount}}) අධ්‍යක්ෂවරයාට යවන්නද?",
+    "approvePayroll": "{{month}} සඳහා {{division}} වැටුප් ලේඛනය අනුමත කරන්නද: සේවකයින් {{count}}, ශුද්ධ වැටුප {{amount}}?",
+    "returnPayroll": "{{month}} සඳහා {{division}} වැටුප් ලේඛනය නිවැරදි කිරීමට ආපසු යවන්නද?",
+    "rejectPayroll": "{{month}} සඳහා {{division}} වැටුප් ලේඛනය (සේවකයින් {{count}}, ශුද්ධ වැටුප {{amount}}) ප්‍රතික්ෂේප කරන්නද?",
+    "emailPayslips": "{{month}} සඳහා {{division}} වැටුප් පත්‍රිකා සේවකයින් {{count}} දෙනෙකුට ඊමේල් කරන්නද?",
+    "submitCredit": "{{employee}} ගේ {{amount}} වූ {{kind}} අධ්‍යක්ෂවරයාට යවන්නද?",
+    "approveCredit": "{{employee}} ගේ {{amount}} වූ {{kind}} අනුමත කරන්නද?",
+    "returnCredit": "{{employee}} ගේ {{amount}} වූ {{kind}} ආපසු යවන්නද?",
+    "rejectCredit": "{{employee}} ගේ {{amount}} වූ {{kind}} ප්‍රතික්ෂේප කරන්නද?",
+    "withdrawCredit": "{{employee}} ගේ {{amount}} වූ {{kind}} ඉල්ලා අස්කර ගන්නද?",
+    "submitPayChange": "{{month}} සිට වැටුප් වෙනස අධ්‍යක්ෂවරයාට යවන්නද?",
+    "approvePayChange": "{{month}} සිට වැටුප් වෙනස අනුමත කරන්නද?",
+    "returnPayChange": "{{month}} සිට වැටුප් වෙනස නිවැරදි කිරීමට ආපසු යවන්නද?",
+    "rejectPayChange": "{{month}} සිට වැටුප් වෙනස ප්‍රතික්ෂේප කරන්නද?",
+    "withdrawPayChange": "{{month}} සිට වැටුප් වෙනස ඉල්ලා අස්කර ගන්නද?",
+    "grantLeave": "{{year}} සඳහා සියලු සේවකයින්ට ඔවුන්ගේ නිවාඩු ලබා දෙන්නද?",
+    "approveTakeover": "{{file}} හි ආරම්භක වැටුප් සංඛ්‍යා (බදු වර්ෂය {{year}}, සේවකයින් {{count}}) අනුමත කරන්නද?",
+    "rejectTakeover": "{{file}} හි ආරම්භක වැටුප් සංඛ්‍යා (බදු වර්ෂය {{year}}, සේවකයින් {{count}}) ප්‍රතික්ෂේප කරන්නද?",
+    "saveTakeover": "{{file}} හි ආරම්භක වැටුප් සංඛ්‍යා සුරකින්නද? පසුව ඒවා අධ්‍යක්ෂවරයාගේ අනුමැතිය බලාපොරොත්තුවෙන් සිටී.",
+    "keepCompare": "{{file}} සමඟ සැසඳීම අත්සන් කිරීම සඳහා තබා ගන්නද?",
+    "signOffCheck": "\"{{title}}\" අත්සන් කර අනුමත කරන්නද?"
   }
 }

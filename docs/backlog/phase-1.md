@@ -437,7 +437,9 @@ Status: `[ ]` to do · `[x]` done
     receipts, supplier returns, QC) in PR #280; part 3 (quotations, proformas, sales orders,
     delivery notes, tax invoices, credit notes, receipts, customer advances) in PR #283;
     part 4a (manual and recurring journals, reversals, month and year close, petty cash,
-    bank statements) in PR #284; payroll, production, bank accounts, assets and settings follow.
+    bank statements) in PR #284; part 4b (payroll runs and payslips, staff advances and loans,
+    pay changes, the year's leave, the payroll takeover) in PR #285; production, bank accounts,
+    assets and settings follow.
   - Testing T42/T41, owner 21 Nov 2026: advances ask for the proforma or advance request;
     matched-invoice vouchers point to the invoices' scans. Done: PR #279.
   - Testing T53, 23 Nov 2026: IM261122001 was in fact rejected by the Director at 05:14 with

@@ -36,7 +36,7 @@ from .packages import PackageError, number
 # Accountant can choose another per item.
 DEFAULT_INVENTORY_ACCOUNT = {
     Item.Category.RAW_MATERIAL: "1210",
-    Item.Category.BOUGHT_OUT: "1210",
+    Item.Category.BOUGHT_OUT: "1215",  # owner, 22 Nov 2026 (not 1210 Raw materials)
     Item.Category.CONSUMABLE: "1240",
     Item.Category.SPARE: "1240",
     Item.Category.PACKING: "1240",

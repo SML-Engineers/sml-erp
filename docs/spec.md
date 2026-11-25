@@ -881,8 +881,9 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
   bought-out part, packing), stock or non-stock, package type and inspection need (6A),
   inventory account, division.
   Item codes are typed (up to 20 letters, digits or dashes) and fixed once used. Only the
-  Accountant chooses an item's accounts; by default raw materials and bought-out parts use
-  1210 Raw materials, and consumables, spares and packing use 1240.
+  Accountant chooses an item's accounts; by default raw materials use 1210 Raw materials,
+  bought-out parts 1215 Bought-out parts (owner, 22 Nov 2026), and consumables, spares and
+  packing use 1240.
 - Stores per production division: main stores (any number), one Quarantine and one
   Rejected store; set by the Admin.
 - Stock is held by item, store and lot, with every movement recorded (receipt, acceptance,
@@ -1592,6 +1593,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Stock tile says "at cost" (owner, 22 Nov 2026) | The Stock value tile reads "main stores, at cost": stock is carried at actual cost, so an approved invoice price difference goes into the stock still on hand (2 Nov decision kept; testing T48 works as designed) | 5A |
 | Receiving on a phone (testing, 22 Nov 2026) | On a phone the GRN lines and the package (bag) list show one card per line, each figure with its name, so receiving needs no sideways scrolling (testing T37) | 5A |
 | Quantities are numbers in Excel (testing, 22 Nov 2026) | In every report download, quantities are numbers Excel can add up (shown 1,403 or 4,800.5), not text; the PDF shows them the same way (testing T32) | 5A |
+| Bought-out parts on their own account (owner, 22 Nov 2026) | A new account 1215 Bought-out parts, under 1200 Inventory, is the default inventory account of bought-out parts instead of 1210 Raw materials. Bought-out items with no stock movement yet move to 1215; an item that already has stock keeps 1210, so the stock and the value posted stay in step (the Accountant can change it later) | 5A |
 
 **Still needed for initial setup**
 

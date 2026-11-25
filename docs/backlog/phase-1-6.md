@@ -107,7 +107,9 @@ Status: `[ ]` to do · `[x]` done
     Subtotal, each tax (or "Tax 0.00" when the PO has none), then the Grand Total (it came
     first, in the lines box, above a Subtotal of the same amount). Purchasing reports add up
     their money columns in a total row on the page (Open POs "Still to come", GRNI value,
-    invoices held, receipts and rejections by supplier), as the Excel and PDF files do.
+    invoices held, receipts and rejections by supplier), as the Excel and PDF files do. The
+    Overdue deliveries tab showed an empty page (it had no columns); it now lists the late
+    POs like Open POs.
 
 ## D. Receiving and inspection
 

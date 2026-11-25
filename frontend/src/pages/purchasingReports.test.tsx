@@ -62,6 +62,31 @@ test("open POs are added up in a total row, like the Excel and PDF files", async
   expect(within(total).getByText("240,000.00")).toBeInTheDocument();
 });
 
+test("the overdue deliveries tab lists the late POs with their total", async () => {
+  const calls = mockApi({
+    "GET /api/v1/purchasing-reports/open-orders/?overdue=1": {
+      body: [
+        {
+          id: 3,
+          label: "PO26110803",
+          supplier: "Lanka Steel",
+          delivery_date: "2026-11-18",
+          days_late: 7,
+          status: "Approved",
+          received_pct: "0",
+          outstanding_lkr: "227500.00",
+        },
+      ],
+    },
+  });
+  renderAt("/purchasing/reports?tab=overdue", <PurchasingReportsPage />, "/purchasing/reports");
+  const table = await screen.findByRole("table", { name: "Overdue deliveries" });
+  expect(within(table).getByRole("link", { name: "PO26110803" })).toHaveAttribute("href", "/purchase-orders/3");
+  expect(within(table).getByText("7")).toBeInTheDocument();
+  expect(within(table.querySelector("tfoot tr") as HTMLElement).getByText("227,500.00")).toBeInTheDocument();
+  expect(calls).toHaveBeenCalledWith("/api/v1/purchasing-reports/open-orders/?overdue=1", expect.anything());
+});
+
 test("the trail links every document of a PO", async () => {
   mockApi({
     "GET /api/v1/purchasing-reports/trail/?grn=4": {

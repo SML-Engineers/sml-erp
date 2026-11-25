@@ -83,6 +83,10 @@ export default function PurchasingReportsPage() {
     ],
   };
 
+  // Overdue deliveries are the open POs past their delivery date: the same columns (the tab
+  // showed nothing without them).
+  columns.overdue = columns.open;
+
   return (
     <main className="page">
       <h1>{t("pr.title")}</h1>

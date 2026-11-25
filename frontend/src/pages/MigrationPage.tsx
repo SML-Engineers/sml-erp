@@ -17,6 +17,7 @@ import {
 } from "../api/migration";
 import { formatDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 const FILES: MigrationFile[] = ["trial_balance", "receivables", "payables", "items"];
 
@@ -120,6 +121,7 @@ export default function MigrationPage() {
 
 function Document({ doc }: { doc: OpeningDoc }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [reason, setReason] = useState("");
   const [open, setOpen] = useState(false);
@@ -174,11 +176,11 @@ function Document({ doc }: { doc: OpeningDoc }) {
           <input aria-label={t("mig.comment")} placeholder={t("mig.comment")} value={reason} onChange={(e) => setReason(e.target.value)} />
           {doc.can_send && (
             <>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate("submit")}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitOpening", { date: doc.as_at, amount: formatDecimal(doc.total_debit) }), t("mig.send"), () => act.mutate("submit"))}>
                 {t("mig.send")}
               </button>
               {doc.history.length === 0 && (
-                <button type="button" className="secondary" disabled={remove.isPending} onClick={() => remove.mutate()}>
+                <button type="button" className="secondary" disabled={remove.isPending} onClick={() => void sure(t("confirm.deleteOpening", { date: doc.as_at, amount: formatDecimal(doc.total_debit) }), t("mig.delete"), () => remove.mutate(), true)}>
                   {t("mig.delete")}
                 </button>
               )}
@@ -186,13 +188,13 @@ function Document({ doc }: { doc: OpeningDoc }) {
           )}
           {doc.can_approve && (
             <>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate("approve")}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveOpening", { date: doc.as_at, amount: formatDecimal(doc.total_debit) }), t("mig.approve"), () => act.mutate("approve"))}>
                 {t("mig.approve")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("return")}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnOpening", { date: doc.as_at, amount: formatDecimal(doc.total_debit) }), t("mig.return"), () => act.mutate("return"))}>
                 {t("mig.return")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("reject")}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectOpening", { date: doc.as_at, amount: formatDecimal(doc.total_debit) }), t("mig.reject"), () => act.mutate("reject"), true)}>
                 {t("mig.reject")}
               </button>
             </>

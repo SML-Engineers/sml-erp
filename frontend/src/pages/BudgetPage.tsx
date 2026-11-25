@@ -17,6 +17,7 @@ import {
 import { ApiError } from "../api/client";
 import { formatDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -57,6 +58,7 @@ function monthLabel(month: string): string {
  * export; sending it to the Director, who approves, returns or rejects it. */
 export default function BudgetPage() {
   const { t } = useTranslation();
+  const sure = useSure();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -278,11 +280,11 @@ export default function BudgetPage() {
           <div className="row-actions">
             {editing && (
               <>
-                <button type="button" disabled={act.isPending} onClick={() => act.mutate("submit")}>
+                <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitBudget", { label: data.label, version: data.version }), t("budget.submit"), () => act.mutate("submit"))}>
                   {t("budget.submit")}
                 </button>
                 {!data.approval && (
-                  <button type="button" className="secondary" disabled={discard.isPending} onClick={() => discard.mutate()}>
+                  <button type="button" className="secondary" disabled={discard.isPending} onClick={() => void sure(t("confirm.discardBudget", { label: data.label, version: data.version }), t("budget.discard"), () => discard.mutate(), true)}>
                     {t("budget.discard")}
                   </button>
                 )}
@@ -290,13 +292,13 @@ export default function BudgetPage() {
             )}
             {data.can_approve && (
               <>
-                <button type="button" disabled={act.isPending} onClick={() => act.mutate("approve")}>
+                <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveBudget", { label: data.label, version: data.version }), t("budget.approve"), () => act.mutate("approve"))}>
                   {t("budget.approve")}
                 </button>
-                <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("return")}>
+                <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnBudget", { label: data.label, version: data.version }), t("budget.return"), () => act.mutate("return"))}>
                   {t("budget.return")}
                 </button>
-                <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("reject")}>
+                <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectBudget", { label: data.label, version: data.version }), t("budget.reject"), () => act.mutate("reject"), true)}>
                   {t("budget.reject")}
                 </button>
               </>

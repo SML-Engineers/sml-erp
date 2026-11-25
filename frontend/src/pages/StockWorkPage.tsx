@@ -23,6 +23,7 @@ import {
 } from "../api/stockOps";
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function today(): string {
   const now = new Date();
@@ -291,6 +292,7 @@ function AdjustmentForm() {
 
 function AdjustmentCard({ doc }: { doc: StockAdjustmentDoc }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const act = useMutation({
@@ -319,19 +321,19 @@ function AdjustmentCard({ doc }: { doc: StockAdjustmentDoc }) {
         <div className="inline-form">
           <input aria-label={t("sw.commentOrReason")} placeholder={t("sw.commentOrReason")} value={text} onChange={(e) => setText(e.target.value)} />
           {doc.can_submit && (
-            <button type="button" disabled={act.isPending} onClick={() => act.mutate("submit")}>
+            <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitAdjustment", { doc: doc.number, store: doc.store.code }), t("sw.submit"), () => act.mutate("submit"))}>
               {t("sw.submit")}
             </button>
           )}
           {doc.can_approve && (
             <>
-              <button type="button" disabled={act.isPending} onClick={() => act.mutate("approve")}>
+              <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.approveAdjustment", { doc: doc.number, store: doc.store.code }), t("sw.approve"), () => act.mutate("approve"))}>
                 {t("sw.approve")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("return")}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.returnAdjustment", { doc: doc.number, store: doc.store.code }), t("sw.return"), () => act.mutate("return"))}>
                 {t("sw.return")}
               </button>
-              <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("reject")}>
+              <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.rejectAdjustment", { doc: doc.number, store: doc.store.code }), t("sw.reject"), () => act.mutate("reject"), true)}>
                 {t("sw.reject")}
               </button>
             </>
@@ -386,6 +388,7 @@ function Counts() {
 
 function CountCard({ doc }: { doc: StockCountDoc }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [counted, setCounted] = useState<Record<string, string>>(
     Object.fromEntries(doc.lines.map((x) => [`${x.item.id}|${x.lot_no}`, x.counted_quantity ?? ""])),
@@ -455,10 +458,10 @@ function CountCard({ doc }: { doc: StockCountDoc }) {
           <button type="button" className="secondary" disabled={save.isPending} onClick={() => save.mutate()}>
             {t("sw.saveCounts")}
           </button>
-          <button type="button" disabled={act.isPending} onClick={() => act.mutate("submit")}>
+          <button type="button" disabled={act.isPending} onClick={() => void sure(t("confirm.submitCount", { doc: doc.number, store: doc.store.code }), t("sw.submitCount"), () => act.mutate("submit"))}>
             {t("sw.submitCount")}
           </button>
-          <button type="button" className="secondary" disabled={act.isPending} onClick={() => act.mutate("cancel")}>
+          <button type="button" className="secondary" disabled={act.isPending} onClick={() => void sure(t("confirm.cancelCount", { doc: doc.number, store: doc.store.code }), t("sw.cancelCount"), () => act.mutate("cancel"), true)}>
             {t("sw.cancelCount")}
           </button>
         </div>

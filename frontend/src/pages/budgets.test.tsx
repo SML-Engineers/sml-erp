@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 
 import type { BudgetDetail } from "../api/budgets";
 import { mockApi, renderAt } from "../test-utils";
@@ -82,4 +82,14 @@ test("the Director approves a budget waiting for approval", async () => {
   expect(await screen.findByText("Sales")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Approve" }));
   await waitFor(() => expect(calls).toHaveBeenCalledWith("/api/v1/budgets/4/approve/", expect.objectContaining({ method: "POST" })));
+});
+
+test("asks before approving a budget; No sends nothing (testing T49)", async () => {
+  const waiting: BudgetDetail = { ...draft, status: "awaiting_approval", can_edit: false, can_approve: true };
+  const calls = mockApi({ "GET /api/v1/budgets/4/": { body: waiting } });
+  renderAt("/budgets/4", <BudgetPage />, "/budgets/:id", { ask: true });
+  fireEvent.click(await screen.findByRole("button", { name: "Approve" }));
+  const dialog = await screen.findByRole("alertdialog", { name: "Approve budget 2027-28 (version 1)?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith("/api/v1/budgets/4/approve/", expect.anything());
 });

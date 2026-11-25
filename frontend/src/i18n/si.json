@@ -1142,6 +1142,27 @@
     "approveShift": "{{day}} දින {{shift}} මුරයේ {{section}} වාර්තාව අනුමත කරන්නද?",
     "returnShift": "{{day}} දින {{shift}} මුරයේ {{section}} වාර්තාව අධීක්ෂකට ආපසු යවන්නද?",
     "approveCorrection": "{{day}} දින {{shift}} මුරයේ {{section}} වාර්තාවේ නිවැරදි කිරීම අනුමත කරන්නද?",
-    "rejectCorrection": "{{day}} දින {{shift}} මුරයේ {{section}} වාර්තාවේ නිවැරදි කිරීම ප්‍රතික්ෂේප කරන්නද?"
+    "rejectCorrection": "{{day}} දින {{shift}} මුරයේ {{section}} වාර්තාවේ නිවැරදි කිරීම ප්‍රතික්ෂේප කරන්නද?",
+    "submitAdjustment": "තොග ගැළපීම {{doc}} ({{store}}) අධ්‍යක්ෂවරයාට යවන්නද?",
+    "approveAdjustment": "තොග ගැළපීම {{doc}} ({{store}}) අනුමත කරන්නද? තොගය වෙනස් වී එය සටහන් වේ.",
+    "returnAdjustment": "තොග ගැළපීම {{doc}} ({{store}}) ආපසු යවන්නද?",
+    "rejectAdjustment": "තොග ගැළපීම {{doc}} ({{store}}) ප්‍රතික්ෂේප කරන්නද?",
+    "submitCount": "තොග ගණන් කිරීම {{doc}} ({{store}}) ඉදිරිපත් කරන්නද? මෙයින් පසු ගණන් වෙනස් කළ නොහැක.",
+    "cancelCount": "තොග ගණන් කිරීම {{doc}} ({{store}}) අවලංගු කරන්නද?",
+    "submitBudget": "අයවැය {{label}} (අනුවාදය {{version}}) අධ්‍යක්ෂවරයාට යවන්නද?",
+    "discardBudget": "අයවැය කෙටුම්පත {{label}} (අනුවාදය {{version}}) ඉවත දමන්නද?",
+    "approveBudget": "අයවැය {{label}} (අනුවාදය {{version}}) අනුමත කරන්නද?",
+    "returnBudget": "අයවැය {{label}} (අනුවාදය {{version}}) වෙනස් කිරීමට ආපසු යවන්නද?",
+    "rejectBudget": "අයවැය {{label}} (අනුවාදය {{version}}) ප්‍රතික්ෂේප කරන්නද?",
+    "submitOpening": "{{date}} දිනට ආරම්භක ශේෂ (එකතුව {{amount}}) අධ්‍යක්ෂවරයාට යවන්නද?",
+    "deleteOpening": "{{date}} දිනට ආරම්භක ශේෂ කෙටුම්පත (එකතුව {{amount}}) මකන්නද?",
+    "approveOpening": "{{date}} දිනට ආරම්භක ශේෂ (එකතුව {{amount}}) අනුමත කර සටහන් කරන්නද?",
+    "returnOpening": "{{date}} දිනට ආරම්භක ශේෂ වෙනස් කිරීමට ආපසු යවන්නද?",
+    "rejectOpening": "{{date}} දිනට ආරම්භක ශේෂ (එකතුව {{amount}}) ප්‍රතික්ෂේප කරන්නද?",
+    "approveGratuity": "{{from}} සිට පාරිතෝෂික නීතිය අනුමත කරන්නද?",
+    "rejectGratuity": "{{from}} සිට පාරිතෝෂික නීතිය ප්‍රතික්ෂේප කරන්නද?",
+    "withdrawGratuity": "{{from}} සිට පාරිතෝෂික නීතිය ඉල්ලා අස්කර ගන්නද?",
+    "postRevaluation": "{{month}} සඳහා නැවත ඇගයීම සටහන් කරන්නද?",
+    "discardRevaluation": "{{month}} සඳහා නැවත ඇගයීම ඉවත දමන්නද?"
   }
 }

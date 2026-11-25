@@ -13,6 +13,7 @@ import {
   type RevaluationRow,
 } from "../api/revaluation";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function lastMonth(): string {
   const now = new Date();
@@ -34,6 +35,7 @@ function ErrorLine({ error }: { error: unknown }) {
  * the month-end rate, checked by the Accountant and posted. */
 export default function RevaluationPage() {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [month, setMonth] = useState(lastMonth());
   const [typed, setTyped] = useState<Record<string, string>>({});
@@ -115,8 +117,8 @@ export default function RevaluationPage() {
           key={r.id}
           run={r}
           busy={post.isPending || discard.isPending}
-          onPost={() => post.mutate(r.id)}
-          onDiscard={() => discard.mutate(r.id)}
+          onPost={() => void sure(t("confirm.postRevaluation", { month: r.month_end }), t("reval.post"), () => post.mutate(r.id))}
+          onDiscard={() => void sure(t("confirm.discardRevaluation", { month: r.month_end }), t("reval.discard"), () => discard.mutate(r.id), true)}
         />
       ))}
     </main>

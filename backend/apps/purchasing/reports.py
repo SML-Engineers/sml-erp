@@ -4,6 +4,8 @@
 - Goods received not invoiced (GRNI): accepted goods waiting for the supplier's invoice, at
   the PO price, next to the GRNI account's balance in the ledger.
 - Supplier invoices held for discrepancies.
+- Rejected goods waiting in the rejected stores to go back, with the days waited (owner,
+  22 Nov 2026: within 14 days).
 - Exceptions approved by the Director: GRN excesses, QC deviations, invoice differences,
   returns of accepted goods and advance payments.
 - Receipts and rejections by supplier, with late deliveries and the rejection rate.
@@ -26,7 +28,7 @@ from apps.core import approvals
 from apps.core.access import division_scope, effective_access
 from apps.core.exports import Column
 from apps.core.models import ApprovalLog, ApprovalState, User
-from apps.inventory import inspections
+from apps.inventory import inspections, rejected
 from apps.inventory.models import (
     GoodsReceipt,
     GoodsReceiptLine,
@@ -116,6 +118,55 @@ def open_orders(user: User, *, division: str = "", overdue_only: bool = False) -
             }
         )
     rows.sort(key=lambda r: (not r["overdue"], r["delivery_date"] or date.max, r["label"]))
+    return rows
+
+
+# --- Rejected stock waiting to go back ------------------------------------------------------
+
+REJECTED_COLUMNS = [
+    Column("since", "In since", "date"),
+    Column("days", "Days waiting", "number", width=0.7),
+    Column("division", "Division", width=0.6),
+    Column("store", "Store", width=0.9),
+    Column("item", "Item", width=2),
+    Column("lot_no", "Lot", width=1.3),
+    Column("quantity", "Quantity", "number", width=0.8),
+    Column("unit", "Unit", width=0.5),
+    Column("grn", "GRN", width=1.2),
+    Column("supplier", "Supplier", width=1.8),
+    Column("po", "PO", width=1.2),
+]
+
+
+def rejected_stock(user: User, *, division: str = "", over_only: bool = False) -> list[dict]:
+    """Every lot in the rejected stores of the user's divisions, oldest first, with the days
+    it has waited (owner, 22 Nov 2026: return within 14 days)."""
+    if not effective_access(user).has("purchasing", "view"):
+        return []
+    movements = _division(StockMovement.objects.filter(division__in=division_scope(user)), division)
+    rows = []
+    for lot in rejected.lots(movements):
+        if over_only and not lot["over"]:
+            continue
+        grn = lot["grn"]
+        rows.append(
+            {
+                "since": lot["since"],
+                "days": lot["days"],
+                "over": lot["over"],
+                "division": lot["store"].division.code,
+                "store": lot["store"].code,
+                "item_id": lot["item"].id,
+                "item": f"{lot['item'].code} {lot['item'].name}",
+                "lot_no": lot["lot_no"],
+                "quantity": _qty(lot["quantity"]),
+                "unit": lot["item"].unit,
+                "grn_id": grn.id if grn else None,
+                "grn": grn.number if grn else "",
+                "supplier": grn.supplier.name if grn else "",
+                "po": grn.purchase_order.label if grn and grn.purchase_order_id else "",
+            }
+        )
     return rows
 
 

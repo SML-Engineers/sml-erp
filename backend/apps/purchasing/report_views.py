@@ -72,6 +72,23 @@ class OpenOrdersView(_Reports):
         ) or Response(rows)
 
 
+class RejectedStockView(_Reports):
+    """Lots in the rejected stores, oldest first; ?over=1 only those over 14 days."""
+
+    def get(self, request):
+        division = request.query_params.get("division", "")
+        over = request.query_params.get("over") in ("1", "true")
+        rows = reports.rejected_stock(request.user, division=division, over_only=over)
+        return _export(
+            request,
+            rows,
+            title="Rejected stock waiting to go back",
+            subtitle=_as_at(division),
+            columns=reports.REJECTED_COLUMNS,
+            filename="rejected-stock",
+        ) or Response(rows)
+
+
 class GrniView(_Reports):
     def get(self, request):
         division = request.query_params.get("division", "")

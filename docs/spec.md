@@ -941,7 +941,8 @@ Purchase Order → Goods Receiving Note (GRN) → QC acceptance → Supplier Inv
 
 ### 5A.7 Reports
 
-Open POs and overdue deliveries; goods received not invoiced (GRNI); invoices held for
+Open POs and overdue deliveries; goods received not invoiced (GRNI); rejected stock waiting
+to go back, with the days waited (target 14 days, owner 22 Nov 2026); invoices held for
 discrepancies; three-way-match exceptions approved; receipts and rejections by supplier;
 stock on hand by store and lot, with value; the full trail of any PO, GRN or invoice.
 
@@ -1594,6 +1595,7 @@ Each phase ends with user acceptance testing by the people who will use it, then
 | Receiving on a phone (testing, 22 Nov 2026) | On a phone the GRN lines and the package (bag) list show one card per line, each figure with its name, so receiving needs no sideways scrolling (testing T37) | 5A |
 | Quantities are numbers in Excel (testing, 22 Nov 2026) | In every report download, quantities are numbers Excel can add up (shown 1,403 or 4,800.5), not text; the PDF shows them the same way (testing T32) | 5A |
 | Bought-out parts on their own account (owner, 22 Nov 2026) | A new account 1215 Bought-out parts, under 1200 Inventory, is the default inventory account of bought-out parts instead of 1210 Raw materials. Bought-out items with no stock movement yet move to 1215; an item that already has stock keeps 1210, so the stock and the value posted stay in step (the Accountant can change it later) | 5A |
+| Rejected goods back within 14 days (owner, 22 Nov 2026) | Rejected and damaged goods are to go back to the supplier within 14 days. Purchasing reports → Rejected stock lists every lot in the rejected stores, oldest first, with the days waited (over 14 in red); the stores person and purchasing of the division are told once, under the bell and by email, when a lot has waited over 14 days. Our own debit note for already-invoiced goods follows in a later PR | 5A |
 
 **Still needed for initial setup**
 

@@ -2796,6 +2796,7 @@
       "open": "Open purchase orders",
       "overdue": "Overdue deliveries",
       "grni": "Goods received not invoiced",
+      "rejected": "Rejected stock",
       "held": "Invoices held",
       "exceptions": "Exceptions approved",
       "suppliers": "By supplier"
@@ -2804,6 +2805,7 @@
       "open": "Approved and partly received purchase orders, with what is still to come.",
       "overdue": "Open purchase orders past their delivery date.",
       "grni": "Goods QC accepted and the supplier has not yet invoiced, at the PO price. The total should equal the balance of the Goods received not invoiced account.",
+      "rejected": "Rejected and damaged goods waiting in the rejected stores to go back to the supplier, oldest first. The target is to return them within 14 days; lots waiting longer are in red, and the stores person and purchasing are reminded once.",
       "held": "Supplier invoices held by the three-way match, and those waiting for the Director's exception.",
       "exceptions": "Everything the Director approved outside the normal rules: excess deliveries, QC deviations, invoice differences, returns of accepted goods and advance payments.",
       "suppliers": "What each supplier delivered, how much was rejected or damaged, late deliveries and returns."
@@ -2851,7 +2853,13 @@
     "unpaid": "LKR {{amount}} unpaid",
     "advance": "advance",
     "paidBy": "paid by {{payments}}",
-    "invoiceWaiting": "Invoice waiting"
+    "invoiceWaiting": "Invoice waiting",
+    "inSince": "In since",
+    "daysWaiting": "Days waiting",
+    "store": "Store",
+    "lot": "Lot",
+    "quantity": "Quantity",
+    "onlyOver": "Only those over 14 days"
   },
   "mj": {
     "title": "Manual journals",

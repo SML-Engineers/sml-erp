@@ -26,6 +26,7 @@ import {
 } from "../api/taxes";
 import RemoveWithReason from "../components/RemoveWithReason";
 import { formatDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -216,6 +217,7 @@ function NewTax() {
 
 function ComponentPanel({ component, canManage }: { component: TaxComponent; canManage: boolean }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const save = useSave();
   const accounts = useQuery({ queryKey: [...chartKey, "accounts", false], queryFn: () => listLedgerAccounts(false), enabled: canManage });
   const [from, setFrom] = useState("");
@@ -272,7 +274,7 @@ function ComponentPanel({ component, canManage }: { component: TaxComponent; can
                     <RemoveWithReason
                       label={t("taxes.removeRate")}
                       pending={remove.isPending}
-                      onRemove={(why) => remove.mutate({ id: r.id, why })}
+                      onRemove={(why) => void sure(t("confirm.removeTaxRate", { name: component.name, rate: r.rate, from: r.effective_from }), t("taxes.removeRate"), () => remove.mutate({ id: r.id, why }), true)}
                     />
                   )}
                 </td>
@@ -337,7 +339,14 @@ function ComponentPanel({ component, canManage }: { component: TaxComponent; can
               <button type="submit" disabled={update.isPending}>
                 {t("taxes.save")}
               </button>
-              <button type="button" className="secondary" onClick={() => update.mutate({ is_active: !component.is_active })}>
+              <button type="button" className="secondary" onClick={() =>
+                void sure(
+                  t(component.is_active ? "confirm.switchOffTax" : "confirm.switchOnTax", { name: component.name }),
+                  t(component.is_active ? "taxes.switchOff" : "taxes.switchOn"),
+                  () => update.mutate({ is_active: !component.is_active }),
+                  component.is_active,
+                )
+              }>
                 {component.is_active ? t("taxes.switchOff") : t("taxes.switchOn")}
               </button>
             </div>
@@ -353,6 +362,7 @@ const USES: TaxUse[] = ["both", "sales", "purchases"];
 
 function CodePanel(props: { code?: TaxCode; components: TaxComponent[]; canManage: boolean; onGone: () => void }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const save = useSave();
   const { code } = props;
   const [values, setValues] = useState({
@@ -493,12 +503,19 @@ function CodePanel(props: { code?: TaxCode; components: TaxComponent[]; canManag
                 {t("taxes.save")}
               </button>
               {code && (
-                <button type="button" className="secondary" onClick={() => toggle.mutate()}>
+                <button type="button" className="secondary" onClick={() =>
+                    void sure(
+                      t(code.is_active ? "confirm.switchOffTax" : "confirm.switchOnTax", { name: code.code }),
+                      t(code.is_active ? "taxes.switchOff" : "taxes.switchOn"),
+                      () => toggle.mutate(),
+                      code.is_active,
+                    )
+                  }>
                   {code.is_active ? t("taxes.switchOff") : t("taxes.switchOn")}
                 </button>
               )}
               {code && !code.in_use && (
-                <button type="button" className="danger" onClick={() => remove.mutate()}>
+                <button type="button" className="danger" onClick={() => void sure(t("confirm.deleteTaxCode", { name: code.code }), t("taxes.delete"), () => remove.mutate(), true)}>
                   {t("taxes.delete")}
                 </button>
               )}

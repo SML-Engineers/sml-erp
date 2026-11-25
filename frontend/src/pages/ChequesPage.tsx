@@ -18,6 +18,7 @@ import {
 import { ApiError } from "../api/client";
 import { listPayAccounts } from "../api/payments";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
+import { useSure } from "../components/ConfirmDialog";
 
 function today(): string {
   const now = new Date();
@@ -123,6 +124,7 @@ function Received() {
 
 function ReceivedRow({ row }: { row: ReceivedCheque }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [on, setOn] = useState(today());
   const [reason, setReason] = useState("");
@@ -158,12 +160,12 @@ function ReceivedRow({ row }: { row: ReceivedCheque }) {
           <div className="inline-form">
             <input type="date" aria-label={t("cheques.date")} value={on} onChange={(e) => setOn(e.target.value)} />
             {row.status === "deposited" && (
-              <button type="button" className="small" disabled={clear.isPending} onClick={() => clear.mutate()}>
+              <button type="button" className="small" disabled={clear.isPending} onClick={() => void sure(t("confirm.clearReceivedCheque", { doc: row.number, amount: formatDecimal(row.amount_lkr) }), t("cheques.clear"), () => clear.mutate())}>
                 {t("cheques.clear")}
               </button>
             )}
             <input aria-label={t("cheques.reason")} placeholder={t("cheques.reason")} value={reason} onChange={(e) => setReason(e.target.value)} />
-            <button type="button" className="small secondary" disabled={back.isPending} onClick={() => back.mutate()}>
+            <button type="button" className="small secondary" disabled={back.isPending} onClick={() => void sure(t("confirm.returnCheque", { doc: row.number, amount: formatDecimal(row.amount_lkr) }), t("cheques.return"), () => back.mutate(), true)}>
               {t("cheques.return")}
             </button>
           </div>
@@ -334,6 +336,7 @@ function Issued() {
 
 function IssuedRow({ row }: { row: IssuedCheque }) {
   const { t } = useTranslation();
+  const sure = useSure();
   const queryClient = useQueryClient();
   const [on, setOn] = useState(today());
   const clear = useMutation({
@@ -361,7 +364,7 @@ function IssuedRow({ row }: { row: IssuedCheque }) {
         {row.status === "issued" && row.payment && (
           <div className="inline-form">
             <input type="date" aria-label={t("cheques.date")} value={on} onChange={(e) => setOn(e.target.value)} />
-            <button type="button" className="small" disabled={clear.isPending} onClick={() => clear.mutate()}>
+            <button type="button" className="small" disabled={clear.isPending} onClick={() => void sure(t("confirm.clearIssuedCheque", { doc: row.number }), t("cheques.clear"), () => clear.mutate())}>
               {t("cheques.clear")}
             </button>
           </div>

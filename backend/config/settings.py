@@ -194,6 +194,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.sales.tasks.post_due_cheques",
         "schedule": crontab(hour=0, minute=35),
     },
+    # Rejected goods waiting over 14 days to go back to the supplier (owner, 22 Nov 2026):
+    # the stores person and purchasing are told once per lot, early each morning.
+    "remind-rejected-stock": {
+        "task": "apps.purchasing.tasks.remind_rejected_stock",
+        "schedule": crontab(hour=7, minute=20),
+    },
     # Stock at or below its reorder level (P2-13): the stores person and purchasing are told.
     "check-reorder-levels": {
         "task": "apps.purchasing.tasks.check_reorder_levels",

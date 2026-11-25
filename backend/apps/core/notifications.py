@@ -36,6 +36,7 @@ EVENTS = {
     "job_on_hold": "A job failed an inspection and waits for my decision",
     "order_profit_alert": "An order is over its cost, below its margin or over its rejects",
     "document_cancelled": "A document I approved was cancelled",
+    "rejected_stock_waiting": "Rejected goods have waited over 14 days to go back to the supplier",
 }
 
 log = logging.getLogger(__name__)

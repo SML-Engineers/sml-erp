@@ -109,6 +109,7 @@ urlpatterns = [
     path("supplier-returns/<int:pk>/pdf/", rv.PdfView.as_view(), name="rtn-pdf"),
     path("purchasing-reports/open-orders/", pr.OpenOrdersView.as_view(), name="pr-open"),
     path("purchasing-reports/grni/", pr.GrniView.as_view(), name="pr-grni"),
+    path("purchasing-reports/rejected-stock/", pr.RejectedStockView.as_view(), name="pr-rejected"),
     path("purchasing-reports/held-invoices/", pr.HeldInvoicesView.as_view(), name="pr-held"),
     path("purchasing-reports/exceptions/", pr.ExceptionsView.as_view(), name="pr-exceptions"),
     path("purchasing-reports/suppliers/", pr.SuppliersView.as_view(), name="pr-suppliers"),

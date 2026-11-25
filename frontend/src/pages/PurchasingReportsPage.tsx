@@ -11,6 +11,7 @@ const TABS: { id: string; report: ReportName; filters?: Record<string, string>; 
   { id: "open", report: "open-orders" },
   { id: "overdue", report: "open-orders", filters: { overdue: "1" } },
   { id: "grni", report: "grni" },
+  { id: "rejected", report: "rejected-stock" },
   { id: "held", report: "held-invoices" },
   { id: "exceptions", report: "exceptions", period: true },
   { id: "suppliers", report: "suppliers", period: true },
@@ -28,6 +29,7 @@ export default function PurchasingReportsPage() {
   const tab = TABS.find((x) => x.id === params.get("tab")) ?? TABS[0];
   const filters: Record<string, string> = { ...(tab.filters ?? {}) };
   for (const name of ["division", "from", "to"]) if (params.get(name)) filters[name] = params.get(name)!;
+  if (tab.id === "rejected" && params.get("over")) filters.over = "1";
   const data = useQuery({ queryKey: [...prKey, tab.id, filters], queryFn: () => getReport<Row[] | { rows: Row[]; ledger_balance: string }>(tab.report, filters) });
   const rows = Array.isArray(data.data) ? data.data : (data.data?.rows ?? []);
   const set = (name: string, value: string) => {
@@ -55,6 +57,26 @@ export default function PurchasingReportsPage() {
       text("quantity", t("pr.notInvoiced")),
       money("value", t("stock.value")),
       text("note", t("pr.invoiceWaiting")),
+    ],
+    rejected: [
+      text("since", t("pr.inSince")),
+      {
+        id: "days",
+        header: t("pr.daysWaiting"),
+        value: (r) => Number(r.days ?? 0),
+        cell: (r) => (r.over ? <span className="form-error">{String(r.days)}</span> : String(r.days)),
+      },
+      text("store", t("pr.store")),
+      text("item", t("po.item")),
+      text("lot_no", t("pr.lot")),
+      { id: "quantity", header: t("pr.quantity"), value: (r) => `${String(r.quantity)} ${String(r.unit)}` },
+      {
+        id: "grn",
+        header: t("grn.number"),
+        value: (r) => String(r.grn ?? ""),
+        cell: (r) => (r.grn_id ? <Link to={`/goods-receipts/${String(r.grn_id)}`}>{String(r.grn)}</Link> : ""),
+      },
+      text("supplier", t("po.supplier")),
     ],
     held: [
       { id: "no", header: t("si.invoiceNo"), value: (r) => String(r.invoice_no), cell: (r) => <Link to={`/supplier-invoices/${r.id}`}>{String(r.invoice_no)}</Link> },
@@ -103,6 +125,12 @@ export default function PurchasingReportsPage() {
           {t("vouchers.division")}
           <input value={params.get("division") ?? ""} maxLength={2} onChange={(e) => set("division", e.target.value.toUpperCase())} />
         </label>
+        {tab.id === "rejected" && (
+          <label className="check">
+            <input type="checkbox" checked={Boolean(params.get("over"))} onChange={(e) => set("over", e.target.checked ? "1" : "")} />
+            {t("pr.onlyOver")}
+          </label>
+        )}
         {tab.period && (
           <>
             <label>

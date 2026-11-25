@@ -87,6 +87,38 @@ test("the overdue deliveries tab lists the late POs with their total", async () 
   expect(calls).toHaveBeenCalledWith("/api/v1/purchasing-reports/open-orders/?overdue=1", expect.anything());
 });
 
+// Owner, 22 Nov 2026: rejected goods go back within 14 days; a list shows those waiting.
+test("rejected stock lists the lots waiting, those over 14 days in red, and filters them", async () => {
+  const lot = { store: "IM-REJ", item: "M8-INSERT Insert", unit: "pcs", grn_id: 4, grn: "GRN26112101", supplier: "Inserts Lanka" };
+  mockApi({
+    "GET /api/v1/purchasing-reports/rejected-stock/": {
+      body: [
+        { ...lot, since: "2026-11-05", days: 20, over: true, lot_no: "GRN26112101-1", quantity: "20" },
+        { ...lot, since: "2026-11-20", days: 5, over: false, lot_no: "GRN26112102-1", quantity: "3" },
+      ],
+    },
+    "GET /api/v1/purchasing-reports/rejected-stock/?over=1": {
+      body: [{ ...lot, since: "2026-11-05", days: 20, over: true, lot_no: "GRN26112101-1", quantity: "20" }],
+    },
+  });
+  renderAt("/purchasing/reports?tab=rejected", <PurchasingReportsPage />, "/purchasing/reports");
+  const table = await screen.findByRole("table", { name: "Rejected stock" });
+  expect(within(table).getByText("20")).toHaveClass("form-error");
+  expect(within(table).getByText("5")).not.toHaveClass("form-error");
+  expect(within(table).getByText("20 pcs")).toBeInTheDocument();
+  expect(within(table).getAllByRole("link", { name: "GRN26112101" })[0]).toHaveAttribute("href", "/goods-receipts/4");
+  expect(screen.getByRole("link", { name: "Excel" })).toHaveAttribute("href", "/api/v1/purchasing-reports/rejected-stock/?export=xlsx");
+
+  fireEvent.click(screen.getByLabelText("Only those over 14 days"));
+  await waitFor(() =>
+    expect(within(screen.getByRole("table", { name: "Rejected stock" })).queryByText("GRN26112102-1")).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole("link", { name: "Excel" })).toHaveAttribute(
+    "href",
+    "/api/v1/purchasing-reports/rejected-stock/?over=1&export=xlsx",
+  );
+});
+
 test("the trail links every document of a PO", async () => {
   mockApi({
     "GET /api/v1/purchasing-reports/trail/?grn=4": {

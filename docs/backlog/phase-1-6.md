@@ -289,6 +289,14 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kamal", "Waiting for Ruwan
     (Director)", "Sent back by Ruwan" (not "Returned by", which would read as the goods),
     "Goods returned" or "Goods returned, approved by Ruwan".
+  - Owner, 22 Nov 2026 (from his testing): rejected goods go back **within 14 days**.
+    Purchasing reports → **Rejected stock** lists every lot in the rejected stores, oldest
+    first, with the day it came in, the days it has waited (over 14 in red; "Only those over
+    14 days"), the GRN, supplier and PO; Excel and PDF. Each morning (07:20) the stores person
+    and purchasing of the division are told once, under the bell and by email, of each lot
+    that has waited over 14 days (`apps/inventory/rejected.py`). Still to build: our own
+    debit note when already-invoiced goods leave, matched later to the supplier's credit
+    note (input VAT waits for the Accountant, A1).
 
 ## G. Reports and go-live
 

@@ -2,7 +2,7 @@ import { API_BASE, apiGet } from "./client";
 
 export const prKey = ["purchasing-reports"];
 
-export type ReportName = "open-orders" | "grni" | "held-invoices" | "exceptions" | "suppliers";
+export type ReportName = "open-orders" | "grni" | "rejected-stock" | "held-invoices" | "exceptions" | "suppliers";
 
 export interface PurchasingDashboard {
   open_orders: number;

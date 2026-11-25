@@ -386,6 +386,36 @@ class DebitNote(models.Model):
         return self.number
 
 
+class SupplierCreditNote(models.Model):
+    """The supplier's own credit note for one of our debit notes (owner, 22 Nov 2026: our debit
+    note is raised when the goods leave, and the supplier's credit note is matched to it
+    later). It only records and tracks the supplier's document: our debit note has already
+    reduced what we owe, so nothing is posted. One supplier credit note may cover several of
+    our debit notes. Never changed (database guard); a mistake is removed by the Accountant
+    with a reason, which the audit log keeps."""
+
+    debit_note = models.OneToOneField(
+        DebitNote, on_delete=models.PROTECT, related_name="supplier_credit"
+    )
+    credit_note_no = models.CharField(max_length=50)
+    credit_note_date = models.DateField()
+    file = models.FileField(upload_to="supplier-credit-notes/%Y/%m/")
+    file_name = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
+    )
+    recorded_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["recorded_at", "id"]
+
+    def __str__(self):
+        return f"{self.credit_note_no} for {self.debit_note.number}"
+
+
 # --- Supplier statements (P2-10) -------------------------------------------------------------
 
 

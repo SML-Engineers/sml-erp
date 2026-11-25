@@ -10,10 +10,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core import exports
+from apps.core.exports import Column
 from apps.core.permissions import AreaAccess
 from apps.inventory import receipts as grns
 
-from . import invoices, orders, reports
+from . import credit_notes, invoices, orders, reports
 
 
 class _Reports(APIView):
@@ -87,6 +88,38 @@ class RejectedStockView(_Reports):
             columns=reports.REJECTED_COLUMNS,
             filename="rejected-stock",
         ) or Response(rows)
+
+
+class DebitNotesView(_Reports):
+    """Our debit notes and the supplier's credit note for each; ?waiting=1 only those the
+    supplier has not yet confirmed (owner, 22 Nov 2026)."""
+
+    def get(self, request):
+        division = request.query_params.get("division", "")
+        waiting = request.query_params.get("waiting") in ("1", "true")
+        rows = credit_notes.rows(request.user, division=division, waiting_only=waiting)
+        return _export(
+            request,
+            rows,
+            title="Debit notes and supplier credit notes",
+            subtitle=_as_at(division),
+            columns=DEBIT_NOTE_COLUMNS,
+            filename="debit-notes",
+        ) or Response(rows)
+
+
+DEBIT_NOTE_COLUMNS = [
+    Column("number", "Debit note", width=1.2),
+    Column("date", "Raised", "date"),
+    Column("division", "Division", width=0.6),
+    Column("supplier", "Supplier", width=1.8),
+    Column("invoice", "Invoice", width=1.2),
+    Column("return", "Return", width=1.2),
+    Column("total_lkr", "Amount (LKR)", "money"),
+    Column("credit_note", "Supplier credit note", width=1.3),
+    Column("credit_note_date", "Credit note date", "date"),
+    Column("days_waiting", "Days waiting", "number", width=0.7),
+]
 
 
 class GrniView(_Reports):

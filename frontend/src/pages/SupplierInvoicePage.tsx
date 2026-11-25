@@ -9,6 +9,7 @@ import { listPayees } from "../api/payees";
 import {
   addInvoiceScan,
   approveInvoiceException,
+  creditNoteScanUrl,
   cancelSupplierInvoice,
   createSupplierInvoice,
   deleteSupplierInvoice,
@@ -16,6 +17,8 @@ import {
   getSupplierInvoice,
   invoiceScanUrl,
   matchSupplierInvoice,
+  recordCreditNote,
+  removeCreditNote,
   removeInvoiceScan,
   reopenSupplierInvoice,
   requestInvoiceException,
@@ -23,6 +26,7 @@ import {
   setOffAdvances,
   siKey,
   updateSupplierInvoice,
+  type DebitNoteRow,
   type InvoiceDetail,
   type InvoiceInput,
   supplierInvoiceStatus,
@@ -32,7 +36,7 @@ import Trail from "../components/Trail";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 import { cancelledNote } from "../lib/cancelled";
-import { useConfirm } from "../components/ConfirmDialog";
+import { useConfirm, useSure } from "../components/ConfirmDialog";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -104,16 +108,7 @@ export default function SupplierInvoicePage() {
               ))}
             </ul>
           )}
-          {(data.debit_notes ?? []).length > 0 && (
-            <ul className="changes" aria-label={t("rtn.debitNotes")}>
-              {(data.debit_notes ?? []).map((d) => (
-                <li key={d.number}>
-                  {t("rtn.debitNote", { number: d.number, amount: formatDecimal(d.total_lkr), qty: formatQuantity(d.quantity) })}{" "}
-                  <Link to={`/supplier-returns/${d.return.id}`}>{d.return.number}</Link>
-                </li>
-              ))}
-            </ul>
-          )}
+          {(data.debit_notes ?? []).length > 0 && <DebitNotes invoice={data} />}
           {data.can_set_off && <SetOff invoice={data} />}
           {data.exception_reason && <p className="muted">{t("si.exceptionReason", { reason: data.exception_reason })}</p>}
           {data.cancel_reason && <p className="notice">{cancelledNote(t, data)}</p>}
@@ -388,6 +383,106 @@ function ReadOnly({ invoice }: { invoice: InvoiceDetail }) {
       </p>
       {invoice.notes && <p className="pre-line">{invoice.notes}</p>}
     </section>
+  );
+}
+
+/** Our debit notes on this invoice and, for each, the supplier's own credit note: recorded
+ * with its number, date and scan, or still awaited (owner, 22 Nov 2026). */
+function DebitNotes({ invoice }: { invoice: InvoiceDetail }) {
+  const { t } = useTranslation();
+  return (
+    <section className="panel" aria-label={t("rtn.debitNotes")}>
+      <h2>{t("rtn.debitNotes")}</h2>
+      <ul className="changes">
+        {(invoice.debit_notes ?? []).map((d) => (
+          <DebitNoteItem key={d.id} invoice={invoice} note={d} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function DebitNoteItem({ invoice, note }: { invoice: InvoiceDetail; note: DebitNoteRow }) {
+  const { t } = useTranslation();
+  const done = useDone();
+  const sure = useSure();
+  const [number, setNumber] = useState("");
+  const [date, setDate] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [reason, setReason] = useState("");
+  const record = useMutation({
+    mutationFn: () => recordCreditNote(invoice.id, note.id, { number, date, file: file as File }),
+    onSuccess: done,
+  });
+  const remove = useMutation({ mutationFn: () => removeCreditNote(invoice.id, note.id, reason), onSuccess: done });
+  const credit = note.credit_note;
+  return (
+    <li>
+      {t("rtn.debitNote", { number: note.number, amount: formatDecimal(note.total_lkr), qty: formatQuantity(note.quantity) })}{" "}
+      <Link to={`/supplier-returns/${note.return.id}`}>{note.return.number}</Link>
+      <div>
+        {credit ? (
+          <>
+            {t("rtn.creditNoteOf", { number: credit.number, date: credit.date, name: credit.recorded_by })}{" "}
+            <a href={creditNoteScanUrl(invoice.id, note.id)} target="_blank" rel="noreferrer">
+              {credit.file_name}
+            </a>
+          </>
+        ) : (
+          <span className="notice">{t("rtn.creditNoteWaiting")}</span>
+        )}
+      </div>
+      {!credit && invoice.can_record_credit_note && (
+        <form
+          className="inline-form"
+          aria-label={t("rtn.recordCreditNote", { number: note.number })}
+          onSubmit={(e) => {
+            e.preventDefault();
+            record.mutate();
+          }}
+        >
+          <label>
+            {t("rtn.creditNoteNo")}
+            <input value={number} required maxLength={50} onChange={(e) => setNumber(e.target.value)} />
+          </label>
+          <label>
+            {t("rtn.creditNoteDate")}
+            <input type="date" value={date} required onChange={(e) => setDate(e.target.value)} />
+          </label>
+          <label>
+            {t("rtn.creditNoteScan")}
+            <input type="file" accept="image/jpeg,image/png,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </label>
+          <button type="submit" disabled={record.isPending || !file}>
+            {t("rtn.recordCreditNoteButton")}
+          </button>
+        </form>
+      )}
+      {credit && invoice.can_remove_credit_note && (
+        <form
+          className="inline-form"
+          aria-label={t("rtn.removeCreditNote", { number: credit.number })}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void sure(
+              t("confirm.removeCreditNote", { credit: credit.number, number: note.number }),
+              t("rtn.removeCreditNoteButton"),
+              () => remove.mutate(),
+              true,
+            );
+          }}
+        >
+          <label>
+            {t("access.reason")}
+            <input value={reason} required onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <button type="submit" className="danger" disabled={remove.isPending}>
+            {t("rtn.removeCreditNoteButton")}
+          </button>
+        </form>
+      )}
+      <ErrorLine error={record.error ?? remove.error} />
+    </li>
   );
 }
 

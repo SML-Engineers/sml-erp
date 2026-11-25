@@ -565,12 +565,14 @@ def our_records(supplier: Supplier, currency, start: date, end: date) -> tuple[l
                 )
         for d in DebitNote.objects.filter(
             invoice__supplier=supplier, created_at__date__range=(start, end)
-        ):
+        ).select_related("supplier_credit"):
+            # The supplier's statement shows their own credit note number (owner, 22 Nov 2026).
+            theirs = getattr(d, "supplier_credit", None)
             credits.append(
                 {
                     "date": d.created_at.date(),
-                    "reference": d.number,
-                    "keys": {_key(d.number)},
+                    "reference": d.number + (f" / {theirs.credit_note_no}" if theirs else ""),
+                    "keys": {_key(d.number)} | ({_key(theirs.credit_note_no)} if theirs else set()),
                     "document": d.number,
                     "link": f"/supplier-invoices/{d.invoice_id}",
                     "amount": d.total_lkr,

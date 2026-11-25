@@ -3,7 +3,7 @@ Accounting: View, for the user's divisions. Changes are checked by the service."
 
 from decimal import Decimal
 
-from django.http import FileResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
@@ -16,9 +16,10 @@ from apps.core.models import Division
 from apps.core.permissions import AreaAccess
 from apps.masters.models import Supplier
 
-from . import advances, invoices
+from . import advances, credit_notes, invoices
+from .credit_notes import CreditNoteError
 from .invoices import InvoiceError, LineInput
-from .models import SupplierInvoice, SupplierInvoiceAttachment
+from .models import DebitNote, SupplierInvoice, SupplierInvoiceAttachment
 
 
 class _Invoices(APIView):
@@ -100,13 +101,18 @@ def _detail(i: SupplierInvoice, user) -> dict:
         ],
         "debit_notes": [
             {
+                "id": d.id,
                 "number": d.number,
                 "return": {"id": d.supplier_return_id, "number": d.supplier_return.number},
                 "quantity": str(d.quantity),
                 "total_lkr": str(d.total_lkr),
+                # The supplier's own credit note for it (owner, 22 Nov 2026).
+                "credit_note": _credit(getattr(d, "supplier_credit", None)),
             }
-            for d in i.debit_notes.select_related("supplier_return")
+            for d in i.debit_notes.select_related("supplier_return", "supplier_credit__recorded_by")
         ],
+        "can_record_credit_note": credit_notes.can_record(user),
+        "can_remove_credit_note": credit_notes.can_remove(user),
         "advances_waiting": str(advances.waiting(i)),
         "can_set_off": i.status == SupplierInvoice.Status.POSTED
         and advances.can_set_off(user)
@@ -181,6 +187,18 @@ def _detail(i: SupplierInvoice, user) -> dict:
             }
             for row in approvals.history(invoices.DOC, i.pk)
         ],
+    }
+
+
+def _credit(credit) -> dict | None:
+    if credit is None:
+        return None
+    return {
+        "number": credit.credit_note_no,
+        "date": credit.credit_note_date,
+        "file_name": credit.file_name,
+        "recorded_by": credit.recorded_by.full_name,
+        "recorded_at": credit.recorded_at,
     }
 
 
@@ -454,5 +472,56 @@ class AttachmentDetailView(_Invoices):
         try:
             invoices.remove_attachment(request.user, attachment)
         except InvoiceError as error:
+            return _error(error)
+        return Response(_fresh(invoice, request.user))
+
+
+class CreditNoteView(_Invoices):
+    """The supplier's credit note for one of this invoice's debit notes: POST records it
+    (number, date, file), GET opens its scan."""
+
+    parser_classes = [MultiPartParser]
+
+    def _note(self, request, pk, note_pk) -> tuple[SupplierInvoice, DebitNote]:
+        invoice = _get(request.user, pk)
+        return invoice, get_object_or_404(DebitNote, pk=note_pk, invoice=invoice)
+
+    def get(self, request, pk, note_pk):
+        _, note = self._note(request, pk, note_pk)
+        credit = getattr(note, "supplier_credit", None)
+        if credit is None:
+            raise Http404
+        return FileResponse(
+            credit.file.open("rb"),
+            content_type=credit.content_type,
+            filename=credit.file_name,
+            as_attachment=request.query_params.get("download") in ("1", "true"),
+        )
+
+    def post(self, request, pk, note_pk):
+        invoice, note = self._note(request, pk, note_pk)
+        try:
+            credit_notes.record(
+                request.user,
+                note,
+                number=request.data.get("number", ""),
+                credit_date=request.data.get("date", ""),
+                uploaded=request.FILES.get("file"),
+            )
+        except CreditNoteError as error:
+            return _error(error)
+        return Response(_fresh(invoice, request.user), status=status.HTTP_201_CREATED)
+
+
+class CreditNoteRemoveView(_Invoices):
+    def post(self, request, pk, note_pk):
+        invoice = _get(request.user, pk)
+        note = get_object_or_404(DebitNote, pk=note_pk, invoice=invoice)
+        credit = getattr(note, "supplier_credit", None)
+        if credit is None:
+            return _error("No supplier credit note is recorded for this debit note.")
+        try:
+            credit_notes.remove(request.user, credit, _text(request, "reason"))
+        except CreditNoteError as error:
             return _error(error)
         return Response(_fresh(invoice, request.user))

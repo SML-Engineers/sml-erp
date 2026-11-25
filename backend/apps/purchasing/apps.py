@@ -20,4 +20,5 @@ class PurchasingConfig(AppConfig):
         register(m.SupplierReturn)
         register(m.SupplierReturnLine)
         register(m.DebitNote)
+        register(m.SupplierCreditNote)
         register(m.SupplierStatement)

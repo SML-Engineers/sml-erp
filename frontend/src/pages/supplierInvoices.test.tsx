@@ -170,3 +170,107 @@ test("asks before deleting a draft invoice, and before matching and posting (tes
   fireEvent.click(within(match).getByRole("button", { name: "No, go back" }));
   expect(calls).not.toHaveBeenCalledWith("/api/v1/supplier-invoices/3/match/", expect.anything());
 });
+
+// Owner, 22 Nov 2026: the supplier's credit note is matched to our debit note later.
+const posted: InvoiceDetail = {
+  ...draft,
+  status: "posted",
+  can_edit: false,
+  journal: "JE26110004",
+  debit_notes: [
+    { id: 7, number: "DN26112501", return: { id: 5, number: "RTN26112501" }, quantity: "10.000", total_lkr: "1000.00", credit_note: null },
+  ],
+  can_record_credit_note: true,
+  can_remove_credit_note: false,
+};
+
+test("the clerk records the supplier's credit note against our debit note", async () => {
+  const recorded = {
+    ...posted,
+    debit_notes: [
+      {
+        ...posted.debit_notes![0],
+        credit_note: {
+          number: "SCN-0055",
+          date: "2026-11-26",
+          file_name: "cn.pdf",
+          recorded_by: "Nimal",
+          recorded_at: "2026-11-26T04:00:00Z",
+        },
+      },
+    ],
+  };
+  const calls = mockApi({
+    "GET /api/v1/supplier-invoices/3/": { body: posted },
+    "POST /api/v1/supplier-invoices/3/debit-notes/7/credit-note/": { status: 201, body: recorded },
+  });
+  renderAt("/supplier-invoices/3", <SupplierInvoicePage />, "/supplier-invoices/:id");
+  const panel = await screen.findByRole("region", { name: "Debit notes" });
+  expect(within(panel).getByText("Waiting for the supplier's credit note.")).toBeInTheDocument();
+  const form = within(panel).getByRole("form", { name: "Record the supplier's credit note for DN26112501" });
+  fireEvent.change(within(form).getByLabelText("Supplier's credit note no."), { target: { value: "SCN-0055" } });
+  fireEvent.change(within(form).getByLabelText("Its date"), { target: { value: "2026-11-26" } });
+  const pdf = new File(["%PDF-1.4"], "cn.pdf", { type: "application/pdf" });
+  fireEvent.change(within(form).getByLabelText("Scan (PDF, JPG or PNG)"), { target: { files: [pdf] } });
+  fireEvent.click(within(form).getByRole("button", { name: "Record credit note" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/supplier-invoices/3/debit-notes/7/credit-note/",
+      expect.objectContaining({ method: "POST" }),
+    ),
+  );
+  const sent = calls.mock.calls.find(([u]) => u === "/api/v1/supplier-invoices/3/debit-notes/7/credit-note/")![1]!.body as FormData;
+  expect([sent.get("number"), sent.get("date"), (sent.get("file") as File).name]).toEqual(["SCN-0055", "2026-11-26", "cn.pdf"]);
+  expect(await within(panel).findByText(/Supplier's credit note SCN-0055 of 2026-11-26, recorded by Nimal/)).toBeInTheDocument();
+  expect(within(panel).getByRole("link", { name: "cn.pdf" })).toHaveAttribute(
+    "href",
+    "/api/v1/supplier-invoices/3/debit-notes/7/credit-note/",
+  );
+});
+
+test("the Accountant is asked before removing a recorded credit note", async () => {
+  const withCredit: InvoiceDetail = {
+    ...posted,
+    can_record_credit_note: true,
+    can_remove_credit_note: true,
+    debit_notes: [
+      {
+        ...posted.debit_notes![0],
+        credit_note: {
+          number: "SCN-0055",
+          date: "2026-11-26",
+          file_name: "cn.pdf",
+          recorded_by: "Nimal",
+          recorded_at: "2026-11-26T04:00:00Z",
+        },
+      },
+    ],
+  };
+  const calls = mockApi({
+    "GET /api/v1/supplier-invoices/3/": { body: withCredit },
+    "POST /api/v1/supplier-invoices/3/debit-notes/7/credit-note/remove/": { body: posted },
+  });
+  renderAt("/supplier-invoices/3", <SupplierInvoicePage />, "/supplier-invoices/:id", { ask: true });
+  const form = await screen.findByRole("form", { name: "Remove credit note SCN-0055" });
+  expect(screen.queryByRole("form", { name: /Record the supplier's credit note/ })).not.toBeInTheDocument();
+  fireEvent.change(within(form).getByLabelText("Reason"), { target: { value: "wrong number" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Remove credit note" }));
+  const question = "Remove the supplier's credit note SCN-0055 from debit note DN26112501? It can then be recorded again.";
+  fireEvent.click(within(await screen.findByRole("alertdialog", { name: question })).getByRole("button", { name: "No, go back" }));
+  expect(calls).not.toHaveBeenCalledWith(expect.stringContaining("/remove/"), expect.anything());
+  fireEvent.click(within(form).getByRole("button", { name: "Remove credit note" }));
+  fireEvent.click(within(await screen.findByRole("alertdialog", { name: question })).getByRole("button", { name: "Remove credit note" }));
+  await waitFor(() =>
+    expect(calls).toHaveBeenCalledWith(
+      "/api/v1/supplier-invoices/3/debit-notes/7/credit-note/remove/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "wrong number" }) }),
+    ),
+  );
+});
+
+test("someone who may not record credit notes only sees that one is awaited", async () => {
+  mockApi({ "GET /api/v1/supplier-invoices/3/": { body: { ...posted, can_record_credit_note: false } } });
+  renderAt("/supplier-invoices/3", <SupplierInvoicePage />, "/supplier-invoices/:id");
+  expect(await screen.findByText("Waiting for the supplier's credit note.")).toBeInTheDocument();
+  expect(screen.queryByRole("form", { name: /Record the supplier's credit note/ })).not.toBeInTheDocument();
+});

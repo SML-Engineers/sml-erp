@@ -124,6 +124,50 @@ def test_the_po_prints_like_the_owners_sample(approved):
     assert b"DRAFT" not in pdf
 
 
+def test_the_totals_run_subtotal_tax_grand_total(approved):
+    """Testing T24 (21 Nov 2026): the Grand Total came first, in the lines box, then a
+    Subtotal box with the same amount. Now one box: Subtotal, each tax, Grand Total."""
+    pdf = text(approved)
+    assert pdf.count(b"Grand Total") == 1
+    subtotal = pdf.index(b"Subtotal")
+    vat = pdf.index(b"VAT Total (18%)")
+    grand = pdf.index(b"Grand Total")
+    assert subtotal < vat < grand
+    assert pdf.index(b"LKR 177,000.00") < pdf.index(b"LKR 31,860.00") < pdf.index(b"LKR 208,860.00")
+
+
+def test_a_po_without_tax_still_shows_a_tax_line_of_nil(buyer):
+    """A PO with no tax code shows "Tax LKR 0.00", so the reader sees no tax was charged."""
+    order = orders.create(
+        buyer,
+        supplier=Supplier.objects.create(
+            code="S0002", name="No Tax Ltd", currency=Currency.objects.get(code="LKR")
+        ),
+        division=im(),
+        lines=[
+            LineInput(
+                items.create_item(
+                    buyer,
+                    {
+                        "code": "BOLT-M8",
+                        "name": "Bolt M8",
+                        "category": "raw_material",
+                        "unit": "pcs",
+                    },
+                ),
+                "10",
+                "25",
+                None,
+            )
+        ],
+        delivery_date=TODAY + timedelta(days=7),
+    )
+    pdf = text(order)
+    assert pdf.index(b"Subtotal") < pdf.index(b"(Tax)") < pdf.index(b"Grand Total")
+    assert pdf.count(b"LKR 0.00") == 1
+    assert pdf.count(b"LKR 250.00") == 2  # the subtotal and the grand total
+
+
 def test_a_po_not_approved_is_marked_draft(po):
     assert b"NOT APPROVED" in text(po)
 

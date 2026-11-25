@@ -16,7 +16,8 @@ const TABS: { id: string; report: ReportName; filters?: Record<string, string>; 
   { id: "suppliers", report: "suppliers", period: true },
 ];
 
-const money = (key: string, header: string): Column<Row> => ({ id: key, header, value: (r) => String(r[key] ?? ""), cell: (r) => formatDecimal(String(r[key] ?? "")) });
+// Money columns are added up in the table's total row, as in the Excel and PDF files (testing T24).
+const money = (key: string, header: string): Column<Row> => ({ id: key, header, money: true, value: (r) => String(r[key] ?? ""), cell: (r) => formatDecimal(String(r[key] ?? "")) });
 const text = (key: string, header: string): Column<Row> => ({ id: key, header, value: (r) => (r[key] === null || r[key] === undefined ? "" : String(r[key])) });
 
 /** Purchasing and stores reports (spec 5A.7): open POs and overdue deliveries, GRNI, invoices
@@ -81,6 +82,10 @@ export default function PurchasingReportsPage() {
       text("returned", t("pr.returns")),
     ],
   };
+
+  // Overdue deliveries are the open POs past their delivery date: the same columns (the tab
+  // showed nothing without them).
+  columns.overdue = columns.open;
 
   return (
     <main className="page">

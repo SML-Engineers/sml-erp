@@ -88,6 +88,9 @@ class JournalListView(_Journal):
         if params.get("account", "").isdigit():
             used = JournalLine.objects.filter(account_id=int(params["account"]))
             rows = rows.filter(pk__in=used.values("entry_id"))
+        # The sum makes this a GROUP BY query, which ignores the model's ordering (testing
+        # T33, 21 Nov 2026: the list was in no order): newest date first, then newest number.
+        rows = rows.order_by("-entry_date", "-number", "-id")
         return Response([_summary(e) for e in rows[:MAX_ROWS]])
 
 

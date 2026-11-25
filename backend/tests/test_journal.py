@@ -331,6 +331,17 @@ def test_the_accountant_reverses_through_the_api_and_the_director_only_views(acc
     assert as_user(admin).get("/api/v1/journal/").status_code == 403
 
 
+def test_the_journal_list_is_newest_date_first_then_newest_number(accountant):
+    """Testing T33 (21 Nov 2026): the list was in no order. An entry posted later for an
+    earlier date goes under the later dates; entries of one day run by number."""
+    first = cost(accountant, "10.00")
+    older = cost(accountant, "20.00", on=LAST_MONTH)
+    second = cost(accountant, "30.00")
+    third = sale(accountant, "40.00")
+    listed = [row["number"] for row in as_user(accountant).get("/api/v1/journal/").json()]
+    assert listed == [third.number, second.number, first.number, older.number]
+
+
 # --- Profit and loss by division ---------------------------------------------------------
 
 

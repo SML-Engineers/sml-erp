@@ -192,6 +192,13 @@ Status: `[ ]` to do · `[x]` done
     server sends it too, so a new kind never shows a raw key); an issue or return links to
     the stores work page with its number and where it went ("MI2611… → IM · Moulding"),
     and an adjustment shows its number.
+  - Testing T33, the rest (21–22 Nov 2026): Accounts → Journal names what posted each entry
+    in words ("Goods receipt (GRN)", "Supplier invoice", "Job order completed"…, and plain
+    words for any new kind), and lists entries newest date first, then newest number (the
+    list was in no order: the amount total made the query ignore the usual order). The
+    audit trail names changed fields in words ("Two-factor sign-in required", "All
+    sections"; any other field without wording becomes words, e.g. "Discount %") and shows
+    dates and times in them in Sri Lanka time.
 
 ## F. Supplier invoices and payment
   - Owner, 14 Nov 2026 (from his testing): the Production Planner saw average cost and total

@@ -2,19 +2,23 @@ import { useTranslation } from "react-i18next";
 
 import type { AuditEvent } from "../api/audit";
 import { formatDateTime } from "../lib/time";
+import { plainWords } from "../lib/words";
+
+const MOMENT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 function show(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
   if (typeof value === "boolean") return value ? "yes" : "no";
+  // A moment such as 2026-11-20T04:30:00Z is shown in Sri Lanka time, like the When column.
+  if (typeof value === "string" && MOMENT.test(value)) return formatDateTime(value);
   return String(value);
 }
 
 /** "password_reset_requested" → "Password reset requested": plain words for an event that has
  * no wording of its own yet (owner, 16 Nov 2026: raw event names showed in the trail). */
 export function eventWords(event: string): string {
-  const words = event.replace(/_/g, " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return plainWords(event);
 }
 
 /** Audit rows, newest first: when, who, what, and each field's old → new value. */
@@ -49,7 +53,7 @@ export default function AuditTable({ rows }: { rows: AuditEvent[] }) {
                 <ul className="changes">
                   {Object.entries(row.changes).map(([field, [before, after]]) => (
                     <li key={field}>
-                      <code>{field}</code>: {show(before)} → {show(after)}
+                      {t(`audit.field.${field}`, plainWords(field))}: {show(before)} → {show(after)}
                     </li>
                   ))}
                 </ul>

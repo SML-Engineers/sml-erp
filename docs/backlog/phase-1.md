@@ -604,6 +604,11 @@ Status: `[ ]` to do · `[x]` done
     reminded (bell and email, "approval_reminder"; each person can turn the email off in My
     notifications), once a day until someone acts. The days count from the last action on
     the document, so they start again at each level.
+  - Testing T7 (21–22 Nov 2026): each person keeps only the newest reminder of a document
+    ("has waited 12 days", not one entry per day); as soon as someone acts on a document,
+    everyone's "waiting for your approval" notices and reminders of it are marked read, so
+    the bell holds only what still waits for you; the notices say "as Director", not "(level
+    3)". The update (core 0035) tidies the notices made before.
 
 ## E. Release
 

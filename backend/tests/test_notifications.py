@@ -63,7 +63,9 @@ def test_the_next_approver_is_told_a_voucher_is_waiting(
     assert titles(director) == [] and titles(clerk) == []
     [email] = mail.outbox
     assert email.to == ["accountant@sml.lk"]
-    assert email.subject == "SML ERP: Voucher WS261029001 is waiting for your approval as Accountant"
+    assert email.subject == (
+        "SML ERP: Voucher WS261029001 is waiting for your approval as Accountant"
+    )
     assert "http://localhost:8080/vouchers/1" in email.body
     with django_capture_on_commit_callbacks(execute=True):
         approvals.approve(accountant, V, 1)

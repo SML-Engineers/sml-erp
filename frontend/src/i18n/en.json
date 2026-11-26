@@ -2446,6 +2446,7 @@
     "one": "Goods receipt",
     "store": "store",
     "confirmedBy": "Confirmed by {{name}} on {{at}}",
+    "confirmedOnExcess": "Confirmed when {{director}} accepted the excess, on {{at}} · received by {{name}}",
     "reversalReason": "Reversal reason: {{reason}}",
     "form": "Goods receipt details",
     "details": "Goods receipt",

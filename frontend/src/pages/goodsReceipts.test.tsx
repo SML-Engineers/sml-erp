@@ -250,3 +250,22 @@ test("asks before confirming a GRN (testing T49)", async () => {
   fireEvent.click(within(dialog).getByRole("button", { name: "No, go back" }));
   expect(calls).not.toHaveBeenCalledWith("/api/v1/goods-receipts/4/confirm/", expect.anything());
 });
+
+// Testing T45 (21 Nov 2026): after Ruwan accepted the excess the header said "Confirmed by Kamal … 17:04".
+test("a GRN confirmed by the Director's acceptance of an excess says so", async () => {
+  const confirmed: GRNDetail = {
+    ...draft,
+    status: "confirmed",
+    can_edit: false,
+    can_add_photo: false,
+    confirmed_by: "Kamal Bandara",
+    confirmed_at: "2026-11-21T11:34:00Z",
+    excess_accepted: { by: "Ruwan Jayasinghe", at: "2026-11-21T11:34:00Z" },
+  };
+  mockApi({ "GET /api/v1/goods-receipts/4/": { body: confirmed } });
+  renderAt("/goods-receipts/4", <GoodsReceiptPage />, "/goods-receipts/:id");
+  expect(
+    await screen.findByText("Confirmed when Ruwan Jayasinghe accepted the excess, on 2026-11-21 17:04 · received by Kamal Bandara"),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Confirmed by Kamal Bandara on/)).not.toBeInTheDocument();
+});

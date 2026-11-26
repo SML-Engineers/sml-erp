@@ -71,7 +71,15 @@ export default function GoodsReceiptPage() {
             {data.supplier.name} · {t("grn.store")} {data.store}
           </p>
           {data.confirmed_by && data.confirmed_at && (
-            <p className="muted">{t("grn.confirmedBy", { name: data.confirmed_by, at: formatDateTime(data.confirmed_at) })}</p>
+            <p className="muted">
+              {data.excess_accepted
+                ? t("grn.confirmedOnExcess", {
+                    director: data.excess_accepted.by,
+                    at: formatDateTime(data.excess_accepted.at),
+                    name: data.confirmed_by,
+                  })
+                : t("grn.confirmedBy", { name: data.confirmed_by, at: formatDateTime(data.confirmed_at) })}
+            </p>
           )}
           {data.reversal_reason && <p className="notice">{t("grn.reversalReason", { reason: data.reversal_reason })}</p>}
           {data.can_edit ? <ReceiptForm key={`${data.id}-${data.lines.map((l) => l.received_quantity).join()}`} grn={data} /> : <ReadOnly grn={data} />}

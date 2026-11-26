@@ -162,8 +162,20 @@ def _line(g: GoodsReceipt, line: GoodsReceiptLine) -> dict:
     }
 
 
+def _excess_accepted(g: GoodsReceipt) -> dict | None:
+    """Who accepted an excess delivery, and when: the GRN was confirmed at that moment, by the
+    Director's decision, not by the stores person (testing T45, 21 Nov 2026)."""
+    if g.status != GoodsReceipt.Status.CONFIRMED:
+        return None
+    last = approvals.history(receipts.DOC, g.pk).filter(action="approve").last()
+    if last is None:
+        return None
+    return {"by": last.user.full_name, "at": last.acted_at}
+
+
 def _detail(g: GoodsReceipt, user) -> dict:
     return _summary(g, receipts.people([g])) | {
+        "excess_accepted": _excess_accepted(g),
         "vehicle_no": g.vehicle_no,
         "supplier_invoice_no": g.supplier_invoice_no,
         "notes": g.notes,

@@ -195,6 +195,24 @@ def test_an_excess_waits_for_the_director(po, stores, director):
     assert [line.received_quantity for line in po_lines(po)] == [320, 1000]
 
 
+def test_the_page_says_the_director_confirmed_it_by_accepting_the_excess(po, stores, director):
+    """Testing T45 (21 Nov 2026): after the Director accepted the excess the header said
+    "Confirmed by Kamal Bandara on … 17:04", but Kamal did not act then."""
+    grn = receipts.confirm(stores, receive(stores, po, ("320", "0"), ("1000", "0")))
+    page = as_user(stores).get(f"/api/v1/goods-receipts/{grn.pk}/").json()
+    assert page["excess_accepted"] is None  # still waiting
+    receipts.approve_excess(director, grn, "Supplier rounds to full bags")
+    page = as_user(stores).get(f"/api/v1/goods-receipts/{grn.pk}/").json()
+    assert page["excess_accepted"]["by"] == director.full_name
+    assert page["confirmed_by"] == stores.full_name  # the stores person received it
+
+
+def test_a_grn_without_excess_names_only_who_confirmed_it(po, stores):
+    grn = receipts.confirm(stores, receive(stores, po, ("300", "0"), ("1000", "0")))
+    page = as_user(stores).get(f"/api/v1/goods-receipts/{grn.pk}/").json()
+    assert (page["confirmed_by"], page["excess_accepted"]) == (stores.full_name, None)
+
+
 def test_a_refused_excess_goes_back_to_be_corrected(po, stores, director):
     grn = receipts.confirm(stores, receive(stores, po, ("320", "0")))
     with pytest.raises(ReceiptError, match="reason"):

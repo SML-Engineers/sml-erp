@@ -140,6 +140,9 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kamal", "Returned by Ruwan", "Excess,
     waiting for Ruwan (Director)", "Confirmed by Kamal", "Reversal, waiting for Ruwan
     (Director)", "Reversed, approved by Ruwan".
+  - Testing T45, 21 Nov 2026: a GRN confirmed by the Director's acceptance of an excess says
+    so: "Confirmed when Ruwan Jayasinghe accepted the excess, on … · received by Kamal
+    Bandara" (it said "Confirmed by Kamal" at the Director's time).
 
 - [x] **P16-07 Package-level receiving** (spec 6A.2)
   Bags, bars, plates, coils, boxes: one row per package with lot or heat number, gross, tare,

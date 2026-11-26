@@ -102,6 +102,8 @@ export interface GRNDetail extends GRNSummary {
   supplier_invoice_no: string;
   notes: string;
   confirmed_at: string | null;
+  /** Who accepted an excess delivery and when (the GRN was confirmed then; testing T45). */
+  excess_accepted?: { by: string; at: string } | null;
   reversal_reason: string;
   reversed_at: string | null;
   lines: GRNLine[];

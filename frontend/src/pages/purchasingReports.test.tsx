@@ -232,3 +232,30 @@ test("the trail is read again when the document's status changes, and a held inv
   fireEvent.click(screen.getByRole("button", { name: "Ask for the exception" }));
   await waitFor(() => expect(reads()).toBe(2));
 });
+
+// Testing T47 (21 Nov 2026): the Director's own comment and a value for each exception.
+test("exceptions show the Director's comment and the value let through", async () => {
+  const row = { approved_at: "2026-11-21T11:34:00Z", supplier: "Precision Tools", division: "IM", approved_by: "Ruwan" };
+  mockApi({
+    "GET /api/v1/purchasing-reports/exceptions/": {
+      body: [
+        {
+          ...row,
+          kind: "Invoice difference",
+          document: "SI26112101 (PTL-7702)",
+          reason: "Price rose",
+          comment: "Price rise accepted - test 6E.8",
+          what: "price difference",
+          value_lkr: "2400.00",
+        },
+        { ...row, kind: "GRN excess over the PO", document: "GRN26112107", reason: "", comment: "", what: "50 pcs", value_lkr: "625.00" },
+      ],
+    },
+  });
+  renderAt("/purchasing/reports?tab=exceptions", <PurchasingReportsPage />, "/purchasing/reports");
+  const table = await screen.findByRole("table", { name: "Exceptions approved" });
+  expect(within(table).getByText("Price rise accepted - test 6E.8")).toBeInTheDocument();
+  expect(within(table).getByText("50 pcs")).toBeInTheDocument();
+  expect(within(table).getByText("2,400.00")).toBeInTheDocument();
+  expect(within(table.querySelector("tfoot tr") as HTMLElement).getByText("3,025.00")).toBeInTheDocument();
+});

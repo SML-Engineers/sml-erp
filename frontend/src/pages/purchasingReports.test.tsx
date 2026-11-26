@@ -119,6 +119,32 @@ test("rejected stock lists the lots waiting, those over 14 days in red, and filt
   );
 });
 
+test("debit notes show the supplier's credit note, or how long we have waited for it", async () => {
+  const row = {
+    number: "DN26112501",
+    date: "2026-11-10",
+    supplier: "Inserts Lanka",
+    invoice_id: 3,
+    invoice: "INV-77",
+    total_lkr: "1000.00",
+  };
+  mockApi({
+    "GET /api/v1/purchasing-reports/debit-notes/": {
+      body: [
+        { ...row, credit_note: "", credit_note_date: null, days_waiting: 16 },
+        { ...row, number: "DN26112502", credit_note: "SCN-0055", credit_note_date: "2026-11-26", days_waiting: null },
+      ],
+    },
+  });
+  renderAt("/purchasing/reports?tab=debitNotes", <PurchasingReportsPage />, "/purchasing/reports");
+  const table = await screen.findByRole("table", { name: "Debit notes" });
+  expect(within(table).getByText("Waiting, 16 days")).toBeInTheDocument();
+  expect(within(table).getByText("SCN-0055 · 2026-11-26")).toBeInTheDocument();
+  expect(within(table).getAllByRole("link", { name: "INV-77" })[0]).toHaveAttribute("href", "/supplier-invoices/3");
+  expect(within(table.querySelector("tfoot tr") as HTMLElement).getByText("2,000.00")).toBeInTheDocument();
+  expect(screen.getByLabelText("Only those still waiting")).not.toBeChecked();
+});
+
 test("the trail links every document of a PO", async () => {
   mockApi({
     "GET /api/v1/purchasing-reports/trail/?grn=4": {

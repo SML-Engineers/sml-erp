@@ -2788,7 +2788,16 @@
     "print": "Print the return note (PDF)",
     "approvedBy": "Goods returned, approved by {{person}}",
     "goodsReturned": "Goods returned",
-    "sentBackBy": "Sent back by {{person}}"
+    "sentBackBy": "Sent back by {{person}}",
+    "creditNoteOf": "Supplier's credit note {{number}} of {{date}}, recorded by {{name}}:",
+    "creditNoteWaiting": "Waiting for the supplier's credit note.",
+    "recordCreditNote": "Record the supplier's credit note for {{number}}",
+    "creditNoteNo": "Supplier's credit note no.",
+    "creditNoteDate": "Its date",
+    "creditNoteScan": "Scan (PDF, JPG or PNG)",
+    "recordCreditNoteButton": "Record credit note",
+    "removeCreditNote": "Remove credit note {{number}}",
+    "removeCreditNoteButton": "Remove credit note"
   },
   "pr": {
     "title": "Purchasing reports",
@@ -2798,6 +2807,7 @@
       "grni": "Goods received not invoiced",
       "rejected": "Rejected stock",
       "held": "Invoices held",
+      "debitNotes": "Debit notes",
       "exceptions": "Exceptions approved",
       "suppliers": "By supplier"
     },
@@ -2807,6 +2817,7 @@
       "grni": "Goods QC accepted and the supplier has not yet invoiced, at the PO price. The total should equal the balance of the Goods received not invoiced account.",
       "rejected": "Rejected and damaged goods waiting in the rejected stores to go back to the supplier, oldest first. The target is to return them within 14 days; lots waiting longer are in red, and the stores person and purchasing are reminded once.",
       "held": "Supplier invoices held by the three-way match, and those waiting for the Director's exception.",
+      "debitNotes": "Our debit notes for goods returned after they were invoiced, and the supplier's credit note for each. Those still waiting for the supplier's credit note show how many days we have waited.",
       "exceptions": "Everything the Director approved outside the normal rules: excess deliveries, QC deviations, invoice differences, returns of accepted goods and advance payments.",
       "suppliers": "What each supplier delivered, how much was rejected or damaged, late deliveries and returns."
     },
@@ -2859,7 +2870,13 @@
     "store": "Store",
     "lot": "Lot",
     "quantity": "Quantity",
-    "onlyOver": "Only those over 14 days"
+    "onlyOver": "Only those over 14 days",
+    "debitNote": "Debit note",
+    "raised": "Raised",
+    "amountLkr": "Amount (LKR)",
+    "supplierCreditNote": "Supplier's credit note",
+    "creditWaiting": "Waiting, {{days}} days",
+    "onlyWaiting": "Only those still waiting"
   },
   "mj": {
     "title": "Manual journals",
@@ -6108,6 +6125,7 @@
     "activateAccount": "Make {{name}} active again?",
     "deleteAccount": "Delete {{name}}?",
     "mergeAccount": "Merge {{name}} into {{into}}? Its history and sub-accounts move to {{into}}. A merge cannot be undone.",
-    "importChart": "Import the chart of accounts from {{file}}?"
+    "importChart": "Import the chart of accounts from {{file}}?",
+    "removeCreditNote": "Remove the supplier's credit note {{credit}} from debit note {{number}}? It can then be recorded again."
   }
 }

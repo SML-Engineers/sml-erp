@@ -88,7 +88,9 @@ export interface InvoiceDetail extends InvoiceSummary {
   vouchers?: { id: number; number: string; status: string; amount: string }[];
   set_offs?: { voucher: { id: number; number: string }; amount: string; journal: string; at: string }[];
   advances_waiting?: string;
-  debit_notes?: { number: string; return: { id: number; number: string }; quantity: string; total_lkr: string }[];
+  debit_notes?: DebitNoteRow[];
+  can_record_credit_note?: boolean;
+  can_remove_credit_note?: boolean;
   can_set_off?: boolean;
   lines: InvoiceLine[];
   attachments: { id: number; file_name: string; uploaded_by: string; uploaded_at: string }[];
@@ -106,6 +108,16 @@ export interface InvoiceInput {
   stated_total: string | null;
   notes: string;
   lines: { grn_line: number; quantity: string; unit_price: string; tax_code: string | null; order: string }[];
+}
+
+/** Our debit note, and the supplier's credit note recorded for it (owner, 22 Nov 2026). */
+export interface DebitNoteRow {
+  id: number;
+  number: string;
+  return: { id: number; number: string };
+  quantity: string;
+  total_lkr: string;
+  credit_note: { number: string; date: string; file_name: string; recorded_by: string; recorded_at: string } | null;
 }
 
 export const siKey = ["supplier-invoices"];
@@ -145,3 +157,15 @@ export const getAdvanceOrders = (supplier: number, division: string) =>
     `/supplier-invoices/advance-orders/?supplier=${supplier}&division=${division}`,
   );
 export const setOffAdvances = (id: number) => apiSend<InvoiceDetail>("POST", `/supplier-invoices/${id}/set-off/`, {});
+
+const creditNotePath = (invoice: number, note: number) => `/supplier-invoices/${invoice}/debit-notes/${note}/credit-note/`;
+export function recordCreditNote(invoice: number, note: number, values: { number: string; date: string; file: File }) {
+  const form = new FormData();
+  form.append("number", values.number);
+  form.append("date", values.date);
+  form.append("file", values.file);
+  return apiUpload<InvoiceDetail>(creditNotePath(invoice, note), form, "POST");
+}
+export const removeCreditNote = (invoice: number, note: number, reason: string) =>
+  apiSend<InvoiceDetail>("POST", `${creditNotePath(invoice, note)}remove/`, { reason });
+export const creditNoteScanUrl = (invoice: number, note: number) => `${API_BASE}${creditNotePath(invoice, note)}`;

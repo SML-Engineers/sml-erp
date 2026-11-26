@@ -13,6 +13,7 @@ const TABS: { id: string; report: ReportName; filters?: Record<string, string>; 
   { id: "grni", report: "grni" },
   { id: "rejected", report: "rejected-stock" },
   { id: "held", report: "held-invoices" },
+  { id: "debitNotes", report: "debit-notes" },
   { id: "exceptions", report: "exceptions", period: true },
   { id: "suppliers", report: "suppliers", period: true },
 ];
@@ -30,6 +31,7 @@ export default function PurchasingReportsPage() {
   const filters: Record<string, string> = { ...(tab.filters ?? {}) };
   for (const name of ["division", "from", "to"]) if (params.get(name)) filters[name] = params.get(name)!;
   if (tab.id === "rejected" && params.get("over")) filters.over = "1";
+  if (tab.id === "debitNotes" && params.get("waiting")) filters.waiting = "1";
   const data = useQuery({ queryKey: [...prKey, tab.id, filters], queryFn: () => getReport<Row[] | { rows: Row[]; ledger_balance: string }>(tab.report, filters) });
   const rows = Array.isArray(data.data) ? data.data : (data.data?.rows ?? []);
   const set = (name: string, value: string) => {
@@ -86,6 +88,24 @@ export default function PurchasingReportsPage() {
       { id: "differences", header: t("si.differences"), value: (r) => String(r.differences), cell: (r) => <span className="pre-line">{String(r.differences)}</span> },
       money("total", t("vouchers.total")),
     ],
+    debitNotes: [
+      text("number", t("pr.debitNote")),
+      text("date", t("pr.raised")),
+      text("supplier", t("po.supplier")),
+      {
+        id: "invoice",
+        header: t("si.invoiceNo"),
+        value: (r) => String(r.invoice),
+        cell: (r) => <Link to={`/supplier-invoices/${String(r.invoice_id)}`}>{String(r.invoice)}</Link>,
+      },
+      money("total_lkr", t("pr.amountLkr")),
+      {
+        id: "credit",
+        header: t("pr.supplierCreditNote"),
+        value: (r) => String(r.credit_note ?? ""),
+        cell: (r) => (r.credit_note ? `${String(r.credit_note)} · ${String(r.credit_note_date)}` : <span className="notice">{t("pr.creditWaiting", { days: r.days_waiting })}</span>),
+      },
+    ],
     exceptions: [
       { id: "at", header: t("pr.approved"), value: (r) => String(r.approved_at), cell: (r) => formatDateTime(String(r.approved_at)) },
       text("kind", t("pr.exception")),
@@ -129,6 +149,12 @@ export default function PurchasingReportsPage() {
           <label className="check">
             <input type="checkbox" checked={Boolean(params.get("over"))} onChange={(e) => set("over", e.target.checked ? "1" : "")} />
             {t("pr.onlyOver")}
+          </label>
+        )}
+        {tab.id === "debitNotes" && (
+          <label className="check">
+            <input type="checkbox" checked={Boolean(params.get("waiting"))} onChange={(e) => set("waiting", e.target.checked ? "1" : "")} />
+            {t("pr.onlyWaiting")}
           </label>
         )}
         {tab.period && (

@@ -294,9 +294,18 @@ Status: `[ ]` to do · `[x]` done
     first, with the day it came in, the days it has waited (over 14 in red; "Only those over
     14 days"), the GRN, supplier and PO; Excel and PDF. Each morning (07:20) the stores person
     and purchasing of the division are told once, under the bell and by email, of each lot
-    that has waited over 14 days (`apps/inventory/rejected.py`). Still to build: our own
-    debit note when already-invoiced goods leave, matched later to the supplier's credit
-    note (input VAT waits for the Accountant, A1).
+    that has waited over 14 days (`apps/inventory/rejected.py`). Done: PR #292.
+  - Owner, 22 Nov 2026, the rest: our own debit note when already-invoiced goods leave was
+    already in place (accepted goods returned: DN… for the invoiced part, GRNI for the rest;
+    rejected goods can never be invoiced, so they need none). Added: **the supplier's credit
+    note matched to our debit note.** On the supplier invoice, the Accounts Clerk or the
+    Accountant records it against each debit note (number, date, scan; nothing is posted);
+    it is never changed (database guard), and the Accountant removes a mistake with a
+    reason. Purchasing reports → Debit notes lists our debit notes with the supplier's credit
+    note, or the days waited ("Only those still waiting"); the supplier statement check
+    recognises the supplier's credit note number (`apps/purchasing/credit_notes.py`). The
+    debit note keeps reversing the input VAT, as built in P16-12 (the Accountant to confirm,
+    A1).
 
 ## G. Reports and go-live
 

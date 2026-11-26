@@ -26,6 +26,7 @@ import { useConfirm } from "../components/ConfirmDialog";
 interface Waiting extends VoucherSummary {
   submitted_at: string | null;
   waiting_level: number | null;
+  waiting_for?: string | null;
 }
 
 interface SplitRow {
@@ -99,7 +100,7 @@ export default function ReviewPage() {
                   <span className="mono">{v.number}</span> · {v.payee?.name ?? v.voucher_type.name}
                 </button>
                 <span className="muted">
-                  {v.voucher_type.name} · L{v.waiting_level} · LKR {formatDecimal(v.total_amount)}
+                  {v.voucher_type.name} · {v.waiting_for ?? v.waiting_level} · LKR {formatDecimal(v.total_amount)}
                 </span>
               </li>
             ))}

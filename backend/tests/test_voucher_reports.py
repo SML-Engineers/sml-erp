@@ -105,14 +105,14 @@ def test_pending_by_approver_and_age(clerk, accountant, director, cashier):
     services.approve(accountant, at_l3)
     body = as_user(director).get("/api/v1/vouchers/reports/pending/").json()
     rows = {r["number"]: r for r in body["rows"]}
-    assert rows[at_l2.number]["waiting_for"] == "L2 Accountant"
+    assert rows[at_l2.number]["waiting_for"] == "Accountant"
     assert rows[at_l2.number]["approvers"] == accountant.full_name
-    assert rows[at_l3.number]["waiting_for"] == "L3 Director"
+    assert rows[at_l3.number]["waiting_for"] == "Director"
     assert rows[at_l3.number]["approvers"] == director.full_name
     assert {(r["days"], r["band"]) for r in body["rows"]} == {(0, "0–2 days")}
     assert [(s["waiting_for"], s["count"]) for s in body["summary"]] == [
-        ("L2 Accountant", 1),
-        ("L3 Director", 1),
+        ("Accountant", 1),
+        ("Director", 1),
     ]
     assert as_user(cashier).get("/api/v1/vouchers/reports/pending/").json()["rows"] == []
     pdf = as_user(director).get("/api/v1/vouchers/reports/pending/?export=pdf")

@@ -309,7 +309,7 @@ def test_the_list_says_who_a_credit_note_waits_for_and_who_returned_it(
         return next(r for r in client.get("/api/v1/credit-notes/").json() if r["id"] == note.pk)
 
     waiting = row()["people"]["waiting"]
-    assert waiting == {"person": director.full_name, "role": waiting["role"]}
+    assert waiting == {"person": director.full_name, "people": [], "role": waiting["role"]}
     assert client.get(f"/api/v1/credit-notes/{note.pk}/").json()["people"] == row()["people"]
     credit_notes.send_back(director, note, "Wrong amount")
     assert row()["status"] == "draft"

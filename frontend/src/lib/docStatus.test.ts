@@ -1,7 +1,7 @@
 import i18n from "../i18n";
 import { quotationStatus } from "../api/quotations";
 import { voucherStatus } from "../api/vouchers";
-import { firstName } from "./docStatus";
+import { approvalStatus, firstName } from "./docStatus";
 
 // Owner, 16 Nov 2026: say who a document is with, not just "Submitted" or "Returned".
 const t = i18n.getFixedT("en");
@@ -76,4 +76,12 @@ test("a quotation's status says who it is with and what the customer did", () =>
 test("the first name is used in lists", () => {
   expect(firstName("Ruwan  Jayasinghe")).toBe("Ruwan");
   expect(firstName("Admin")).toBe("Admin");
+});
+
+// Testing T41 (22 Nov 2026): with two Directors the status said only "Waiting for the Director".
+test("two or three people who can approve are all named", () => {
+  const doc = { status: "accountant_approved", created_by: "Nimal Perera" };
+  const waiting = (people: string[]) => ({ ...doc, people: { waiting: { person: null, people, role: "Director" }, last: null } });
+  expect(approvalStatus(t, waiting(["Kamal Silva", "Ruwan Jayasinghe"]), "approved")).toBe("Waiting for Kamal or Ruwan (Director)");
+  expect(approvalStatus(t, waiting([]), "approved")).toBe("Waiting for the Director");
 });

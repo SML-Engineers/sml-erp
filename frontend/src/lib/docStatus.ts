@@ -3,7 +3,8 @@ import type { TFunction } from "i18next";
 /** Who a document waits for and who last acted on it, from the server's approval engine
  * (owner, 16 Nov 2026: clear statuses such as "Waiting for Ruwan (Director)"). */
 export interface StatusPeople {
-  waiting: { person: string | null; role: string } | null;
+  /** `people`: everyone who can act, when two or three can (testing T41: two Directors). */
+  waiting: { person: string | null; people?: string[]; role: string } | null;
   last: { action: string; by: string } | null;
 }
 
@@ -27,7 +28,10 @@ export function approvalStatus(
   if (doc.status === "draft") return t("docStatus.draftOf", { person: firstName(doc.created_by) });
   if (people?.waiting) {
     const { person, role } = people.waiting;
-    return person ? t("docStatus.waitingFor", { person: firstName(person), role }) : t("docStatus.waitingForRole", { role });
+    const several = people.waiting.people ?? [];
+    if (person) return t("docStatus.waitingFor", { person: firstName(person), role });
+    if (several.length > 1) return t("docStatus.waitingForEither", { people: several.map(firstName).join(t("docStatus.or")), role });
+    return t("docStatus.waitingForRole", { role });
   }
   if (!last) return null;
   if (doc.status === "rejected") return t("docStatus.rejectedBy", { person: firstName(last.by) });

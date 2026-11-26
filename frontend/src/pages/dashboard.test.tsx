@@ -26,8 +26,8 @@ const figures: VoucherDashboard = {
   waiting_for_me: { count: 2, total: "550.00" },
   my_vouchers: { draft: { count: 0, total: "0.00" }, returned: { count: 1, total: "75.00" } },
   by_level: [
-    { level: 2, waiting_for: "L2 Accountant", count: 2, total: "550.00", bands },
-    { level: 3, waiting_for: "L3 Director", count: 1, total: "900.00", bands: { ...bands, "15 days or more": 0 } },
+    { level: 2, waiting_for: "Accountant", count: 2, total: "550.00", bands },
+    { level: 3, waiting_for: "Director", count: 1, total: "900.00", bands: { ...bands, "15 days or more": 0 } },
   ],
   pending_count: 3,
   unpaid: { count: 1, total: "1000.00", remaining: "600.00" },
@@ -58,7 +58,7 @@ const figures: VoucherDashboard = {
       division: "IM",
       payee: "CEB",
       level: 2,
-      waiting_for: "L2 Accountant",
+      waiting_for: "Accountant",
       approvers: "Kumari",
       since: "2026-10-12T09:00:00Z",
       days: 17,
@@ -85,7 +85,7 @@ test("every tile opens the list behind it", async () => {
   expect(within(board).getByRole("link", { name: /Approved, not yet paid\s*LKR 600.00/ })).toHaveAttribute("href", "/payments");
   expect(within(board).getByRole("link", { name: /Paid this month/ })).toHaveAttribute("href", "/payments?from=2026-10-01&to=2026-10-29");
   const levels = within(board).getByRole("table", { name: "Waiting by level and age" });
-  expect(within(levels).getByRole("link", { name: "L2 Accountant" })).toHaveAttribute("href", "/vouchers/reports?tab=pending&level=2");
+  expect(within(levels).getByRole("link", { name: "Accountant" })).toHaveAttribute("href", "/vouchers/reports?tab=pending&level=2");
   expect(within(board).getByRole("link", { name: "IM261012001" })).toHaveAttribute("href", "/vouchers/7");
   const divisions = within(board).getByRole("table", { name: "By division" });
   expect(within(divisions).getByRole("link", { name: /1 · 300.00/ })).toHaveAttribute("href", "/vouchers/reports?tab=pending&division=IM");

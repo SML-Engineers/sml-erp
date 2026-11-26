@@ -146,6 +146,7 @@ def _summary(v: Voucher, user=None, waiting=None, people=None) -> dict:
 
 def _detail(v: Voucher, user) -> dict:
     body = _summary(v, user, people=approvals.people_for(services.DOC, [v.pk]))
+    state = approvals.state_of(services.DOC, v.pk)
     body.update(
         {
             "voucher_type": _type(v.voucher_type),
@@ -261,6 +262,7 @@ def _detail(v: Voucher, user) -> dict:
             "approvals": [
                 {
                     "level": row.level,
+                    "level_name": services.level_name(state, row.level),
                     "action": services.history_row(row)[0],
                     "user": row.user.full_name,
                     "reason": services.history_row(row)[2],
@@ -568,7 +570,9 @@ class WaitingView(_Approving):
         for v in rows:
             row = _summary(v, request.user, waiting)
             row["submitted_at"] = v.submitted_at
-            row["waiting_level"] = _approval(v, request.user)["waiting_level"]
+            waits = _approval(v, request.user)
+            row["waiting_level"] = waits["waiting_level"]
+            row["waiting_for"] = waits["waiting_for"]  # the level in words (testing T41)
             checked = [h for h in approvals.history(services.DOC, v.pk) if h.action == "approve"]
             row["last_comment"] = checked[-1].reason if checked else ""
             result.append(row)

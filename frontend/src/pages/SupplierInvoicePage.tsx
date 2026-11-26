@@ -115,7 +115,7 @@ export default function SupplierInvoicePage() {
           {data.can_edit ? <InvoiceForm key={`${data.id}-${data.total_amount}`} invoice={data} /> : <ReadOnly invoice={data} />}
           <Scans invoice={data} />
           <Actions invoice={data} />
-          {data.status !== "draft" && <Trail by="invoice" id={data.id} />}
+          {data.status !== "draft" && <Trail by="invoice" id={data.id} stamp={data.status} />}
         </>
       )}
       <ErrorLine error={invoice.error} />

@@ -116,7 +116,7 @@ export default function PurchaseOrderPage() {
           )}
           <Actions order={data} unsaved={data.can_edit && unsaved} />
           {(data.can_email || data.emails.length > 0) && <EmailPanel order={data} />}
-          {data.status !== "draft" && data.status !== "awaiting_approval" && <Trail by="po" id={data.id} />}
+          {data.status !== "draft" && data.status !== "awaiting_approval" && <Trail by="po" id={data.id} stamp={data.status} />}
         </>
       )}
       <ErrorLine error={order.error} />

@@ -89,7 +89,7 @@ export default function GoodsReceiptPage() {
           )}
           <Actions grn={data} />
           <Photos grn={data} />
-          {data.status !== "draft" && <Trail by="grn" id={data.id} />}
+          {data.status !== "draft" && <Trail by="grn" id={data.id} stamp={data.status} />}
         </>
       )}
       <ErrorLine error={grn.error} />

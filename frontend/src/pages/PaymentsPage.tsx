@@ -8,6 +8,7 @@ import type { CurrentUser } from "../api/auth";
 import { listPayments, listToPay, paymentStatus, paymentsKey } from "../api/payments";
 import DataTable from "../components/DataTable";
 import ExportLinks from "../components/ExportLinks";
+import JournalLink from "../components/JournalLink";
 
 /** Supplier payments (spec 4.4, Cashier): vouchers approved by the Director and not yet
  * fully paid, and the payments made. A payment always starts from a voucher. */
@@ -112,7 +113,12 @@ export default function PaymentsPage({ me }: { me: CurrentUser }) {
                 { id: "method", header: t("payments.method"), value: (p) => t(`payments.methods.${p.method}`) },
                 { id: "reference", header: t("payments.reference"), value: (p) => p.reference },
                 { id: "amount", header: t("payments.amount"), value: (p) => p.amount, money: true },
-                { id: "entry", header: t("payments.entry"), value: (p) => p.journal_entry },
+                {
+                  id: "entry",
+                  header: t("payments.entry"),
+                  value: (p) => p.journal_entry,
+                  cell: (p) => <JournalLink number={p.journal_entry} />,
+                },
                 { id: "status", header: t("vouchers.status"), value: (p) => paymentStatus(t, p) },
               ]}
             />

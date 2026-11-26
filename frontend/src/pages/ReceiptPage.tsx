@@ -16,6 +16,7 @@ import {
 import { formatDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 import { useSure } from "../components/ConfirmDialog";
+import JournalLink from "../components/JournalLink";
 
 /** One customer receipt (P2-07): the invoices it pays, the Accountant's approval, the printed
  * receipt. */
@@ -75,7 +76,9 @@ export default function ReceiptPage() {
             {r.journal_entry && (
               <>
                 <dt>{t("advances.journal")}</dt>
-                <dd>{r.journal_entry.number}</dd>
+                <dd>
+                  <JournalLink number={r.journal_entry.number} />
+                </dd>
               </>
             )}
             {r.notes && (

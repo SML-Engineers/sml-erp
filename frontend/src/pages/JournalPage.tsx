@@ -36,6 +36,10 @@ export default function JournalPage({ me }: { me: CurrentUser }) {
   const [filter, setFilter] = useState<JournalFilter>(start);
   const [selected, setSelected] = useState<number | null>(params.get("entry") ? Number(params.get("entry")) : null);
   const entries = useQuery({ queryKey: [...journalKey, filter], queryFn: () => listJournal(filter) });
+  // From a "posted as JV…" link (testing T39): that one entry opens at once.
+  const asked = params.get("q") ?? "";
+  const only = entries.data?.filter((e) => e.number === asked) ?? [];
+  if (selected === null && !params.get("entry") && only.length === 1) setSelected(only[0].id);
   const canReverse = can(me.access, "accounting", "manage");
   const field = (key: keyof JournalFilter) => (value: string) => setDraft((now) => ({ ...now, [key]: value }));
 

@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router";
 import { getStock, listMovements, stockKey, type StockRow } from "../api/stock";
 import DataTable from "../components/DataTable";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import JournalLink from "../components/JournalLink";
 
 /** Stock on hand (spec 5A.3): balances worked out from the stock movements, with their value
  * at the PO price, and the movements behind them. */
@@ -109,7 +110,12 @@ export default function StockPage() {
                         </Link>
                       )}
                       {m.adjustment && <Link to="/stores-work?tab=adjustments">{m.adjustment}</Link>}
-                      {m.journal && ` · ${m.journal}`}
+                      {m.journal && (
+                        <>
+                          {" · "}
+                          <JournalLink number={m.journal} />
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

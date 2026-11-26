@@ -139,7 +139,7 @@ test("the Director approves a payroll waiting for him", async () => {
   });
   renderAt("/payroll/4", <PayrollPage />, "/payroll/:id");
   fireEvent.click(await screen.findByRole("button", { name: "Approve" }));
-  expect(await screen.findByText(/Approved as PR261001 and posted to the accounts \(journal JE261020001\)/)).toBeInTheDocument();
+  await waitFor(() => expect(document.body).toHaveTextContent(/Approved as PR261001 and posted to the accounts \(journal JE261020001\)/));
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith(
       "/api/v1/payroll/4/approve/",

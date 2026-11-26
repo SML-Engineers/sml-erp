@@ -39,6 +39,7 @@ import { formatDecimal, sumDecimal } from "../lib/decimal";
 import { invoiceDateAge } from "../lib/invoiceDates";
 import { factoryToday, formatDateTime } from "../lib/time";
 import { useConfirm } from "../components/ConfirmDialog";
+import { WithJournal } from "../components/JournalLink";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -1002,7 +1003,9 @@ function PaymentCancel({
     <div aria-label={t("payments.cancelOf", { number: payment.number })} role="group">
       {c?.status === "pending" && <p>{t("payments.cancelPending", { name: c.requested_by, reason: c.reason, who: waitingFor(t, c.waiting) })}</p>}
       {c?.status === "approved" && (
-        <p className="muted">{t("payments.cancelDone", { name: c.decided_by ?? "", reason: c.reason, entry: c.reversal_entry ?? "" })}</p>
+        <p className="muted">
+          <WithJournal text={t("payments.cancelDone", { name: c.decided_by ?? "", reason: c.reason, entry: c.reversal_entry ?? "" })} number={c.reversal_entry} />
+        </p>
       )}
       {c?.status === "rejected" && !payment.can_cancel && <p className="muted">{t("payments.cancelRejected", { name: c.decided_by ?? "" })}</p>}
       {c?.can_decide && (

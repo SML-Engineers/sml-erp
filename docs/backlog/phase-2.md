@@ -77,6 +77,12 @@ Status: `[ ]` to do · `[x]` done
     account that replaced them. Until the year-end close (P2-23), the profit to date is shown
     inside equity, so the balance sheet balances; a division's balance sheet shows bank, loans
     and capital as "funded at company level".
+  - Testing T39 (21 Nov 2026): the journal entry a document was posted as opens from it:
+    "posted as JV…" on supplier invoices and returns, payments (saved message, list,
+    cancellation reversal), receipts, payroll, stock work, stock movements, cheques, assets,
+    job transfers and the QuickBooks opening balances (`components/JournalLink.tsx`). It
+    goes to Accounts → Journal, which opens that entry; people who cannot open the journal
+    see the number only.
 
 ## B. Sales invoicing and receivables
 

@@ -24,6 +24,7 @@ import {
 import SearchSelect from "../components/SearchSelect";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { useSure } from "../components/ConfirmDialog";
+import JournalLink from "../components/JournalLink";
 
 function today(): string {
   const now = new Date();
@@ -307,7 +308,12 @@ function AdjustmentCard({ doc }: { doc: StockAdjustmentDoc }) {
       </h2>
       <p className="muted">
         {doc.reason} · {doc.created_by}
-        {doc.status === "posted" && ` · LKR ${formatDecimal(doc.total_value)} · ${doc.journal_entry}`}
+        {doc.status === "posted" && (
+          <>
+            {` · LKR ${formatDecimal(doc.total_value)} · `}
+            <JournalLink number={doc.journal_entry} />
+          </>
+        )}
       </p>
       <ul className="plain-list">
         {doc.lines.map((x, i) => (

@@ -29,6 +29,7 @@ import { ApiError } from "../api/client";
 import { listPayAccounts } from "../api/payments";
 import { formatDecimal } from "../lib/decimal";
 import { useSure } from "../components/ConfirmDialog";
+import JournalLink from "../components/JournalLink";
 
 function today(): string {
   const now = new Date();
@@ -514,7 +515,12 @@ function Depreciation() {
         <section key={r.id} className="panel" aria-label={r.month_end}>
           <h2>
             {r.month_end.slice(0, 7)} · {t(`fa.runStatuses.${r.status}`)} · LKR {formatDecimal(r.total)}
-            {r.journal_entry && ` · ${r.journal_entry}`}
+            {r.journal_entry && (
+              <>
+                {" · "}
+                <JournalLink number={r.journal_entry} />
+              </>
+            )}
           </h2>
           <div className="table-wrap">
             <table aria-label={t("fa.linesOf", { month: r.month_end.slice(0, 7) })}>

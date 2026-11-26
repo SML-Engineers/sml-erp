@@ -453,7 +453,7 @@ test("the Accountant transfers a completed mould repair at cost", async () => {
       expect.objectContaining({ body: JSON.stringify({ notes: "Cavity 3 rewelded" }) }),
     ),
   );
-  expect(await within(panel).findByText("Transferred on 2026-11-09: journal JE26110042")).toBeInTheDocument();
+  await waitFor(() => expect(panel).toHaveTextContent("Transferred on 2026-11-09: journal JE26110042"));
 });
 
 test("asking to issue more: the material is chosen from the job's list, or typed for another item", async () => {

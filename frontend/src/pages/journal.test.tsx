@@ -119,6 +119,13 @@ test("the source of each entry is in plain words, also for one with no wording o
   expect(within(panel).getByText(/Goods receipt \(GRN\) GRN26112107/)).toBeInTheDocument();
 });
 
+// Testing T39: a "posted as JV…" link opens that entry on the journal page.
+test("a link to one entry's number opens that entry", async () => {
+  mockApi(journalApi({ "GET /api/v1/journal/?q=JV26100001": { body: [entry] } }));
+  renderAt("/journal?q=JV26100001", <JournalPage me={accountant} />, "/journal");
+  expect(await screen.findByRole("region", { name: "JV26100001 · 2026-10-21" })).toBeInTheDocument();
+});
+
 const year = new Date().getFullYear();
 const months = {
   year,

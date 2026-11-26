@@ -37,6 +37,7 @@ import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 import { cancelledNote } from "../lib/cancelled";
 import { useConfirm, useSure } from "../components/ConfirmDialog";
+import { WithJournal } from "../components/JournalLink";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -75,7 +76,12 @@ export default function SupplierInvoicePage() {
         <>
           <p className="muted">
             {supplierInvoiceStatus(t, data)} · {data.number} · {data.division} · {t("si.dueOn", { date: data.due_date })}
-            {data.journal && ` · ${t("si.posted", { journal: data.journal })}`}
+            {data.journal && (
+              <>
+                {" · "}
+                <WithJournal text={t("si.posted", { journal: data.journal })} number={data.journal} />
+              </>
+            )}
           </p>
           {data.discrepancies.length > 0 && data.status !== "posted" && (
             <section className="notice" aria-label={t("si.differences")}>
@@ -102,7 +108,7 @@ export default function SupplierInvoicePage() {
             <ul className="changes" aria-label={t("si.setOffs")}>
               {(data.set_offs ?? []).map((s, i) => (
                 <li key={i}>
-                  {t("si.setOff", { amount: formatDecimal(s.amount), journal: s.journal })}{" "}
+                  <WithJournal text={t("si.setOff", { amount: formatDecimal(s.amount), journal: s.journal })} number={s.journal} />{" "}
                   <Link to={`/vouchers/${s.voucher.id}`}>{s.voucher.number}</Link>
                 </li>
               ))}

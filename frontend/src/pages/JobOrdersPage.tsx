@@ -32,6 +32,7 @@ import OrderClosePanel from "../components/OrderClosePanel";
 import OrderProfitPanel from "../components/OrderProfitPanel";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { useSure } from "../components/ConfirmDialog";
+import { WithJournal } from "../components/JournalLink";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -1352,7 +1353,9 @@ function TransferPanel({ job, transfer: x, onSaved }: { job: JobOrder; transfer:
       {x.bill_lines && x.bill_lines.length > 0 && <p className="muted small">{x.bill_lines.join("; ")}</p>}
       {x.done ? (
         <>
-          <p className="notice">{t("job.transferred", { date: x.date, journal: x.journal })}</p>
+          <p className="notice">
+            <WithJournal text={t("job.transferred", { date: x.date, journal: x.journal })} number={x.journal} />
+          </p>
           {x.asset && <p className="notice">{t("job.assetMade", { asset: x.asset })}</p>}
         </>
       ) : (

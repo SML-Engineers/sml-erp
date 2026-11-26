@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
 
 import Trail from "../components/Trail";
 import { mockApi, renderAt } from "../test-utils";
@@ -186,4 +187,48 @@ test("the trail links every document of a PO", async () => {
   expect(within(trail).getByRole("link", { name: "INV-1" })).toHaveAttribute("href", "/supplier-invoices/3");
   expect(within(trail).getByRole("link", { name: "IM261101001" })).toHaveAttribute("href", "/vouchers/12");
   expect(within(trail).getByText(/paid by PY2611001 2026-11-02/)).toBeInTheDocument();
+});
+
+// Testing T36 (21 Nov 2026): the Trail kept old statuses, and a held invoice read "LKR 0.00 unpaid".
+test("the trail is read again when the document's status changes, and a held invoice is not payable yet", async () => {
+  const body = {
+    po: { id: 9, label: "PO26110805", status: "Received", total_lkr: "62400.00", parent: null, revisions: [] },
+    grns: [],
+    inspections: [],
+    invoices: [
+      {
+        id: 3,
+        number: "SI26112101",
+        invoice_no: "PTL-7702",
+        status: "Held: discrepancy",
+        total_lkr: "62400.00",
+        unpaid: "0.00",
+        payable: false,
+        set_off: "0.00",
+        debited: "0.00",
+      },
+    ],
+    returns: [],
+    vouchers: [],
+  };
+  const calls = mockApi({ "GET /api/v1/purchasing-reports/trail/?invoice=3": { body } });
+  function Page() {
+    const [status, setStatus] = useState("held");
+    return (
+      <>
+        <button type="button" onClick={() => setStatus("exception_requested")}>
+          Ask for the exception
+        </button>
+        <Trail by="invoice" id={3} stamp={status} />
+      </>
+    );
+  }
+  renderAt("/", <Page />);
+  const trail = await screen.findByRole("region", { name: "Trail" });
+  expect(within(trail).getByText(/Held: discrepancy, LKR 62,400.00, not payable yet/)).toBeInTheDocument();
+  expect(within(trail).queryByText(/unpaid/)).not.toBeInTheDocument();
+  const reads = () => calls.mock.calls.filter(([url]) => String(url).includes("/trail/")).length;
+  expect(reads()).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: "Ask for the exception" }));
+  await waitFor(() => expect(reads()).toBe(2));
 });

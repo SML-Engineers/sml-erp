@@ -333,6 +333,10 @@ Status: `[ ]` to do · `[x]` done
     Done: PR #277.
   - Testing T22/T23, 23 Nov 2026: items export/import carry tare, tolerance, kg per metre and
     density (blank keeps the value); checking a file needs no reason. Done: PR #278.
+  - Testing T36, 21 Nov 2026: the Trail on a PO, GRN or supplier invoice is read again as
+    soon as that document's status changes (it kept "Excess waiting for the Director" after
+    the GRN was confirmed); a held invoice, or one waiting for the Director's exception,
+    reads "not payable yet" instead of "LKR 0.00 unpaid".
 
 - [ ] **P16-14 User acceptance testing and go-live**
   Test scripts per role (Purchasing Officer, Stores Executive and Manager, QC Inspector,

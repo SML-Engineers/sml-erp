@@ -7,9 +7,11 @@ import { formatDecimal } from "../lib/decimal";
 
 /** The full trail of a purchase order (spec 5A.6): PO ↔ GRN ↔ QC ↔ invoice ↔ voucher ↔
  * payment, with returns, shown on the PO, GRN and invoice pages. */
-export default function Trail({ by, id }: { by: "po" | "grn" | "invoice"; id: number }) {
+export default function Trail({ by, id, stamp = "" }: { by: "po" | "grn" | "invoice"; id: number; stamp?: string }) {
   const { t } = useTranslation();
-  const trail = useQuery({ queryKey: [...prKey, "trail", by, id], queryFn: () => getTrail(by, id) });
+  // `stamp` is the page's document status: when it changes (confirmed, exception asked for,
+  // posted…) the trail is read again (testing T36: it kept the old statuses).
+  const trail = useQuery({ queryKey: [...prKey, "trail", by, id, stamp], queryFn: () => getTrail(by, id) });
   const d = trail.data;
   if (!d) return null;
   return (
@@ -58,7 +60,7 @@ export default function Trail({ by, id }: { by: "po" | "grn" | "invoice"; id: nu
                 <span key={inv.id}>
                   {i > 0 && ", "}
                   <Link to={`/supplier-invoices/${inv.id}`}>{inv.invoice_no}</Link> ({inv.status}, LKR {formatDecimal(inv.total_lkr)},{" "}
-                  {t("pr.unpaid", { amount: formatDecimal(inv.unpaid) })})
+                  {inv.payable === false ? t("pr.notPayable") : t("pr.unpaid", { amount: formatDecimal(inv.unpaid) })})
                 </span>
               ))}
         </li>

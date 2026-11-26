@@ -2876,7 +2876,8 @@
     "amountLkr": "Amount (LKR)",
     "supplierCreditNote": "Supplier's credit note",
     "creditWaiting": "Waiting, {{days}} days",
-    "onlyWaiting": "Only those still waiting"
+    "onlyWaiting": "Only those still waiting",
+    "notPayable": "not payable yet"
   },
   "mj": {
     "title": "Manual journals",

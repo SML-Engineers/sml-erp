@@ -612,6 +612,8 @@ def trail(user: User, order: PurchaseOrder) -> dict:
                     i.total_lkr if i.status == SupplierInvoice.Status.POSTED else i.total_amount
                 ),
                 "unpaid": _money(invoices.unpaid(i)),
+                # Only a posted invoice can be paid; a held one is "not payable yet" (T36).
+                "payable": i.status == SupplierInvoice.Status.POSTED,
                 "set_off": _money(advances.set_off_total(i)),
                 "debited": _money(returns.debited(i)),
             }

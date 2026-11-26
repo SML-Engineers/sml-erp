@@ -221,6 +221,19 @@ def test_the_trail_from_po_to_voucher_both_ways(people, supplier):
         assert [r["number"] for r in trail["returns"]] == [ret.number]
 
 
+def test_the_trail_says_a_held_invoice_is_not_payable_yet(people, supplier):
+    """Testing T36 (21 Nov 2026): PTL-7702, held, read "LKR 0.00 unpaid"."""
+    line = receive_and_accept(people, po(people, supplier), accepted="80")
+    held = invoice(people, line, qty="80", price="105")
+    client = as_user(people["accountant"])
+    row = client.get(f"/api/v1/purchasing-reports/trail/?invoice={held.pk}").json()["invoices"][0]
+    assert (row["status"], row["payable"]) == ("Held: discrepancy", False)
+    invoices.request_exception(people["accountant"], held, "Price list changed")
+    invoices.approve_exception(people["director"], held, "OK")
+    row = client.get(f"/api/v1/purchasing-reports/trail/?invoice={held.pk}").json()["invoices"][0]
+    assert (row["payable"], row["unpaid"]) == (True, "8400.00")
+
+
 # --- Dashboard, exports and the return note ------------------------------------------------------
 
 

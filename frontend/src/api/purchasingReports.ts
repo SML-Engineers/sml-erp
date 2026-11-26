@@ -19,7 +19,7 @@ export interface Trail {
   po: { id: number; label: string; status: string; total_lkr: string; parent: { id: number; label: string } | null; revisions: { id: number; label: string }[] };
   grns: { id: number; number: string; date: string; status: string }[];
   inspections: { id: number; grn: string; item: string; status: string; decision: string; accepted: string; rejected: string }[];
-  invoices: { id: number; number: string; invoice_no: string; status: string; total_lkr: string; unpaid: string; set_off: string; debited: string }[];
+  invoices: { id: number; number: string; invoice_no: string; status: string; total_lkr: string; unpaid: string; payable?: boolean; set_off: string; debited: string }[];
   returns: { id: number; number: string; kind: string; status: string }[];
   vouchers: { id: number; number: string; status: string; amount: string; advance: boolean; payments: { number: string; date: string; amount: string }[] }[];
 }

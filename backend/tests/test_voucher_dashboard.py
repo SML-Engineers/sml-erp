@@ -114,8 +114,8 @@ def test_the_accountant_sees_the_whole_picture(accountant, scene):
     body = as_user(accountant).get("/api/v1/vouchers/dashboard/").json()
     assert body["waiting_for_me"] == {"count": 2, "total": "550.00"}  # WS 250 + IM 300 at L2
     assert [(r["waiting_for"], r["count"], r["total"]) for r in body["by_level"]] == [
-        ("L2 Accountant", 2, "550.00"),
-        ("L3 Director", 1, "900.00"),
+        ("Accountant", 2, "550.00"),
+        ("Director", 1, "900.00"),
     ]
     assert body["by_level"][0]["bands"]["0–2 days"] == 2
     assert body["unpaid"] == {"count": 1, "total": "1000.00", "remaining": "600.00"}

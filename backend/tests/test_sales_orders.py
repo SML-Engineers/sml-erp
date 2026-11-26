@@ -467,7 +467,11 @@ def test_the_list_and_page_say_who_a_repeat_order_waits_for(executive, director,
     order = orders.confirm(executive, repeat(executive, unilever))
     client = as_user(executive)
     row = next(r for r in client.get("/api/v1/sales-orders/").json() if r["id"] == order.pk)
-    assert row["people"]["waiting"] == {"person": director.full_name, "role": "Director"}
+    assert row["people"]["waiting"] == {
+        "person": director.full_name,
+        "people": [],
+        "role": "Director",
+    }
     orders.send_back(director, order, "Price went up in October")
     page = client.get(f"/api/v1/sales-orders/{order.pk}/").json()
     assert page["people"] == {

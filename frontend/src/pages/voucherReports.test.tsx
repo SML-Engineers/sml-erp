@@ -29,7 +29,7 @@ const pending: PendingReport = {
       division: "WS",
       payee: "CEB",
       level: 2,
-      waiting_for: "L2 Accountant",
+      waiting_for: "Accountant",
       approvers: "Kumari",
       since: "2026-10-20T09:00:00Z",
       days: 9,
@@ -37,7 +37,7 @@ const pending: PendingReport = {
       total_amount: "25000.00",
     },
   ],
-  summary: [{ waiting_for: "L2 Accountant", count: 1, bands: { "0–2 days": 0, "3–7 days": 0, "8–14 days": 1, "15 days or more": 0 } }],
+  summary: [{ waiting_for: "Accountant", count: 1, bands: { "0–2 days": 0, "3–7 days": 0, "8–14 days": 1, "15 days or more": 0 } }],
 };
 
 test("the approved list filters by date and exports with the same filters", async () => {
@@ -71,8 +71,8 @@ test("pending vouchers by approver and age", async () => {
 
   fireEvent.click(await screen.findByRole("tab", { name: "Pending by approver and age" }));
   const summary = await screen.findByRole("table", { name: "Waiting, by approver and age" });
-  const row = within(summary).getByText("L2 Accountant").closest("tr")!;
-  expect(row).toHaveTextContent("L2 Accountant10010");
+  const row = within(summary).getByText("Accountant").closest("tr")!;
+  expect(row).toHaveTextContent("Accountant10010");
   const list = screen.getByRole("table", { name: "Pending by approver and age" });
   expect(within(list).getByText("Kumari")).toBeInTheDocument();
   expect(within(list).getByText("9")).toBeInTheDocument();

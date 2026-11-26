@@ -446,6 +446,12 @@ Status: `[ ]` to do · `[x]` done
     Every "Are you sure?" on the owner's list is then in place.
   - Testing T42/T41, owner 21 Nov 2026: advances ask for the proforma or advance request;
     matched-invoice vouchers point to the invoices' scans. Done: PR #279.
+  - Testing T41, the rest (21–22 Nov 2026): the approval history, the history report, the
+    Accountant's queue and the pending report name each level by its role (Clerk,
+    Accountant, Director) instead of "L1 / L2 / L3"; the help text no longer says "approved
+    at L2". When two or three people can approve (two Directors), the status names them
+    all: "Waiting for Kamal or Ruwan (Director)". The approval matrix settings page keeps
+    its level numbers, where they are needed.
   - Testing T53, 23 Nov 2026: IM261122001 was in fact rejected by the Director at 05:14 with
     the right reason; the approval page then showed stale and wrong vouchers. "Open to approve"
     now opens the one asked for or says it is no longer waiting. Done: PR #282.

@@ -159,7 +159,7 @@ test("a submitted voucher is shown read-only with its approval history", async (
         ...draft,
         status: "submitted",
         can_edit: false,
-        approvals: [{ level: 1, action: "submit", user: "Nimal", reason: "", acted_at: "2026-10-29T09:00:00Z" }],
+        approvals: [{ level: 1, level_name: "Clerk", action: "submit", user: "Nimal", reason: "", acted_at: "2026-10-29T09:00:00Z" }],
       },
     },
   });
@@ -169,7 +169,7 @@ test("a submitted voucher is shown read-only with its approval history", async (
   expect(screen.queryByRole("form", { name: "Voucher details" })).not.toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Submit for approval" })).not.toBeInTheDocument();
   const history = screen.getByRole("region", { name: "Approval history" });
-  expect(within(history).getByText(/L1 · Submitted · Nimal/)).toBeInTheDocument();
+  expect(within(history).getByText(/Clerk · Submitted · Nimal/)).toBeInTheDocument();
 });
 
 // Owner, 16 Nov 2026: the Director opened a voucher from the bell and found no Approve.
@@ -188,7 +188,7 @@ test("a voucher waiting for me says so and opens it where I approve it", async (
   renderAt("/vouchers/9", <VoucherPage me={director} />, "/vouchers/:id");
 
   const box = await screen.findByRole("region", { name: "Waiting for your approval" });
-  expect(within(box).getByText(/waits for your approval at level 3 \(Director\)/)).toBeInTheDocument();
+  expect(within(box).getByText(/waits for your approval as Director\./)).toBeInTheDocument();
   expect(within(box).getByRole("link", { name: "Open to approve" })).toHaveAttribute("href", "/vouchers/review?open=9");
 });
 

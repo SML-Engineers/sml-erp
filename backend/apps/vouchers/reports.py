@@ -167,7 +167,7 @@ def pending(user: User, *, division: str = "", level: int | None = None) -> list
                 "division": v.division.code,
                 "payee": _payee(v),
                 "level": state.current_level,
-                "waiting_for": f"L{state.current_level} {step['role_name']}",
+                "waiting_for": step["role_name"],
                 "approvers": ", ".join(p.full_name for p in approvals.approvers(state)),
                 "since": since,
                 "days": days,
@@ -198,7 +198,7 @@ def pending_summary(rows: list[dict]) -> list[dict]:
 HISTORY_COLUMNS = [
     Column("acted_at", "When", "datetime", width=1.2),
     Column("round", "Round", "number", width=0.5),
-    Column("level", "Level", "number", width=0.5),
+    Column("level_name", "Level", width=1),
     Column("action", "Action", width=1.3),
     Column("user", "By", width=1.3),
     Column("reason", "Reason / comment", width=3),
@@ -206,11 +206,13 @@ HISTORY_COLUMNS = [
 
 
 def history(voucher: Voucher) -> list[dict]:
+    state = approvals.state_of(DOC, voucher.pk)
     rows = [
         {
             "acted_at": row.acted_at,
             "round": row.round,
             "level": row.level,
+            "level_name": services.level_name(state, row.level),
             "action": services.history_row(row)[1],
             "user": row.user.full_name,
             "reason": services.history_row(row)[2],
@@ -218,12 +220,14 @@ def history(voucher: Voucher) -> list[dict]:
         for row in approvals.history(DOC, voucher.pk)
     ]
     for cancel in voucher.cancellations.all():
+        cancel_state = approvals.state_of(services.CANCEL_DOC, cancel.pk)
         for row in approvals.history(services.CANCEL_DOC, cancel.pk):
             rows.append(
                 {
                     "acted_at": row.acted_at,
                     "round": row.round,
                     "level": row.level,
+                    "level_name": services.level_name(cancel_state, row.level, "Requested by"),
                     "action": f"Cancellation: {row.get_action_display().lower()}",
                     "user": row.user.full_name,
                     "reason": row.reason,

@@ -687,9 +687,10 @@ def people_for(document_type: str, document_ids) -> dict[int, dict]:
     """Who each document waits for and who last acted on it, for clear statuses in lists and
     on document pages (owner, 16 Nov 2026: "Waiting for Ruwan", "Returned by Kumari").
 
-    For each id with an approval: {"waiting": {"person", "role"} or None, "last": {"action",
-    "by"} or None}. "person" is named only when exactly one active person other than the maker
-    holds the waiting level's role; otherwise the role alone is given, so it is never wrong.
+    For each id with an approval: {"waiting": {"person", "people", "role"} or None, "last":
+    {"action", "by"} or None}. "person" is named only when exactly one active person other than
+    the maker holds the waiting level's role; when two or three do, "people" names them all;
+    otherwise the role alone is given, so it is never wrong.
     Two queries for the whole list, plus one per role waited on.
     """
     ids = list(document_ids)
@@ -718,6 +719,9 @@ def people_for(document_type: str, document_ids) -> dict[int, dict]:
             people = [name for pk, name in holders[code] if pk != state.created_by_id]
             entry["waiting"] = {
                 "person": people[0] if len(people) == 1 else None,
+                # Two or three people hold the role, e.g. two Directors (testing T41, 22 Nov
+                # 2026): each is named, "Waiting for Ruwan or Kamal (Director)".
+                "people": sorted(people) if 1 < len(people) <= 3 else [],
                 "role": names[code],
             }
         found[state.document_id] = entry

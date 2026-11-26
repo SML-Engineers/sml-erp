@@ -135,7 +135,7 @@ export default function VoucherPage({ me }: { me: CurrentUser }) {
       {data?.can_act && (
         <section className="panel confirm-box" aria-label={t("waiting.title")}>
           <h2>{t("waiting.title")}</h2>
-          <p>{t("vouchers.waitingYou", { level: data.waiting_level, role: data.waiting_for ?? "" })}</p>
+          <p>{t("vouchers.waitingYou", { role: data.waiting_for ?? "" })}</p>
           <Link className="button-link" to={`/vouchers/review?open=${data.id}`}>
             {t("waiting.open")}
           </Link>
@@ -813,7 +813,7 @@ function History({ voucher }: { voucher: VoucherDetail }) {
       <ul className="changes">
         {voucher.approvals.map((row, index) => (
           <li key={index}>
-            L{row.level} · {t(`vouchers.actions.${row.action}`)} · {row.user} ·{" "}
+            {row.level_name ?? row.level} · {t(`vouchers.actions.${row.action}`)} · {row.user} ·{" "}
             {formatDateTime(row.acted_at)}
             {row.reason && ` — ${row.reason}`}
           </li>

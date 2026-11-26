@@ -120,7 +120,9 @@ function Pending({ division, level }: { division: string; level: string }) {
       <p className="muted">{t("voucherReports.pendingHelp")}</p>
       {(division || level) && (
         <p>
-          {[division && t("dashboard.divisionChip", { code: division }), level && `L${level}`].filter(Boolean).join(" · ")}{" "}
+          {[division && t("dashboard.divisionChip", { code: division }), level && (report.data?.summary[0]?.waiting_for ?? level)]
+            .filter(Boolean)
+            .join(" · ")}{" "}
           <Link to="/vouchers/reports?tab=pending">{t("dashboard.showAll")}</Link>
         </p>
       )}
@@ -245,7 +247,7 @@ function History() {
                   value: (r) => r.acted_at,
                   cell: (r) => formatDateTime(r.acted_at),
                 },
-                { id: "level", header: t("voucherReports.level"), value: (r) => `L${r.level}` },
+                { id: "level", header: t("voucherReports.level"), value: (r) => r.level_name ?? String(r.level) },
                 { id: "action", header: t("voucherReports.action"), value: (r) => r.action },
                 { id: "user", header: t("voucherReports.by"), value: (r) => r.user },
                 { id: "reason", header: t("voucherReports.reason"), value: (r) => r.reason },

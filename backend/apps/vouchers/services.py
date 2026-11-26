@@ -1142,6 +1142,15 @@ def send_to_accountant(user: User, voucher: Voucher, reason: str) -> Voucher:
         return sync_status(voucher)
 
 
+def level_name(state, level: int, first: str = "Clerk") -> str:
+    """The role of an approval level in words (testing T41, 21 Nov 2026: "L1 / L2 / L3" read
+    as program words). Level 1 is whoever sends the voucher: the Clerk."""
+    if level == 1:
+        return first
+    step = next((s for s in (state.route if state else []) if s["level"] == level), None)
+    return step["role_name"] if step else f"Level {level}"
+
+
 def history_row(row) -> tuple[str, str, str]:
     """(action code, label, reason) of one approval-log row, telling a Director's "send back
     to the Accountant" apart from a change sent back for checking."""

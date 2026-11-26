@@ -164,7 +164,8 @@ export interface VoucherDetail extends Omit<VoucherSummary, "voucher_type" | "pa
   warnings: string[];
   can_edit: boolean;
   payee_balance: { waiting_approval: string; approved_unpaid: string; outstanding: string } | null;
-  approvals: { level: number; action: string; user: string; reason: string; acted_at: string }[];
+  /** level_name: the level's role in words ("Clerk", "Accountant", "Director"; testing T41). */
+  approvals: { level: number; level_name?: string; action: string; user: string; reason: string; acted_at: string }[];
   upload_warnings?: string[];
   waiting_level: number | null;
   waiting_for: string | null;
@@ -324,6 +325,7 @@ export interface HistoryRow {
   acted_at: string;
   round: number;
   level: number;
+  level_name?: string;
   action: string;
   user: string;
   reason: string;

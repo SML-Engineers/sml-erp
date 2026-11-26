@@ -31,14 +31,23 @@ def test_a_voucher_says_who_it_waits_for_and_who_acted(clerk, accountant, direct
     services.submit(clerk, voucher)
     waiting = approvals.people_for(services.DOC, [voucher.pk])[voucher.pk]
     assert waiting == {
-        "waiting": {"person": accountant.full_name, "role": "Accountant"},
+        "waiting": {"person": accountant.full_name, "people": [], "role": "Accountant"},
         "last": None,
     }
 
-    # With a second accountant, only the role can be named.
-    person("accountant2@sml.lk", "accountant", all_divisions=True)
+    # With a second accountant, both are named (testing T41: "Ruwan or Kamal").
+    second = person("accountant2@sml.lk", "accountant", all_divisions=True)
     assert approvals.people_for(services.DOC, [voucher.pk])[voucher.pk]["waiting"] == {
         "person": None,
+        "people": sorted([accountant.full_name, second.full_name]),
+        "role": "Accountant",
+    }
+    # With four, only the role: too many names to read.
+    for n in (3, 4):
+        person(f"accountant{n}@sml.lk", "accountant", all_divisions=True)
+    assert approvals.people_for(services.DOC, [voucher.pk])[voucher.pk]["waiting"] == {
+        "person": None,
+        "people": [],
         "role": "Accountant",
     }
 
@@ -46,7 +55,7 @@ def test_a_voucher_says_who_it_waits_for_and_who_acted(clerk, accountant, direct
 def test_the_director_and_a_return_are_named(clerk, accountant, director):  # noqa: F811
     voucher = at_director(clerk, accountant)
     people = approvals.people_for(services.DOC, [voucher.pk])[voucher.pk]
-    assert people["waiting"] == {"person": director.full_name, "role": "Director"}
+    assert people["waiting"] == {"person": director.full_name, "people": [], "role": "Director"}
     assert people["last"] == {"action": "approve", "by": accountant.full_name}
 
     services.send_back(director, voucher, "Wrong invoice attached")
@@ -64,7 +73,7 @@ def test_the_maker_is_never_the_one_named(clerk, accountant):  # noqa: F811
     accountant.is_active = False
     accountant.save()
     waiting = approvals.people_for(services.DOC, [voucher.pk])[voucher.pk]["waiting"]
-    assert waiting == {"person": None, "role": "Accountant"}
+    assert waiting == {"person": None, "people": [], "role": "Accountant"}
 
 
 def test_lists_and_pages_carry_it(clerk, accountant, director, executive, unilever):  # noqa: F811
@@ -79,3 +88,30 @@ def test_lists_and_pages_carry_it(clerk, accountant, director, executive, unilev
     listed = as_user(executive).get("/api/v1/quotations/").json()
     assert next(r for r in listed if r["id"] == quotation.pk)["people"] is None  # a draft
     assert as_user(executive).get(f"/api/v1/quotations/{quotation.pk}/").json()["people"] is None
+
+
+def test_two_directors_are_both_named(clerk, accountant, director):  # noqa: F811
+    """Testing T41 (22 Nov 2026): with two Directors the status said only "Waiting for the
+    Director"."""
+    second = person("director2@sml.lk", "director", all_divisions=True)
+    voucher = at_director(clerk, accountant)
+    waiting = approvals.people_for(services.DOC, [voucher.pk])[voucher.pk]["waiting"]
+    assert waiting == {
+        "person": None,
+        "people": sorted([director.full_name, second.full_name]),
+        "role": "Director",
+    }
+
+
+def test_the_history_names_each_level_by_its_role(clerk, accountant, director):  # noqa: F811
+    """Testing T41 (21 Nov 2026): the history said "L1 / L2 / L3"."""
+    voucher = at_director(clerk, accountant)
+    services.approve(director, voucher)
+    page = as_user(clerk).get(f"/api/v1/vouchers/{voucher.pk}/").json()
+    assert [(r["level_name"], r["action"]) for r in page["approvals"]] == [
+        ("Clerk", "submit"),
+        ("Accountant", "approve"),
+        ("Director", "approve"),
+    ]
+    report = as_user(accountant).get(f"/api/v1/vouchers/{voucher.pk}/history/").json()
+    assert [r["level_name"] for r in report] == ["Clerk", "Accountant", "Director"]

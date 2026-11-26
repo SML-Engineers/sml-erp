@@ -388,7 +388,23 @@ def may_act_at(user: User, document_type: str, step: dict) -> bool:
     return holds_role(user, step["role"]) or _stands_in(user, document_type, step)
 
 
+WAITING_EVENTS = ("approval_waiting", "approval_reminder")
+
+
+def _settle_bell(state: ApprovalState) -> None:
+    """Someone acted on the document: the notices that it waits at a level leave everyone's
+    bell (testing T7, 21 Nov 2026: the bell kept documents already approved). New notices
+    follow for whoever it waits for next."""
+    Notification.objects.filter(
+        event__in=WAITING_EVENTS,
+        document_type=state.document_type,
+        document_id=state.document_id,
+        read_at__isnull=True,
+    ).update(read_at=timezone.now())
+
+
 def _log(state: ApprovalState, user: User, level: int, action: str, reason: str = ""):
+    _settle_bell(state)
     return ApprovalLog.objects.create(
         document_type=state.document_type,
         document_id=state.document_id,
@@ -752,13 +768,19 @@ def _action_holders(document_type: str):
     ).values("pk")
 
 
+def _waiting_role(state: ApprovalState) -> str:
+    """The role of the level waiting, in words: "Director", not "level 3" (testing T7)."""
+    step = next((s for s in state.route if s["level"] == state.current_level), None)
+    return step["role_name"] if step else f"level {state.current_level}"
+
+
 def _tell_approvers(state: ApprovalState) -> None:
     from .notifications import notify
 
     notify(
         approvers(state),
         "approval_waiting",
-        title=f"{_title(state)} is waiting for your approval (level {state.current_level})",
+        title=f"{_title(state)} is waiting for your approval as {_waiting_role(state)}",
         link=state.link,
         document_type=state.document_type,
         document_id=state.document_id,
@@ -859,7 +881,8 @@ def waiting_since(state: ApprovalState):
 def send_reminders(now=None) -> int:
     """Once a day: remind everyone who can act on a document that has waited at least the
     set number of days, until someone acts. Never twice on the same day for the same
-    person and document. Returns the number of reminders made."""
+    person and document, and each person keeps only the newest reminder of a document.
+    Returns the number of reminders made."""
     from .notifications import notify
 
     now = now or timezone.now()
@@ -888,12 +911,20 @@ def send_reminders(now=None) -> int:
             if not people:
                 continue
             with transaction.atomic():
+                # One reminder per document and person, the newest (testing T7: each day's
+                # reminder was a new entry, "waited 11 days" and "waited 12 days").
+                Notification.objects.filter(
+                    event="approval_reminder",
+                    document_type=state.document_type,
+                    document_id=state.document_id,
+                    user__in=people,
+                ).delete()
                 made += len(
                     notify(
                         people,
                         "approval_reminder",
                         title=f"Reminder: {_title(state)} has waited {days} days for your "
-                        f"approval (level {state.current_level})",
+                        f"approval as {_waiting_role(state)}",
                         link=state.link,
                         document_type=state.document_type,
                         document_id=state.document_id,

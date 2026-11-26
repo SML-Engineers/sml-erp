@@ -74,13 +74,39 @@ def test_approvers_are_reminded_once_a_day_after_the_set_days(clerk, accountant,
         assert approvals.send_reminders() == 0  # not twice on the same day
     reminder = reminders(accountant).get()
     assert reminder.title.startswith(f"Reminder: Voucher {voucher.number}")
-    assert "waited 3 days for your approval (level 2)" in reminder.title
+    assert "waited 3 days for your approval as Accountant" in reminder.title
     assert reminder.link == f"/vouchers/{voucher.pk}"
     assert not reminders(clerk).exists() and not reminders(director).exists()
     Notification.objects.update(created_at=F("created_at") - timedelta(days=1))  # next day
     with waited(4):
         assert approvals.send_reminders() == 1
-    assert reminders(accountant).count() == 2
+    # Testing T7: one reminder per document, the newest ("waited 4 days"), not one a day.
+    only = reminders(accountant).get()
+    assert only.title.startswith(f"Reminder: Voucher {voucher.number}")
+    assert only.title.endswith("has waited 4 days for your approval as Accountant")
+
+
+def test_once_someone_acts_the_notices_leave_the_bell(clerk, accountant, director, voucher):
+    """Testing T7 (21 Nov 2026): after the Director approved, the notice stayed in the bell."""
+    with waited(3):
+        approvals.send_reminders()
+    waiting = Notification.objects.filter(user=accountant, document_id=voucher.pk)
+    assert waiting.filter(read_at__isnull=True).count() == 2  # waiting, and the reminder
+    services.code_lines(
+        accountant,
+        voucher,
+        [CodingInput(line_no=1, account=Account.objects.get(number="6210"), division=ws())],
+    )
+    services.approve(accountant, voucher)
+    assert not waiting.filter(read_at__isnull=True).exists()  # the Accountant's are read
+    director_bell = Notification.objects.filter(user=director, read_at__isnull=True)
+    assert director_bell.get().title.endswith("is waiting for your approval as Director")
+    services.approve(director, voucher)
+    assert not director_bell.exists()
+    # The Clerk's own news ("was approved") stays until the Clerk reads it.
+    assert Notification.objects.filter(
+        user=clerk, event="document_approved", read_at__isnull=True
+    ).exists()
 
 
 def test_the_waiting_starts_again_at_each_level(clerk, accountant, director, voucher):
@@ -174,3 +200,47 @@ def test_each_person_can_turn_reminder_emails_off(accountant):
         p["event"] for p in as_user(accountant).get("/api/v1/notifications/preferences/").json()
     }
     assert "approval_reminder" in events
+
+
+def test_notices_made_before_the_update_are_tidied(clerk, accountant, director, voucher):
+    """Testing T7: the bell already held stale notices and a reminder per day; the update
+    marks the stale ones read and keeps only the newest reminder."""
+    import importlib
+
+    from django.apps import apps as django_apps
+
+    services.code_lines(
+        accountant,
+        voucher,
+        [CodingInput(line_no=1, account=Account.objects.get(number="6210"), division=ws())],
+    )
+    services.approve(accountant, voucher)
+    # As before the fix: the Accountant's waiting notice still unread, two daily reminders.
+    early = timezone.now() - timedelta(days=3)
+    stale = Notification.objects.create(
+        user=accountant,
+        event="approval_waiting",
+        title="old",
+        document_type="voucher",
+        document_id=voucher.pk,
+        created_at=early,
+    )
+    for days in (2, 1):
+        Notification.objects.create(
+            user=director,
+            event="approval_reminder",
+            title=f"reminder {days}",
+            document_type="voucher",
+            document_id=voucher.pk,
+            created_at=timezone.now() - timedelta(hours=days),
+        )
+    importlib.import_module("apps.core.migrations.0035_tidy_waiting_notices").tidy(
+        django_apps, None
+    )
+    stale.refresh_from_db()
+    assert stale.read_at is not None
+    assert [n.title for n in reminders(director)] == ["reminder 1"]
+    # The Director's own waiting notice is still waiting, so it stays unread.
+    assert Notification.objects.filter(
+        user=director, event="approval_waiting", read_at__isnull=True
+    ).exists()

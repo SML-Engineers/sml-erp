@@ -8,6 +8,7 @@ import { getVoucher, voucherFileUrl, vouchersKey, type VoucherDetail, type Vouch
 import FilesIcon from "../components/FilesIcon";
 import VoucherActions from "../components/VoucherActions";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
+import AdvanceNotice from "../components/AdvanceNotice";
 
 interface Waiting extends VoucherSummary {
   submitted_at: string | null;
@@ -372,6 +373,7 @@ function SidePanel({ id, onClose, onSentBack }: { id: number; onClose: () => voi
           ⚠ {w}
         </p>
       ))}
+      <AdvanceNotice voucher={v} />
       <div className="preview">
         {scan?.content_type === "application/pdf" && <iframe title={scan.file_name} src={voucherFileUrl(v.id, scan.id)} />}
         {scan && scan.content_type !== "application/pdf" && <img alt={scan.file_name} src={voucherFileUrl(v.id, scan.id)} />}

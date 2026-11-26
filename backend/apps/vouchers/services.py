@@ -1142,6 +1142,17 @@ def send_to_accountant(user: User, voucher: Voucher, reason: str) -> Voucher:
         return sync_status(voucher)
 
 
+def advanced_before(line) -> Decimal:
+    """What other vouchers still standing (not deleted, rejected, amended or cancelled)
+    advance on the same purchase order as this advance line, with tax."""
+    rows = (
+        VoucherLine.objects.filter(advance_order_id=line.advance_order_id)
+        .exclude(voucher_id=line.voucher_id)
+        .exclude(voucher__status__in=INVOICE_FREED)
+    )
+    return sum((r.amount + r.tax_amount for r in rows), Decimal("0.00"))
+
+
 def level_name(state, level: int, first: str = "Clerk") -> str:
     """The role of an approval level in words (testing T41, 21 Nov 2026: "L1 / L2 / L3" read
     as program words). Level 1 is whoever sends the voucher: the Clerk."""

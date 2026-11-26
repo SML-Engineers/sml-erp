@@ -129,6 +129,50 @@ test("the side panel shows the scan, the accountant's comment and the payee bala
   expect(screen.queryByRole("complementary")).not.toBeInTheDocument();
 });
 
+// Testing T46 (21 Nov 2026): the approval screen showed an advance only in small grey text.
+test("an advance on a PO is flagged on the Director's screen, with what was advanced before", async () => {
+  const detail = {
+    ...waiting[0],
+    voucher_type: { ...waiting[0].voucher_type, id: 1 },
+    payee: { id: 11, code: "S0011", name: "Lanka Steel", category: "supplier" },
+    transfer_to: null,
+    lines: [
+      {
+        line_no: 1,
+        invoice_no: "",
+        invoice_date: null,
+        description: "Advance payment on a purchase order",
+        amount: "10000.00",
+        tax_code: null,
+        tax_amount: "0.00",
+        total: "10000.00",
+        account: { id: 9, number: "1320", name: "Advances to suppliers" },
+        division: "WS",
+        job_ref: "",
+        splits: [],
+        advance_order: { id: 2, label: "PO26110802", total_lkr: "37000.00", status: "approved", advanced_before: "5000.00" },
+      },
+    ],
+    attachments: [],
+    warnings: [],
+    payee_balance: null,
+    approvals: [],
+  } as unknown as VoucherDetail;
+  mockApi({
+    "GET /api/v1/vouchers/waiting/": { body: waiting },
+    "GET /api/v1/vouchers/1/": { body: detail },
+  });
+  renderAt("/vouchers/approve", <DirectorPage />);
+  fireEvent.click(await screen.findByRole("button", { name: "WS261029001" }));
+  const panel = await screen.findByRole("complementary", { name: "Voucher WS261029001" });
+  const note = within(panel).getByRole("note");
+  expect(note).toHaveTextContent(
+    "Exception: advance of LKR 10,000.00 on purchase order PO26110802 (LKR 37,000.00) before the goods arrive.",
+  );
+  expect(note).toHaveTextContent("Other vouchers have already advanced LKR 5,000.00 on it.");
+  expect(within(note).getByRole("link", { name: "PO26110802" })).toHaveAttribute("href", "/purchase-orders/2");
+});
+
 test("from the side panel the Director sends a voucher back to the Accountant", async () => {
   const detail = {
     ...waiting[0],

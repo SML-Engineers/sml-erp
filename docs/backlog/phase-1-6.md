@@ -273,6 +273,9 @@ Status: `[ ]` to do · `[x]` done
     Accountant ("Set off advances") if it was paid after the invoice; never more than the
     invoice still owes (database). What is set off reduces what can still go on vouchers.
     Set-offs are never changed (database guard).
+  - Testing T46, 21 Nov 2026: the Director's approval screen shows the same exception box as
+    the voucher page (the advance, the PO and its total), and both say what other vouchers
+    still standing have already advanced on that PO.
 
 - [x] **P16-12 Supplier returns and debit notes**
   Rejected or short goods returned to the supplier with a return note; a debit note reduces

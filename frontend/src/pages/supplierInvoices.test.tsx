@@ -118,7 +118,7 @@ test("the Director sees the differences and approves the exception", async () =>
   await waitFor(() =>
     expect(calls).toHaveBeenCalledWith("/api/v1/supplier-invoices/3/approve/", expect.objectContaining({ method: "POST" })),
   );
-  expect(await screen.findByText(/posted as JE26110004/)).toBeInTheDocument();
+  await waitFor(() => expect(document.body).toHaveTextContent(/posted as JE26110004/));
 });
 
 // Owner, 16 Nov 2026: clear statuses in the list.
@@ -273,4 +273,18 @@ test("someone who may not record credit notes only sees that one is awaited", as
   renderAt("/supplier-invoices/3", <SupplierInvoicePage />, "/supplier-invoices/:id");
   expect(await screen.findByText("Waiting for the supplier's credit note.")).toBeInTheDocument();
   expect(screen.queryByRole("form", { name: /Record the supplier's credit note/ })).not.toBeInTheDocument();
+});
+
+// Testing T39 (21 Nov 2026): "posted as JV26110022" could not be opened from the invoice.
+test("the journal entry an invoice was posted as opens from it, for those who can see the journal", async () => {
+  const done = { ...posted, debit_notes: [], journal: "JV26110022" };
+  mockApi({ "GET /api/v1/supplier-invoices/3/": { body: done } });
+  const accountant = { ...sampleUser, access: { areas: { accounting: ["view" as const] }, actions: [], divisions: "all" as const } };
+  const first = renderAt("/supplier-invoices/3", <SupplierInvoicePage />, "/supplier-invoices/:id", { me: accountant });
+  expect(await screen.findByRole("link", { name: "JV26110022" })).toHaveAttribute("href", "/journal?q=JV26110022");
+  first.unmount();
+
+  renderAt("/supplier-invoices/3", <SupplierInvoicePage />, "/supplier-invoices/:id", { me: sampleUser });
+  expect(await screen.findByText("JV26110022")).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "JV26110022" })).not.toBeInTheDocument();
 });

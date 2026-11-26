@@ -17,6 +17,7 @@ import {
 import { formatDecimal, formatQuantity } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 import { useSure } from "../components/ConfirmDialog";
+import { WithJournal } from "../components/JournalLink";
 
 /** One supplier return (P16-12): its lots, the Director's approval for accepted goods, and
  * the debit notes. */
@@ -55,7 +56,12 @@ export default function SupplierReturnPage() {
             {supplierReturnStatus(t, data)} · {t(`rtn.kinds.${data.kind}`)} · {data.return_date} · {data.supplier.name} ·{" "}
             <Link to={`/goods-receipts/${data.grn.id}`}>{data.grn.number}</Link>
             {data.vehicle_no && ` · ${data.vehicle_no}`}
-            {data.journal && ` · ${t("si.posted", { journal: data.journal })}`}
+            {data.journal && (
+              <>
+                {" · "}
+                <WithJournal text={t("si.posted", { journal: data.journal })} number={data.journal} />
+              </>
+            )}
           </p>
           <p>{t("rtn.reasonGiven", { reason: data.reason })}</p>
           <p>

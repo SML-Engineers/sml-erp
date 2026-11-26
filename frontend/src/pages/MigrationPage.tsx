@@ -18,6 +18,7 @@ import {
 import { formatDecimal } from "../lib/decimal";
 import { formatDateTime } from "../lib/time";
 import { useSure } from "../components/ConfirmDialog";
+import JournalLink from "../components/JournalLink";
 
 const FILES: MigrationFile[] = ["trial_balance", "receivables", "payables", "items"];
 
@@ -135,7 +136,12 @@ function Document({ doc }: { doc: OpeningDoc }) {
     <section className="panel" aria-label={t("mig.document", { date: doc.as_at })}>
       <h2>
         {t("mig.document", { date: doc.as_at })} · {t(`mig.statuses.${doc.status}`)}
-        {doc.journal_entry && ` · ${doc.journal_entry}`}
+        {doc.journal_entry && (
+          <>
+            {" · "}
+            <JournalLink number={doc.journal_entry} />
+          </>
+        )}
       </h2>
       <p className="muted">
         {t("mig.linesTotal", { count: String(doc.lines.length), debit: formatDecimal(doc.total_debit), credit: formatDecimal(doc.total_credit) })} ·{" "}

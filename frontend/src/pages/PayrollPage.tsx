@@ -23,6 +23,7 @@ import {
 import PayPeriodLine from "../components/PayPeriodLine";
 import { formatDecimal } from "../lib/decimal";
 import { useSure } from "../components/ConfirmDialog";
+import { WithJournal } from "../components/JournalLink";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -166,7 +167,7 @@ function RunPage({ id }: { id: number }) {
           <PayPeriodLine period={r.period} />
           {r.status === "approved" && (
             <p className="notice">
-              {t("payroll.posted", { number: r.number, journal: r.journal, net: formatDecimal(r.totals.net) })}
+              <WithJournal text={t("payroll.posted", { number: r.number, journal: r.journal, net: formatDecimal(r.totals.net) })} number={r.journal} />
             </p>
           )}
           <dl className="details">

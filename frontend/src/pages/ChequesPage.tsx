@@ -19,6 +19,7 @@ import { ApiError } from "../api/client";
 import { listPayAccounts } from "../api/payments";
 import { formatDecimal, sumDecimal } from "../lib/decimal";
 import { useSure } from "../components/ConfirmDialog";
+import JournalLink from "../components/JournalLink";
 
 function today(): string {
   const now = new Date();
@@ -277,7 +278,9 @@ function Deposits() {
                 <td>{d.account.code}</td>
                 <td>{d.slip_no}</td>
                 <td className="num">{formatDecimal(d.total)}</td>
-                <td>{d.journal_entry}</td>
+                <td>
+                  <JournalLink number={d.journal_entry} />
+                </td>
               </tr>
             ))}
           </tbody>

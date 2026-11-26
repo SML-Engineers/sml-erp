@@ -20,6 +20,7 @@ import { voucherPrintUrl, vouchersKey } from "../api/vouchers";
 import { formatDecimal } from "../lib/decimal";
 import { factoryToday } from "../lib/time";
 import { useConfirm } from "../components/ConfirmDialog";
+import { WithJournal } from "../components/JournalLink";
 
 const today = () => factoryToday(); // YYYY-MM-DD, local date
 
@@ -222,12 +223,15 @@ function Done({ payment }: { payment: Payment }) {
     <section className="panel notice" role="status" aria-label={t("payments.saved")}>
       <h2>{t("payments.saved")}</h2>
       <p>
-        {t("payments.savedText", {
-          number: payment.number,
-          amount: formatDecimal(payment.amount),
-          voucher: payment.voucher.number,
-          entry: payment.journal_entry,
-        })}
+        <WithJournal
+          text={t("payments.savedText", {
+            number: payment.number,
+            amount: formatDecimal(payment.amount),
+            voucher: payment.voucher.number,
+            entry: payment.journal_entry,
+          })}
+          number={payment.journal_entry}
+        />
       </p>
       {payment.reference && (
         <p className="saved-reference">

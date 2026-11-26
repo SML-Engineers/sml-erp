@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { vi } from "vitest";
 
-import type { CurrentUser } from "./api/auth";
+import { meQueryKey, type CurrentUser } from "./api/auth";
 
 type Reply = { status?: number; body: unknown };
 type ApiRoutes = Record<string, Reply | ((body: unknown) => Reply)>;
@@ -31,8 +31,15 @@ export function mockApi(routes: ApiRoutes) {
 /** Render `element` at `path`, with simple stand-ins for the other pages. */
 /** `ask: true` shows the real "Are you sure?" dialog (testing T49); otherwise it answers yes,
  * so tests of other behaviour need not click through it. */
-export function renderAt(path: string, element: ReactNode, routePath = path, { ask = false }: { ask?: boolean } = {}) {
+/** `me`: the signed-in user, for parts that read it from the cache (JournalLink). */
+export function renderAt(
+  path: string,
+  element: ReactNode,
+  routePath = path,
+  { ask = false, me }: { ask?: boolean; me?: CurrentUser } = {},
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  if (me) client.setQueryData(meQueryKey, { authenticated: true, user: me });
   return render(
     <QueryClientProvider client={client}>
       <ConfirmProvider autoYes={!ask}>

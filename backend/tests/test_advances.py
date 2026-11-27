@@ -213,6 +213,18 @@ def test_the_advances_on_a_po_never_exceed_it(clerk, supplier, order):
         )
 
 
+def test_the_page_shows_what_other_vouchers_advanced_on_the_po(clerk, director, supplier, order):
+    """Testing T46 (21 Nov 2026): the Director's approval screen shows the advance as an
+    exception, with the PO, its total and what was already advanced on it."""
+    first = advance(clerk, supplier, order, "6000.00")
+    second = advance(clerk, supplier, order, "3000.00")
+    page = as_user(director).get(f"/api/v1/vouchers/{second.pk}/").json()
+    assert page["lines"][0]["advance_order"]["advanced_before"] == "6000.00"
+    services.delete(clerk, first, "Entered twice")  # a deleted voucher no longer counts
+    page = as_user(director).get(f"/api/v1/vouchers/{second.pk}/").json()
+    assert page["lines"][0]["advance_order"]["advanced_before"] == "0.00"
+
+
 def test_an_advance_needs_a_reason_and_an_open_po_of_the_payee(clerk, supplier, order):
     with pytest.raises(VoucherError, match="say why"):
         advance(clerk, supplier, order, reason=" ")

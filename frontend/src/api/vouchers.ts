@@ -104,7 +104,7 @@ export interface VoucherLineData {
   /** The matched supplier invoice this line pays (P16-11), with PO, GRN and invoice. */
   supplier_invoice?: PaidInvoice | null;
   /** An advance on this purchase order before the goods arrive (P16-11a). */
-  advance_order?: { id: number; label: string; total_lkr: string; status: string } | null;
+  advance_order?: { id: number; label: string; total_lkr: string; status: string; advanced_before?: string } | null;
 }
 
 export interface PaidInvoice {

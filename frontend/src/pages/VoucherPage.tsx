@@ -40,6 +40,7 @@ import { invoiceDateAge } from "../lib/invoiceDates";
 import { factoryToday, formatDateTime } from "../lib/time";
 import { useConfirm } from "../components/ConfirmDialog";
 import { WithJournal } from "../components/JournalLink";
+import AdvanceNotice from "../components/AdvanceNotice";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -664,14 +665,7 @@ function ReadOnly({ voucher }: { voucher: VoucherDetail }) {
           </tfoot>
         </table>
       </div>
-      {voucher.lines
-        .filter((l) => l.advance_order)
-        .map((l) => (
-          <p key={`a${l.line_no}`} className="notice">
-            {t("vouchers.advanceException", { po: l.advance_order!.label, amount: formatDecimal(l.total), total: formatDecimal(l.advance_order!.total_lkr) })}{" "}
-            <Link to={`/purchase-orders/${l.advance_order!.id}`}>{l.advance_order!.label}</Link>
-          </p>
-        ))}
+      <AdvanceNotice voucher={voucher} />
       {voucher.lines
         .filter((l) => l.supplier_invoice)
         .map((l) => (

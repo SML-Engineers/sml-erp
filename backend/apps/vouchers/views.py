@@ -209,6 +209,9 @@ def _detail(v: Voucher, user) -> dict:
                         "label": line.advance_order.label,
                         "total_lkr": str(line.advance_order.total_lkr),
                         "status": line.advance_order.status,
+                        # Advanced on the same PO by other vouchers still standing (testing
+                        # T46: the Director's screen shows it next to this advance).
+                        "advanced_before": str(services.advanced_before(line)),
                     },
                     "splits": [
                         {

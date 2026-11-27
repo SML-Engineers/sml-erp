@@ -155,3 +155,32 @@ test("the sales tiles open their reports", async () => {
     "/sales/reports?tab=orders&division=IM",
   );
 });
+
+// Testing T20 (20 Nov 2026): overdue deliveries were not red, and today's said "This week".
+test("open orders show overdue deliveries in red and today's as due today", async () => {
+  const row = {
+    id: 1,
+    number: "SO26103101",
+    customer: "Unilever",
+    customer_po: "UL/7781",
+    division: "IM",
+    item: "Cap",
+    quantity: "4,000 pcs",
+    value_lkr: "9400.00",
+  };
+  mockApi({
+    ...divisions,
+    "GET /api/v1/sales/reports/open-orders/": {
+      body: [
+        { ...row, due_date: "2026-11-14", overdue: true, due_today: false, status: "Overdue" },
+        { ...row, id: 2, number: "SO26111001", due_date: "2026-11-20", overdue: false, due_today: true, status: "Due today" },
+      ],
+    },
+  });
+  renderAt("/sales/reports?tab=orders", <SalesReportsPage />, "/sales/reports");
+  const table = await screen.findByRole("table", { name: "Open orders and deliveries" });
+  expect(within(table).getByText("2026-11-14")).toHaveClass("form-error");
+  expect(within(table).getByText("Overdue")).toHaveClass("form-error");
+  expect(within(table).getByText("Due today")).toBeInTheDocument();
+  expect(within(table).getByText("2026-11-20")).not.toHaveClass("form-error");
+});

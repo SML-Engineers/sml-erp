@@ -178,6 +178,33 @@ def test_open_orders_list_every_delivery_by_date(executive, director, unilever):
     assert len(reports.open_orders(executive, until=TODAY + timedelta(7))) == 1
 
 
+def test_a_delivery_due_today_says_due_today(executive, director, unilever):
+    """Testing T20 (20 Nov 2026): a delivery due today said "This week"."""
+    won = approved(executive, director, unilever)
+    workflow.mark_sent(executive, won)
+    won = workflow.record_outcome(executive, won, accepted=True, reason="price")
+    order = orders.from_quotation(executive, won)
+    line = order.lines.get()
+    orders.save(
+        executive,
+        order,
+        customer_po="UL/PO/7782",
+        lines=[
+            OrderLine(
+                quantity="10000",
+                quotation_line=line.quotation_line,
+                schedule=[Delivery(TODAY, "4000"), Delivery(TODAY + timedelta(3), "6000")],
+            )
+        ],
+    )
+    orders.confirm(executive, order)
+    rows = reports.open_orders(executive)
+    assert [(r["status"], r["due_today"], r["overdue"]) for r in rows] == [
+        ("Due today", True, False),
+        ("This week", False, False),
+    ]
+
+
 # --- Advances not yet set off ------------------------------------------------------------------
 
 

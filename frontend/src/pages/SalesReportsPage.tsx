@@ -347,7 +347,8 @@ function Orders({ division }: { division: string }) {
               id: "due",
               header: t("salesReports.due"),
               value: (r) => r.due_date,
-              cell: (r) => <span className={r.overdue ? "danger-text" : ""}>{r.due_date}</span>,
+              // Overdue deliveries are in red, as the page says (testing T20).
+              cell: (r) => <span className={r.overdue ? "form-error" : undefined}>{r.due_date}</span>,
             },
             {
               id: "number",
@@ -366,8 +367,17 @@ function Orders({ division }: { division: string }) {
             {
               id: "status",
               header: t("salesReports.dueStatus"),
-              value: (r) => (r.overdue ? 0 : r.status ? 1 : 2),
-              cell: (r) => (r.overdue ? t("salesReports.overdue") : r.status ? t("salesReports.thisWeek") : ""),
+              value: (r) => (r.overdue ? 0 : r.due_today ? 1 : r.status ? 2 : 3),
+              cell: (r) =>
+                r.overdue ? (
+                  <span className="form-error">{t("salesReports.overdue")}</span>
+                ) : r.due_today ? (
+                  t("salesReports.dueToday")
+                ) : r.status ? (
+                  t("salesReports.thisWeek")
+                ) : (
+                  ""
+                ),
             },
             { id: "value", header: t("salesReports.valueLkr"), value: (r) => r.value_lkr, money: true },
           ]}

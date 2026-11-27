@@ -2274,6 +2274,7 @@
     "due": "Due",
     "dueStatus": "When",
     "overdue": "Overdue",
+    "dueToday": "Due today",
     "thisWeek": "This week",
     "valueLkr": "Value (LKR)",
     "noneOrders": "No deliveries to make.",

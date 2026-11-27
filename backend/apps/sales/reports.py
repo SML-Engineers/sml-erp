@@ -351,9 +351,15 @@ def open_orders(
                 "item": line.description,
                 "quantity": f"{d.quantity.normalize():,f} {line.unit}",
                 "overdue": d.due_date < today,
+                # Testing T20 (20 Nov 2026): a delivery due today said "This week".
+                "due_today": d.due_date == today,
                 "status": "Overdue"
                 if d.due_date < today
-                else ("This week" if d.due_date <= today + timedelta(7) else ""),
+                else (
+                    "Due today"
+                    if d.due_date == today
+                    else ("This week" if d.due_date <= today + timedelta(7) else "")
+                ),
                 "value_lkr": _money((share * rate).quantize(Decimal("0.01"))),
             }
         )

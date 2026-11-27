@@ -222,3 +222,15 @@ def response(
     reply = HttpResponse(content, content_type=kind)
     reply["Content-Disposition"] = f'attachment; filename="{filename}.{fmt}"'
     return reply
+
+
+def period_words(start, end) -> str:
+    """A report's period in words for its heading (testing T19, 20 Nov 2026: "start to
+    today"): "all dates", "from 01/11/2026", "up to 30/11/2026" or "01/11/2026 to 30/11/2026"."""
+    if start and end:
+        return f"{start:%d/%m/%Y} to {end:%d/%m/%Y}"
+    if start:
+        return f"from {start:%d/%m/%Y}"
+    if end:
+        return f"up to {end:%d/%m/%Y}"
+    return "all dates"

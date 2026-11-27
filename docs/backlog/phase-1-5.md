@@ -236,6 +236,10 @@ Status: `[ ]` to do · `[x]` done
   - Testing T20, 20 Nov 2026: in Open orders and deliveries an overdue delivery's date and
     "Overdue" are in red, as the page says; a delivery due today reads "Due today" (it said
     "This week"), also in the Excel and PDF.
+  - Testing T19, 20 Nov 2026: the register's Excel and PDF use the screen's status words
+    ("Customer accepted", not "Accepted"); report headings give the period in words ("all
+    dates", "from 01/11/2026", "01/11/2026 to 30/11/2026", not "start to today"; also on the
+    purchasing reports) and name the status filter used.
 
 - [ ] **P15-12 User acceptance testing and go-live**
   Sales staff and the Director run test scripts for each role on the test server; the owner

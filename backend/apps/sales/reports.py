@@ -47,6 +47,19 @@ def _division(rows: QuerySet, division: str) -> QuerySet:
 
 # --- Quotation register ----------------------------------------------------------------------
 
+# The words the screen uses for a quotation's status (testing T19: the downloads said
+# "Accepted" where the screen says "Customer accepted").
+STATUS_WORDS = {
+    "draft": "Draft",
+    "awaiting_approval": "Awaiting approval",
+    "approved": "Approved",
+    "sent": "Sent to customer",
+    "accepted": "Customer accepted",
+    "lost": "Customer did not accept",
+    "expired": "Expired, no answer",
+    "revised": "Replaced by a revision",
+}
+
 REGISTER_COLUMNS = [
     Column("label", "Quotation", width=1.4),
     Column("quote_date", "Date", "date"),
@@ -94,7 +107,7 @@ def register(
             "customer": q.customer.name,
             "salesperson_id": q.created_by_id,
             "salesperson": q.created_by.full_name,
-            "status": q.get_status_display(),
+            "status": STATUS_WORDS.get(q.status, q.get_status_display()),
             "status_code": q.status,
             "reason": q.get_outcome_reason_display() if q.outcome_reason else "",
             "currency": q.currency.code,
@@ -109,7 +122,15 @@ def register(
 def register_summary(rows: list[dict]) -> list[dict]:
     """How many quotations, and their value in LKR, per status."""
     summary: OrderedDict[str, dict] = OrderedDict(
-        (code, {"status_code": code, "status": name, "count": 0, "total_lkr": ZERO})
+        (
+            code,
+            {
+                "status_code": code,
+                "status": STATUS_WORDS.get(code, name),
+                "count": 0,
+                "total_lkr": ZERO,
+            },
+        )
         for code, name in Quotation.Status.choices
     )
     for row in rows:

@@ -189,6 +189,9 @@ Status: `[ ]` to do · `[x]` done
     critical check (subtype "critical") is approved by the Director, and is refused if the
     approval matrix does not end with the Director. Migration inventory 0013 moved the
     default rule to the Production Manager and added the Director's "critical" rule.
+  - Testing T38, 21 Nov 2026: the QC queue counts only the packages waiting in quarantine
+    (a damaged bag went straight to the rejected store), and so does the sample; an item
+    without packages reads "check a sample of the delivery", not "sample 1 packages".
 - [x] **P16-09 Stock movements and valuation** (spec 5A.3, IAS 2)
   Every movement recorded by item, store and lot; balances computed, never typed; weighted
   average cost. On acceptance: Dr Inventory, Cr Goods received not invoiced (GRNI), at the PO

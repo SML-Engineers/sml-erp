@@ -62,7 +62,11 @@ export default function InspectionPage() {
             {Number(data.damaged_quantity) > 0 && ` (${t("qc.damaged", { qty: formatQuantity(data.damaged_quantity) })})`}
           </p>
           <p className="muted">
-            {data.plan ? t("qc.plan", { name: data.plan.name, n: data.sample_size }) : t("qc.noPlan")}
+            {data.plan
+              ? data.packages.length > 0
+                ? t("qc.plan", { name: data.plan.name, count: data.sample_size })
+                : t("qc.planUnpacked", { name: data.plan.name })
+              : t("qc.noPlan")}
             {data.inspector && ` · ${t("qc.inspectedBy", { name: data.inspector })}`}
           </p>
           {data.reason && <p className="notice">{t("qc.reasonGiven", { reason: data.reason })}</p>}

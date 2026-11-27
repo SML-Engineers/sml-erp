@@ -257,7 +257,9 @@ class QueueView(_Quality):
                             "unit": line.item.unit,
                         },
                         "good_quantity": str(inspections.good_quantity(line)),
-                        "packages": line.packages.count(),
+                        # Only the packages waiting for QC: a damaged one went straight to
+                        # the rejected store (testing T38: "30 packages" with 29 waiting).
+                        "packages": line.packages.filter(damaged=False).count(),
                         "inspection": None
                         if line.id not in started
                         else {"id": started[line.id].id, "status": started[line.id].status},

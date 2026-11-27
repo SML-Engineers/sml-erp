@@ -226,6 +226,9 @@ Status: `[ ]` to do · `[x]` done
     (it was hidden when one person had made every quotation), the chosen salesperson is named
     on the Excel and PDF, and the division is chosen from a list of the user's production
     divisions instead of typed.
+  - Testing T21, 20 Nov 2026: no screen text talks about the project's phases ("from Phase 2"
+    on Advances not set off; "until production is built (Phase 3)" on delivery notes, which
+    now says that issuing takes the parts out of the finished goods store); a test keeps it so.
 
 - [ ] **P15-12 User acceptance testing and go-live**
   Sales staff and the Director run test scripts for each role on the test server; the owner

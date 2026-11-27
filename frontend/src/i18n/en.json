@@ -1705,7 +1705,7 @@
     "waitingWith": "Waiting for approval by the {{role}}.",
     "notApprovedYet": "Not yet approved by the Director: it cannot be printed as final or sent to the customer.",
     "reviewLabel": "For the Director",
-    "overallMargin": "Margin of the prices quoted",
+    "overallMargin": "Margin on cost of the prices quoted",
     "minimum": "minimum {{pct}}%",
     "valueLkr": "Value before tax (LKR)",
     "warnings": "Warnings for the Director",
@@ -1768,7 +1768,7 @@
     "printsNotValid": "Prints marked NOT VALID: the customer did not accept it.",
     "printsReplaced": "Prints marked REPLACED BY A REVISION.",
     "expiredNote": "Expired: it was valid until {{date}}. To offer it again, make a revision with a new validity date.",
-    "overallMarginCostedOnly": "Margin of the prices quoted (costed lines only)"
+    "overallMarginCostedOnly": "Margin on cost of the prices quoted (costed lines only)"
   },
   "quoteCosting": {
     "open": "Costing",
@@ -1805,7 +1805,7 @@
     "machine": "Machine",
     "machineOf": "Machine, operation {{r}}",
     "perHour": "LKR {{rate}}/h",
-    "operation": "Operation",
+    "operation": "Operation (e.g. Turning)",
     "operationOf": "Operation {{r}}",
     "minutes": "Minutes per piece",
     "minutesOf": "Minutes per piece, operation {{r}}",
@@ -1845,7 +1845,7 @@
       "suggested": "Suggested price",
       "suggestedIn": "Suggested price in {{currency}}",
       "quoted": "Price quoted",
-      "quotedMargin": "Margin of the price quoted",
+      "quotedMargin": "Margin on cost of the price quoted",
       "machine": "Machine",
       "rejects": "Rejects",
       "packing": "Packing",

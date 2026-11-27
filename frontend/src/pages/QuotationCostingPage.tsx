@@ -21,6 +21,7 @@ import {
   type ToolingMode,
 } from "../api/quotations";
 import { formatDecimal, formatQuantity } from "../lib/decimal";
+import { codeAndName } from "../lib/words";
 
 /** The sizes asked for each form of stock; other forms are weighed. */
 const SIZES: Record<string, string[]> = {
@@ -226,7 +227,7 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
               <option value="">—</option>
               {resins.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.code} {m.name} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
+                  {codeAndName(m.code, m.name)} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
                 </option>
               ))}
             </select>
@@ -249,7 +250,7 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
               <option value="">{t("quoteCosting.noMasterbatch")}</option>
               {masterbatches.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.code} {m.name} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
+                  {codeAndName(m.code, m.name)} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
                 </option>
               ))}
             </select>
@@ -266,7 +267,7 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
               <option value="">—</option>
               {machines.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.code} {m.name} ({t("quoteCosting.perHour", { rate: formatDecimal(m.rate) })})
+                  {codeAndName(m.code, m.name)} ({t("quoteCosting.perHour", { rate: formatDecimal(m.rate) })})
                 </option>
               ))}
             </select>
@@ -335,7 +336,7 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
             <option value="">{t("quoteCosting.noMaterial")}</option>
             {resins.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.code} {m.name} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
+                {codeAndName(m.code, m.name)} ({t("quoteCosting.perKg", { rate: formatDecimal(m.rate) })})
               </option>
             ))}
           </select>
@@ -387,7 +388,7 @@ function CostingForm({ page, line }: { page: CostingPage; line: CostingLine }) {
                     <option value="">—</option>
                     {machines.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.code} {m.name} ({t("quoteCosting.perHour", { rate: formatDecimal(m.rate) })})
+                        {codeAndName(m.code, m.name)} ({t("quoteCosting.perHour", { rate: formatDecimal(m.rate) })})
                       </option>
                     ))}
                   </select>

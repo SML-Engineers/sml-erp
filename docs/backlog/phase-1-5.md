@@ -88,6 +88,10 @@ Status: `[ ]` to do · `[x]` done
     the line, or on that quantity break, and saves the quotation again (taxes and totals
     worked out as usual; the costing stays). With a quotation discount, the price before the
     discount is set so the net price is the suggested one.
+  - Testing T2, 20 Nov 2026: the costing names a material or machine once when its name
+    starts with its code ("EN8 steel bar", not "EN8 EN8 steel bar"); the margin figures say
+    "Margin on cost" (they are worked out on cost, not on the price); the operation box reads
+    "Operation (e.g. Turning)".
 
 - [x] **P15-05 Moulding costing and tooling** (spec 5.1)
   Per line, internal only: material ((part weight + runner weight ÷ cavities) × resin rate +

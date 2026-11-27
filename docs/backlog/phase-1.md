@@ -355,6 +355,9 @@ Status: `[ ]` to do · `[x]` done
     Each kind of document is sent from one of them, chosen on its default message
     (quotations and proformas from Sales, purchase orders from Purchasing, the rest from
     Accounts); a mailbox not set up yet sends from Accounts.
+  - Testing T11 (20 Nov 2026): a test result shows only for a mailbox that is set up, with
+    the date of the test ("The last test email, on …, was sent successfully with these
+    settings"); emptying the mailbox forgets it.
 
 - [x] **P0-20 Taxes, QuickBooks style** (owner, 29 Oct 2026: kept by the Accountant)
   Tax components (VAT, SSCL, WHT…) with dated rates and their ledger accounts; tax codes made

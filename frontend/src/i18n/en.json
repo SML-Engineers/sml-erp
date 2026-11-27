@@ -950,6 +950,7 @@
     "test": "Send test email",
     "testTo": "Send the test to",
     "testOk": "The last test email was sent successfully.",
+    "testOkAt": "The last test email, on {{at}}, was sent successfully with these settings.",
     "testFailed": "The last test email failed: {{error}}",
     "notTested": "Send a test email to check these settings.",
     "notReady": "Not set up yet: documents cannot be emailed.",

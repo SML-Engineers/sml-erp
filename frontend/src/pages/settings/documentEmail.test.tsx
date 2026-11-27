@@ -76,9 +76,7 @@ test("the Admin changes the mailbox; an empty password keeps the saved one", asy
 });
 
 test("the Admin edits the default message, with its placeholders listed", async () => {
-  const calls = mockApi(
-    api({ "PUT /api/v1/settings/document-email/templates/tax_invoice/": { body: template } }),
-  );
+  const calls = mockApi(api({ "PUT /api/v1/settings/document-email/templates/tax_invoice/": { body: template } }));
   renderAt("/settings/document-email", <DocumentEmailPage me={admin} />);
 
   const form = await screen.findByRole("form", { name: "Default message: Tax invoice" });
@@ -179,11 +177,25 @@ test("the person sending edits the message before it goes", async () => {
 });
 
 test("without a sending mailbox the form says so", () => {
-  render(
-    <SendEmailForm
-      draft={{ from: "", ready: false, to: [], cc: [], subject: "", body: "" }}
-      onSend={vi.fn()}
-    />,
-  );
+  render(<SendEmailForm draft={{ from: "", ready: false, to: [], cc: [], subject: "", body: "" }} onSend={vi.fn()} />);
   expect(screen.getByRole("alert")).toHaveTextContent("Document email is not set up yet");
+});
+
+// Testing T11 (20 Nov 2026): with every mailbox box empty the page still said "The last test
+// email was sent successfully".
+test("a test result shows only for a mailbox that is set up, with its date", async () => {
+  const tested = { ...account, last_test_ok: true, last_test_at: "2026-11-20T08:56:00Z" };
+  mockApi(api({ "GET /api/v1/settings/document-email/?mailbox=accounts": { body: tested } }));
+  const first = renderAt("/settings/document-email", <DocumentEmailPage me={admin} />);
+  expect(
+    await screen.findByText("The last test email, on 2026-11-20 14:26, was sent successfully with these settings."),
+  ).toBeInTheDocument();
+  first.unmount();
+
+  const emptied = { ...tested, from_address: "", host: "", username: "", has_password: false, is_ready: false };
+  mockApi(api({ "GET /api/v1/settings/document-email/?mailbox=accounts": { body: emptied } }));
+  renderAt("/settings/document-email", <DocumentEmailPage me={admin} />);
+  expect(await screen.findByRole("region", { name: "Sending mailbox" })).toBeInTheDocument();
+  expect(screen.queryByText(/sent successfully/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("form", { name: "Send a test email" })).not.toBeInTheDocument();
 });

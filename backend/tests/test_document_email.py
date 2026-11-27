@@ -115,6 +115,17 @@ def test_a_test_email_checks_the_settings(admin, finance, monkeypatch):
     assert MailAccount.get().last_test_ok is False
 
 
+def test_emptying_the_mailbox_forgets_the_last_test(admin, finance):
+    """Testing T11 (20 Nov 2026): with every box empty the page still said the last test
+    email was sent successfully."""
+    document_email.send_test(admin, "owner@sml.lk")
+    assert MailAccount.get().last_test_ok is True
+    view = document_email.update_account(
+        admin, {"from_address": "", "host": "", "username": "", "clear_password": True}
+    )
+    assert (view["is_ready"], view["last_test_ok"]) == (False, None)
+
+
 # --- Default messages -------------------------------------------------------------------
 
 

@@ -2055,7 +2055,7 @@
   },
   "dn": {
     "title": "Delivery notes",
-    "help": "What leaves the factory against an open sales order. Issue the note when the goods leave: the order becomes Partly delivered, then Delivered. Print it for the customer to sign, and record the signed copy when it comes back. An issued note never changes; if it was wrong, cancel it with a reason and make a new one. Delivery notes do not change any stock until production is built (Phase 3).",
+    "help": "What leaves the factory against an open sales order. Issue the note when the goods leave: the order becomes Partly delivered, then Delivered. Print it for the customer to sign, and record the signed copy when it comes back. An issued note never changes; if it was wrong, cancel it with a reason and make a new one. Issuing it takes the parts out of the finished goods store, at their cost; cancelling it brings them back.",
     "new": "Make a delivery note",
     "chooseOrder": "Open sales order",
     "none": "No delivery notes yet.",
@@ -2246,7 +2246,7 @@
     "winLossHelp": "Quotations won or lost in the period (by the day the outcome was recorded), with the reasons. The win rate is by number and by value.",
     "attentionHelp": "Quotations waiting for the Director's approval, oldest first, then approved or sent quotations that expire within 7 days without an answer.",
     "ordersHelp": "Every delivery still to make on open sales orders, by due date. Overdue deliveries are in red. The value is the delivery's share of its line, before tax.",
-    "advancesHelp": "Customer advances approved and not yet set off against invoices (from Phase 2, invoices set them off).",
+    "advancesHelp": "Customer advances approved and not yet set off against a tax invoice.",
     "salesperson": "Salesperson",
     "everyone": "Everyone",
     "byStatus": "By status",

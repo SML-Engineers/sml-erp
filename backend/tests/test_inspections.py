@@ -473,3 +473,13 @@ def test_a_critical_deviation_is_refused_if_the_matrix_skips_the_director(line, 
         inspections.decide(qc, inspection, D.DEVIATION, "Trial OK")
     inspection.refresh_from_db()
     assert inspection.status == St.DRAFT
+
+
+def test_damaged_bags_are_not_counted_as_waiting_for_qc(buyer, director, stores, qc, resin, plan):
+    """Testing T38 (21 Nov 2026): GRN26112101 showed "30 packages" while bag 030, damaged,
+    had gone straight to the rejected store; only 29 waited for QC."""
+    line = receive(buyer, director, stores, resin, bags=2, damaged=1)
+    queue = as_user(qc).get("/api/v1/inspections/queue/").json()
+    assert [row["packages"] for row in queue["lines"]] == [1]
+    inspection = inspections.start(qc, line)
+    assert inspection.sample_size == 1  # the plan's 2, but only 1 bag is in quarantine

@@ -287,7 +287,8 @@ def save_plan(
 
 
 def _sample_size(plan: InspectionPlan | None, line: GoodsReceiptLine) -> int:
-    count = line.packages.count() or 1
+    # Damaged packages went to the rejected store; QC samples the ones in quarantine.
+    count = line.packages.filter(damaged=False).count() or 1
     if plan is None or plan.sampling == InspectionPlan.Sampling.ALL:
         return count
     if plan.sampling == InspectionPlan.Sampling.FIXED:

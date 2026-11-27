@@ -172,3 +172,16 @@ test("saving the results says Saved (testing T38)", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Save the results" }));
   expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
 });
+
+// Testing T38 (21 Nov 2026): "sample 1 packages" for M8 inserts that come without packages.
+test("the plan line counts packages in words, and an item without packages has no package count", async () => {
+  mockApi({ "GET /api/v1/inspections/7/": { body: inspection } });
+  const first = renderAt("/inspections/7", <InspectionPage />, "/inspections/:id");
+  expect(await screen.findByText(/Plan: PP resin · sample 2 packages/)).toBeInTheDocument();
+  first.unmount();
+
+  mockApi({ "GET /api/v1/inspections/7/": { body: { ...inspection, packages: [], sample_size: 1 } } });
+  renderAt("/inspections/7", <InspectionPage />, "/inspections/:id");
+  expect(await screen.findByText(/Plan: PP resin · check a sample of the delivery/)).toBeInTheDocument();
+  expect(screen.queryByText(/sample 1 packages/)).not.toBeInTheDocument();
+});

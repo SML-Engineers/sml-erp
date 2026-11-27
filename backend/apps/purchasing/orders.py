@@ -264,6 +264,13 @@ def submit(user: User, order: PurchaseOrder, comment: str = "") -> PurchaseOrder
             raise PurchasingError("A purchase order needs at least one line.")
         if order.delivery_date is None:
             raise PurchasingError("Give the delivery date.")
+        # Testing T25 (21 Nov 2026): PO26110801, due 18 Nov, was sent on 21 Nov unnoticed.
+        # A new order needs a delivery date still to come; a revision keeps its own.
+        if order.parent_id is None and order.delivery_date < timezone.localdate():
+            raise PurchasingError(
+                f"The delivery date {order.delivery_date:%d/%m/%Y} has passed: give the date "
+                "the supplier will now deliver, save, then send."
+            )
         if not order.deliver_to.strip():
             raise PurchasingError(
                 "Give the delivery address (Deliver to): the supplier needs to know where to "

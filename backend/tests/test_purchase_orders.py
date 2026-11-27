@@ -169,6 +169,32 @@ def test_every_po_goes_to_the_director(draft, buyer, director, sdd, masterbatch)
     assert sdd.first_used_at and masterbatch.first_used_at  # codes now fixed
 
 
+def test_a_po_whose_delivery_date_has_passed_is_not_sent(buyer, sdd, masterbatch, monkeypatch):
+    """Testing T25 (21 Nov 2026): PO26110801, raised on 8 Nov for delivery on 18 Nov, was sent
+    on 21 Nov without a word about the date having passed."""
+    late = raise_po(buyer, sdd, masterbatch, delivery_date=TODAY + timedelta(days=3))
+    monkeypatch.setattr(orders.timezone, "localdate", lambda: TODAY + timedelta(days=5))
+    with pytest.raises(PurchasingError, match="has passed: give the date the supplier will"):
+        orders.submit(buyer, late)
+    late.refresh_from_db()
+    assert late.status == St.DRAFT
+    late = orders.save(
+        buyer,
+        late,
+        lines=[LineInput(masterbatch, "300", "590.00")],
+        delivery_date=TODAY + timedelta(days=5),  # due "today" is still on time
+    )
+    assert orders.submit(buyer, late).status == St.AWAITING_APPROVAL
+
+
+def test_a_revision_keeps_its_delivery_date_even_if_past(approved, buyer, monkeypatch):
+    """A revision of a PO already being delivered keeps its date: it is not refused."""
+    rev = orders.revise(buyer, approved, "Supplier raised the price")
+    later = TODAY + timedelta(days=10)
+    monkeypatch.setattr(orders.timezone, "localdate", lambda: later)
+    assert orders.submit(buyer, rev).status == St.AWAITING_APPROVAL
+
+
 def test_the_director_cannot_approve_a_po_they_raised(sdd, masterbatch):
     both = person("both@sml.lk", "purchasing_officer", "director", all_divisions=True)
     person("director2@sml.lk", "director", all_divisions=True)  # T51: someone else can approve

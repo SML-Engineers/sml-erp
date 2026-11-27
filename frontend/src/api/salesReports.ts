@@ -91,6 +91,7 @@ export interface OpenOrderRow {
   item: string;
   quantity: string;
   overdue: boolean;
+  due_today?: boolean;
   status: string;
   value_lkr: string;
 }

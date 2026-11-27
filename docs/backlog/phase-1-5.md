@@ -229,6 +229,9 @@ Status: `[ ]` to do · `[x]` done
   - Testing T21, 20 Nov 2026: no screen text talks about the project's phases ("from Phase 2"
     on Advances not set off; "until production is built (Phase 3)" on delivery notes, which
     now says that issuing takes the parts out of the finished goods store); a test keeps it so.
+  - Testing T20, 20 Nov 2026: in Open orders and deliveries an overdue delivery's date and
+    "Overdue" are in red, as the page says; a delivery due today reads "Due today" (it said
+    "This week"), also in the Excel and PDF.
 
 - [ ] **P15-12 User acceptance testing and go-live**
   Sales staff and the Director run test scripts for each role on the test server; the owner

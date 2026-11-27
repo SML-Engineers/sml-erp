@@ -10,7 +10,7 @@ from apps.core.models import Division
 from apps.inventory import inspections, items, receipts
 from apps.inventory.models import IncomingInspection
 from apps.masters.models import Currency, Supplier
-from apps.purchasing import invoices, orders, reports, returns
+from apps.purchasing import invoices, orders, reports, return_printing, returns
 from apps.purchasing.invoices import LineInput
 from apps.purchasing.orders import LineInput as POLine
 from apps.vouchers import services as vouchers
@@ -297,6 +297,10 @@ def test_the_printed_return_note(people, supplier):
     )
     printed = as_user(people["stores"]).get(f"/api/v1/supplier-returns/{ret.pk}/pdf/")
     assert printed.status_code == 200 and printed["Content-Type"] == "application/pdf"
+    # Testing T35 (21 Nov 2026): the PO is SML's own, not the supplier's.
+    text = return_printing.render(ret, compress=False)
+    assert b"Our PO" in text and b"Your PO" not in text
+    assert ret.receipt.purchase_order.label.encode() in text
 
 
 def test_reports_need_purchasing_access(people):

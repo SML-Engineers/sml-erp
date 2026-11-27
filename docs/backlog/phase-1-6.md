@@ -298,6 +298,8 @@ Status: `[ ]` to do · `[x]` done
   - Owner, 16 Nov 2026: **clear statuses.** "Draft of Kamal", "Waiting for Ruwan
     (Director)", "Sent back by Ruwan" (not "Returned by", which would read as the goods),
     "Goods returned" or "Goods returned, approved by Ruwan".
+  - Testing T35, 21 Nov 2026: the printed return note says "Our PO" (it is SML's PO to the
+    supplier), not "Your PO".
   - Owner, 22 Nov 2026 (from his testing): rejected goods go back **within 14 days**.
     Purchasing reports → **Rejected stock** lists every lot in the rejected stores, oldest
     first, with the day it came in, the days it has waited (over 14 in red; "Only those over

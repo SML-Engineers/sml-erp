@@ -14,7 +14,7 @@ from apps.vouchers.printing import Table
 from .models import SupplierReturn
 
 
-def render(ret: SupplierReturn) -> bytes:
+def render(ret: SupplierReturn, *, compress: bool = True) -> bytes:
     s = Styles()
     p = s.p
     supplier = ret.supplier
@@ -31,7 +31,8 @@ def render(ret: SupplierReturn) -> bytes:
             [p("Return No.", s.bold), p(ret.number)],
             [p("Date", s.bold), p(f"{ret.return_date:%d-%b-%Y}")],
             [p("Our GRN", s.bold), p(ret.receipt.number)],
-            [p("Your PO", s.bold), p(ret.receipt.purchase_order.label)],
+            # SML's own PO to the supplier (testing T35: it said "Your PO").
+            [p("Our PO", s.bold), p(ret.receipt.purchase_order.label)],
             [p("Your delivery note", s.bold), p(ret.receipt.delivery_note_no or "–")],
             [p("Vehicle", s.bold), p(ret.vehicle_no or "–")],
         ],
@@ -121,5 +122,6 @@ def render(ret: SupplierReturn) -> bytes:
         topMargin=MARGIN,
         bottomMargin=MARGIN,
         title=f"Goods return note {ret.number}",
+        pageCompression=1 if compress else 0,
     ).build(story, onFirstPage=on_page, onLaterPages=on_page)
     return buffer.getvalue()

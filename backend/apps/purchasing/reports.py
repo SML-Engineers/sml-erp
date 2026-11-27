@@ -292,8 +292,12 @@ EXCEPTION_COLUMNS = [
     Column("document", "Document", width=1.3),
     Column("supplier", "Supplier", width=1.6),
     Column("division", "Division", width=0.6),
-    Column("reason", "Reason given", width=2.4),
+    Column("reason", "Reason given", width=2.2),
     Column("approved_by", "Approved by", width=1.2),
+    # Testing T47 (21 Nov 2026): the Director's own comment and what was let through.
+    Column("comment", "Director's comment", width=2),
+    Column("what", "Quantity", width=1.1),
+    Column("value_lkr", "Value (LKR)", "money"),
 ]
 
 EXCEPTION_KINDS = {
@@ -328,7 +332,18 @@ def exceptions(user: User, *, start=None, end=None, division: str = "") -> list[
     scope = set(division_scope(user).values_list("code", flat=True))
     rows = []
 
-    def add(kind, document_id, approval, asked, label, supplier, division_code, reason=None):
+    def add(
+        kind,
+        document_id,
+        approval,
+        asked,
+        label,
+        supplier,
+        division_code,
+        reason=None,
+        what="",
+        value=None,
+    ):
         if division_code not in scope or (division and division_code != division.upper()):
             return
         rows.append(
@@ -340,12 +355,20 @@ def exceptions(user: User, *, start=None, end=None, division: str = "") -> list[
                 "division": division_code,
                 "reason": reason if reason is not None else ((asked.reason if asked else "") or ""),
                 "approved_by": approval.user.full_name,
+                "comment": approval.reason or "",
+                "what": what,
+                "value_lkr": _money(value) if value is not None else "",
             }
         )
 
     for doc_id, approval, asked in _approved("goods_receipt", start, end):
         grn = GoodsReceipt.objects.select_related("supplier", "division").filter(pk=doc_id).first()
         if grn:
+            over = [
+                line
+                for line in grn.lines.select_related("item", "po_line", "receipt")
+                if line.excess_quantity > 0
+            ]
             add(
                 "goods_receipt",
                 doc_id,
@@ -354,6 +377,14 @@ def exceptions(user: User, *, start=None, end=None, division: str = "") -> list[
                 grn.number,
                 grn.supplier.name,
                 grn.division.code,
+                what=", ".join(f"{_qty(x.excess_quantity)} {x.item.unit}" for x in over),
+                value=sum(
+                    (
+                        (x.excess_quantity * unit_cost(x)).quantize(CENT, ROUND_HALF_UP)
+                        for x in over
+                    ),
+                    ZERO,
+                ),
             )
     for doc_id, approval, asked in _approved("quality_deviation", start, end):
         found = (
@@ -373,12 +404,22 @@ def exceptions(user: User, *, start=None, end=None, division: str = "") -> list[
                 f"{grn.number} {found.line.item.code}",
                 grn.supplier.name,
                 grn.division.code,
+                what=f"{_qty(found.accepted_quantity)} {found.line.item.unit}",
+                value=(found.accepted_quantity * unit_cost(found.line)).quantize(
+                    CENT, ROUND_HALF_UP
+                ),
             )
     for doc_id, approval, asked in _approved("invoice_exception", start, end):
         found = (
             SupplierInvoice.objects.select_related("supplier", "division").filter(pk=doc_id).first()
         )
         if found:
+            rate = found.exchange_rate or Decimal("1")
+            # The difference let through: the invoice's lines against the PO prices.
+            difference = sum(
+                (line.amount - line.quantity * line.po_unit_price for line in found.lines.all()),
+                ZERO,
+            )
             add(
                 "invoice_exception",
                 doc_id,
@@ -387,6 +428,8 @@ def exceptions(user: User, *, start=None, end=None, division: str = "") -> list[
                 f"{found.number} ({found.invoice_no})",
                 found.supplier.name,
                 found.division.code,
+                what="price difference",
+                value=(difference * rate).quantize(CENT, ROUND_HALF_UP),
             )
     for doc_id, approval, asked in _approved("supplier_return", start, end):
         found = (
@@ -401,6 +444,7 @@ def exceptions(user: User, *, start=None, end=None, division: str = "") -> list[
                 found.number,
                 found.supplier.name,
                 found.division.code,
+                value=sum((line.value for line in found.lines.all()), ZERO),
             )
     # Advances: approved with their voucher by the Director.
     from apps.vouchers.models import Voucher, VoucherLine
@@ -442,6 +486,7 @@ def exceptions(user: User, *, start=None, end=None, division: str = "") -> list[
             line.voucher.payee.name if line.voucher.payee else "",
             line.voucher.division.code,
             reason=line.description,
+            value=line.amount + line.tax_amount,
         )
     rows.sort(key=lambda r: r["approved_at"], reverse=True)
     return rows

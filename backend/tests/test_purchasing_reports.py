@@ -171,6 +171,32 @@ def test_held_invoices_and_approved_exceptions(people, supplier):
     assert [(r["kind"], r["reason"], r["approved_by"]) for r in found] == [
         ("Invoice difference", "Price list changed in October", "Director")
     ]
+    # Testing T47: the Director's comment and the value let through (100 × 5.00).
+    assert (found[0]["comment"], found[0]["what"], found[0]["value_lkr"]) == (
+        "OK",
+        "price difference",
+        "500.00",
+    )
+
+
+def test_an_excess_shows_its_quantity_value_and_the_directors_comment(people, supplier):
+    """Testing T47 (21 Nov 2026): the exceptions report had no value column."""
+    from apps.inventory.receipts import LineInput as GRNLine
+
+    order = po(people, supplier)
+    grn = receipts.create(people["stores"], order)
+    grn = receipts.save(people["stores"], grn, lines=[GRNLine(order.lines.get().pk, "150", "0")])
+    grn = receipts.confirm(people["stores"], grn)
+    receipts.approve_excess(people["director"], grn, "Supplier rounds up the box")
+    rows = {r["kind"]: r for r in reports.exceptions(people["accountant"])}
+    excess = rows["GRN excess over the PO"]
+    assert (excess["what"], excess["value_lkr"], excess["comment"]) == (
+        "50 pcs",
+        "5000.00",
+        "Supplier rounds up the box",
+    )
+    sheet = as_user(people["accountant"]).get("/api/v1/purchasing-reports/exceptions/?export=xlsx")
+    assert sheet.status_code == 200
 
 
 # --- By supplier --------------------------------------------------------------------------------

@@ -339,6 +339,10 @@ Status: `[ ]` to do · `[x]` done
     Done: PR #277.
   - Testing T22/T23, 23 Nov 2026: items export/import carry tare, tolerance, kg per metre and
     density (blank keeps the value); checking a file needs no reason. Done: PR #278.
+  - Testing T47, 21 Nov 2026: Exceptions approved shows the Director's own comment and what
+    was let through: the excess quantity and its value at the PO price, the quantity and
+    value accepted under deviation, an invoice's price difference against the PO, the value
+    of accepted goods returned, and the advance; with a total (screen, Excel and PDF).
   - Testing T36, 21 Nov 2026: the Trail on a PO, GRN or supplier invoice is read again as
     soon as that document's status changes (it kept "Excess waiting for the Director" after
     the GRN was confirmed); a held invoice, or one waiting for the Director's exception,

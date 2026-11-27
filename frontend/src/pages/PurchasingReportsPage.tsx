@@ -113,6 +113,9 @@ export default function PurchasingReportsPage() {
       text("supplier", t("po.supplier")),
       text("reason", t("pr.reason")),
       text("approved_by", t("pr.approvedBy")),
+      text("comment", t("pr.directorComment")),
+      text("what", t("pr.quantity")),
+      money("value_lkr", t("pr.valueLkr")),
     ],
     suppliers: [
       text("supplier", t("po.supplier")),

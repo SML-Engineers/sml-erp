@@ -2879,7 +2879,9 @@
     "supplierCreditNote": "Supplier's credit note",
     "creditWaiting": "Waiting, {{days}} days",
     "onlyWaiting": "Only those still waiting",
-    "notPayable": "not payable yet"
+    "notPayable": "not payable yet",
+    "directorComment": "Director's comment",
+    "valueLkr": "Value (LKR)"
   },
   "mj": {
     "title": "Manual journals",

@@ -53,7 +53,7 @@ def _as_at(division: str) -> str:
 
 def _period(request, division: str) -> str:
     start, end = _day(request, "from"), _day(request, "to")
-    text = f"{start or 'start'} to {end or 'today'}"
+    text = exports.period_words(start, end)
     return text + (f", division {division.upper()}" if division else "")
 
 
@@ -162,7 +162,7 @@ class ExceptionsView(_Reports):
             request,
             rows,
             title="Exceptions approved by the Director",
-            subtitle=_period(request, division),
+            subtitle="Approved: " + _period(request, division),
             columns=reports.EXCEPTION_COLUMNS,
             filename="exceptions-approved",
         ) or Response(rows)
@@ -178,7 +178,7 @@ class SuppliersView(_Reports):
             request,
             rows,
             title="Receipts and rejections by supplier",
-            subtitle="Goods received " + _period(request, division),
+            subtitle="Goods received: " + _period(request, division),
             columns=reports.SUPPLIER_COLUMNS,
             filename="receipts-by-supplier",
         ) or Response(rows)

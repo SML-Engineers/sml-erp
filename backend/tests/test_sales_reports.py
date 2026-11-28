@@ -320,6 +320,40 @@ def test_the_register_downloads_one_salespersons_quotations(
     assert client.get(f"{url}&export=pdf")["Content-Type"] == "application/pdf"
 
 
+def test_the_register_download_uses_the_screens_words_and_names_its_filters(
+    executive, director, manager, unilever
+):
+    """Testing T19 (20 Nov 2026): the files said "Accepted" where the screen says "Customer
+    accepted", the heading read "Quotations dated start to today", and the status filter
+    used was not mentioned."""
+    import io
+
+    import openpyxl
+
+    won = approved(executive, director, unilever)
+    workflow.mark_sent(executive, won)
+    workflow.record_outcome(executive, won, accepted=True, reason="price")
+    client = as_user(manager)
+    xlsx = client.get("/api/v1/sales/reports/register/?status=accepted&export=xlsx")
+    sheet = openpyxl.load_workbook(io.BytesIO(xlsx.content)).active
+    cells = [str(c) for row in sheet.iter_rows(values_only=True) for c in row if c]
+    assert "Customer accepted" in cells and "Accepted" not in cells
+    assert any("Quotations: all dates, status Customer accepted" in c for c in cells)
+    assert not any("start to" in c for c in cells)
+    dated = client.get(
+        f"/api/v1/sales/reports/register/?from={TODAY:%Y-%m-%d}&status=accepted&export=xlsx"
+    )
+    cells = [
+        str(c)
+        for row in openpyxl.load_workbook(io.BytesIO(dated.content)).active.iter_rows(
+            values_only=True
+        )
+        for c in row
+        if c
+    ]
+    assert any(f"Quotations: from {TODAY:%d/%m/%Y}" in c for c in cells)
+
+
 def test_no_sales_access_no_reports():
     clerk = person("clerk@sml.lk", "clerk", all_divisions=True)
     client = as_user(clerk)

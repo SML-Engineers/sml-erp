@@ -44,7 +44,14 @@ def _export(request, rows, *, title, subtitle, columns, filename):
 
 
 def _period(start, end) -> str:
-    return f"{start or 'start'} to {end or 'today'}"
+    return exports.period_words(start, end)
+
+
+def _and_status(status: str) -> str:
+    """ ", status Customer accepted" when the register is filtered (testing T19: a printed
+    copy looked like all quotations)."""
+    words = [reports.STATUS_WORDS.get(code, code) for code in status.split(",") if code]
+    return f", status {' or '.join(words)}" if words else ""
 
 
 def _and_division(division: str) -> str:
@@ -76,7 +83,8 @@ class RegisterView(_Reports):
             request,
             rows,
             title="Quotation register",
-            subtitle=f"Quotations dated {_period(start, end)}"
+            subtitle=f"Quotations: {_period(start, end)}"
+            + _and_status(p.get("status", ""))
             + _and_division(p.get("division", ""))
             + _and_salesperson(request.user, p.get("salesperson", "")),
             columns=reports.REGISTER_COLUMNS,
@@ -100,7 +108,7 @@ class WinLossView(_Reports):
             request,
             rows,
             title="Quotations won and lost",
-            subtitle=f"Decided {_period(start, end)}" + _and_division(division),
+            subtitle=f"Decided: {_period(start, end)}" + _and_division(division),
             columns=reports.WIN_LOSS_COLUMNS,
             filename="win-loss",
         )

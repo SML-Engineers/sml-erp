@@ -37,3 +37,9 @@ export function plainWords(code: string): string {
   const words = parts.join(" ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+/** "EN8 steel bar", not "EN8 EN8 steel bar": the code is left out when the name already
+ * starts with it (testing T2, 20 Nov 2026). */
+export function codeAndName(code: string, name: string): string {
+  return name.toUpperCase().startsWith(code.toUpperCase()) ? name : `${code} ${name}`;
+}

@@ -418,8 +418,12 @@ test("the creator costs a line: material by size, operations and subcontract", a
   const suggested = within(table).getByRole("row", { name: /Suggested price/ });
   expect(suggested).toHaveTextContent("2,971.52");
   expect(suggested).toHaveTextContent("2,419.52");
-  expect(within(table).getByRole("row", { name: /Margin of the price quoted/ })).toHaveTextContent("21.15%");
+  expect(within(table).getByRole("row", { name: /Margin on cost of the price quoted/ })).toHaveTextContent("21.15%");
   expect(screen.getByText(/below cost for 50/)).toBeInTheDocument();
+  // Testing T2 (20 Nov 2026): "EN8 EN8 steel bar", and "0.5" typed as the operation.
+  expect(document.body).not.toHaveTextContent("EN8 EN8");
+  expect(screen.getAllByText(/EN8 steel bar/).length).toBeGreaterThan(0);
+  expect(screen.getAllByText("Operation (e.g. Turning)").length).toBeGreaterThan(0);
 });
 
 test("those who only look see the costing without changing it", async () => {
@@ -668,7 +672,7 @@ test("the margin says when it counts the costed lines only", async () => {
   mockApi({ "GET /api/v1/quotations/12/": { body: partial } });
   renderAt("/quotations/12", <QuotationPage />, "/quotations/:id");
   const panel = await screen.findByRole("region", { name: "Approval and status" });
-  expect(within(panel).getByText(/Margin of the prices quoted \(costed lines only\)/)).toBeInTheDocument();
+  expect(within(panel).getByText(/Margin on cost of the prices quoted \(costed lines only\)/)).toBeInTheDocument();
   expect(within(panel).getByRole("list", { name: "Warnings for the Director" })).toHaveTextContent("Line 2 has no costing.");
 });
 

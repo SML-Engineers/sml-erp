@@ -88,6 +88,10 @@ Status: `[ ]` to do · `[x]` done
     cancelled by Priyanka: reason". A cancelled or closed-short PO says who did it and
     when (fixed once set), and its print note says "Prints marked CANCELLED" or "REPLACED
     BY A REVISION" instead of DRAFT.
+  - Testing T25 (21 Nov 2026): a PO whose delivery date has already passed is not sent to
+    the Director ("The delivery date 18/11/2026 has passed: give the date the supplier will
+    now deliver, save, then send"); today's date is still accepted, and a revision keeps
+    its own date.
   - Testing T24/T26/T28 (21 Nov 2026): a new PO keeps the company's address as Deliver to
     and the supplier's payment terms when the form sends them blank; a PO without a
     delivery address is not sent. Send to the Director waits until typed changes are saved

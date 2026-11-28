@@ -20,6 +20,7 @@ import {
   type Mailbox,
   type Security,
 } from "../../api/documentEmail";
+import { formatDateTime } from "../../lib/time";
 
 function ErrorLine({ error }: { error: unknown }) {
   const { t } = useTranslation();
@@ -175,8 +176,12 @@ function AccountPanel({
       </form>
       <ErrorLine error={save.error} />
       <p role="status">
-        {account.last_test_ok === true && t("documentEmail.testOk")}
-        {account.last_test_ok === false && t("documentEmail.testFailed", { error: account.last_test_error })}
+        {/* A test result belongs to the mailbox as it is set up now; without one it means
+            nothing (testing T11: "sent successfully" with every box empty). */}
+        {account.is_ready &&
+          account.last_test_ok === true &&
+          t("documentEmail.testOkAt", { at: account.last_test_at ? formatDateTime(account.last_test_at) : "" })}
+        {account.is_ready && account.last_test_ok === false && t("documentEmail.testFailed", { error: account.last_test_error })}
         {account.last_test_ok === null && account.is_ready && t("documentEmail.notTested")}
         {!account.is_ready && t(mailbox === "accounts" ? "documentEmail.notReady" : "documentEmail.notReadyDepartment")}
       </p>
